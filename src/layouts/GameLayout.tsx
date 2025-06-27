@@ -14,5 +14,9 @@ export const GameLayout: React.FC<GameLayoutProps> = ({ children }) => {
     return <RotateDeviceOverlay />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+    </>
+  );
 };
