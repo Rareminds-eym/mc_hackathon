@@ -1,11 +1,13 @@
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { GameLayout } from './layouts/GameLayout';
-import { LoginScreen } from './screens/LoginScreen';
+import LoaderScreen from './screens/LoaderScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ModuleMapScreen } from './screens/ModuleMap';
 import { LevelList } from './screens/LevelList';
 import { LevelScene } from './screens/LevelScene';
+import AuthPage from './screens/AuthPage';
+import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
 import {
@@ -16,6 +18,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from 'react-router-dom';
+import InstructionsPage from './screens/InstructionsPage';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -48,31 +51,14 @@ const router = createBrowserRouter(
       element: <GameLayout><Outlet /></GameLayout>,
       errorElement: <RouteErrorBoundary />,
       children: [
-        {
-          path: '/',
-          element: <LoginScreen />,
-          errorElement: <RouteErrorBoundary />
-        },
-        {
-          path: '/home',
-          element: <HomeScreen />,
-          errorElement: <RouteErrorBoundary />
-        },
-        {
-          path: '/modules',
-          element: <ModuleMapScreen />,
-          errorElement: <RouteErrorBoundary />
-        },
-        {
-          path: '/modules/:moduleId',
-          element: <LevelList />,
-          errorElement: <RouteErrorBoundary />
-        },
-        {
-          path: '/modules/:moduleId/levels/:levelId',
-          element: <LevelScene />,
-          errorElement: <RouteErrorBoundary />
-        },
+
+        { path: '/', element: <LoaderScreen /> },
+        { path: '/home', element: <HomeScreen /> },
+        { path: '/modules', element: <ModuleMapScreen /> },
+        { path: '/modules/:moduleId', element: <LevelList /> },
+        { path: '/modules/:moduleId/levels/:levelId', element: <LevelScene /> },
+        { path: '/auth', element: <AuthPage /> },
+        { path: '/instructions', element: <InstructionsPage /> },
         { path: '*', element: <Navigate to="/" replace /> },
       ],
     },
@@ -82,17 +68,9 @@ const router = createBrowserRouter(
 function App() {
   return (
     <Provider store={store}>
-      <ErrorBoundary
-        onError={(error, errorInfo) => {
-          // Log error to console or external service
-          console.error('Application Error:', error, errorInfo);
-
-          // You can add error reporting service here
-          // Example: Sentry.captureException(error, { extra: errorInfo });
-        }}
-      >
+      <AuthProvider>
         <RouterProvider router={router} />
-      </ErrorBoundary>
+      </AuthProvider>
     </Provider>
   );
 }
