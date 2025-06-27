@@ -16,6 +16,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from 'react-router-dom';
+import Level3 from './screens/Level3/Index';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -66,6 +67,11 @@ const router = createBrowserRouter(
         {
           path: '/modules/:moduleId',
           element: <LevelList />,
+          errorElement: <RouteErrorBoundary />
+        },
+        {
+          path: '/modules/:moduleId/levels/3',
+          element: <Level3 />,
           errorElement: <RouteErrorBoundary />
         },
         {
