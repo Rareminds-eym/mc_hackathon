@@ -1,46 +1,76 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from './types';
 
-// Base selectors
-export const selectGame = (state: RootState) => state.game;
-export const selectAudio = (state: RootState) => state.audio;
-export const selectUI = (state: RootState) => state.ui;
-export const selectProgress = (state: RootState) => state.progress;
+// Base selectors with defensive checks
+export const selectGame = (state: RootState) => state.game || {
+  modules: [],
+  completedLevels: new Set(),
+  userScores: {},
+  isLoading: false,
+};
 
-// Game selectors
+export const selectAudio = (state: RootState) => state.audio || {
+  isEnabled: true,
+  volume: 0.7,
+  isMuted: false,
+  currentTrack: undefined,
+};
+
+export const selectUI = (state: RootState) => state.ui || {
+  sidebarOpen: false,
+  theme: 'light' as const,
+  notifications: [],
+  modals: {
+    isSettingsOpen: false,
+    isHelpOpen: false,
+    isConfirmationOpen: false,
+  },
+};
+
+export const selectProgress = (state: RootState) => state.progress || {
+  totalProgress: 0,
+  moduleProgress: {},
+  achievements: [],
+  streaks: {
+    current: 0,
+    longest: 0,
+  },
+};
+
+// Game selectors with defensive checks
 export const selectModules = createSelector(
   [selectGame],
-  (game) => game.modules
+  (game) => game?.modules || []
 );
 
 export const selectCompletedLevels = createSelector(
   [selectGame],
-  (game) => game.completedLevels
+  (game) => game?.completedLevels || new Set()
 );
 
 export const selectUserScores = createSelector(
   [selectGame],
-  (game) => game.userScores
+  (game) => game?.userScores || {}
 );
 
 export const selectCurrentModule = createSelector(
   [selectGame],
-  (game) => game.currentModule
+  (game) => game?.currentModule
 );
 
 export const selectCurrentLevel = createSelector(
   [selectGame],
-  (game) => game.currentLevel
+  (game) => game?.currentLevel
 );
 
 export const selectIsLoading = createSelector(
   [selectGame],
-  (game) => game.isLoading
+  (game) => game?.isLoading || false
 );
 
 export const selectError = createSelector(
   [selectGame],
-  (game) => game.error
+  (game) => game?.error
 );
 
 // Level completion selectors
@@ -73,67 +103,71 @@ export const selectModuleProgress = createSelector(
   }
 );
 
-// Audio selectors
+// Audio selectors with defensive checks
 export const selectAudioEnabled = createSelector(
   [selectAudio],
-  (audio) => audio.isEnabled
+  (audio) => audio?.isEnabled ?? true
 );
 
 export const selectVolume = createSelector(
   [selectAudio],
-  (audio) => audio.volume
+  (audio) => audio?.volume ?? 0.7
 );
 
 export const selectIsMuted = createSelector(
   [selectAudio],
-  (audio) => audio.isMuted
+  (audio) => audio?.isMuted ?? false
 );
 
 export const selectCurrentTrack = createSelector(
   [selectAudio],
-  (audio) => audio.currentTrack
+  (audio) => audio?.currentTrack
 );
 
-// UI selectors
+// UI selectors with defensive checks
 export const selectSidebarOpen = createSelector(
   [selectUI],
-  (ui) => ui.sidebarOpen
+  (ui) => ui?.sidebarOpen ?? false
 );
 
 export const selectTheme = createSelector(
   [selectUI],
-  (ui) => ui.theme
+  (ui) => ui?.theme ?? 'light'
 );
 
 export const selectNotifications = createSelector(
   [selectUI],
-  (ui) => ui.notifications
+  (ui) => ui?.notifications || []
 );
 
 export const selectModals = createSelector(
   [selectUI],
-  (ui) => ui.modals
+  (ui) => ui?.modals || {
+    isSettingsOpen: false,
+    isHelpOpen: false,
+    isConfirmationOpen: false,
+  }
 );
 
-// Progress selectors
+// Progress selectors with defensive checks
 export const selectTotalProgress = createSelector(
   [selectProgress],
-  (progress) => progress.totalProgress
+  (progress) => progress?.totalProgress ?? 0
 );
 
 export const selectAchievements = createSelector(
   [selectProgress],
-  (progress) => progress.achievements
+  (progress) => progress?.achievements || []
 );
 
 export const selectUnlockedAchievements = createSelector(
   [selectAchievements],
-  (achievements) => achievements.filter(a => a.unlockedAt)
+  (achievements) => (achievements || []).filter(a => a.unlockedAt)
 );
 
 export const selectStreaks = createSelector(
   [selectProgress],
-  (progress) => progress.streaks
+  (progress) => progress?.streaks || { current: 0, longest: 0 }
 );
 
 // Complex selectors
