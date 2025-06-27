@@ -1,10 +1,13 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
+import { useAuth } from "../contexts/AuthContext"; // Add this import
 
 const HomeScreen: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const navigate = useNavigate();
+  const { user, logout } = useAuth(); // Get user and logout
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const startGame = () => {
     navigate("/modules");
@@ -26,11 +29,44 @@ const HomeScreen: React.FC = () => {
     window.close();
   };
 
+  const handleLogout = () => {
+    if (typeof logout === "function") {
+      logout();
+    } else {
+      // fallback: clear token and reload
+      localStorage.removeItem("authToken");
+    }
+    navigate("/auth", { replace: true });
+  };
+
   return (
     <div
       className="homepage-bg min-h-screen w-screen relative overflow-x-hidden overflow-y-auto bg-cover bg-center"
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.jpg')` }}
     >
+      {/* Player avatar top right with dropdown */}
+      <div className="absolute top-6 right-10 z-30">
+        <div className="relative">
+          <img
+            src={user?.avatarUrl || "/avatars/default.png"}
+            alt="Player Avatar"
+            className="w-10 h-10 rounded-full border border-gray-300 cursor-pointer"
+            onClick={() => setProfileOpen((v) => !v)}
+            tabIndex={0}
+            onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
+          />
+          {profileOpen && (
+            <div className="absolute right-0 mt-2 w-52 bg-white/80 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
+              <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
+                {user?.user_metadata?.full_name || user?.email || "Player"}
+              </span>
+              <Button size="sm" variant="secondary" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
       {/* Lab game sound */}
       <audio ref={audioRef} src="/lab-game-sound.mp3" loop />
       <div className="absolute top-8 left-0 w-full flex justify-center z-20">
