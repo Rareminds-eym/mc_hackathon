@@ -324,12 +324,8 @@ const CustomDragLayer = () => {
   if (!isDragging || !item || !offset) return null;
 
   // Use the dragged piece's color
-  const categoryGradient = item.category === 'violation'
-    ? 'from-red-500 via-pink-500 to-purple-500'
-    : 'from-blue-500 via-cyan-500 to-teal-500';
-  const categoryBorder = item.category === 'violation'
-    ? 'border-red-400'
-    : 'border-cyan-400';
+  const categoryGradient = 'from-blue-500 via-cyan-500 to-teal-500';
+  const categoryBorder = 'border-cyan-400';
 
   // Only center the preview on desktop
   const transform = isTouchDevice
