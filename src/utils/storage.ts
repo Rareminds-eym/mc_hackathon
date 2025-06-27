@@ -19,7 +19,7 @@ export const saveToStorage = <T>(key: string, data: T): boolean => {
     return false;
   }
 };
-
+ 
 /**
  * Load data from localStorage with error handling
  */
