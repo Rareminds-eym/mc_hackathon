@@ -28,15 +28,15 @@ const LevelList: React.FC = () => {
         justifyContent: 'center'
       }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '20px' }}>Module not found</h1>
-        <Button onClick={() => navigate('/roadmap')}>
-          Back to Roadmap
+        <Button onClick={() => navigate('/modules')}>
+          Back to Modules
         </Button>
       </div>
     );
   }
 
   const selectLevel = (level: Level) => {
-    navigate(`/module/${module.id}/level/${level.id}`, { 
+    navigate(`/modules/${module.id}/levels/${level.id}`, { 
       state: { module, level } 
     });
   };
