@@ -54,7 +54,7 @@ const router = createBrowserRouter(
       children: [
         {
           path: '/',
-          element: <LoginScreen />,
+          element: <AuthPage />,
           errorElement: <RouteErrorBoundary />
         },
         {
