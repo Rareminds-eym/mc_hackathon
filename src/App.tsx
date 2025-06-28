@@ -20,6 +20,7 @@ import {
 } from 'react-router-dom';
 import Level3 from './screens/Level3/Index';
 import InstructionsPage from './screens/InstructionsPage';
+import BingoGame from './screens/BingoGame';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -76,6 +77,10 @@ const router = createBrowserRouter(
           path: '/modules/:moduleId/levels/3',
           element: <Level3 />,
           errorElement: <RouteErrorBoundary />
+        },
+        { path: '/modules/:moduleId/levels/1',
+          element: <BingoGame />, 
+          errorElement: <RouteErrorBoundary /> 
         },
         {
           path: '/modules/:moduleId/levels/:levelId',
