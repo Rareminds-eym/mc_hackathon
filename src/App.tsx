@@ -18,6 +18,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from 'react-router-dom';
+import Level3 from './screens/Level3/Index';
 import InstructionsPage from './screens/InstructionsPage';
 import BingoGame from './screens/BingoGame';
 
@@ -52,16 +53,46 @@ const router = createBrowserRouter(
       element: <GameLayout><Outlet /></GameLayout>,
       errorElement: <RouteErrorBoundary />,
       children: [
-
-        { path: '/', element: <LoaderScreen /> },
-        { path: '/home', element: <HomeScreen /> },
-        { path: '/modules', element: <ModuleMapScreen /> },
-        { path: '/modules/:moduleId', element: <LevelList /> },
-        { path: '/modules/:moduleId/levels/:levelId', element: <LevelScene /> },
-        { path: '/modules/:moduleId/levels/1',element: <BingoGame />, errorElement: <RouteErrorBoundary /> },
-        { path: '/auth', element: <AuthPage /> },
-        { path: '/instructions', element: <InstructionsPage /> },
-        { path: '*', element: <Navigate to="/" replace /> },
+        {
+          path: '/',
+          element: <AuthPage />,
+          errorElement: <RouteErrorBoundary />
+        },
+        {
+          path: '/home',
+          element: <HomeScreen />,
+          errorElement: <RouteErrorBoundary />
+        },
+        {
+          path: '/modules',
+          element: <ModuleMapScreen />,
+          errorElement: <RouteErrorBoundary />
+        },
+        {
+          path: '/modules/:moduleId',
+          element: <LevelList />,
+          errorElement: <RouteErrorBoundary />
+        },
+        {
+          path: '/modules/:moduleId/levels/3',
+          element: <Level3 />,
+          errorElement: <RouteErrorBoundary />
+        },
+        { path: '/modules/:moduleId/levels/1',
+          element: <BingoGame />, 
+          errorElement: <RouteErrorBoundary /> 
+        },
+        {
+          path: '/modules/:moduleId/levels/:levelId',
+          element: <LevelScene />,
+          errorElement: <RouteErrorBoundary />
+        },
+        { path: '/auth', element: <AuthPage />,
+          errorElement: <RouteErrorBoundary /> },
+        { path: '/instructions', element: <InstructionsPage />,
+          errorElement: <RouteErrorBoundary /> },
+        { path: '*', element: <Navigate to="/" replace />,
+          errorElement: <RouteErrorBoundary /> },
       ],
     },
   ]
