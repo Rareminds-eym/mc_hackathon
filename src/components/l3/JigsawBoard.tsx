@@ -5,7 +5,7 @@ import { TouchBackend } from "react-dnd-touch-backend";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
-import { RotateCcw, Zap } from "lucide-react";
+import { RotateCcw, Zap, ArrowLeftCircle } from "lucide-react";
 import { VictoryPopup } from "../ui/Popup";
 
 interface PuzzlePiece {
@@ -219,6 +219,16 @@ export const JigsawBoard = () => {
 
         <div className="w-full p-1 relative z-10 flex flex-col gap-1 h-full">
           <header className="relative w-full flex flex-row items-center justify-between mb-2 px-2 py-2 bg-gradient-to-r from-gray-900/80 to-blue-900/80 rounded-2xl border-2 border-cyan-500 shadow-xl game-hud-header">
+            {/* Back Button */}
+            <div className="flex items-center min-w-[48px] justify-start">
+              <button
+                onClick={() => window.history.back()}
+                className="p-2 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-full font-bold hover:from-gray-600 hover:to-gray-800 transition-all duration-200 shadow border border-cyan-400 flex items-center justify-center text-lg focus:outline-none"
+                aria-label="Back"
+              >
+                <ArrowLeftCircle className="w-7 h-7" />
+              </button>
+            </div>
             {/* Left: Agent Avatar & Level */}
             <div className="flex flex-col items-start gap-1 min-w-[90px]">
               <div className="flex items-center gap-2">
@@ -304,8 +314,8 @@ export const JigsawBoard = () => {
                   <div
                     className="w-full"
                     style={{
-                      maxHeight: "100px",
-                      minHeight: "60px",
+                      maxHeight: "220px",
+                      minHeight: "120px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -331,8 +341,8 @@ export const JigsawBoard = () => {
                   <div
                     className="w-full"
                     style={{
-                      maxHeight: "100px",
-                      minHeight: "60px",
+                      maxHeight: "220px",
+                      minHeight: "120px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
