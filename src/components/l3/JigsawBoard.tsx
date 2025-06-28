@@ -5,7 +5,7 @@ import { TouchBackend } from "react-dnd-touch-backend";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
-import { RotateCcw, Zap, ArrowLeftCircle } from "lucide-react";
+import { RotateCcw, Zap, ArrowLeftCircle, Menu, User, Trophy, Heart, FileText, X } from "lucide-react";
 import { VictoryPopup } from "../ui/Popup";
 
 interface PuzzlePiece {
@@ -95,6 +95,7 @@ export const JigsawBoard = () => {
   const [score, setScore] = useState(0);
   const [health, setHealth] = useState(100);
   const [combo, setCombo] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkOrientation = () => {
@@ -218,51 +219,33 @@ export const JigsawBoard = () => {
         )}
 
         <div className="w-full p-1 relative z-10 flex flex-col gap-1 h-full">
-          <header className="relative w-full flex flex-row items-center justify-between mb-2 px-2 py-2 bg-gradient-to-r from-gray-900/80 to-blue-900/80 rounded-2xl border-2 border-cyan-500 shadow-xl game-hud-header">
-            {/* Back Button */}
-            <div className="flex items-center min-w-[48px] justify-start">
+          {/* Ultra Compact Header with Menu */}
+          <header className="relative w-full flex flex-row items-center justify-between px-4 py-2 bg-gradient-to-r from-gray-900/90 to-blue-900/90 rounded-xl border border-cyan-500/50 shadow-lg backdrop-blur-sm z-50">
+            {/* Left Section - Back Button */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => window.history.back()}
-                className="p-2 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-full font-bold hover:from-gray-600 hover:to-gray-800 transition-all duration-200 shadow border border-cyan-400 flex items-center justify-center text-lg focus:outline-none"
+                className="p-2 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-bold hover:from-gray-600 hover:to-gray-800 transition-all duration-200 shadow border border-cyan-400/50 flex items-center justify-center focus:outline-none"
                 aria-label="Back"
               >
-                <ArrowLeftCircle className="w-7 h-7" />
+                <ArrowLeftCircle className="w-5 h-5" />
               </button>
             </div>
-            {/* Left: Agent Avatar & Level */}
-            <div className="flex flex-col items-start gap-1 min-w-[90px]">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-yellow-300 shadow-lg animate-pulse-slow">
-                  <span className="text-2xl font-bold text-black">🕵️‍♂️</span>
-                </span>
-                <span className="ml-1 px-2 py-0.5 bg-cyan-700/80 text-cyan-100 rounded-lg font-bold text-xs border border-cyan-300 shadow game-font">
-                  AGENT 47
-                </span>
-              </div>
-              <span className="mt-1 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full font-bold text-xs border border-green-300 shadow game-font animate-bounce">
-                LEVEL 3
-              </span>
-            </div>
 
-            {/* Center: Mission Title & Status */}
-            <div className="flex flex-col items-center flex-1">
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white game-font tracking-widest mb-0.5 animate-glow drop-shadow-lg flex items-center gap-2">
-                <span className="animate-spin-slow">⚡</span>
+            {/* Center Section - Mission Title & Progress */}
+            <div className="flex flex-col items-center flex-1 px-4">
+              <h1 className="text-xl font-extrabold text-white game-font tracking-wide mb-1 flex items-center gap-2">
+                <span className="text-yellow-400">⚡</span>
                 <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent">
-                  MISSION: FIX THE VIOLATION
+                  LEVEL 3: FIX THE VIOLATION
                 </span>
-                <span className="animate-bounce">⚡</span>
+                <span className="text-yellow-400">⚡</span>
               </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-cyan-200 text-xs md:text-base font-mono bg-black/30 px-2 py-0.5 rounded-lg border border-cyan-400 shadow-inner animate-fade-in">
-                  Deploy your GMP knowledge to complete the mission
-                </span>
-                <span className="text-green-300 text-xs font-bold bg-green-900/60 px-2 py-0.5 rounded-lg border border-green-400 shadow-inner animate-pulse">{`XP: ${score}`}</span>
-              </div>
-              {/* Mission Status Bar */}
-              <div className="w-full max-w-xs mx-auto h-2 bg-gray-800 rounded-full overflow-hidden border-2 border-cyan-400 mt-2 animate-fade-in">
+              
+              {/* Compact Progress Bar */}
+              <div className="w-full max-w-xs h-1.5 bg-gray-800 rounded-full overflow-hidden border border-cyan-400/50">
                 <div
-                  className="h-full bg-gradient-to-r from-green-400 to-cyan-400 animate-progress-bar"
+                  className="h-full bg-gradient-to-r from-green-400 to-cyan-400 transition-all duration-500"
                   style={{
                     width: isComplete
                       ? "100%"
@@ -279,26 +262,93 @@ export const JigsawBoard = () => {
               </div>
             </div>
 
-            {/* Right: Mission Brief Button & Health */}
-            <div className="flex flex-col items-end gap-2 min-w-[110px]">
+            {/* Right Section - Menu Button */}
+            <div className="relative">
               <button
-                onClick={() => setShowScenario(true)}
-                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-extrabold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-110 shadow-xl hover:shadow-cyan-500/40 game-button text-sm tracking-wider border-2 border-cyan-300 animate-fade-in flex items-center gap-1"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-bold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105 shadow border border-cyan-300/50 flex items-center justify-center focus:outline-none"
+                aria-label="Menu"
               >
-                <span className="animate-pulse">📋</span> MISSION BRIEF
+                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-xs font-bold text-red-300">HEALTH</span>
-                <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden border border-red-400">
-                  <div
-                    className="h-full bg-gradient-to-r from-red-500 to-green-400 animate-health-bar"
-                    style={{ width: `${health}%` }}
-                  ></div>
+
+              {/* Dropdown Menu - Fixed z-index to be above everything */}
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[9999] overflow-hidden">
+                  {/* Menu Header */}
+                  <div className="px-4 py-3 border-b border-cyan-500/30">
+                    <h3 className="text-sm font-bold text-cyan-300 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      AGENT STATUS
+                    </h3>
+                  </div>
+
+                  {/* Agent Info */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow">
+                          <span className="text-lg font-bold text-black">🕵️‍♂️</span>
+                        </span>
+                        <div>
+                          <div className="text-cyan-200 font-bold text-sm">AGENT 47</div>
+                          <div className="text-xs text-cyan-400">Level 3 Operative</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-black/30 rounded-lg p-3 border border-green-400/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Trophy className="w-4 h-4 text-green-400" />
+                          <span className="text-xs font-bold text-green-300">SCORE</span>
+                        </div>
+                        <div className="text-lg font-bold text-green-200">{score}</div>
+                        <div className="text-xs text-green-400">XP Points</div>
+                      </div>
+
+                      <div className="bg-black/30 rounded-lg p-3 border border-red-400/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Heart className="w-4 h-4 text-red-400" />
+                          <span className="text-xs font-bold text-red-300">HEALTH</span>
+                        </div>
+                        <div className="text-lg font-bold text-red-200">{health}%</div>
+                        <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-1">
+                          <div
+                            className="h-full bg-gradient-to-r from-red-500 to-green-400 transition-all duration-300"
+                            style={{ width: `${health}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Combo Counter */}
+                    {combo > 0 && (
+                      <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Zap className="w-4 h-4 text-yellow-400" />
+                          <span className="text-xs font-bold text-yellow-300">COMBO</span>
+                        </div>
+                        <div className="text-lg font-bold text-yellow-200">{combo}x</div>
+                        <div className="text-xs text-yellow-400">Streak Multiplier</div>
+                      </div>
+                    )}
+
+                    {/* Mission Brief Button */}
+                    <button
+                      onClick={() => {
+                        setShowScenario(true);
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-bold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105 shadow border border-cyan-300/50 flex items-center justify-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      MISSION BRIEF
+                    </button>
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-green-300">
-                  {health}
-                </span>
-              </div>
+              )}
             </div>
           </header>
 
@@ -360,8 +410,8 @@ export const JigsawBoard = () => {
               </div>
             </div>
 
-            {/* Arsenal */}
-            <div className="flex-1 min-w-[80px] max-w-[80px] sm:max-w-xs flex flex-col h-full min-h-0 items-stretch justify-stretch">
+            {/* Arsenal - Reduced z-index to be below dropdown */}
+            <div className="flex-1 min-w-[80px] max-w-[80px] sm:max-w-xs flex flex-col h-full min-h-0 items-stretch justify-stretch relative z-10">
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-2 border-2 border-cyan-400 glow-border flex flex-col h-full min-h-0">
                 <div className="flex items-center gap-1 mb-1">
                   <Zap className="w-4 h-4 text-yellow-400" />
@@ -407,6 +457,14 @@ export const JigsawBoard = () => {
             health={health}
           />
         </div>
+
+        {/* Overlay to close menu when clicking outside - Higher z-index than arsenal but lower than dropdown */}
+        {isMenuOpen && (
+          <div
+            className="fixed inset-0 bg-transparent z-[9998]"
+            onClick={() => setIsMenuOpen(false)}
+          />
+        )}
       </div>
     </DndProvider>
   );
