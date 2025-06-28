@@ -19,6 +19,7 @@ import {
   isRouteErrorResponse,
 } from 'react-router-dom';
 import InstructionsPage from './screens/InstructionsPage';
+import BingoGame from './screens/BingoGame';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -57,6 +58,7 @@ const router = createBrowserRouter(
         { path: '/modules', element: <ModuleMapScreen /> },
         { path: '/modules/:moduleId', element: <LevelList /> },
         { path: '/modules/:moduleId/levels/:levelId', element: <LevelScene /> },
+        { path: '/modules/:moduleId/levels/1',element: <BingoGame />, errorElement: <RouteErrorBoundary /> },
         { path: '/auth', element: <AuthPage /> },
         { path: '/instructions', element: <InstructionsPage /> },
         { path: '*', element: <Navigate to="/" replace /> },
