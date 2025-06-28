@@ -1,11 +1,13 @@
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { GameLayout } from './layouts/GameLayout';
-import { LoginScreen } from './screens/LoginScreen';
+import LoaderScreen from './screens/LoaderScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ModuleMapScreen } from './screens/ModuleMap';
 import { LevelList } from './screens/LevelList';
 import { LevelScene } from './screens/LevelScene';
+import AuthPage from './screens/AuthPage';
+import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
 import {
@@ -17,6 +19,7 @@ import {
   isRouteErrorResponse,
 } from 'react-router-dom';
 import Level3 from './screens/Level3/Index';
+import InstructionsPage from './screens/InstructionsPage';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -51,7 +54,7 @@ const router = createBrowserRouter(
       children: [
         {
           path: '/',
-          element: <LoginScreen />,
+          element: <AuthPage />,
           errorElement: <RouteErrorBoundary />
         },
         {
@@ -79,7 +82,12 @@ const router = createBrowserRouter(
           element: <LevelScene />,
           errorElement: <RouteErrorBoundary />
         },
-        { path: '*', element: <Navigate to="/" replace /> },
+        { path: '/auth', element: <AuthPage />,
+          errorElement: <RouteErrorBoundary /> },
+        { path: '/instructions', element: <InstructionsPage />,
+          errorElement: <RouteErrorBoundary /> },
+        { path: '*', element: <Navigate to="/" replace />,
+          errorElement: <RouteErrorBoundary /> },
       ],
     },
   ]
@@ -88,17 +96,9 @@ const router = createBrowserRouter(
 function App() {
   return (
     <Provider store={store}>
-      <ErrorBoundary
-        onError={(error, errorInfo) => {
-          // Log error to console or external service
-          console.error('Application Error:', error, errorInfo);
-
-          // You can add error reporting service here
-          // Example: Sentry.captureException(error, { extra: errorInfo });
-        }}
-      >
+      <AuthProvider>
         <RouterProvider router={router} />
-      </ErrorBoundary>
+      </AuthProvider>
     </Provider>
   );
 }
