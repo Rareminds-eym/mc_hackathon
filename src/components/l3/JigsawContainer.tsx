@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useDrop } from 'react-dnd';
 import { Target, CheckCircle, Puzzle } from 'lucide-react';
@@ -69,7 +68,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
         <div className={`absolute inset-0 bg-gradient-to-r ${gradientColor} opacity-20 animate-pulse`}></div>
         
         {pieces.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10">
+          <div className="flex flex-col gap-3 relative z-10">
             {pieces.map((piece, index) => (
               <div 
                 key={piece.id}
