@@ -27,23 +27,18 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
     dragPreview(getEmptyImage(), { captureDraggingState: true });
   }, [dragPreview]);
 
-  // Enhanced styling based on category
-  const isViolation = piece.category === 'violation';
-  const categoryGradient = isViolation 
-    ? 'from-red-500 via-pink-500 to-red-600' 
-    : 'from-blue-500 via-cyan-500 to-blue-600';
-  const categoryBorder = isViolation ? 'border-red-400' : 'border-cyan-400';
-  const categoryIcon = isViolation ? Shield : Target;
-  const IconComponent = categoryIcon;
+  // Use a consistent Arsenal color for all pieces, including hover
+  const arsenalGradient = 'from-blue-500 via-cyan-500 to-teal-500';
+  const arsenalBorder = 'border-cyan-400';
 
   return (
     <div
       ref={drag}
       className={`
         group relative cursor-grab active:cursor-grabbing
-        bg-gradient-to-br ${categoryGradient} text-white p-4 font-bold text-center 
+        bg-gradient-to-br ${arsenalGradient} text-white p-4 font-bold text-center 
         shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl 
-        border-2 ${categoryBorder} transform hover:rotate-1 game-font overflow-hidden
+        border-2 ${arsenalBorder} transform hover:rotate-1 game-font overflow-hidden
         ${isDragging ? 'opacity-50 scale-95 rotate-6' : 'opacity-100'}
       `}
       style={{
@@ -59,10 +54,8 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
       
       {/* Category Icon */}
       <div className="absolute top-2 left-2">
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-          isViolation ? 'bg-red-600/80' : 'bg-blue-600/80'
-        } border border-white/30`}>
-          <IconComponent className="w-3 h-3 text-white" />
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center bg-cyan-600/80 border border-white/30`}>
+          <Target className="w-3 h-3 text-white" />
         </div>
       </div>
 
@@ -82,25 +75,19 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
           {[...Array(3)].map((_, i) => (
             <Star
               key={i}
-              className={`w-2 h-2 ${
-                piece.isCorrect ? 'text-yellow-400 fill-current' : 'text-gray-400'
-              } animate-pulse`}
+              className={`w-2 h-2 ${piece.isCorrect ? 'text-yellow-400 fill-current' : 'text-gray-400'} animate-pulse`}
               style={{ animationDelay: `${i * 0.2}s` }}
             />
           ))}
         </div>
       </div>
 
-      {/* Hover Glow Effect */}
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-        isViolation 
-          ? 'bg-red-400/20 shadow-lg shadow-red-500/25' 
-          : 'bg-cyan-400/20 shadow-lg shadow-cyan-500/25'
-      }`} 
-      style={{
-        clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
-        borderRadius: '8px'
-      }} />
+      {/* Hover Glow Effect - Arsenal color only */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-cyan-400/20 shadow-lg shadow-cyan-500/25" 
+        style={{
+          clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
+          borderRadius: '8px'
+        }} />
 
       {/* Drag State Overlay */}
       {isDragging && (

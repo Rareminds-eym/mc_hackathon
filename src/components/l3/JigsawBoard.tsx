@@ -354,7 +354,7 @@ export const JigsawBoard = () => {
           </header>
 
           <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-auto">
-            {/* Mission Zones */}
+            {/* Mission Zones with Arsenal in the middle */}
             <div className="flex flex-row gap-2 flex-[2_2_0%] min-h-0 h-full justify-stretch items-stretch min-w-[400px] w-full">
               {/* Violations Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
@@ -379,6 +379,23 @@ export const JigsawBoard = () => {
                       maxPieces={correctViolations.length}
                       onDrop={handleDrop}
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Arsenal - Now in the middle */}
+              <div className="flex-1 min-w-[80px] max-w-[80px] sm:max-w-xs flex flex-col h-full min-h-0 items-stretch justify-stretch relative z-10">
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-2 border-2 border-cyan-400 glow-border flex flex-col h-full min-h-0">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Zap className="w-4 h-4 text-yellow-400" />
+                    <h3 className="text-xs font-bold text-white game-font">
+                      ARSENAL
+                    </h3>
+                  </div>
+                  <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center">
+                    {availablePieces.map((piece) => (
+                      <DraggablePiece key={piece.id} piece={piece} />
+                    ))}
                   </div>
                 </div>
               </div>
@@ -410,35 +427,38 @@ export const JigsawBoard = () => {
                 </div>
               </div>
             </div>
-
-            {/* Arsenal - Reduced z-index to be below dropdown */}
-            <div className="flex-1 min-w-[80px] max-w-[80px] sm:max-w-xs flex flex-col h-full min-h-0 items-stretch justify-stretch relative z-10">
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-2 border-2 border-cyan-400 glow-border flex flex-col h-full min-h-0">
-                <div className="flex items-center gap-1 mb-1">
-                  <Zap className="w-4 h-4 text-yellow-400" />
-                  <h3 className="text-xs font-bold text-white game-font">
-                    ARSENAL
-                  </h3>
-                </div>
-                <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center">
-                  {availablePieces.map((piece) => (
-                    <DraggablePiece key={piece.id} piece={piece} />
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Feedback Console */}
           {feedback && (
-            <div
-              className={`mt-1 p-2 rounded-xl text-center font-bold text-xs md:text-base game-font border-2 transform transition-all duration-500 max-w-md mx-auto ${
-                feedback.includes("🎯") || feedback.includes("🎉")
-                  ? "bg-gradient-to-r from-green-900 to-emerald-900 text-green-300 border-green-500 glow-border-green animate-pulse"
-                  : "bg-gradient-to-r from-red-900 to-pink-900 text-red-300 border-red-500 glow-border-red shake"
-              }`}
-            >
-              {feedback}
+            <div className="fixed left-1/2 bottom-8 z-[9999] flex justify-center w-full pointer-events-none" style={{transform: 'translateX(-50%)'}}>
+              <div
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border-2 max-w-lg w-full sm:w-auto
+                  text-base md:text-lg font-extrabold game-font tracking-wide
+                  transition-all duration-500 pointer-events-auto
+                  ${feedback.includes('🎯') || feedback.includes('🎉')
+                    ? 'bg-gradient-to-r from-green-800 via-emerald-700 to-cyan-700 text-green-200 border-green-400/80 animate-pulse'
+                    : 'bg-gradient-to-r from-red-800 via-pink-800 to-yellow-700 text-yellow-200 border-yellow-400/80 shake'}
+                `}
+                style={{
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 4px 32px 0 rgba(0,255,255,0.10), 0 1.5px 8px 0 rgba(0,0,0,0.15)'
+                }}
+                role="status"
+                aria-live="polite"
+              >
+                <span className="text-2xl md:text-3xl">
+                  {feedback.includes('🎯') || feedback.includes('🎉') ? '✅' : '⚠️'}
+                </span>
+                <span className="flex-1 text-center">{feedback}</span>
+                <button
+                  className="ml-2 p-1 rounded-full bg-black/20 hover:bg-black/40 transition-colors border border-cyan-400/40 text-cyan-200 focus:outline-none"
+                  onClick={() => setFeedback("")}
+                  aria-label="Dismiss feedback"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           )}
 
