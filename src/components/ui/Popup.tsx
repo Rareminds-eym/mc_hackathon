@@ -10,6 +10,8 @@ interface PopupProps {
 }
 
 export const Popup: React.FC<PopupProps> = ({ open, onClose, children }) => {
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const isMobileHorizontal = isMobile && isHorizontal;
   return (
     <AnimatePresence>
       {open && (
@@ -21,7 +23,8 @@ export const Popup: React.FC<PopupProps> = ({ open, onClose, children }) => {
           transition={{ duration: 0.25 }}
         >
           <motion.div
-            className="relative bg-gradient-to-br from-cyan-400 via-blue-400 to-teal-300 rounded-2xl shadow-2xl p-6 max-w-md w-full border-4 border-cyan-300"
+            className={`relative bg-gradient-to-br from-cyan-400 via-blue-400 to-teal-300 rounded-2xl shadow-2xl border-4 border-cyan-300 max-w-md w-full ${isMobileHorizontal ? 'py-2 px-4 rounded-lg' : 'p-6'}`}
+            style={isMobileHorizontal ? { minHeight: 0, borderRadius: '0.75rem' } : {}}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -29,15 +32,16 @@ export const Popup: React.FC<PopupProps> = ({ open, onClose, children }) => {
           >
             <button
               onClick={onClose}
-              className="absolute top-2 right-2 z-10 p-1 rounded-full transition-all duration-200 bg-gradient-to-br from-cyan-200 via-blue-200 to-teal-100 hover:from-pink-200 hover:to-yellow-100 shadow-lg border-2 border-cyan-300/70 hover:border-pink-400/70 focus:outline-none group"
+              className={`absolute ${isMobileHorizontal ? 'top-1.5 right-1.5 p-0.5' : 'top-2 right-2 p-1'} z-10 rounded-full transition-all duration-200 bg-gradient-to-br from-cyan-200 via-blue-200 to-teal-100 hover:from-pink-200 hover:to-yellow-100 shadow-lg border-2 border-cyan-300/70 hover:border-pink-400/70 focus:outline-none group`}
               aria-label="Close"
+              style={isMobileHorizontal ? { width: 28, height: 28 } : {}}
             >
               <span className="relative flex items-center justify-center">
                 {/* Animated ring */}
-                <span className="absolute w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400/30 via-blue-300/20 to-yellow-200/10 blur-md animate-pulse-slow z-0"></span>
+                <span className={`absolute ${isMobileHorizontal ? 'w-6 h-6' : 'w-9 h-9'} rounded-full bg-gradient-to-br from-cyan-400/30 via-blue-300/20 to-yellow-200/10 blur-md animate-pulse-slow z-0`}></span>
                 {/* Main icon with pop and shine */}
                 <span className="relative z-10 animate-pop-scale">
-                  <Icon icon="mdi:close-circle" className="w-7 h-7 text-cyan-700 group-hover:text-pink-500 drop-shadow-glow" style={{filter: 'drop-shadow(0 0 8px #22d3ee) drop-shadow(0 0 16px #f472b6)'}} />
+                  <Icon icon="mdi:close-circle" className={`${isMobileHorizontal ? 'w-4 h-4' : 'w-7 h-7'} text-cyan-700 group-hover:text-pink-500 drop-shadow-glow`} style={{filter: 'drop-shadow(0 0 8px #22d3ee) drop-shadow(0 0 16px #f472b6)'}} />
                 </span>
                 {/* Sparkle */}
                 <span className="absolute -top-1 -right-1 text-yellow-300 text-xs animate-bounce select-none pointer-events-none">✦</span>

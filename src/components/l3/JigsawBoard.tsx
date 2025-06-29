@@ -5,10 +5,20 @@ import { TouchBackend } from "react-dnd-touch-backend";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
-import { RotateCcw, Zap, ArrowLeftCircle, Menu, User, Trophy, Heart, FileText, X } from "lucide-react";
+import {
+  RotateCcw,
+  Zap,
+  ArrowLeftCircle,
+  Menu,
+  User,
+  Trophy,
+  Heart,
+  FileText,
+  X,
+} from "lucide-react";
 import { VictoryPopup } from "../ui/Popup";
-import { Icon } from '@iconify/react';
-import { useDeviceLayout } from '../../hooks/useOrientation';
+import { Icon } from "@iconify/react";
+import { useDeviceLayout } from "../../hooks/useOrientation";
 
 interface PuzzlePiece {
   id: string;
@@ -188,7 +198,12 @@ export const JigsawBoard = () => {
     ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0));
   const dndBackend = isTouchDevice ? TouchBackend : HTML5Backend;
   const dndOptions = isTouchDevice
-    ? { enableMouseEvents: true, enableTouchEvents: true, delayTouchStart: 0, delayMouseStart: 0 }
+    ? {
+        enableMouseEvents: true,
+        enableTouchEvents: true,
+        delayTouchStart: 0,
+        delayMouseStart: 0,
+      }
     : undefined;
 
   if (!isLandscape) {
@@ -214,11 +229,23 @@ export const JigsawBoard = () => {
       <div
         className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
         style={{
-          backgroundImage:
-            "url('/backgrounds/m1l3.webp')",
+          backgroundImage: "url('/backgrounds/m1l3.webp')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
+          // Prevent scroll in mobile horizontal
+          ...(isMobile && isHorizontal
+            ? {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                minHeight: '100vh',
+                overflow: 'hidden',
+                zIndex: 1000,
+              }
+            : {}),
         }}
       >
         {showScenario && (
@@ -245,11 +272,9 @@ export const JigsawBoard = () => {
             {/* Center Section - Mission Title & Progress */}
             <div className="flex flex-col items-center flex-1 px-4">
               <h1 className="text-xl font-extrabold text-white game-font tracking-wide mb-1 flex items-center gap-2">
-                <span className="text-white">
-                  LEVEL 3: FIX THE VIOLATION
-                </span>
+                <span className="text-white">LEVEL 3: FIX THE VIOLATION</span>
               </h1>
-              
+
               {/* Compact Progress Bar */}
               <div className="w-full max-w-xs h-1.5 bg-gray-800 rounded-full overflow-hidden border border-cyan-400/50">
                 <div
@@ -277,7 +302,11 @@ export const JigsawBoard = () => {
                 className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-bold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105 shadow border border-cyan-300/50 flex items-center justify-center focus:outline-none"
                 aria-label="Menu"
               >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
               </button>
 
               {/* Overlay to close menu when clicking outside - Higher z-index to be above arsenal but lower than dropdown */}
@@ -287,9 +316,9 @@ export const JigsawBoard = () => {
                     className="fixed inset-0 bg-transparent z-[40]"
                     onMouseDown={() => setIsMenuOpen(false)}
                   />
-                  <div 
+                  <div
                     className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-hidden pointer-events-auto"
-                    onMouseDown={e => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     {/* Menu Header */}
                     <div className="px-4 py-3 border-b border-cyan-500/30">
@@ -304,11 +333,17 @@ export const JigsawBoard = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow">
-                            <span className="text-lg font-bold text-black">🕵️‍♂️</span>
+                            <span className="text-lg font-bold text-black">
+                              🕵️‍♂️
+                            </span>
                           </span>
                           <div>
-                            <div className="text-cyan-200 font-bold text-sm">AGENT 47</div>
-                            <div className="text-xs text-cyan-400">Level 3 Operative</div>
+                            <div className="text-cyan-200 font-bold text-sm">
+                              AGENT 47
+                            </div>
+                            <div className="text-xs text-cyan-400">
+                              Level 3 Operative
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -318,18 +353,28 @@ export const JigsawBoard = () => {
                         <div className="bg-black/30 rounded-lg p-3 border border-green-400/50">
                           <div className="flex items-center gap-2 mb-1">
                             <Trophy className="w-4 h-4 text-green-400" />
-                            <span className="text-xs font-bold text-green-300">SCORE</span>
+                            <span className="text-xs font-bold text-green-300">
+                              SCORE
+                            </span>
                           </div>
-                          <div className="text-lg font-bold text-green-200">{score}</div>
-                          <div className="text-xs text-green-400">XP Points</div>
+                          <div className="text-lg font-bold text-green-200">
+                            {score}
+                          </div>
+                          <div className="text-xs text-green-400">
+                            XP Points
+                          </div>
                         </div>
 
                         <div className="bg-black/30 rounded-lg p-3 border border-red-400/50">
                           <div className="flex items-center gap-2 mb-1">
                             <Heart className="w-4 h-4 text-red-400" />
-                            <span className="text-xs font-bold text-red-300">HEALTH</span>
+                            <span className="text-xs font-bold text-red-300">
+                              HEALTH
+                            </span>
                           </div>
-                          <div className="text-lg font-bold text-red-200">{health}%</div>
+                          <div className="text-lg font-bold text-red-200">
+                            {health}%
+                          </div>
                           <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-1">
                             <div
                               className="h-full bg-gradient-to-r from-red-500 to-green-400 transition-all duration-300"
@@ -344,10 +389,16 @@ export const JigsawBoard = () => {
                         <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/50">
                           <div className="flex items-center gap-2 mb-1">
                             <Zap className="w-4 h-4 text-yellow-400" />
-                            <span className="text-xs font-bold text-yellow-300">COMBO</span>
+                            <span className="text-xs font-bold text-yellow-300">
+                              COMBO
+                            </span>
                           </div>
-                          <div className="text-lg font-bold text-yellow-200">{combo}x</div>
-                          <div className="text-xs text-yellow-400">Streak Multiplier</div>
+                          <div className="text-lg font-bold text-yellow-200">
+                            {combo}x
+                          </div>
+                          <div className="text-xs text-yellow-400">
+                            Streak Multiplier
+                          </div>
                         </div>
                       )}
 
@@ -374,14 +425,14 @@ export const JigsawBoard = () => {
             <div className="flex flex-row gap-2 flex-[2_2_0%] min-h-0 h-full justify-stretch items-stretch min-w-[400px] w-full">
               {/* Violations Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
-                <h2 className="text-base md:text-lg font-bold text-red-400 game-font text-center mb-1">
-                  🎯 VIOLATIONS DETECTED
-                </h2>
-                <div className="flex-1 flex items-center justify-center min-h-0">
+                <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
+                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
+                    VIOLATIONS DETECTED
+                  </h2>
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
-                      maxHeight: "220px",
+                      maxHeight: "max-content",
                       minHeight: "120px",
                       display: "flex",
                       flexDirection: "column",
@@ -401,50 +452,73 @@ export const JigsawBoard = () => {
               </div>
 
               {/* Arsenal - Now in the middle */}
-              <div className="flex flex-col items-center justify-center w-max relative z-20" style={{height: '340px', minHeight: '340px', maxHeight: '340px'}}>
+              <div
+                className={`flex flex-col my-auto items-center justify-center w-max relative z-20${
+                  isMobile && isHorizontal ? ' arsenal-mobile-horizontal' : ''
+                }`}
+                style={{
+                  height: isMobile && isHorizontal ? '220px' : '300px',
+                  minHeight: isMobile && isHorizontal ? '220px' : '300px',
+                  maxHeight: '100%',
+                }}
+              >
                 <div
-                  className="relative flex flex-col h-full w-max p-2 rounded-2xl shadow-2xl border-2 border-cyan-400/80 arsenal-glass-container items-center justify-between"
+                  className={`relative flex flex-col h-full w-max p-2 rounded-2xl shadow-2xl border-2 border-cyan-400/80 arsenal-glass-container items-center justify-between${
+                    isMobile && isHorizontal ? ' arsenal-glass-mobile-horizontal' : ''
+                  }`}
                   style={{
                     background: 'rgba(20, 30, 60, 0.35)',
                     backdropFilter: 'blur(10px)',
                     boxShadow: '0 0 24px 4px #22d3ee55, 0 2px 16px 0 #0008',
                     border: '2.5px solid #22d3ee',
                     overflow: 'hidden',
-                    width: 'max-content'
+                    width: 'max-content',
+                    padding: isMobile && isHorizontal ? '0.5rem' : '0.5rem 1rem',
                   }}
                 >
                   {/* Watermark Icon */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-10 z-0">
-                    <Zap className="w-24 h-24 text-cyan-300 animate-pulse-slow" />
+                    <Zap className={
+                      `w-24 h-24 text-cyan-300 animate-pulse-slow${isMobile && isHorizontal ? ' w-14 h-14' : ''}`
+                    } />
                   </div>
                   {/* Arsenal Title */}
-                  <div className="flex flex-row items-center justify-center gap-2 mb-2 relative z-10 w-full whitespace-nowrap">
-                    <Zap className="w-6 h-6 text-yellow-300 drop-shadow-glow animate-flicker flex-shrink-0" />
-                    <h3 className="text-lg font-extrabold text-cyan-100 game-font tracking-widest neon-text drop-shadow-glow animate-gradient-move text-center whitespace-nowrap" style={{letterSpacing: '0.12em', textShadow: '0 0 8px #22d3ee, 0 0 16px #fde68a'}}>
+                  <div className={`flex flex-row items-center justify-center gap-2 mb-2 relative z-10 w-full whitespace-nowrap${isMobile && isHorizontal ? ' text-base' : ''}`}>
+                    <Zap className={`w-6 h-6 text-yellow-300 drop-shadow-glow animate-flicker flex-shrink-0${isMobile && isHorizontal ? ' w-4 h-4' : ''}`} />
+                    <h3
+                      className={`text-lg font-extrabold text-cyan-100 game-font tracking-widest neon-text drop-shadow-glow animate-gradient-move text-center whitespace-nowrap${isMobile && isHorizontal ? ' text-base' : ''}`}
+                      style={{
+                        letterSpacing: '0.12em',
+                        textShadow: '0 0 8px #22d3ee, 0 0 16px #fde68a',
+                      }}
+                    >
                       ARSENAL
                     </h3>
                   </div>
                   {/* Pieces List */}
-                  <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2">
+                  <div className={`space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2${isMobile && isHorizontal ? ' text-xs px-1 py-1' : ''}`}>
                     {availablePieces.map((piece) => (
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
                   </div>
                   {/* Animated Glow Border */}
-                  <div className="absolute inset-0 rounded-2xl pointer-events-none border-4 border-cyan-400/60 animate-glow-border" style={{boxShadow: '0 0 32px 8px #22d3ee55'}}></div>
+                  <div
+                    className="absolute inset-0 rounded-2xl pointer-events-none border-4 border-cyan-400/60 animate-glow-border"
+                    style={{ boxShadow: '0 0 32px 8px #22d3ee55' }}
+                  ></div>
                 </div>
               </div>
 
               {/* Actions Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
-                <h2 className="text-base md:text-lg font-bold text-blue-400 game-font text-center mb-1">
-                  ⚡ DEPLOY COUNTERMEASURES
-                </h2>
-                <div className="flex-1 flex items-center justify-center min-h-0">
+                <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
+                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
+                    DEPLOY COUNTERMEASURES
+                  </h2>
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
-                      maxHeight: "220px",
+                      maxHeight: "max-content",
                       minHeight: "120px",
                       display: "flex",
                       flexDirection: "column",
@@ -467,9 +541,12 @@ export const JigsawBoard = () => {
 
           {/* Feedback Console */}
           {feedback && (
-            <div className={`fixed left-1/2 bottom-8 z-[9999] flex justify-center w-full pointer-events-none ${isMobile && isHorizontal ? 'mobile-feedback' : ''}`}
+            <div
+              className={`fixed left-1/2 bottom-8 z-[9999] flex justify-center w-full pointer-events-none ${
+                isMobile && isHorizontal ? "mobile-feedback" : ""
+              }`}
               style={{
-                transform: 'translateX(-50%)',
+                transform: "translateX(-50%)",
               }}
             >
               <div
@@ -477,53 +554,145 @@ export const JigsawBoard = () => {
                   text-base md:text-lg font-extrabold game-font tracking-wide
                   pointer-events-auto
                   backdrop-blur-lg bg-opacity-90
-                  ${feedback.includes('🎯') || feedback.includes('🎉')
-                    ? 'bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80'
-                    : 'bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake'}
-                ${isMobile && isHorizontal ? ' text-xs px-2 py-2 max-w-xs' : ''}`}
+                  ${
+                    feedback.includes("🎯") || feedback.includes("🎉")
+                      ? "bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80"
+                      : "bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake"
+                  }
+                ${
+                  isMobile && isHorizontal ? " text-xs px-2 py-2 max-w-xs" : ""
+                }`}
                 style={{
-                  letterSpacing: '0.04em',
-                  boxShadow: '0 8px 40px 0 rgba(0, 255, 255, 0.15), 0 2px 12px 0 rgba(0, 0, 0, 0.18)',
-                  ...(isMobile && isHorizontal ? { fontSize: '0.85rem', padding: '0.5rem 0.75rem', maxWidth: '18rem' } : {})
+                  letterSpacing: "0.04em",
+                  boxShadow:
+                    "0 8px 40px 0 rgba(0, 255, 255, 0.15), 0 2px 12px 0 rgba(0, 0, 0, 0.18)",
+                  ...(isMobile && isHorizontal
+                    ? {
+                        fontSize: "0.85rem",
+                        padding: "0.5rem 0.75rem",
+                        maxWidth: "18rem",
+                      }
+                    : {}),
                 }}
                 role="status"
                 aria-live="polite"
               >
                 <div className="relative flex items-center gap-4 w-full">
                   {/* Gamified Icon with animated glow and sparkles */}
-                  <span className={`text-4xl relative flex items-center justify-center${isMobile && isHorizontal ? ' text-2xl' : ''}`}>
+                  <span
+                    className={`text-4xl relative flex items-center justify-center${
+                      isMobile && isHorizontal ? " text-2xl" : ""
+                    }`}
+                  >
                     {/* Main Icon with shine and pop */}
                     <span className="relative z-10 flex items-center justify-center">
-                      <span className="absolute left-0 top-0 w-full h-full animate-shine pointer-events-none" style={{background: 'linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 100%)', borderRadius: '9999px'}}></span>
+                      <span
+                        className="absolute left-0 top-0 w-full h-full animate-shine pointer-events-none"
+                        style={{
+                          background:
+                            "linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 100%)",
+                          borderRadius: "9999px",
+                        }}
+                      ></span>
                       <span className="relative animate-pop-scale">
-                        {feedback.includes('🎯') ? (
-                          <Icon icon="mdi:gamepad-variant" className={`text-green-300 drop-shadow-glow${isMobile && isHorizontal ? ' text-2xl' : ''}`} style={{filter: 'drop-shadow(0 0 8px #34d399) drop-shadow(0 0 16px #22d3ee)'}} />
-                        ) : feedback.includes('🎉') ? (
-                          <Icon icon="mdi:crown" className={`text-yellow-300 drop-shadow-glow${isMobile && isHorizontal ? ' text-2xl' : ''}`} style={{filter: 'drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 16px #06b6d4)'}} />
-                        ) : feedback.includes('⚠️') ? (
-                          <Icon icon="mdi:alert-octagon" className={`text-yellow-400 drop-shadow-glow${isMobile && isHorizontal ? ' text-2xl' : ''}`} style={{filter: 'drop-shadow(0 0 8px #facc15) drop-shadow(0 0 16px #f472b6)'}} />
+                        {feedback.includes("🎯") ? (
+                          <Icon
+                            icon="mdi:gamepad-variant"
+                            className={`text-green-300 drop-shadow-glow${
+                              isMobile && isHorizontal ? " text-2xl" : ""
+                            }`}
+                            style={{
+                              filter:
+                                "drop-shadow(0 0 8px #34d399) drop-shadow(0 0 16px #22d3ee)",
+                            }}
+                          />
+                        ) : feedback.includes("🎉") ? (
+                          <Icon
+                            icon="mdi:crown"
+                            className={`text-yellow-300 drop-shadow-glow${
+                              isMobile && isHorizontal ? " text-2xl" : ""
+                            }`}
+                            style={{
+                              filter:
+                                "drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 16px #06b6d4)",
+                            }}
+                          />
+                        ) : feedback.includes("⚠️") ? (
+                          <Icon
+                            icon="mdi:alert-octagon"
+                            className={`text-yellow-400 drop-shadow-glow${
+                              isMobile && isHorizontal ? " text-2xl" : ""
+                            }`}
+                            style={{
+                              filter:
+                                "drop-shadow(0 0 8px #facc15) drop-shadow(0 0 16px #f472b6)",
+                            }}
+                          />
                         ) : (
-                          <Icon icon="mdi:close-octagon" className={`text-red-400 drop-shadow-glow${isMobile && isHorizontal ? ' text-2xl' : ''}`} style={{filter: 'drop-shadow(0 0 8px #f87171) drop-shadow(0 0 16px #06b6d4)'}} />
+                          <Icon
+                            icon="mdi:close-octagon"
+                            className={`text-red-400 drop-shadow-glow${
+                              isMobile && isHorizontal ? " text-2xl" : ""
+                            }`}
+                            style={{
+                              filter:
+                                "drop-shadow(0 0 8px #f87171) drop-shadow(0 0 16px #06b6d4)",
+                            }}
+                          />
                         )}
                       </span>
                     </span>
                     {/* Sparkles and confetti */}
-                    <span className={`absolute left-1 top-1 animate-bounce text-yellow-200 text-xs select-none pointer-events-none${isMobile && isHorizontal ? ' text-[0.7rem]' : ''}`}>✦</span>
-                    <span className={`absolute right-1 bottom-1 animate-bounce-slow text-cyan-200 text-sm select-none pointer-events-none${isMobile && isHorizontal ? ' text-xs' : ''}`}>✧</span>
-                    <span className={`absolute -left-2 -top-2 animate-float text-pink-300 text-lg select-none pointer-events-none${isMobile && isHorizontal ? ' text-base' : ''}`}>★</span>
-                    <span className={`absolute -right-2 -bottom-2 animate-float-slow text-blue-200 text-base select-none pointer-events-none${isMobile && isHorizontal ? ' text-xs' : ''}`}>✪</span>
+                    <span
+                      className={`absolute left-1 top-1 animate-bounce text-yellow-200 text-xs select-none pointer-events-none${
+                        isMobile && isHorizontal ? " text-[0.7rem]" : ""
+                      }`}
+                    >
+                      ✦
+                    </span>
+                    <span
+                      className={`absolute right-1 bottom-1 animate-bounce-slow text-cyan-200 text-sm select-none pointer-events-none${
+                        isMobile && isHorizontal ? " text-xs" : ""
+                      }`}
+                    >
+                      ✧
+                    </span>
+                    <span
+                      className={`absolute -left-2 -top-2 animate-float text-pink-300 text-lg select-none pointer-events-none${
+                        isMobile && isHorizontal ? " text-base" : ""
+                      }`}
+                    >
+                      ★
+                    </span>
+                    <span
+                      className={`absolute -right-2 -bottom-2 animate-float-slow text-blue-200 text-base select-none pointer-events-none${
+                        isMobile && isHorizontal ? " text-xs" : ""
+                      }`}
+                    >
+                      ✪
+                    </span>
                   </span>
                   {/* Gamified Text with animated gradient and shadow */}
-                  <span className={`flex-1 text-center px-2 leading-tight select-text font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-white to-cyan-100 drop-shadow-glow animate-gradient-move${isMobile && isHorizontal ? ' text-xs' : ''}`}>
+                  <span
+                    className={`flex-1 text-center px-2 leading-tight select-text font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-white to-cyan-100 drop-shadow-glow animate-gradient-move${
+                      isMobile && isHorizontal ? " text-xs" : ""
+                    }`}
+                  >
                     {feedback.replace(/^[^\w\d]+\s*/, "")}
                   </span>
                   {/* Gamified Dismiss Button */}
                   <button
-                    className={`ml-2 p-2 rounded-full bg-gradient-to-br from-cyan-700 via-blue-700 to-teal-600 hover:from-cyan-500 hover:to-teal-400 transition-colors border-2 border-cyan-300/60 text-white focus:outline-none shadow-lg active:scale-95 animate-pop${isMobile && isHorizontal ? ' p-1' : ''}`}
+                    className={`ml-2 p-2 rounded-full bg-gradient-to-br from-cyan-700 via-blue-700 to-teal-600 hover:from-cyan-500 hover:to-teal-400 transition-colors border-2 border-cyan-300/60 text-white focus:outline-none shadow-lg active:scale-95 animate-pop${
+                      isMobile && isHorizontal ? " p-1" : ""
+                    }`}
                     onClick={() => setFeedback("")}
                     aria-label="Dismiss feedback"
                   >
-                    <X className={`w-5 h-5${isMobile && isHorizontal ? ' w-4 h-4' : ''}`} />
+                    <X
+                      className={`w-5 h-5${
+                        isMobile && isHorizontal ? " w-4 h-4" : ""
+                      }`}
+                    />
                   </button>
                 </div>
               </div>
@@ -553,32 +722,20 @@ export const JigsawBoard = () => {
 
 // Custom drag layer for mobile/desktop drag feedback
 const CustomDragLayer = () => {
-  const { item, isDragging, sourceOffset, clientOffset } = useDragLayer(
+  const { item, isDragging, clientOffset } = useDragLayer(
     (monitor) => ({
       item: monitor.getItem(),
       isDragging: monitor.isDragging(),
-      sourceOffset: monitor.getSourceClientOffset(),
       clientOffset: monitor.getClientOffset(),
     })
   );
 
-  // Detect touch device
-  const isTouchDevice =
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0));
-
-  // Use sourceOffset if available, else fallback to clientOffset
-  const offset = sourceOffset || clientOffset;
+  const offset = clientOffset || (typeof window !== 'undefined' ? { x: window.innerWidth / 2, y: window.innerHeight / 2 } : null);
   if (!isDragging || !item || !offset) return null;
 
-  // Use the dragged piece's color
   const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
   const categoryBorder = "border-cyan-400";
-
-  // Only center the preview on desktop
-  const transform = isTouchDevice
-    ? `translate(${offset.x}px, ${offset.y}px)`
-    : `translate(${offset.x}px, ${offset.y}px) `;
+  const transform = `translate(${offset.x}px, ${offset.y}px)`;
 
   return (
     <div
@@ -625,3 +782,8 @@ const CustomDragLayer = () => {
 // @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 // .animate-pulse-slow { animation: pulse 3s infinite; }
 // @keyframes pulse { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.22; } }
+
+/* Arsenal Mobile Horizontal Styles */
+// Add these classes to your global CSS or tailwind config if not present:
+// .arsenal-mobile-horizontal { height: 220px !important; min-height: 220px !important; }
+// .arsenal-glass-mobile-horizontal { padding: 0.5rem !important; }
