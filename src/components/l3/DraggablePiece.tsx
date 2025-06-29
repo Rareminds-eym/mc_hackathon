@@ -35,7 +35,7 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
     <div
       ref={drag}
       className={`
-        group relative cursor-grab active:cursor-grabbing
+        group relative cursor-grab active:cursor-grabbing select-none
         bg-gradient-to-br ${arsenalGradient} text-white p-4 font-bold text-center 
         shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl 
         border-2 ${arsenalBorder} transform hover:rotate-1 game-font overflow-hidden

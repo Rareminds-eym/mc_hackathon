@@ -7,6 +7,7 @@ import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
 import { RotateCcw, Zap, ArrowLeftCircle, Menu, User, Trophy, Heart, FileText, X } from "lucide-react";
 import { VictoryPopup } from "../ui/Popup";
+import { Icon } from '@iconify/react';
 
 interface PuzzlePiece {
   id: string;
@@ -121,9 +122,15 @@ export const JigsawBoard = () => {
     if (placedCorrectPieces === totalCorrectPieces && totalCorrectPieces > 0) {
       setIsComplete(true);
       setScore((prev) => prev + 1000 + combo * 100);
-      setFeedback("🎉 MISSION ACCOMPLISHED! Perfect execution, Agent!");
+      setFeedback(""); // Close feedback when Victory Screen shows
     }
   }, [placedPieces, combo, correctViolations.length, correctActions.length]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timeout = setTimeout(() => setFeedback(""), 2500);
+    return () => clearTimeout(timeout);
+  }, [feedback]);
 
   const handleDrop = (
     containerType: "violations" | "actions",
@@ -236,11 +243,9 @@ export const JigsawBoard = () => {
             {/* Center Section - Mission Title & Progress */}
             <div className="flex flex-col items-center flex-1 px-4">
               <h1 className="text-xl font-extrabold text-white game-font tracking-wide mb-1 flex items-center gap-2">
-                <span className="text-yellow-400">⚡</span>
-                <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent">
+                <span className="text-white">
                   LEVEL 3: FIX THE VIOLATION
                 </span>
-                <span className="text-yellow-400">⚡</span>
               </h1>
               
               {/* Compact Progress Bar */}
@@ -273,82 +278,91 @@ export const JigsawBoard = () => {
                 {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
 
-              {/* Dropdown Menu - Fixed z-index to be above everything */}
+              {/* Overlay to close menu when clicking outside - Higher z-index to be above arsenal but lower than dropdown */}
               {isMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[9999] overflow-hidden">
-                  {/* Menu Header */}
-                  <div className="px-4 py-3 border-b border-cyan-500/30">
-                    <h3 className="text-sm font-bold text-cyan-300 flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      AGENT STATUS
-                    </h3>
-                  </div>
-
-                  {/* Agent Info */}
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow">
-                          <span className="text-lg font-bold text-black">🕵️‍♂️</span>
-                        </span>
-                        <div>
-                          <div className="text-cyan-200 font-bold text-sm">AGENT 47</div>
-                          <div className="text-xs text-cyan-400">Level 3 Operative</div>
-                        </div>
-                      </div>
+                <>
+                  <div
+                    className="fixed inset-0 bg-transparent z-[40]"
+                    onMouseDown={() => setIsMenuOpen(false)}
+                  />
+                  <div 
+                    className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-hidden pointer-events-auto"
+                    onMouseDown={e => e.stopPropagation()}
+                  >
+                    {/* Menu Header */}
+                    <div className="px-4 py-3 border-b border-cyan-500/30">
+                      <h3 className="text-sm font-bold text-cyan-300 flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        AGENT STATUS
+                      </h3>
                     </div>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-black/30 rounded-lg p-3 border border-green-400/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Trophy className="w-4 h-4 text-green-400" />
-                          <span className="text-xs font-bold text-green-300">SCORE</span>
+                    {/* Agent Info */}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow">
+                            <span className="text-lg font-bold text-black">🕵️‍♂️</span>
+                          </span>
+                          <div>
+                            <div className="text-cyan-200 font-bold text-sm">AGENT 47</div>
+                            <div className="text-xs text-cyan-400">Level 3 Operative</div>
+                          </div>
                         </div>
-                        <div className="text-lg font-bold text-green-200">{score}</div>
-                        <div className="text-xs text-green-400">XP Points</div>
                       </div>
 
-                      <div className="bg-black/30 rounded-lg p-3 border border-red-400/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Heart className="w-4 h-4 text-red-400" />
-                          <span className="text-xs font-bold text-red-300">HEALTH</span>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-black/30 rounded-lg p-3 border border-green-400/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Trophy className="w-4 h-4 text-green-400" />
+                            <span className="text-xs font-bold text-green-300">SCORE</span>
+                          </div>
+                          <div className="text-lg font-bold text-green-200">{score}</div>
+                          <div className="text-xs text-green-400">XP Points</div>
                         </div>
-                        <div className="text-lg font-bold text-red-200">{health}%</div>
-                        <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-1">
-                          <div
-                            className="h-full bg-gradient-to-r from-red-500 to-green-400 transition-all duration-300"
-                            style={{ width: `${health}%` }}
-                          ></div>
+
+                        <div className="bg-black/30 rounded-lg p-3 border border-red-400/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Heart className="w-4 h-4 text-red-400" />
+                            <span className="text-xs font-bold text-red-300">HEALTH</span>
+                          </div>
+                          <div className="text-lg font-bold text-red-200">{health}%</div>
+                          <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-1">
+                            <div
+                              className="h-full bg-gradient-to-r from-red-500 to-green-400 transition-all duration-300"
+                              style={{ width: `${health}%` }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Combo Counter */}
+                      {combo > 0 && (
+                        <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Zap className="w-4 h-4 text-yellow-400" />
+                            <span className="text-xs font-bold text-yellow-300">COMBO</span>
+                          </div>
+                          <div className="text-lg font-bold text-yellow-200">{combo}x</div>
+                          <div className="text-xs text-yellow-400">Streak Multiplier</div>
+                        </div>
+                      )}
+
+                      {/* Mission Brief Button */}
+                      <button
+                        onClick={() => {
+                          setShowScenario(true);
+                          setIsMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-bold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105 shadow border border-cyan-300/50 flex items-center justify-center gap-2"
+                      >
+                        <FileText className="w-4 h-4" />
+                        MISSION BRIEF
+                      </button>
                     </div>
-
-                    {/* Combo Counter */}
-                    {combo > 0 && (
-                      <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/50">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Zap className="w-4 h-4 text-yellow-400" />
-                          <span className="text-xs font-bold text-yellow-300">COMBO</span>
-                        </div>
-                        <div className="text-lg font-bold text-yellow-200">{combo}x</div>
-                        <div className="text-xs text-yellow-400">Streak Multiplier</div>
-                      </div>
-                    )}
-
-                    {/* Mission Brief Button */}
-                    <button
-                      onClick={() => {
-                        setShowScenario(true);
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-bold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105 shadow border border-cyan-300/50 flex items-center justify-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      MISSION BRIEF
-                    </button>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </header>
@@ -384,15 +398,15 @@ export const JigsawBoard = () => {
               </div>
 
               {/* Arsenal - Now in the middle */}
-              <div className="flex-1 min-w-[80px] max-w-[80px] sm:max-w-xs flex flex-col h-full min-h-0 items-stretch justify-stretch relative z-10">
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-2 border-2 border-cyan-400 glow-border flex flex-col h-full min-h-0">
-                  <div className="flex items-center gap-1 mb-1">
+              <div className="flex flex-col items-center justify-center min-w-[80px] max-w-[80px] sm:max-w-xs relative z-10" style={{height: '340px', minHeight: '340px', maxHeight: '340px'}}>
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-2 border-2 border-cyan-400 glow-border flex flex-col h-full w-full">
+                  <div className="flex items-center gap-1 mb-1 justify-center">
                     <Zap className="w-4 h-4 text-yellow-400" />
                     <h3 className="text-xs font-bold text-white game-font">
                       ARSENAL
                     </h3>
                   </div>
-                  <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center">
+                  <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar">
                     {availablePieces.map((piece) => (
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
@@ -433,31 +447,58 @@ export const JigsawBoard = () => {
           {feedback && (
             <div className="fixed left-1/2 bottom-8 z-[9999] flex justify-center w-full pointer-events-none" style={{transform: 'translateX(-50%)'}}>
               <div
-                className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border-2 max-w-lg w-full sm:w-auto
+                className={`flex items-center gap-4 px-6 py-4 rounded-3xl shadow-2xl border-2 max-w-xl w-full sm:w-auto
                   text-base md:text-lg font-extrabold game-font tracking-wide
-                  transition-all duration-500 pointer-events-auto
+                  pointer-events-auto
+                  backdrop-blur-lg bg-opacity-90
                   ${feedback.includes('🎯') || feedback.includes('🎉')
-                    ? 'bg-gradient-to-r from-green-800 via-emerald-700 to-cyan-700 text-green-200 border-green-400/80 animate-pulse'
-                    : 'bg-gradient-to-r from-red-800 via-pink-800 to-yellow-700 text-yellow-200 border-yellow-400/80 shake'}
+                    ? 'bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80'
+                    : 'bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake'}
                 `}
                 style={{
                   letterSpacing: '0.04em',
-                  boxShadow: '0 4px 32px 0 rgba(0,255,255,0.10), 0 1.5px 8px 0 rgba(0,0,0,0.15)'
+                  boxShadow: '0 8px 40px 0 rgba(0, 255, 255, 0.15), 0 2px 12px 0 rgba(0, 0, 0, 0.18)'
                 }}
                 role="status"
                 aria-live="polite"
               >
-                <span className="text-2xl md:text-3xl">
-                  {feedback.includes('🎯') || feedback.includes('🎉') ? '✅' : '⚠️'}
-                </span>
-                <span className="flex-1 text-center">{feedback}</span>
-                <button
-                  className="ml-2 p-1 rounded-full bg-black/20 hover:bg-black/40 transition-colors border border-cyan-400/40 text-cyan-200 focus:outline-none"
-                  onClick={() => setFeedback("")}
-                  aria-label="Dismiss feedback"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="relative flex items-center gap-4 w-full">
+                  {/* Gamified Icon with animated glow and sparkles */}
+                  <span className="text-4xl relative flex items-center justify-center">
+                    {/* Main Icon with shine and pop */}
+                    <span className="relative z-10 flex items-center justify-center">
+                      <span className="absolute left-0 top-0 w-full h-full animate-shine pointer-events-none" style={{background: 'linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 100%)', borderRadius: '9999px'}}></span>
+                      <span className="relative animate-pop-scale">
+                        {feedback.includes('🎯') ? (
+                          <Icon icon="mdi:gamepad-variant" className="text-green-300 drop-shadow-glow" style={{filter: 'drop-shadow(0 0 8px #34d399) drop-shadow(0 0 16px #22d3ee)'}} />
+                        ) : feedback.includes('🎉') ? (
+                          <Icon icon="mdi:crown" className="text-yellow-300 drop-shadow-glow" style={{filter: 'drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 16px #06b6d4)'}} />
+                        ) : feedback.includes('⚠️') ? (
+                          <Icon icon="mdi:alert-octagon" className="text-yellow-400 drop-shadow-glow" style={{filter: 'drop-shadow(0 0 8px #facc15) drop-shadow(0 0 16px #f472b6)'}} />
+                        ) : (
+                          <Icon icon="mdi:close-octagon" className="text-red-400 drop-shadow-glow" style={{filter: 'drop-shadow(0 0 8px #f87171) drop-shadow(0 0 16px #06b6d4)'}} />
+                        )}
+                      </span>
+                    </span>
+                    {/* Sparkles and confetti */}
+                    <span className="absolute left-1 top-1 animate-bounce text-yellow-200 text-xs select-none pointer-events-none">✦</span>
+                    <span className="absolute right-1 bottom-1 animate-bounce-slow text-cyan-200 text-sm select-none pointer-events-none">✧</span>
+                    <span className="absolute -left-2 -top-2 animate-float text-pink-300 text-lg select-none pointer-events-none">★</span>
+                    <span className="absolute -right-2 -bottom-2 animate-float-slow text-blue-200 text-base select-none pointer-events-none">✪</span>
+                  </span>
+                  {/* Gamified Text with animated gradient and shadow */}
+                  <span className="flex-1 text-center px-2 leading-tight select-text font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-white to-cyan-100 drop-shadow-glow animate-gradient-move">
+                    {feedback.replace(/^[^\w\d]+\s*/, "")}
+                  </span>
+                  {/* Gamified Dismiss Button */}
+                  <button
+                    className="ml-2 p-2 rounded-full bg-gradient-to-br from-cyan-700 via-blue-700 to-teal-600 hover:from-cyan-500 hover:to-teal-400 transition-colors border-2 border-cyan-300/60 text-white focus:outline-none shadow-lg active:scale-95 animate-pop"
+                    onClick={() => setFeedback("")}
+                    aria-label="Dismiss feedback"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -478,14 +519,6 @@ export const JigsawBoard = () => {
             health={health}
           />
         </div>
-
-        {/* Overlay to close menu when clicking outside - Higher z-index than arsenal but lower than dropdown */}
-        {isMenuOpen && (
-          <div
-            className="fixed inset-0 bg-transparent z-[9998]"
-            onClick={() => setIsMenuOpen(false)}
-          />
-        )}
       </div>
     </DndProvider>
   );
@@ -535,3 +568,21 @@ const CustomDragLayer = () => {
     </div>
   );
 };
+
+/* Add this to the bottom of the file or in your global CSS if not already present */
+// .custom-scrollbar::-webkit-scrollbar {
+//   width: 8px;
+//   background: transparent;
+// }
+// .custom-scrollbar::-webkit-scrollbar-thumb {
+//   background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+//   border-radius: 8px;
+//   min-height: 24px;
+// }
+// .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+//   background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
+// }
+// .custom-scrollbar {
+//   scrollbar-width: thin;
+//   scrollbar-color: #06b6d4 #1e293b;
+// }
