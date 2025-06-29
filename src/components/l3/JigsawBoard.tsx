@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { DndProvider, useDragLayer } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { TouchBackend } from "react-dnd-touch-backend";
@@ -35,58 +35,159 @@ interface Scenario {
   pieces: PuzzlePiece[];
 }
 
-const scenario: Scenario = {
-  title: "MISSION: Cleanroom Entry Violation",
-  description:
-    "A production worker enters the cleanroom without gloves and skips the entry logbook. Your mission: Identify the violations and deploy corrective actions!",
-  pieces: [
-    {
-      id: "v1",
-      text: "Personnel Hygiene",
-      category: "violation",
-      isCorrect: true,
-    },
-    { id: "v2", text: "Documentation", category: "violation", isCorrect: true },
-    {
-      id: "v3",
-      text: "Quality Control",
-      category: "violation",
-      isCorrect: false,
-    },
-    {
-      id: "v4",
-      text: "Equipment Qualification",
-      category: "violation",
-      isCorrect: false,
-    },
-    {
-      id: "a1",
-      text: "Follow gowning SOP",
-      category: "action",
-      isCorrect: true,
-    },
-    {
-      id: "a2",
-      text: "Sign and verify entry in log",
-      category: "action",
-      isCorrect: true,
-    },
-    {
-      id: "a3",
-      text: "Use cleanroom air filters",
-      category: "action",
-      isCorrect: false,
-    },
-    {
-      id: "a4",
-      text: "Initiate audit trail",
-      category: "action",
-      isCorrect: false,
-    },
-  ],
-};
+const scenarios: Scenario[] = [
+  {
+    title: "MISSION: Cleanroom Entry Violation",
+    description:
+      "A production worker enters the cleanroom without gloves and skips the entry logbook. Your mission: Identify the violations and deploy corrective actions!",
+    pieces: [
+      {
+        id: "v1",
+        text: "Personnel Hygiene",
+        category: "violation",
+        isCorrect: true,
+      },
+      { id: "v2", text: "Documentation", category: "violation", isCorrect: true },
+      {
+        id: "v3",
+        text: "Quality Control",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "v4",
+        text: "Equipment Qualification",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "a1",
+        text: "Follow gowning SOP",
+        category: "action",
+        isCorrect: true,
+      },
+      {
+        id: "a2",
+        text: "Sign and verify entry in log",
+        category: "action",
+        isCorrect: true,
+      },
+      {
+        id: "a3",
+        text: "Use cleanroom air filters",
+        category: "action",
+        isCorrect: false,
+      },
+      {
+        id: "a4",
+        text: "Initiate audit trail",
+        category: "action",
+        isCorrect: false,
+      },
+    ],
+  },
+  {
+    title: "MISSION: Expired Balance Used",
+    description:
+      "An expired balance is used to weigh materials for a production batch. Your mission: Identify the violated GMP principle and deploy corrective actions!",
+    pieces: [
+      {
+        id: "s2v1",
+        text: "Equipment Calibration",
+        category: "violation",
+        isCorrect: true,
+      },
+      {
+        id: "s2v2",
+        text: "Training",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "s2v3",
+        text: "Cleaning Validation",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "s2v4",
+        text: "Material Storage",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "s2a1",
+        text: "Stop use, recalibrate",
+        category: "action",
+        isCorrect: true,
+      },
+      {
+        id: "s2a2",
+        text: "Repeat training",
+        category: "action",
+        isCorrect: false,
+      },
+      {
+        id: "s2a3",
+        text: "Update MSDS",
+        category: "action",
+        isCorrect: false,
+      },
+      {
+        id: "s2a4",
+        text: "Document deviation & assess risk",
+        category: "action",
+        isCorrect: true,
+      },
+    ],
+  },
+  {
+    title: "MISSION: Batch Record Not Reviewed by QA",
+    description:
+      "A batch record is signed only by Production Head. QA has not reviewed or signed. Your mission: Identify the violated GMP principle and deploy corrective actions!",
+    pieces: [
+      {
+        id: "s3v1",
+        text: "Documentation",
+        category: "violation",
+        isCorrect: true,
+      },
+      {
+        id: "s3v2",
+        text: "Root Cause Analysis",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "s3v3",
+        text: "Market Complaint Handling",
+        category: "violation",
+        isCorrect: false,
+      },
+      {
+        id: "s3a1",
+        text: "QA counter-sign required",
+        category: "action",
+        isCorrect: true,
+      },
+      {
+        id: "s3a2",
+        text: "Recall product",
+        category: "action",
+        isCorrect: false,
+      },
+      {
+        id: "s3a3",
+        text: "Skip QA review",
+        category: "action",
+        isCorrect: false,
+      },
+    ],
+  },
+];
 
 export const JigsawBoard = () => {
+  const scenario = scenarios[0];
   const correctViolations = scenario.pieces.filter(
     (p) => p.category === "violation" && p.isCorrect
   );
@@ -183,15 +284,22 @@ export const JigsawBoard = () => {
   const isTouchDevice =
     typeof window !== "undefined" &&
     ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0));
-  const dndBackend = isTouchDevice ? TouchBackend : HTML5Backend;
-  const dndOptions = isTouchDevice
-    ? {
-        enableMouseEvents: true,
-        enableTouchEvents: true,
-        delayTouchStart: 0,
-        delayMouseStart: 0,
-      }
-    : undefined;
+
+  // Memoize backend and options for DndProvider stability
+  const dndBackend = useMemo(() => (isTouchDevice ? TouchBackend : HTML5Backend), [isTouchDevice]);
+  const dndOptions = useMemo(() =>
+    isTouchDevice
+      ? {
+          enableMouseEvents: true,
+          enableTouchEvents: true,
+          delayTouchStart: 0,
+          delayMouseStart: 0,
+          touchSlop: 10,
+          pressDelay: 100, // Add press delay for mobile drag
+        }
+      : undefined,
+    [isTouchDevice]
+  );
 
   if (!isHorizontal) {
     return (
@@ -223,16 +331,12 @@ export const JigsawBoard = () => {
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          // Prevent scroll in mobile horizontal
+          // Remove overflow: hidden and position: fixed for mobile horizontal to allow drag events
           ...(isMobile && isHorizontal
             ? {
-                position: 'fixed',
-                top: 0,
-                left: 0,
                 width: '100vw',
                 height: '100vh',
                 minHeight: '100vh',
-                overflow: 'hidden',
                 zIndex: 1000,
               }
             : {}),
