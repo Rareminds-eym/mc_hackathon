@@ -22,7 +22,7 @@ interface Scenario {
 }
 
 const scenario: Scenario = {
-  title: "⚡ MISSION: Cleanroom Entry Violation",
+  title: "MISSION: Cleanroom Entry Violation",
   description:
     "A production worker enters the cleanroom without gloves and skips the entry logbook. Your mission: Identify the violations and deploy corrective actions!",
   pieces: [
@@ -202,15 +202,16 @@ export const JigsawBoard = () => {
     <DndProvider backend={dndBackend} options={dndOptions}>
       {/* Custom drag layer for better mobile feedback */}
       <CustomDragLayer />
-      <div className="min-h-screen h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden flex flex-col justify-center items-center p-1">
-        {/* Animated Background Effects */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-4 left-4 w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-          <div className="absolute top-8 right-8 w-1.5 h-1.5 bg-yellow-400 rounded-full animate-ping"></div>
-          <div className="absolute bottom-8 left-1/4 w-1 h-1 bg-green-400 rounded-full animate-bounce"></div>
-          <div className="absolute bottom-16 right-1/3 w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse"></div>
-        </div>
-
+      <div
+        className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
+        style={{
+          backgroundImage:
+            "url('/backgrounds/m1l3.webp')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         {showScenario && (
           <ScenarioDialog
             scenario={scenario}
