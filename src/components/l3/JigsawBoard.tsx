@@ -20,6 +20,7 @@ import { VictoryPopup } from "../ui/Popup";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface PuzzlePiece {
   id: string;
@@ -109,6 +110,7 @@ export const JigsawBoard = () => {
   const [combo, setCombo] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Check if all correct pieces are placed
@@ -206,6 +208,9 @@ export const JigsawBoard = () => {
       </div>
     );
   }
+
+  // Get display name: prefer full_name from metadata, fallback to email, else "Player"
+  const displayName = user?.user_metadata?.full_name || user?.email || "Player";
 
   return (
     <DndProvider backend={dndBackend} options={dndOptions}>
@@ -339,7 +344,7 @@ export const JigsawBoard = () => {
                             <span className="font-bold text-black">🕵️‍♂️</span>
                           </span>
                           <div>
-                            <div className={`text-cyan-200 font-bold${isMobile && isHorizontal ? ' text-xs' : ' text-sm'}`}>AGENT 47</div>
+                            <div className={`text-cyan-200 font-bold${isMobile && isHorizontal ? ' text-xs' : ' text-sm'}`}>{displayName}</div>
                             <div className={`text-xs text-cyan-400${isMobile && isHorizontal ? ' leading-tight' : ''}`}>Level 3 Operative</div>
                           </div>
                         </div>
