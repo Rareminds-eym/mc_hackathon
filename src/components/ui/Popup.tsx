@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
+import { useDeviceLayout } from '../../hooks/useOrientation';
 
 interface PopupProps {
   open: boolean;
@@ -59,10 +60,14 @@ interface VictoryPopupProps {
 }
 
 export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score }) => {
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const isMobileHorizontal = isMobile && isHorizontal;
+
   return (
     <Popup open={open} onClose={onClose}>
       <motion.div
-        className="flex flex-col items-center text-center text-gray-900"
+        className={`flex flex-col items-center mx-auto justify-center text-center text-gray-900${isMobileHorizontal ? ' scale-90 max-w-[320px] px-1' : ''}`}
+        style={isMobileHorizontal ? { fontSize: '0.92rem', padding: '0.5rem', alignItems: 'center', textAlign: 'center', justifyContent: 'center' } : {}}
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 40, opacity: 0 }}
@@ -70,7 +75,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
       >
         {/* ⭐ Stars */}
         <motion.div
-          className="relative w-[600px] h-16 mb-4 flex items-center justify-center"
+          className={`relative flex items-center justify-center ${isMobileHorizontal ? ' w-[260px] h-10 mb-2 justify-center' : 'w-[600px] h-16 mb-4'}`}
+          style={isMobileHorizontal ? { marginLeft: 0, justifyContent: 'center' } : {}}
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: 'spring', stiffness: 180, damping: 18 }}
@@ -78,15 +84,15 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
           {[0, 1, 2, 3, 4].map((i) => {
             // Arc math: angle from 120deg to 60deg (flatter upside-down arc)
             const angle = -(120 - i * 15) * (Math.PI / 180); // 120, 105, 90, 75, 60
-            const radius = 200; // px, even larger for more spacing
-            const centerX = 300; // half of w-600px
-            const centerY = 240; // vertical center
-            const x = centerX + radius * Math.cos(angle) - 20;
-            const y = centerY + radius * Math.sin(angle) - 20;
+            const radius = isMobileHorizontal ? 140 : 200;
+            const centerX = isMobileHorizontal ? 130 : 300;
+            const centerY = isMobileHorizontal ? 160 : 240;
+            const x = centerX + radius * Math.cos(angle) - (isMobileHorizontal ? 12 : 20);
+            const y = centerY + radius * Math.sin(angle) - (isMobileHorizontal ? 12 : 20);
             return (
               <motion.span
                 key={i}
-                className="absolute text-yellow-400 text-4xl"
+                className={`absolute text-yellow-400${isMobileHorizontal ? ' text-2xl' : ' text-4xl'}`}
                 style={{ left: `${x}px`, top: `${y}px` }}
                 initial={{ scale: 0, rotate: -90 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -99,7 +105,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
         </motion.div>
         {/* 🎉 Message */}
         <motion.h2
-          className="text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-1"
+          className={`text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-1${isMobileHorizontal ? ' text-xl mb-0 w-full' : ''}`}
+          style={isMobileHorizontal ? { textAlign: 'center', width: '100%' } : {}}
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.45, type: 'spring', stiffness: 200, damping: 18 }}
@@ -108,7 +115,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
         </motion.h2>
         {/* 🧑‍🔬 Character + 🦜 Bird */}
         <motion.div
-          className="relative w-full flex justify-center items-center mb-3 py-5"
+          className={`relative w-full flex justify-center items-center mb-3 py-5${isMobileHorizontal ? ' py-2 mb-1 justify-center' : ''}`}
+          style={isMobileHorizontal ? { justifyContent: 'center' } : {}}
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, type: 'spring', stiffness: 180, damping: 18 }}
@@ -116,7 +124,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
           <motion.img
             src="/characters/worker.webp"
             alt="Worker Character"
-            className="w-[200px] object-contain"
+            className={`object-contain${isMobileHorizontal ? ' w-[180px]' : ' w-[200px]'}`}
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.7, type: 'spring', stiffness: 200, damping: 18 }}
@@ -124,30 +132,31 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
         </motion.div>
         {/* 🔘 Buttons */}
         <motion.div
-          className="flex justify-center gap-4 w-full mt-2"
+          className={`flex justify-center gap-4 w-full mt-2${isMobileHorizontal ? ' gap-2 mt-1 justify-center' : ''}`}
+          style={isMobileHorizontal ? { justifyContent: 'center' } : {}}
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 1.0, type: 'spring', stiffness: 180, damping: 18 }}
         >
           <button
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2"
+            className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-2 text-xs' : ''}`}
             onClick={() => alert('Retry Level')}
           >
-            <Icon icon="mdi:restart" className="w-6 h-6" />
+            <Icon icon="mdi:restart" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
             Retry
           </button>
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2"
+            className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-3 text-xs' : ''}`}
             onClick={onClose}
           >
-            <Icon icon="mdi:arrow-right-bold-circle" className="w-6 h-6" />
+            <Icon icon="mdi:arrow-right-bold-circle" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
             Next
           </button>
           <button
-            className="bg-lime-500 hover:bg-lime-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2"
+            className={`bg-lime-500 hover:bg-lime-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-2 text-xs' : ''}`}
             onClick={() => alert('Open Map')}
           >
-            <Icon icon="mdi:map-marker-radius" className="w-6 h-6" />
+            <Icon icon="mdi:map-marker-radius" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
             Map
           </button>
         </motion.div>

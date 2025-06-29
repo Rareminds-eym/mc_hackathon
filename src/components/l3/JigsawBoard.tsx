@@ -401,19 +401,37 @@ export const JigsawBoard = () => {
               </div>
 
               {/* Arsenal - Now in the middle */}
-              <div className="flex flex-col items-center justify-center min-w-[80px] max-w-[80px] sm:max-w-xs relative z-10" style={{height: '340px', minHeight: '340px', maxHeight: '340px'}}>
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-2 border-2 border-cyan-400 glow-border flex flex-col h-full w-full">
-                  <div className="flex items-center gap-1 mb-1 justify-center">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                    <h3 className="text-xs font-bold text-white game-font">
+              <div className="flex flex-col items-center justify-center w-max relative z-20" style={{height: '340px', minHeight: '340px', maxHeight: '340px'}}>
+                <div
+                  className="relative flex flex-col h-full w-max p-2 rounded-2xl shadow-2xl border-2 border-cyan-400/80 arsenal-glass-container items-center justify-between"
+                  style={{
+                    background: 'rgba(20, 30, 60, 0.35)',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 0 24px 4px #22d3ee55, 0 2px 16px 0 #0008',
+                    border: '2.5px solid #22d3ee',
+                    overflow: 'hidden',
+                    width: 'max-content'
+                  }}
+                >
+                  {/* Watermark Icon */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-10 z-0">
+                    <Zap className="w-24 h-24 text-cyan-300 animate-pulse-slow" />
+                  </div>
+                  {/* Arsenal Title */}
+                  <div className="flex flex-row items-center justify-center gap-2 mb-2 relative z-10 w-full whitespace-nowrap">
+                    <Zap className="w-6 h-6 text-yellow-300 drop-shadow-glow animate-flicker flex-shrink-0" />
+                    <h3 className="text-lg font-extrabold text-cyan-100 game-font tracking-widest neon-text drop-shadow-glow animate-gradient-move text-center whitespace-nowrap" style={{letterSpacing: '0.12em', textShadow: '0 0 8px #22d3ee, 0 0 16px #fde68a'}}>
                       ARSENAL
                     </h3>
                   </div>
-                  <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar">
+                  {/* Pieces List */}
+                  <div className="space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2">
                     {availablePieces.map((piece) => (
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
                   </div>
+                  {/* Animated Glow Border */}
+                  <div className="absolute inset-0 rounded-2xl pointer-events-none border-4 border-cyan-400/60 animate-glow-border" style={{boxShadow: '0 0 32px 8px #22d3ee55'}}></div>
                 </div>
               </div>
 
@@ -595,3 +613,15 @@ const CustomDragLayer = () => {
 //   scrollbar-width: thin;
 //   scrollbar-color: #06b6d4 #1e293b;
 // }
+
+/* Arsenal Glassmorphism & Neon CSS */
+// Add these classes to your global CSS or tailwind config if not present:
+// .arsenal-glass-container { transition: box-shadow 0.3s, border 0.3s; }
+// .neon-text { text-shadow: 0 0 8px #22d3ee, 0 0 16px #fde68a; }
+// .drop-shadow-glow { filter: drop-shadow(0 0 8px #22d3ee) drop-shadow(0 0 16px #fde68a); }
+// .animate-glow-border { animation: glow-border 2s infinite alternate; }
+// @keyframes glow-border { 0% { box-shadow: 0 0 16px 2px #22d3ee55; } 100% { box-shadow: 0 0 32px 8px #22d3eeaa; } }
+// .animate-flicker { animation: flicker 1.5s infinite alternate; }
+// @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+// .animate-pulse-slow { animation: pulse 3s infinite; }
+// @keyframes pulse { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.22; } }
