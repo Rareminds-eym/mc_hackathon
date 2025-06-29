@@ -19,6 +19,7 @@ import {
 import { VictoryPopup } from "../ui/Popup";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PuzzlePiece {
   id: string;
@@ -103,27 +104,11 @@ export const JigsawBoard = () => {
   const [showScenario, setShowScenario] = useState(true);
   const [feedback, setFeedback] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(true);
   const [score, setScore] = useState(0);
   const [health, setHealth] = useState(100);
   const [combo, setCombo] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
-
-  useEffect(() => {
-    const checkOrientation = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight);
-    };
-
-    checkOrientation();
-    window.addEventListener("resize", checkOrientation);
-    window.addEventListener("orientationchange", checkOrientation);
-
-    return () => {
-      window.removeEventListener("resize", checkOrientation);
-      window.removeEventListener("orientationchange", checkOrientation);
-    };
-  }, []);
 
   useEffect(() => {
     // Check if all correct pieces are placed
@@ -206,7 +191,7 @@ export const JigsawBoard = () => {
       }
     : undefined;
 
-  if (!isLandscape) {
+  if (!isHorizontal) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
         <div className="text-center bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-8 max-w-md border-2 border-cyan-400 glow-border">
@@ -248,12 +233,23 @@ export const JigsawBoard = () => {
             : {}),
         }}
       >
-        {showScenario && (
-          <ScenarioDialog
-            scenario={scenario}
-            onClose={() => setShowScenario(false)}
-          />
-        )}
+        <AnimatePresence>
+          {showScenario && (
+            <motion.div
+              key="scenario-dialog"
+              initial={{ opacity: 0, scale: 1, y: 0 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
+              style={{ position: 'absolute', inset: 0, zIndex: 2000 }}
+            >
+              <ScenarioDialog
+                scenario={scenario}
+                onClose={() => setShowScenario(false)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="w-full p-1 relative z-10 flex flex-col gap-1 h-full">
           {/* Ultra Compact Header with Menu */}
@@ -317,65 +313,55 @@ export const JigsawBoard = () => {
                     onMouseDown={() => setIsMenuOpen(false)}
                   />
                   <div
-                    className="absolute right-0 top-full mt-2 w-64 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-hidden pointer-events-auto"
+                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto w-64${isMobile && isHorizontal ? ' compact-dropdown-mobile-horizontal' : ''}`}
+                    style={isMobile && isHorizontal ? {
+                      minWidth: '10rem',
+                      maxWidth: '13rem',
+                      height: 'min-content',
+                      maxHeight: '70vh',
+                      padding: '0.5rem 0.5rem',
+                    } : {}}
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     {/* Menu Header */}
-                    <div className="px-4 py-3 border-b border-cyan-500/30">
-                      <h3 className="text-sm font-bold text-cyan-300 flex items-center gap-2">
-                        <User className="w-4 h-4" />
+                    <div className={`border-b border-cyan-500/30${isMobile && isHorizontal ? ' px-2 py-1' : ' px-4 py-3'}`}>
+                      <h3 className={`text-sm font-bold text-cyan-300 flex items-center gap-2${isMobile && isHorizontal ? ' text-xs' : ''}`}>
+                        <User className={`w-4 h-4${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
                         AGENT STATUS
                       </h3>
                     </div>
 
                     {/* Agent Info */}
-                    <div className="p-4 space-y-3">
+                    <div className={`space-y-2${isMobile && isHorizontal ? ' p-2' : ' p-4 space-y-3'}`}> 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow">
-                            <span className="text-lg font-bold text-black">
-                              🕵️‍♂️
-                            </span>
+                          <span className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow${isMobile && isHorizontal ? ' w-6 h-6 text-base' : ' w-8 h-8 text-lg'}`}> 
+                            <span className="font-bold text-black">🕵️‍♂️</span>
                           </span>
                           <div>
-                            <div className="text-cyan-200 font-bold text-sm">
-                              AGENT 47
-                            </div>
-                            <div className="text-xs text-cyan-400">
-                              Level 3 Operative
-                            </div>
+                            <div className={`text-cyan-200 font-bold${isMobile && isHorizontal ? ' text-xs' : ' text-sm'}`}>AGENT 47</div>
+                            <div className={`text-xs text-cyan-400${isMobile && isHorizontal ? ' leading-tight' : ''}`}>Level 3 Operative</div>
                           </div>
                         </div>
                       </div>
 
                       {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-black/30 rounded-lg p-3 border border-green-400/50">
+                      <div className={`grid grid-cols-2 gap-2${isMobile && isHorizontal ? '' : ' gap-3'}`}> 
+                        <div className={`bg-black/30 rounded-lg border border-green-400/50${isMobile && isHorizontal ? ' p-2' : ' p-3'}`}>
                           <div className="flex items-center gap-2 mb-1">
-                            <Trophy className="w-4 h-4 text-green-400" />
-                            <span className="text-xs font-bold text-green-300">
-                              SCORE
-                            </span>
+                            <Trophy className={`w-4 h-4 text-green-400${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
+                            <span className="text-xs font-bold text-green-300">SCORE</span>
                           </div>
-                          <div className="text-lg font-bold text-green-200">
-                            {score}
-                          </div>
-                          <div className="text-xs text-green-400">
-                            XP Points
-                          </div>
+                          <div className={`font-bold text-green-200${isMobile && isHorizontal ? ' text-base' : ' text-lg'}`}>{score}</div>
+                          <div className="text-xs text-green-400">XP Points</div>
                         </div>
-
-                        <div className="bg-black/30 rounded-lg p-3 border border-red-400/50">
+                        <div className={`bg-black/30 rounded-lg border border-red-400/50${isMobile && isHorizontal ? ' p-2' : ' p-3'}`}>
                           <div className="flex items-center gap-2 mb-1">
-                            <Heart className="w-4 h-4 text-red-400" />
-                            <span className="text-xs font-bold text-red-300">
-                              HEALTH
-                            </span>
+                            <Heart className={`w-4 h-4 text-red-400${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
+                            <span className="text-xs font-bold text-red-300">HEALTH</span>
                           </div>
-                          <div className="text-lg font-bold text-red-200">
-                            {health}%
-                          </div>
-                          <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-1">
+                          <div className={`font-bold text-red-200${isMobile && isHorizontal ? ' text-base' : ' text-lg'}`}>{health}%</div>
+                          <div className={`w-full${isMobile && isHorizontal ? ' h-1' : ' h-1.5'} bg-gray-700 rounded-full overflow-hidden mt-1`}>
                             <div
                               className="h-full bg-gradient-to-r from-red-500 to-green-400 transition-all duration-300"
                               style={{ width: `${health}%` }}
@@ -386,19 +372,13 @@ export const JigsawBoard = () => {
 
                       {/* Combo Counter */}
                       {combo > 0 && (
-                        <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/50">
+                        <div className={`bg-black/30 rounded-lg border border-yellow-400/50${isMobile && isHorizontal ? ' p-2' : ' p-3'}`}>
                           <div className="flex items-center gap-2 mb-1">
-                            <Zap className="w-4 h-4 text-yellow-400" />
-                            <span className="text-xs font-bold text-yellow-300">
-                              COMBO
-                            </span>
+                            <Zap className={`w-4 h-4 text-yellow-400${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
+                            <span className="text-xs font-bold text-yellow-300">COMBO</span>
                           </div>
-                          <div className="text-lg font-bold text-yellow-200">
-                            {combo}x
-                          </div>
-                          <div className="text-xs text-yellow-400">
-                            Streak Multiplier
-                          </div>
+                          <div className={`font-bold text-yellow-200${isMobile && isHorizontal ? ' text-base' : ' text-lg'}`}>{combo}x</div>
+                          <div className="text-xs text-yellow-400">Streak Multiplier</div>
                         </div>
                       )}
 
@@ -408,9 +388,9 @@ export const JigsawBoard = () => {
                           setShowScenario(true);
                           setIsMenuOpen(false);
                         }}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-bold hover:from-cyan-400 hover:to-blue-400 transition-all duration-300 transform hover:scale-105 shadow border border-cyan-300/50 flex items-center justify-center gap-2"
+                        className={`w-full rounded-lg font-bold flex items-center justify-center gap-2 transition-all border border-cyan-300/50 shadow bg-gradient-to-r from-cyan-500 to-blue-500${isMobile && isHorizontal ? ' px-2 py-2 text-xs' : ' px-4 py-3'}`}
                       >
-                        <FileText className="w-4 h-4" />
+                        <FileText className={`w-4 h-4${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
                         MISSION BRIEF
                       </button>
                     </div>
