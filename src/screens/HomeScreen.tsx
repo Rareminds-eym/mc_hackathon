@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useDeviceLayout } from "../hooks/useOrientation";
 
 // Avatar options for modal
@@ -20,9 +20,6 @@ const AVATAR_OPTIONS = [
     src: "/characters/Intern3.png",
   },
 ];
-
-import { motion, AnimatePresence } from "framer-motion";
-import { useDeviceLayout } from "../hooks/useOrientation";
 
 const HomeScreen: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
