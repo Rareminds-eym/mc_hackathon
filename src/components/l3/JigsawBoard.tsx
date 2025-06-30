@@ -647,11 +647,11 @@ export const JigsawBoard: React.FC = () => {
             </div>
           </header>
 
-          <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-auto">
+          <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-hidden">
             {/* Mission Zones with Arsenal in the middle */}
-            <div className="flex flex-row gap-2 flex-[2_2_0%] min-h-0 h-full justify-stretch items-stretch min-w-[400px] w-full">
+            <div className="flex flex-row gap-4 flex-1 min-h-0 h-full justify-center items-stretch w-full max-w-6xl mx-auto">
               {/* Violations Container */}
-              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
+              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
                   <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
                     VIOLATIONS DETECTED
@@ -757,7 +757,7 @@ export const JigsawBoard: React.FC = () => {
               </div>
 
               {/* Actions Container */}
-              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
+              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
                   <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
                     DEPLOY COUNTERMEASURES
@@ -966,6 +966,21 @@ const CustomDragLayer = () => {
     clientOffset: monitor.getClientOffset(),
   }));
 
+  // Dynamically size the preview to match the dragged piece's DOM size
+  const [pieceSize, setPieceSize] = React.useState<{ width: number; height: number } | null>(null);
+  React.useEffect(() => {
+    if (!item || !item.id) {
+      setPieceSize(null);
+      return;
+    }
+    // Try to find the DOM node of the dragged piece
+    const el = document.querySelector(`[data-piece-id='${item.id}']`);
+    if (el) {
+      const rect = (el as HTMLElement).getBoundingClientRect();
+      setPieceSize({ width: rect.width, height: rect.height });
+    }
+  }, [item]);
+
   const offset =
     clientOffset ||
     (typeof window !== "undefined"
@@ -973,22 +988,33 @@ const CustomDragLayer = () => {
       : null);
   if (!isDragging || !item || !offset) return null;
 
+  const width = pieceSize?.width || 128;
+  const height = pieceSize?.height || 60;
   const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
   const categoryBorder = "border-cyan-400";
-  const transform = `translate(${offset.x}px, ${offset.y}px)`;
+  // Center the preview under the finger/cursor
+  const transform = `translate(${offset.x - width / 2}px, ${offset.y - height / 2}px)`;
 
   return (
     <div
-      className={`pointer-events-none fixed z-50 left-0 top-0 w-32 opacity-90 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white p-4 rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
+      className={`pointer-events-none fixed z-[9999] left-0 top-0 opacity-95 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
       style={{
+        width: `${width}px`,
+        height: `${height}px`,
         transform,
         clipPath:
           "polygon(0% 20%, 10% 20%, 15% 0%, 25% 0%, 30% 20%, 70% 20%, 75% 0%, 85% 0%, 90% 20%, 100% 20%, 100% 80%, 90% 80%, 85% 100%, 75% 100%, 70% 80%, 30% 80%, 25% 100%, 15% 100%, 10% 80%, 0% 80%)",
         filter: "drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
         pointerEvents: "none",
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <div className="relative z-10">{item.text}</div>
+      <div className="relative z-10 flex items-center justify-center h-full w-full text-xs md:text-sm px-1">
+        {item.text}
+      </div>
     </div>
   );
 };

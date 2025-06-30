@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { modules as initialModules } from '../data/modules';
-import ModuleMap from '../components/roadmap/ModuleMap';
+import { modules as initialModules } from '../../data/modules';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { Module } from '../../types/module';
+import ModuleMap from './ModuleMap';
 
 const GameRoadmap: React.FC = () => {
   const [modules] = useState<Module[]>(initialModules); // Remove setModules since it's unused
