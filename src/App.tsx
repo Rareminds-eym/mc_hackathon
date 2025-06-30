@@ -19,7 +19,9 @@ import {
   isRouteErrorResponse,
 } from 'react-router-dom';
 import Level3 from './screens/Level3/Index';
+import Level4 from './screens/Level4/Index';
 import InstructionsPage from './screens/InstructionsPage';
+import { GameBoard2D } from './components/Level4/GameBoard2D';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -54,7 +56,7 @@ const router = createBrowserRouter(
       children: [
         {
           path: '/',
-          element: <LoginScreen />,
+          element: <AuthPage />,
           errorElement: <RouteErrorBoundary />
         },
         {
@@ -78,6 +80,11 @@ const router = createBrowserRouter(
           errorElement: <RouteErrorBoundary />
         },
         {
+          path: '/modules/:moduleId/levels/4',
+          element: <Level4 />,
+          errorElement: <RouteErrorBoundary />
+        },
+        {
           path: '/modules/:moduleId/levels/:levelId',
           element: <LevelScene />,
           errorElement: <RouteErrorBoundary />
@@ -86,6 +93,11 @@ const router = createBrowserRouter(
           errorElement: <RouteErrorBoundary /> },
         { path: '/instructions', element: <InstructionsPage />,
           errorElement: <RouteErrorBoundary /> },
+        {
+          path: '/modules/:moduleId/levels/4/gameboard2d',
+          element: <GameBoard2D />,
+          errorElement: <RouteErrorBoundary />
+        },
         { path: '*', element: <Navigate to="/" replace />,
           errorElement: <RouteErrorBoundary /> },
       ],
