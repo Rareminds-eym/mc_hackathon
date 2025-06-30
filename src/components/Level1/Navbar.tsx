@@ -16,6 +16,9 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
 
+  // Get avatar from localStorage, fallback to Intern1
+  const avatar = localStorage.getItem("selectedAvatar") || "/characters/Intern1.png";
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTimer(prev => prev + 1);
@@ -90,22 +93,22 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
 
           {/* Center Section - Level */}
           <div className="flex items-center">
-            <div className="bg-white/30 text-white px-8 py-2 rounded-full backdrop-blur shadow-[0_4px_24px_0_rgba(59,130,246,0.10)] border border-white/30 font-bold text-lg tracking-wide">
+            <div className="bg-white/30 text-white px-6 py-1 rounded-full backdrop-blur shadow-[0_4px_24px_0_rgba(59,130,246,0.10)] border border-white/30 font-bold text-lg tracking-wide">
               Level 1
             </div>
           </div>
 
           {/* Right Section - User Profile */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-white/30 backdrop-blur px-5 py-2 rounded-full border border-white/30">
-              <div className="w-5 h-5 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
+          <div className="flex items-center gap-2">
+              <img
+                src={avatar}
+                alt="Player Avatar"
+                className="w-12 h-12 rounded-full border-2 border-green-400 shadow-[0_0_8px_2px_rgba(34,197,94,0.5)] object-cover"
+              />
               <span className="text-white text-lg font-medium">{displayName}</span>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Dropdown Menu */}
       {isMenuOpen && (

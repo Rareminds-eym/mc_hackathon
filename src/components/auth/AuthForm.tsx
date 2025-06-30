@@ -91,13 +91,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 p-8 transform hover:scale-[1.02] transition-all duration-300">
+      <div
+        className="bg-gray-800/60 rounded-lg shadow-2xl p-8 
+        w-full max-w-md relative z-10 "
+      >
         {/* Form Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          <h2 className="text-3xl font-bold text-white mb-2">
             {mode === 'login' ? 'Welcome Back' : 'Join GMP Quest'}
           </h2>
-          <p className="text-gray-600">
+          <p className={mode === 'login' ? "text-gray-300" : "text-white"}>
             {mode === 'login' 
               ? 'Sign in to continue your quality journey' 
               : 'Start your manufacturing excellence adventure'
@@ -125,12 +128,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           {/* Full Name (Signup only) */}
           {mode === 'signup' && (
             <div className="space-y-2">
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-white mb-1">
                 Full Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User className="h-5 w-5 text-blue-300" />
                 </div>
                 <input
                   id="fullName"
@@ -138,7 +141,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   type="text"
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  required
+                  className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
+                  rounded-md shadow-sm placeholder-slate-400
+                  focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                  text-white pl-10"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -147,12 +154,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Email */}
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-white mb-1">
               Email Address
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400" />
+                <Mail className="h-5 w-5 text-blue-300" />
               </div>
               <input
                 id="email"
@@ -160,7 +167,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                required
+                className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
+                rounded-md shadow-sm placeholder-slate-400
+                focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                text-white pl-10"
                 placeholder="Enter your email"
               />
             </div>
@@ -168,12 +179,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Password */}
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-white mb-1">
               Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
+                <Lock className="h-5 w-5 text-blue-300" />
               </div>
               <input
                 id="password"
@@ -181,7 +192,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                required
+                className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
+                rounded-md shadow-sm placeholder-slate-400
+                focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                text-white pl-10 pr-10"
                 placeholder="Enter your password"
               />
               <button
@@ -190,9 +205,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
                 ) : (
-                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
                 )}
               </button>
             </div>
@@ -201,12 +216,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           {/* Confirm Password (Signup only) */}
           {mode === 'signup' && (
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-white mb-1">
                 Confirm Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-blue-300" />
                 </div>
                 <input
                   id="confirmPassword"
@@ -214,7 +229,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  required
+                  className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
+                  rounded-md shadow-sm placeholder-slate-400
+                  focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                  text-white pl-10 pr-10"
                   placeholder="Confirm your password"
                 />
                 <button
@@ -223,9 +242,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
                   )}
                 </button>
               </div>
@@ -236,7 +255,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200"
+            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200"
           >
             {isSubmitting ? (
               <>

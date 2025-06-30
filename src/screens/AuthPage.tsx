@@ -17,11 +17,17 @@ const AuthPage: React.FC = () => {
   }, [user, navigate])
 
   const toggleAuthMode = () => {
-    setAuthMode(prev => prev === 'login' ? 'signup' : 'login')
+    setAuthMode(prev => {
+      const next = prev === 'login' ? 'signup' : 'login';
+      if (next === 'signup') {
+        localStorage.setItem("selectedAvatar", "/characters/Intern1.png");
+      }
+      return next;
+    });
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900">
       <BackgroundAnimation />
       
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
@@ -33,9 +39,6 @@ const AuthPage: React.FC = () => {
           <div className="text-center mt-8">
             <p className="text-sm text-gray-500">
               © 2025 Rareminds. All rights reserved.
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Empowering Quality Excellence Through Interactive Learning
             </p>
           </div>
         </div>

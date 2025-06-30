@@ -1,5 +1,5 @@
 import React from 'react'
-import { Shield, CheckCircle, Award, Target } from 'lucide-react'
+import { Package, CheckCircle, Award, Target } from 'lucide-react'
 
 const AnimatedLogo: React.FC = () => {
   return (
@@ -14,7 +14,7 @@ const AnimatedLogo: React.FC = () => {
         
         {/* Inner logo container */}
         <div className="relative w-24 h-24 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 rounded-full flex items-center justify-center shadow-2xl transform hover:scale-110 transition-all duration-300">
-          <Shield className="h-12 w-12 text-white animate-pulse" />
+          <Package className="h-12 w-12 text-white animate-pulse" />
         </div>
 
         {/* Floating quality icons */}
@@ -33,10 +33,10 @@ const AnimatedLogo: React.FC = () => {
 
       {/* Animated Title */}
       <div className="text-center">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent animate-gradient-x mb-2">
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-500 via-cyan-200 to-emerald-600 bg-clip-text text-transparent animate-gradient-x mb-2">
           GMP Quest
         </h1>
-        <p className="text-lg text-gray-600 font-medium animate-fade-in-up">
+        <p className="text-lg text-gray-200 font-medium animate-fade-in-up">
           Good Manufacturing Practices
         </p>
         <div className="flex items-center justify-center space-x-2 mt-2">
