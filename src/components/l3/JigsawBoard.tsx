@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { DndProvider, useDragLayer } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { TouchBackend } from "react-dnd-touch-backend";
@@ -22,6 +22,7 @@ import { useDeviceLayout } from "../../hooks/useOrientation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 
+// --- Types ---
 interface PuzzlePiece {
   id: string;
   text: string;
@@ -35,6 +36,7 @@ interface Scenario {
   pieces: PuzzlePiece[];
 }
 
+// --- Scenario Data (Consider moving to a separate file for scalability) ---
 const scenarios: Scenario[] = [
   {
     title: "MISSION: Cleanroom Entry Violation",
@@ -191,26 +193,29 @@ const scenarios: Scenario[] = [
   },
 ];
 
-export const JigsawBoard = () => {
+// --- Utility: Get moduleId from URL ---
+const getModuleIdFromPath = () => {
+  const match = window.location.pathname.match(/modules\/(\w+)/);
+  return match ? match[1] : '';
+};
+
+export const JigsawBoard: React.FC = () => {
+  // --- State ---
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const scenario = scenarios[scenarioIndex];
-  const correctViolations = scenario.pieces.filter(
+  const correctViolations = useMemo(() => scenario.pieces.filter(
     (p) => p.category === "violation" && p.isCorrect
-  );
-  const correctActions = scenario.pieces.filter(
+  ), [scenario]);
+  const correctActions = useMemo(() => scenario.pieces.filter(
     (p) => p.category === "action" && p.isCorrect
-  );
+  ), [scenario]);
 
-  const [placedPieces, setPlacedPieces] = useState<{
-    violations: PuzzlePiece[];
-    actions: PuzzlePiece[];
-  }>({
+  const [placedPieces, setPlacedPieces] = useState<{ violations: PuzzlePiece[]; actions: PuzzlePiece[] }>({
     violations: [],
     actions: [],
   });
-
   const [showScenario, setShowScenario] = useState(true);
-  const [feedback, setFeedback] = useState<string>("");
+  const [feedback, setFeedback] = useState("");
   const [isComplete, setIsComplete] = useState(false);
   const [score, setScore] = useState(0);
   const [health, setHealth] = useState(100);
@@ -218,27 +223,21 @@ export const JigsawBoard = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const { user } = useAuth();
-
-  // Ref for arsenal scroll container
   const arsenalRef = useRef<HTMLDivElement>(null);
+  const moduleId = getModuleIdFromPath();
 
+  // --- Effects ---
   useEffect(() => {
-    // Scroll arsenal to top when scenario changes
-    if (arsenalRef.current) {
-      arsenalRef.current.scrollTop = 0;
-    }
+    if (arsenalRef.current) arsenalRef.current.scrollTop = 0;
   }, [scenarioIndex]);
 
   useEffect(() => {
-    // Check if all correct pieces are placed
-    const totalCorrectPieces = correctViolations.length + correctActions.length;
-    const placedCorrectPieces =
-      placedPieces.violations.length + placedPieces.actions.length;
-
-    if (placedCorrectPieces === totalCorrectPieces && totalCorrectPieces > 0) {
+    const totalCorrect = correctViolations.length + correctActions.length;
+    const placedCorrect = placedPieces.violations.length + placedPieces.actions.length;
+    if (placedCorrect === totalCorrect && totalCorrect > 0) {
       setIsComplete(true);
       setScore((prev) => prev + 1000 + combo * 100);
-      setFeedback(""); // Close feedback when Victory Screen shows
+      setFeedback("");
     }
   }, [placedPieces, combo, correctViolations.length, correctActions.length]);
 
@@ -248,31 +247,24 @@ export const JigsawBoard = () => {
     return () => clearTimeout(timeout);
   }, [feedback]);
 
-  const handleDrop = (
-    containerType: "violations" | "actions",
-    piece: PuzzlePiece
-  ) => {
+  // --- Handlers ---
+  const handleDrop = useCallback((containerType: "violations" | "actions", piece: PuzzlePiece) => {
     const isCorrectCategory =
       (containerType === "violations" && piece.category === "violation") ||
       (containerType === "actions" && piece.category === "action");
-
     if (!isCorrectCategory) {
       setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
       setHealth((prev) => Math.max(0, prev - 10));
       setCombo(0);
       return { success: false };
     }
-
-    // Check if piece is already placed
     const isAlreadyPlaced =
-      placedPieces.violations.find((p) => p.id === piece.id) ||
-      placedPieces.actions.find((p) => p.id === piece.id);
-
+      placedPieces.violations.some((p) => p.id === piece.id) ||
+      placedPieces.actions.some((p) => p.id === piece.id);
     if (isAlreadyPlaced) {
       setFeedback("⚠️ Already placed! Try another piece!");
       return { success: false };
     }
-
     if (piece.isCorrect) {
       setPlacedPieces((prev) => ({
         ...prev,
@@ -288,45 +280,52 @@ export const JigsawBoard = () => {
       setCombo(0);
       return { success: false };
     }
-  };
+  }, [placedPieces, combo]);
 
-  const availablePieces = scenario.pieces.filter(
-    (piece) =>
-      !placedPieces.violations.find((p) => p.id === piece.id) &&
-      !placedPieces.actions.find((p) => p.id === piece.id)
-  );
+  const handleVictoryClose = useCallback(() => {
+    if (scenarioIndex < scenarios.length - 1) {
+      setScenarioIndex((idx) => idx + 1);
+      setPlacedPieces({ violations: [], actions: [] });
+      setIsComplete(false);
+      setCombo(0);
+      setHealth(100);
+      setShowScenario(true);
+    } else {
+      // Optionally: navigate to module/levels or show a final message
+      setIsComplete(false);
+    }
+  }, [scenarioIndex]);
 
-  // Detect touch device for DnD backend
-  const isTouchDevice =
+  // --- DnD Backend ---
+  const isTouchDevice = useMemo(() =>
     typeof window !== "undefined" &&
-    ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0));
-
-  // Memoize backend and options for DndProvider stability
-  const dndBackend = useMemo(
-    () => (isTouchDevice ? TouchBackend : HTML5Backend),
-    [isTouchDevice]
+    ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0)),
+    []
   );
-  const dndOptions = useMemo(
-    () =>
-      isTouchDevice
-        ? {
-            enableMouseEvents: true,
-            enableTouchEvents: true,
-            delayTouchStart: 0,
-            delayMouseStart: 0,
-            touchSlop: 10,
-            pressDelay: 100, // Add press delay for mobile drag
-          }
-        : undefined,
+  const dndBackend = useMemo(() => (isTouchDevice ? TouchBackend : HTML5Backend), [isTouchDevice]);
+  const dndOptions = useMemo(() =>
+    isTouchDevice ? {
+      enableMouseEvents: true,
+      enableTouchEvents: true,
+      delayTouchStart: 0,
+      delayMouseStart: 0,
+      touchSlop: 10,
+      pressDelay: 100,
+    } : undefined,
     [isTouchDevice]
   );
 
-  // Get moduleId from URL for navigation
-  const moduleId = (() => {
-    const match = window.location.pathname.match(/modules\/(\w+)/);
-    return match ? match[1] : '';
-  })();
+  // --- Derived ---
+  const availablePieces = useMemo(() => scenario.pieces.filter(
+    (piece) =>
+      !placedPieces.violations.some((p) => p.id === piece.id) &&
+      !placedPieces.actions.some((p) => p.id === piece.id)
+  ), [scenario, placedPieces]);
 
+  // --- Display Name ---
+  const displayName = user?.user_metadata?.full_name || user?.email || "Player";
+
+  // --- Layout: Force landscape ---
   if (!isHorizontal) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
@@ -343,9 +342,7 @@ export const JigsawBoard = () => {
     );
   }
 
-  // Get display name: prefer full_name from metadata, fallback to email, else "Player"
-  const displayName = user?.user_metadata?.full_name || user?.email || "Player";
-
+  // --- Main Render ---
   return (
     <DndProvider backend={dndBackend} options={dndOptions}>
       {/* Custom drag layer for better mobile feedback */}
@@ -357,15 +354,12 @@ export const JigsawBoard = () => {
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          // Remove overflow: hidden and position: fixed for mobile horizontal to allow drag events
-          ...(isMobile && isHorizontal
-            ? {
-                width: "100vw",
-                height: "100vh",
-                minHeight: "100vh",
-                zIndex: 1000,
-              }
-            : {}),
+          ...(isMobile && isHorizontal ? {
+            width: "100vw",
+            height: "100vh",
+            minHeight: "100vh",
+            zIndex: 1000,
+          } : {}),
         }}
       >
         <AnimatePresence>
@@ -798,9 +792,7 @@ export const JigsawBoard = () => {
               className={`fixed left-1/2 bottom-8 z-[9999] flex justify-center w-full pointer-events-none ${
                 isMobile && isHorizontal ? "mobile-feedback" : ""
               }`}
-              style={{
-                transform: "translateX(-50%)",
-              }}
+              style={{ transform: "translateX(-50%)" }}
             >
               <div
                 className={`flex items-center gap-4 px-6 py-4 rounded-3xl shadow-2xl border-2 max-w-xl w-full sm:w-auto
@@ -953,27 +945,7 @@ export const JigsawBoard = () => {
           {/* Victory Screen */}
           <VictoryPopup
             open={isComplete}
-            onClose={() => {
-              if (scenarioIndex < scenarios.length - 1) {
-                setScenarioIndex((prev) => prev + 1);
-                setPlacedPieces({ violations: [], actions: [] });
-                setScore(0);
-                setCombo(0);
-                setHealth(100);
-                setFeedback("");
-                setIsComplete(false);
-                setShowScenario(true);
-              } else {
-                setIsComplete(false);
-                setPlacedPieces({ violations: [], actions: [] });
-                setScore(0);
-                setCombo(0);
-                setHealth(100);
-                setFeedback("");
-                setShowScenario(true);
-                setScenarioIndex(0);
-              }
-            }}
+            onClose={handleVictoryClose}
             score={score}
             combo={combo}
             health={health}
@@ -986,9 +958,9 @@ export const JigsawBoard = () => {
   );
 };
 
-// Custom drag layer for mobile/desktop drag feedback
+// --- Custom Drag Layer (unchanged, but consider extracting for clarity) ---
 const CustomDragLayer = () => {
-  const { item, isDragging, clientOffset } = useDragLayer((monitor) => ({
+  const { item, isDragging, clientOffset } = useDragLayer((monitor: any) => ({
     item: monitor.getItem(),
     isDragging: monitor.isDragging(),
     clientOffset: monitor.getClientOffset(),

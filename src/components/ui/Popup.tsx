@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
@@ -67,31 +67,38 @@ interface VictoryPopupProps {
   moduleId?: string;
 }
 
-export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score, combo, health, showNext, showGoToModules, moduleId }) => {
+export const VictoryPopup: React.FC<VictoryPopupProps> = ({
+  open,
+  onClose,
+  score,
+  combo,
+  health,
+  showNext = false,
+  showGoToModules = true,
+  moduleId,
+}) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
 
   // Handler for Go to Levels
-  const handleGoToLevels = () => {
+  const handleGoToLevels = useCallback(() => {
     let id = moduleId;
     if (!id) {
-      // Try to extract from window.location if not passed as prop
       const match = window.location.pathname.match(/modules\/(\w+)/);
       id = match ? match[1] : '';
     }
-    console.log('moduleId:', id);
     if (id) {
       navigate(`/modules/${id}`);
     } else {
       navigate('/modules');
     }
-  };
+  }, [moduleId, navigate]);
 
   // Handler for Next
-  const handleNext = () => {
-    onClose(); // Just call onClose, parent will handle scenario change
-  };
+  const handleNext = useCallback(() => {
+    onClose(); // Parent handles scenario change
+  }, [onClose]);
 
   return (
     <Popup open={open} onClose={onClose}>
@@ -143,7 +150,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
         >
           Well Done!
         </motion.h2>
-        {/* 🧑‍🔬 Character + 🦜 Bird */}
+        {/* 🧑‍🔬 Character */}
         <motion.div
           className={`relative w-full flex justify-center items-center mb-3 py-5${isMobileHorizontal ? ' py-2 mb-1 justify-center' : ''}`}
           style={isMobileHorizontal ? { justifyContent: 'center' } : {}}
@@ -168,19 +175,25 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 1.0, type: 'spring', stiffness: 180, damping: 18 }}
         >
-          <button
-            className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-2 text-xs' : ''}`}
-            onClick={handleGoToLevels}
-          >
-            <Icon icon="mdi:format-list-bulleted" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
-            Back to Levels
-          </button>
+          {showGoToModules && (
+            <button
+              className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-2 text-xs' : ''}`}
+              onClick={handleGoToLevels}
+              aria-label="Back to Levels"
+              type="button"
+            >
+              <Icon icon="mdi:map-marker-path" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
+              Back to Levels
+            </button>
+          )}
           {showNext && (
             <button
               className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-3 text-xs' : ''}`}
               onClick={handleNext}
+              aria-label="Next"
+              type="button"
             >
-              <Icon icon="mdi:arrow-right-bold-circle" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
+              <Icon icon="mdi:arrow-right-bold" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
               Next
             </button>
           )}
