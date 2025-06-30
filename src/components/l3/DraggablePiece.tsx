@@ -47,6 +47,7 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
       style={{
         minHeight: mobile ? '58px' : '80px',
         height: mobile ? '58px' : undefined,
+        maxWidth: mobile ? '220px' : '260px', // Added max width for puzzle piece
         filter: isDragging ? 'brightness(0.8)' : 'brightness(1)',
         // JIGSAW PIECE SHAPE
         clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',

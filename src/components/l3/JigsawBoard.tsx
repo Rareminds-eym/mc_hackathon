@@ -653,7 +653,7 @@ export const JigsawBoard: React.FC = () => {
               {/* Violations Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
+                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
                     VIOLATIONS DETECTED
                   </h2>
                   <div
@@ -759,7 +759,7 @@ export const JigsawBoard: React.FC = () => {
               {/* Actions Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
+                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
                     DEPLOY COUNTERMEASURES
                   </h2>
                   <div
