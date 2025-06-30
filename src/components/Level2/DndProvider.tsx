@@ -32,7 +32,6 @@ const DndProvider: React.FC<DndProviderProps> = ({
   onDragOver
 }) => {
   const [activeItem, setActiveItem] = useState<Term | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const { isMobile } = useDeviceLayout();
 
   // Ultra-simple sensors for easy mobile drag and drop
@@ -78,7 +77,6 @@ const DndProvider: React.FC<DndProviderProps> = ({
     const draggedItem = active.data.current as Term;
 
     setActiveItem(draggedItem);
-    setIsDragging(true);
 
     // Provide haptic feedback on drag start
     triggerHapticFeedback('strong');
@@ -99,7 +97,6 @@ const DndProvider: React.FC<DndProviderProps> = ({
 
     // Reset state
     setActiveItem(null);
-    setIsDragging(false);
 
     // Call parent handler
     onDragEnd?.(event);
@@ -127,14 +124,7 @@ const DndProvider: React.FC<DndProviderProps> = ({
     >
       {children}
 
-      {/* Ultra-Simple Mobile Drag Indicator */}
-      {isDragging && isMobile && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-none">
-          <div className="bg-red-500 text-white px-6 py-3 rounded-full text-lg font-black shadow-2xl">
-            🎯 DRAGGING
-          </div>
-        </div>
-      )}
+
 
 
 
