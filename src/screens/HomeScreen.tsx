@@ -47,7 +47,7 @@ const HomeScreen: React.FC = () => {
       className={`min-h-screen w-screen relative bg-cover bg-center flex flex-col${
         layout.isMobile && layout.isHorizontal ? " px-2 py-2" : ""
       }`}
-      style={{ backgroundImage: `url('/backgrounds/Homepagebg.jpg')` }}
+      style={{ backgroundImage: `url('/backgrounds/Homepagebg.webp')` }}
     >
       {/* Player avatar top right with dropdown */}
       <div
@@ -58,7 +58,7 @@ const HomeScreen: React.FC = () => {
         <div className="relative">
           {/* Gamified profile icon - User profile icon */}
           <motion.div
-            className={`w-10 h-10 flex items-center justify-center rounded-full border-2 border-yellow-400 bg-gradient-to-br from-yellow-200 via-yellow-100 to-yellow-400 shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 ring-1 ring-yellow-300${
+            className={`w-10 h-10 flex items-center justify-center rounded-full border-2 border-yellow-400 bg-gradient-to-br from-yellow-200 via-yellow-100 to-yellow-400 shadow-lg cursor-pointer hover:scale-110 ring-1 ring-yellow-300${
               layout.isMobile && layout.isHorizontal ? " w-8 h-8" : ""
             }`}
             onClick={() => setProfileOpen((v) => !v)}
@@ -68,7 +68,7 @@ const HomeScreen: React.FC = () => {
             aria-label="Open profile menu"
             whileHover={{ scale: 1.15, rotate: 6 }}
             whileTap={{ scale: 0.95, rotate: -6 }}
-            initial={{ opacity: 0, y: -30 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
@@ -117,7 +117,7 @@ const HomeScreen: React.FC = () => {
                     // variant="secondary"
                     variant= "danger"
                     onClick={handleLogout}
-                    className="w-full mt-1 "
+                    className="w-full mt-1 !text-white"
                   >
                     Logout
                   </Button>
@@ -207,7 +207,7 @@ const HomeScreen: React.FC = () => {
             }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.7, type: "spring" }}
+            transition={{ duration: 0.0, delay: 0, type: "spring" }}
           >
             <img
               src="/characters/intern.png"

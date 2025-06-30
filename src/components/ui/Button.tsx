@@ -49,6 +49,7 @@ const Button: React.FC<ButtonProps> = ({
         padding: '0 6px',
         borderRadius: '6px',
         margin: '0 0 6px 0',
+        border: '2px solid #222', // reduced border size
       }
     : {};
 
