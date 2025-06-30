@@ -18,6 +18,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from 'react-router-dom';
+import Level3 from './screens/Level3/Index';
 import InstructionsPage from './screens/InstructionsPage';
 import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
