@@ -44,7 +44,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({ scenario, onClos
         {/* Header with icon and close */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <img src="/public/logos/bulb.png" alt="Mission" className={isMobileHorizontal ? 'w-7 h-7' : 'w-10 h-10'} />
+            <img src="/logos/bulb.png" alt="Mission" className={isMobileHorizontal ? 'w-7 h-7' : 'w-10 h-10'} />
             <span className={`game-font font-extrabold text-cyan-300 drop-shadow-lg ${isMobileHorizontal ? 'text-lg' : 'text-2xl'}`}>{scenario.title}</span>
           </div>
           <button
