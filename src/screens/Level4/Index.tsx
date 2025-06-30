@@ -1,7 +1,7 @@
-import Detective from '../../components/Level4/level4';
+import {GameBoard2D} from '../../components/Level4/GameBoard2D';
 
 const Level4 = () => {
-  return <Detective />;
+  return <GameBoard2D />;
 };
 
 export default Level4;

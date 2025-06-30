@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameState } from './types';
 import { cases } from './data/cases';
 import { Product2D } from './Product2D';
@@ -18,10 +19,13 @@ import {
 import CharacterRotator from './CharacterRotator';
 import Characterboybook from './Characterboybook';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import { FeedbackPopup } from './Popup';
 
 type GamePhase = 'login' | 'reportView' | 'step1' | 'step2' | 'step3' | 'feedback';
 
 export const GameBoard2D: React.FC = () => {
+  const navigate = useNavigate();
+
   const [gameState, setGameState] = useState<GameState>({
     currentCase: 0,
     answers: {
@@ -42,6 +46,7 @@ export const GameBoard2D: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   // Track which questions have been scored for each case
   const [scoredQuestions, setScoredQuestions] = useState<Record<number, Set<'violation' | 'rootCause' | 'impact'>>>({});
+  const [popupOpen, setPopupOpen] = useState(false);
 
   const currentCase = cases[gameState.currentCase];
 
@@ -140,6 +145,10 @@ export const GameBoard2D: React.FC = () => {
 
   const handleBack = () => {
     switch (currentPhase) {
+      case 'login':
+        // Dynamic module navigation based on current case (SPA routing)
+        navigate(`/modules/${gameState.currentCase + 1}`);
+        break;
       case 'reportView':
         setCurrentPhase('login');
         setCanContinue(true);
@@ -216,6 +225,10 @@ export const GameBoard2D: React.FC = () => {
   );// Phase 1: Login/Deviation Report
   const renderLogin = () => (
     <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-white">
+      {/* Case label top left on login page */}
+      <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-blue-700 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start">
+        <span className="text-gray-800 font-bold text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
+      </div>
       {/* Blurred, low-opacity background image */}
       <div
         className="absolute inset-0 bg-cover bg-center z-0"
@@ -237,15 +250,15 @@ export const GameBoard2D: React.FC = () => {
         <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-full h-full lg:gap-[2vw] lg:px-8 lg:pt-6 lg:pb-0">
           {/* Left: Character */}
           <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
-            <div className="w-full h-full flex items-center justify-center">
-              {/* Interactive CharacterRotator */}
+            {/* <div className="w-full h-full flex items-center justify-center">
+     
               <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
                 <CharacterRotator />
               </div>
-            </div>
+            </div> */}
           </div>
           {/* Right: Product Showcase */}
-          <div className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center bg-white/70 border-2 border-cyan-400 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]">
+          <div className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mr-2 ml-2 mx-auto items-center bg-white/70 border-2 border-cyan-400 relative w-full sm:w-[90%] md:w-[80%] lg:w-auto landscape:w-1/2 max-w-xl lg:max-w-4xl xl:max-w-5xl min-h-0 lg:min-h-[420px] xl:min-h-[520px]">
             <div className="w-full flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible">
               <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0">Product Under Investigation</h2>
               <div className="w-full h-full flex flex-col items-center justify-center lg:overflow-visible">
@@ -260,7 +273,7 @@ export const GameBoard2D: React.FC = () => {
           </div>
         </div>
         {/* Navigation - always visible in mobile landscape */}
-        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full px-2 md:w-[100%] gap-16 pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-[50%] px-2 md:w-[50%] gap-4 pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
           <button
             onClick={handleBack}
             className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm mb-2 sm:mb-0"
@@ -268,7 +281,8 @@ export const GameBoard2D: React.FC = () => {
             <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3" />
             <span>Back</span>
           </button>
-          <div className="flex-1 flex justify-center sm:justify-start w-full sm:w-auto">
+          {/* Show Start Investigation on all devices, align right on desktop, stack on mobile */}
+          <div className="flex w-full sm:w-auto justify-center md:justify-end">
             <button
               onClick={handleContinue}
               className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
@@ -304,7 +318,7 @@ export const GameBoard2D: React.FC = () => {
           {/* Left: Character */}
            <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
             <div className="w-full h-full flex items-center justify-center">
-              {/* Interactive CharacterRotator */}
+           
               <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
                 <CharacterRotator />
               </div>
@@ -312,8 +326,8 @@ export const GameBoard2D: React.FC = () => {
           </div>
           {/* Right: Deviation Report in Pad/Paper Format */}
           <div
-            className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center
-              bg-white/70 border-2 border-cyan-400 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]"
+            className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mr-2 ml-2 mx-auto items-center
+              bg-white/70 border-2 border-cyan-400 relative w-full sm:w-[90%] md:w-[80%] lg:w-auto landscape:w-1/2 max-w-xl lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]"
             style={{
               backgroundImage: `url('/exam-pad-bg.png')`,
               backgroundSize: 'cover',
@@ -328,19 +342,17 @@ export const GameBoard2D: React.FC = () => {
               <div className="w-8 h-2 bg-gray-400 rounded-full"></div>
             </div>
             {/* Paper styling */}
-            <div className="mt-[1vw] w-full h-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl overflow-auto max-h-[320px] lg:max-h-[420px] lg:scale-110 xl:scale-125 px-2 md:px-4 lg:px-0">
+            <div className="mt-[1vw] w-full h-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl lg:scale-110 xl:scale-125 px-2 md:px-4 lg:px-0">
               <div className="text-center mb-2 w-full">
                 <h2 className="text-xs md:text-sm lg:text-2xl xl:text-3xl font-bold text-red-600 mb-1">DEVIATION REPORT</h2>
                 <div className="w-full h-px bg-gray-300 mb-1"></div>
               </div>
               <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl">
-                <div className="grid grid-cols-2 gap-1">
-                  <div>
+                               <div>
                     <span className="font-bold">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
                   </div>
-                  <div>
-                    <span className="font-bold">Date:</span> {new Date().toLocaleDateString()}
-                  </div>
+                 <div>
+                  <span className="font-bold">Date:</span> {new Date().toLocaleDateString()}
                 </div>
                 <div>
                   <span className="font-bold">Title:</span> <span className="break-words text-[10px] md:text-xs">{currentCase.title}</span>
@@ -370,7 +382,7 @@ export const GameBoard2D: React.FC = () => {
           </div>
         </div>
         {/* Navigation */}
-        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full px-2 md:w-[100%] gap-[10%] pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-[50%] px-2 md:w-[50%] gap-[15%] pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
           <button
             onClick={handleBack}
             className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm mb-2 sm:mb-0"
@@ -378,7 +390,8 @@ export const GameBoard2D: React.FC = () => {
             <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3" />
             <span>Back</span>
           </button>
-          <div className="flex-1 flex justify-center sm:justify-start w-full sm:w-auto">
+          {/* Show Start Investigation on all devices, align right on desktop, stack on mobile */}
+          <div className="flex w-full sm:w-auto justify-center md:justify-end">
             <button
               onClick={handleContinue}
               className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
@@ -457,7 +470,7 @@ export const GameBoard2D: React.FC = () => {
             </div>
           </div>
           {/* Navigation */}
-          <div className="flex justify-start mt-[1vw] w-[100%] min-h-0 overflow-visible fixed bottom-0 left-0 z-50 bg-transparent p-2 ">
+          <div className="flex justify-between mt-[1vw] w-[50%] min-h-0 overflow-visible fixed bottom-0 left-0 z-50 bg-transparent p-2">
             <button
               onClick={handleBack}
               className="px-[1vw] py-[0.5vw] min-px-2 min-py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm"
@@ -501,6 +514,18 @@ export const GameBoard2D: React.FC = () => {
     const impactCorrect = currentCase.questions.impact.options[currentCase.questions.impact.correct];
     const impactUser = gameState.answers.impact !== null ? currentCase.questions.impact.options[gameState.answers.impact] : null;
     const impactIsCorrect = gameState.answers.impact === currentCase.questions.impact.correct;
+
+    // Only show Submit in feedback phase of case 2 if all answers are provided and all are correct
+    const allAnswersProvided =
+      gameState.answers.violation !== null &&
+      gameState.answers.rootCause !== null &&
+      gameState.answers.impact !== null;
+    const allAnswersCorrect =
+      gameState.answers.violation === currentCase.questions.violation.correct &&
+      gameState.answers.rootCause === currentCase.questions.rootCause.correct &&
+      gameState.answers.impact === currentCase.questions.impact.correct;
+
+    const allAnswersReviewed = Object.keys(scoredQuestions).length > 0 && Object.values(scoredQuestions).some(set => set.size === 3);
 
     return (
       <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm overflow-hidden"
@@ -610,6 +635,15 @@ export const GameBoard2D: React.FC = () => {
               <ChevronLeft className="w-[0.7vw] h-[0.7vw] min-w-3 min-h-3" />
               <span>Back</span>
             </button>
+            {/* Show Submit only in feedback phase for case2 (index 1), all answers provided, and all correct */}
+            {currentPhase === 'feedback' && gameState.currentCase === 1 && allAnswersProvided && allAnswersCorrect && (
+              <button
+                onClick={() => setPopupOpen(true)}
+                className="px-[2vw] py-[0.8vw] min-px-4 min-py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-xl hover:from-yellow-500 hover:to-yellow-600 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
+              >
+                <span>Submit</span>
+              </button>
+            )}
             {isAllCorrect && (
               <button
                 onClick={handleContinue}
@@ -620,6 +654,17 @@ export const GameBoard2D: React.FC = () => {
               </button>
             )}
           </div>
+          {/* Feedback Popup - only for case2 feedback phase */}
+          {currentPhase === 'feedback' && gameState.currentCase === 1 && (
+            <FeedbackPopup
+              open={popupOpen}
+              onClose={() => setPopupOpen(false)}
+              onNext={handleContinue}
+              onBackToLevels={() => window.location.assign('/modules')}
+              score={gameState.score}
+              time={formatTimer(timer)}
+            />
+          )}
         </div>
       </div>
     );
@@ -638,9 +683,11 @@ export const GameBoard2D: React.FC = () => {
   // Main render logic
   return (
     <div className="relative h-full w-full">
-      {/* Timer and Score always top left */}
+      {/* Case label and Timer/Score always top left */}
       {showTimer && (
         <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-blue-700 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start">
+          {/* Case label above timer */}
+          <span className="text-gray-800 font-bold text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
           <span>Time : {formatTimer(timer)}</span>
           <span className="text-green-700 font-bold mt-1">Score : {gameState.score}</span>
         </div>
