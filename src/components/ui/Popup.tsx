@@ -31,7 +31,9 @@ export const Popup: React.FC<PopupProps> = ({
         >
           <motion.div
             className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 max-w-md w-full overflow-visible ${
-              isMobileHorizontal ? "py-1 px-2 rounded-lg max-w-[90vw] w-[320px] min-h-[120px]" : "p-6"
+              isMobileHorizontal
+                ? "py-1 px-2 rounded-lg max-w-[90vw] w-[320px] min-h-[120px]"
+                : "p-6"
             }`}
             style={
               isMobileHorizontal
@@ -189,15 +191,15 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
       >
         {/* ⭐ Stars */}
         <motion.div
-          className={`relative flex items-center justify-center${
+          className={`relative flex items-center justify-center w-full ${
             isMobileHorizontal
               ? " w-[260px] h-8 mb-1 justify-center"
-              : "w-[600px] h-14 mb-2"
+              : " h-14 mb-2"
           }`}
           style={
             isMobileHorizontal
               ? { marginLeft: 0, justifyContent: "center" }
-              : {}
+              : { margin: "0 auto", justifyContent: "center" }
           }
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -228,7 +230,12 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                 className={`absolute text-yellow-400${
                   isMobileHorizontal ? " text-2xl" : " text-4xl"
                 }`}
-                style={{ left: `${x}px`, top: `${y}px` }}
+                style={{
+                  left: isMobileHorizontal
+                    ? `${x}px`
+                    : `calc(50% + ${x - 300}px)`,
+                  top: `${y}px`,
+                }}
                 initial={{ scale: 0, rotate: -90 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{
@@ -245,7 +252,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         </motion.div>
         {/* 🎉 Message */}
         <motion.h2
-          className={`text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-1${
+          className={`text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-1 mt-4${
             isMobileHorizontal ? " text-xl mb-0 w-full" : ""
           }`}
           style={
@@ -315,7 +322,10 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               className={`bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2$${
                 isMobileHorizontal ? " py-1 px-2 text-xs" : ""
               } border border-green-200/60`}
-              style={{ boxShadow: "0 2px 8px 0 rgba(34,197,94,0.10)", background: undefined }}
+              style={{
+                boxShadow: "0 2px 8px 0 rgba(34,197,94,0.10)",
+                background: undefined,
+              }}
               onClick={handleGoToLevels}
               aria-label="Back to Levels"
               type="button"
@@ -332,7 +342,10 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               className={`bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2$${
                 isMobileHorizontal ? " py-1 px-3 text-xs" : ""
               } border border-blue-200/60`}
-              style={{ boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)", background: undefined }}
+              style={{
+                boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
+                background: undefined,
+              }}
               onClick={handleNext}
               aria-label="Next"
               type="button"
