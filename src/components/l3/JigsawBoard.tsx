@@ -789,10 +789,10 @@ export const JigsawBoard: React.FC = () => {
           {/* Feedback Console */}
           {feedback && (
             <div
-              className={`fixed left-1/2 bottom-8 z-[9999] flex justify-center w-full pointer-events-none ${
+              className={`fixed bottom-5 right-5 z-[9999] flex justify-end w-auto pointer-events-none ${
                 isMobile && isHorizontal ? "mobile-feedback" : ""
               }`}
-              style={{ transform: "translateX(-50%)" }}
+              style={{}}
             >
               <div
                 className={`flex items-center gap-4 px-6 py-4 rounded-3xl shadow-2xl border-2 max-w-xl w-full sm:w-auto
