@@ -6,7 +6,7 @@ import type { Module } from '../types/module';
 
 const ModuleMapScreen: React.FC = () => {
   const [modules] = useState<Module[]>(initialModules); // Remove setModules since it's unused
-  const [currentModuleId, setCurrentModuleId] = useState(3); // Current available module
+  const [currentModuleId, setCurrentModuleId] = useState(1); // Current available module
   const { isHorizontal: isLandscape } = useDeviceLayout();
 
   const handleModuleSelect = (id: number) => {

@@ -22,7 +22,7 @@ import Level3 from './screens/Level3/Index';
 import Level4 from './screens/Level4/Index';
 import InstructionsPage from './screens/InstructionsPage';
 import { GameBoard2D } from './components/Level4/GameBoard2D';
-
+import BingoGame from './screens/BingoGame';
 // Route Error Component
 function RouteErrorBoundary() {
   const error = useRouteError();
@@ -78,6 +78,10 @@ const router = createBrowserRouter(
           path: '/modules/:moduleId/levels/3',
           element: <Level3 />,
           errorElement: <RouteErrorBoundary />
+        },
+        { path: '/modules/:moduleId/levels/1',
+          element: <BingoGame />, 
+          errorElement: <RouteErrorBoundary /> 
         },
         {
           path: '/modules/:moduleId/levels/4',
