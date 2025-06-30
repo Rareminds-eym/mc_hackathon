@@ -11,7 +11,7 @@ interface GameHeaderProps {
 
 const GameHeader: React.FC<GameHeaderProps> = ({ currentCase, totalCases, score, totalQuestions, onBack }) => {
   return (
-    <header className="game-header flex flex-col items-center justify-center py-1 text-center w-full">
+    <header className="game-header flex flex-col bg-white/60 items-center justify-center py-1 text-center w-full">
       {onBack && (
         <div className="w-full flex justify-start mb-2">
           <button

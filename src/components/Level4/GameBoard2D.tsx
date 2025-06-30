@@ -37,16 +37,17 @@ export const GameBoard2D: React.FC = () => {
 
   const [currentPhase, setCurrentPhase] = useState<GamePhase>('login');
   const [canContinue, setCanContinue] = useState(true); // Login phase always allows continue
-  const [timer, setTimer] = useState<number>(120);
+  const [timer, setTimer] = useState<number>(0); // Start from 0
   const [timerActive, setTimerActive] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // Track which questions have been scored for each case
+  const [scoredQuestions, setScoredQuestions] = useState<Record<number, Set<'violation' | 'rootCause' | 'impact'>>>({});
 
   const currentCase = cases[gameState.currentCase];
-  const { isDesktop } = useDeviceLayout();
 
   // Start timer when entering investigation phases
   useEffect(() => {
-    if (currentPhase === "reportView" && timer === 120 && !timerActive) {
+    if (["reportView", "step1", "step2", "step3"].includes(currentPhase) && !timerActive) {
       setTimerActive(true);
     }
     // Stop timer when leaving investigation phases
@@ -55,18 +56,22 @@ export const GameBoard2D: React.FC = () => {
     }
   }, [currentPhase]);
 
-  // Timer countdown effect
+  // Timer count up effect
   useEffect(() => {
-    if (timerActive && timer > 0) {
-      timerRef.current = setTimeout(() => setTimer(timer - 1), 1000);
-    } else if (timer === 0) {
-      setTimerActive(false);
-      // Optionally, handle timer end (e.g., auto-submit, show message, etc.)
+    if (timerActive) {
+      timerRef.current = setTimeout(() => setTimer(timer + 1), 1000);
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [timerActive, timer]);
+
+  // Reset timer only if game is fully restarted (login, first case, and score is 0)
+  useEffect(() => {
+    if (currentPhase === 'login' && gameState.currentCase === 0 && gameState.score === 0) {
+      setTimer(0);
+    }
+  }, [currentPhase, gameState.currentCase, gameState.score]);
 
   const handleAnswerSelect = (questionType: 'violation' | 'rootCause' | 'impact', answer: number) => {
     setGameState(prev => ({
@@ -159,19 +164,34 @@ export const GameBoard2D: React.FC = () => {
   };
 
   const calculateResults = () => {
-    const correctAnswers = [
-      gameState.answers.violation === currentCase.questions.violation.correct,
-      gameState.answers.rootCause === currentCase.questions.rootCause.correct,
-      gameState.answers.impact === currentCase.questions.impact.correct
+    const caseIdx = gameState.currentCase;
+    const currentScored = scoredQuestions[caseIdx] || new Set<'violation' | 'rootCause' | 'impact'>();
+    let newScore = 0;
+    let newQuestions = 0;
+    const newScored = new Set(currentScored);
+    // Prepare question list with correct types
+    const questionList: Array<['violation' | 'rootCause' | 'impact', number | null, number]> = [
+      ['violation', gameState.answers.violation, currentCase.questions.violation.correct],
+      ['rootCause', gameState.answers.rootCause, currentCase.questions.rootCause.correct],
+      ['impact', gameState.answers.impact, currentCase.questions.impact.correct],
     ];
-    
-    const newScore = correctAnswers.filter(Boolean).length;
+    questionList.forEach(([type, userAns, correctAns]) => {
+      if (userAns !== null && userAns === correctAns && !currentScored.has(type)) {
+        newScore += 5; // 5 points per correct answer
+        newQuestions++;
+        newScored.add(type);
+      } else if (userAns !== null && !currentScored.has(type)) {
+        newQuestions++;
+        newScored.add(type);
+      }
+    });
     setGameState(prev => ({
       ...prev,
       score: prev.score + newScore,
-      totalQuestions: prev.totalQuestions + 3,
+      totalQuestions: prev.totalQuestions + newQuestions,
       showFeedback: true
     }));
+    setScoredQuestions(prev => ({ ...prev, [caseIdx]: newScored }));
   };
 
   const getCorrectAnswers = () => {
@@ -214,18 +234,18 @@ export const GameBoard2D: React.FC = () => {
         </div>
 
         {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-        <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-full h-full lg:gap-[2vw] lg:px-8 lg:py-12">
+        <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-full h-full lg:gap-[2vw] lg:px-8 lg:pt-6 lg:pb-0">
           {/* Left: Character */}
           <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
             <div className="w-full h-full flex items-center justify-center">
               {/* Interactive CharacterRotator */}
-              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${isDesktop ? '' : 'w-full h-full flex items-center justify-center'}`}>
+              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
                 <CharacterRotator />
               </div>
             </div>
           </div>
           {/* Right: Product Showcase */}
-          <div className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center">
+          <div className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center bg-white/70 border-2 border-cyan-400 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]">
             <div className="w-full flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible">
               <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0">Product Under Investigation</h2>
               <div className="w-full h-full flex flex-col items-center justify-center lg:overflow-visible">
@@ -240,21 +260,30 @@ export const GameBoard2D: React.FC = () => {
           </div>
         </div>
         {/* Navigation - always visible in mobile landscape */}
-        <div className="flex justify-evenly w-full px-2 md:mt-[1vw] md:w-full overflow-x-auto landscape:fixed landscape:bottom-0 landscape:left-0 landscape:w-full landscape:py-2">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full px-2 md:w-[100%] gap-16 pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
           <button
-            onClick={handleContinue}
-            className="px-3 py-2 md:px-[2vw] md:py-[0.8vw] lg:px-8 lg:py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm lg:text-lg whitespace-nowrap"
+            onClick={handleBack}
+            className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm mb-2 sm:mb-0"
           >
-            <span>Continue Investigation</span>
-            <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4" />
+            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3" />
+            <span>Back</span>
           </button>
+          <div className="flex-1 flex justify-center sm:justify-start w-full sm:w-auto">
+            <button
+              onClick={handleContinue}
+              className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
+            >
+              <span>Start Investigation</span>
+              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
   // Phase 2: Report View
   const renderReportView = () => (
-    <div className="lg:fixed lg:inset-0 lg:h-screen lg:w-screen lg:z-40 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-[1vw] flex flex-col text-xs md:text-sm"
+    <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
       style={{
         backgroundImage: "url('/background.png')",
         backgroundSize: 'cover',
@@ -271,12 +300,12 @@ export const GameBoard2D: React.FC = () => {
           <p className="text-base text-gray-600  bg-white/60">Case Report Review</p>
         </div>
         {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-        <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-[100%] h-auto lg:gap-[2vw] lg:px-2 lg:py-6">
+        <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-[100%] h-auto lg:gap-[2vw] lg:px-2 lg:pt-6 lg:pb-">
           {/* Left: Character */}
            <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
             <div className="w-full h-full flex items-center justify-center">
               {/* Interactive CharacterRotator */}
-              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${isDesktop ? '' : 'w-full h-full flex items-center justify-center'}`}>
+              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
                 <CharacterRotator />
               </div>
             </div>
@@ -284,14 +313,14 @@ export const GameBoard2D: React.FC = () => {
           {/* Right: Deviation Report in Pad/Paper Format */}
           <div
             className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center
-              bg-white/70 border-4 border-yellow-700 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]"
+              bg-white/70 border-2 border-cyan-400 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]"
             style={{
               backgroundImage: `url('/exam-pad-bg.png')`,
               backgroundSize: 'cover',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
               minHeight: '200px',
-              boxShadow: '0 8px 32px 0 rgba(0,0,0,0.25)'
+              boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
             }}
           >
             {/* Exam pad ring/clip at the top */}
@@ -341,21 +370,23 @@ export const GameBoard2D: React.FC = () => {
           </div>
         </div>
         {/* Navigation */}
-        <div className="flex justify-evenly  w-full px-2 md:w-[100%]">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full px-2 md:w-[100%] gap-[10%] pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
           <button
             onClick={handleBack}
-            className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm"
+            className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm mb-2 sm:mb-0"
           >
             <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3" />
             <span>Back</span>
           </button>
-          <button
-            onClick={handleContinue}
-            className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
-          >
-            <span>Start Investigation</span>
-            <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] min-w-4 min-h-4" />
-          </button>
+          <div className="flex-1 flex justify-center sm:justify-start w-full sm:w-auto">
+            <button
+              onClick={handleContinue}
+              className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
+            >
+              <span>Start Investigation</span>
+              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -376,7 +407,7 @@ export const GameBoard2D: React.FC = () => {
     };
 
     const StepIcon = stepIcons[currentPhase as keyof typeof stepIcons];    return (
-      <div className="lg:fixed lg:inset-0 lg:h-screen lg:w-screen lg:z-40 p-[1vw] flex flex-col text-xs md:text-sm"
+      <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
        style={{
       backgroundImage: "url('/background.png')",
       backgroundSize: 'cover',
@@ -401,14 +432,14 @@ export const GameBoard2D: React.FC = () => {
             <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
             <div className="w-full h-full flex items-center justify-center">
               {/* Interactive CharacterRotator */}
-              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${isDesktop ? '' : 'w-full h-full flex items-center justify-center'}`}>
+              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
                 <CharacterRotator />
               </div>
             </div>
           </div>
             {/* Right: Question Panel */}
-            <div className="bg-white/70 rounded-2xl shadow-xl p-[1vw] flex-1 w-full landscape:w-1/2 h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[10px]  sm:text-xs col-span-1 lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto">
-              <div className="w-auto h-full text-xs md:text-sm landscape:text-[10px] landscape:leading-tight">
+            <div className="bg-white/70 rounded-2xl shadow-xl p-[1vw] flex-1 w-full landscape:w-1/2 h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs col-span-1 lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto">
+              <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] landscape:leading-tight">
                 <QuestionPanel
                   case={currentCase}
                   currentQuestion={
@@ -426,7 +457,7 @@ export const GameBoard2D: React.FC = () => {
             </div>
           </div>
           {/* Navigation */}
-          <div className="flex justify-evenly mt-[1vw] w-[100%] min-h-0 overflow-visible fixed bottom-0 left-0 z-50 bg-transparent p-2 ">
+          <div className="flex justify-start mt-[1vw] w-[100%] min-h-0 overflow-visible fixed bottom-0 left-0 z-50 bg-transparent p-2 ">
             <button
               onClick={handleBack}
               className="px-[1vw] py-[0.5vw] min-px-2 min-py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm"
@@ -472,7 +503,15 @@ export const GameBoard2D: React.FC = () => {
     const impactIsCorrect = gameState.answers.impact === currentCase.questions.impact.correct;
 
     return (
-      <div className="fixed inset-0 h-screen w-screen z-40 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-[1vw] flex flex-col text-xs md:text-sm overflow-hidden">
+      <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm overflow-hidden"
+        style={{
+          backgroundImage: "url('/background.png')",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          opacity: 1
+        }}
+      >
         <div className="w-full h-full flex-1 flex flex-col overflow-hidden">
           <GameHeader
             currentCase={gameState.currentCase + 1}
@@ -489,7 +528,7 @@ export const GameBoard2D: React.FC = () => {
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
-                "bg-white rounded-lg mb-4 shadow p-1 flex flex-col gap-0.5 items-stretch flex-1 min-w-0 min-h-0 w-full h-full text-[9px] md:text-xs lg:p-8 xl:p-12 lg:text-lg xl:text-xl overflow-y-auto lg:overflow-auto lg:max-h-[70vh]"
+                "bg-white/60 rounded-lg mb-4 shadow p-1 flex flex-col gap-0.5 items-stretch flex-1 min-w-0 min-h-0 w-full h-full text-[9px] md:text-xs lg:p-8 xl:p-12 lg:text-lg xl:text-xl overflow-y-auto lg:overflow-auto lg:max-h-[70vh]"
               }
               style={{ minHeight: 0 }}
             >
@@ -515,21 +554,21 @@ export const GameBoard2D: React.FC = () => {
                 <div className="mt-0.5">
                   <span className="font-bold text-[9px] text-gray-800 leading-tight lg:text-base xl:text-lg">Detailed Analysis</span>
                   <div className="flex flex-col gap-0.5 mt-0.5">
-                    <div className="flex flex-col bg-yellow-50 border-l-4 border-yellow-400 rounded p-0.5">
+                    <div className="flex flex-col bg-white/40 border-l-4 border-yellow-400 rounded p-0.5">
                       <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">🔍 GMP Violation Identification</span>
                       <div className="flex flex-row justify-between items-center w-full text-[8px]">
                         <span className="text-gray-800 lg:text-base xl:text-lg">Correct: {violationCorrect}</span>
                         <span className={violationIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {violationUser || '-'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col bg-yellow-50 border-l-4 border-yellow-400 rounded p-0.5">
+                    <div className="flex flex-col bg-white/40 border-l-4 border-yellow-400 rounded p-0.5">
                       <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">🎯 Root Cause Analysis</span>
                       <div className="flex flex-row justify-between items-center w-full text-[8px]">
                         <span className="text-gray-800 lg:text-base xl:text-lg">Correct: {rootCauseCorrect}</span>
                         <span className={rootCauseIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {rootCauseUser || '-'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col bg-yellow-50 border-l-4 border-yellow-400 rounded p-0.5">
+                    <div className="flex flex-col bg-white/40 border-l-4 border-yellow-400 rounded p-0.5">
                       <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">⚡ Impact Assessment</span>
                       <div className="flex flex-row justify-between items-center w-full text-[8px]">
                         <span className="text-gray-800 lg:text-base xl:text-lg">Correct: {impactCorrect}</span>
@@ -546,7 +585,7 @@ export const GameBoard2D: React.FC = () => {
                 {/* Next Case button - only show if not last case */}
                 {gameState.currentCase < cases.length - 1 }
                 {/* Summary message at the bottom */}
-                <div className="flex flex-col items-start justify-center bg-yellow-50 border-l-4 border-yellow-500 p-0.5 w-full rounded mt-1">
+                <div className="flex flex-col items-start justify-center bg-white/40 border-l-4 border-yellow-500 p-0.5 w-full rounded mt-1">
                   <div className="flex items-center min-h-[18px] py-0.5">
                     <span className="text-yellow-700 font-medium text-[8px] md:text-xs mr-1 leading-tight lg:text-base xl:text-lg">Needs Improvement - You must get all answers correct to continue</span>
                     <AlertTriangle className="w-3 h-3 min-w-2 min-h-2 text-yellow-500 mr-1" />
@@ -586,35 +625,24 @@ export const GameBoard2D: React.FC = () => {
     );
   };
 
-  // Always keep timer running except on initial login or when timer hits 0
-  useEffect(() => {
-    if (currentPhase !== "login" && timer > 0 && !timerActive) {
-      setTimerActive(true);
-    }
-    // Only stop timer if timer hits 0
-    if (timer === 0 && timerActive) {
-      setTimerActive(false);
-    }
-  }, [currentPhase, timer, timerActive]);
+  // Format timer as MM:SS
+  const formatTimer = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
-  // Only reset timer if game is fully restarted (e.g., after all cases are done)
-  useEffect(() => {
-    if (currentPhase === "login" && gameState.currentCase === 0 && gameState.score === 0) {
-      setTimer(120);
-      setTimerActive(false);
-    }
-  }, [currentPhase, gameState.currentCase, gameState.score]);
-
-  // Show timer in all investigation and feedback phases (not just when timerActive is true)
-  const showTimer = ["reportView", "step1", "step2", "step3", "feedback"].includes(currentPhase) && timer > 0 && !gameState.gameComplete;
+  // Show timer and score in all investigation and feedback phases (not just when timerActive is true)
+  const showTimer = ["reportView", "step1", "step2", "step3", "feedback"].includes(currentPhase) && !gameState.gameComplete;
 
   // Main render logic
   return (
     <div className="relative h-full w-full">
-      {/* Timer always top right */}
+      {/* Timer and Score always top left */}
       {showTimer && (
-        <div className="absolute top-4 right-4 bg-white/80 rounded-lg px-4 py-2 shadow text-lg font-bold text-blue-700 z-50">
-          Time Left: {timer}s
+        <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-blue-700 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start">
+          <span>Time : {formatTimer(timer)}</span>
+          <span className="text-green-700 font-bold mt-1">Score : {gameState.score}</span>
         </div>
       )}
       {/* Phase rendering */}

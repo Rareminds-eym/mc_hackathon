@@ -121,7 +121,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-y-auto max-h-[50vh] sm:max-h-[60vh]">
             {question.options.map((option, index) => {
               const isSelected = selectedAnswers[currentQuestion] === index;
               const optionLetter = String.fromCharCode(97 + index).toUpperCase();
