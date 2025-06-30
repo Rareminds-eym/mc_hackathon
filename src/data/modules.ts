@@ -1,9 +1,9 @@
 import type { Module } from '../types/module';
 
 export const modules: Module[] = [
-  { id: 1, status: 'completed', title: 'Introduction to GMP', progress: 100 },
-  { id: 2, status: 'completed', title: 'Personal Hygiene', progress: 90 },
-  { id: 3, status: 'available', title: 'Cleaning Validation' },
+  { id: 1, status: 'available', title: 'Introduction to GMP', progress: 0 },
+  { id: 2, status: 'locked', title: 'Personal Hygiene' },
+  { id: 3, status: 'locked', title: 'Cleaning Validation' },
   { id: 4, status: 'locked', title: 'Documentation' },
   { id: 5, status: 'locked', title: 'Equipment Maintenance' },
   { id: 6, status: 'locked', title: 'Quality Control' },
