@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
-import AvatarSelector from "../components/AvatarSelector";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDeviceLayout } from "../hooks/useOrientation";
 
 // Avatar options for modal
 const AVATAR_OPTIONS = [
@@ -25,6 +26,7 @@ const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); // Get user and logout
   const [profileOpen, setProfileOpen] = useState(false);
+  const layout = useDeviceLayout();
 
   // Avatar selection state, default to Intern 1, load from localStorage if available
   const [avatar, setAvatar] = useState<string>(() =>
@@ -68,7 +70,9 @@ const HomeScreen: React.FC = () => {
 
   return (
     <div
-      className="homepage-bg min-h-screen w-screen relative overflow-x-hidden overflow-y-auto bg-cover bg-center"
+      className={`min-h-screen w-screen relative bg-cover bg-center flex flex-col${
+        layout.isMobile && layout.isHorizontal ? " px-2 py-2" : ""
+      }`}
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.jpg')` }}
     >
       {/* Avatar Modal */}
@@ -116,7 +120,11 @@ const HomeScreen: React.FC = () => {
         </div>
       )}
       {/* Player avatar top right with dropdown */}
-      <div className="absolute top-6 right-10 z-30">
+      <div
+        className={`absolute top-4 right-4 z-30${
+          layout.isMobile && layout.isHorizontal ? " scale-90" : ""
+        }`}
+      >
         <div className="relative">
           <img
             src={avatar}
@@ -126,56 +134,127 @@ const HomeScreen: React.FC = () => {
             tabIndex={0}
             onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           />
-          {profileOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
-              <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
-                {user?.user_metadata?.full_name || user?.email || "Player"}
-              </span>
-              {/* Avatars button */}
-              <Button
-                size="sm"
-                className="w-full mb-3"
-                onClick={() => setShowAvatarModal(true)}
+          <AnimatePresence>
+            {profileOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.25, type: "spring" }}
+                className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
               >
-                Avatars
-              </Button>
-              <Button size="sm" variant="secondary" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          )}
+                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
+                  {user?.user_metadata?.full_name || user?.email || "Player"}
+                </span>
+                {/* Avatars button */}
+                <Button
+                  size="sm"
+                  className="w-full mb-3"
+                  onClick={() => setShowAvatarModal(true)}
+                >
+                  Avatars
+                </Button>
+                <Button size="sm" variant="secondary" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
       {/* Lab game sound */}
       <audio ref={audioRef} src="/lab-game-sound.mp3" loop />
-      <div className="absolute top-8 left-0 w-full flex justify-center z-20">
-        <div className="animate-title-glow">
-          <img
-            src="/logos/Gametitle.png"
-            alt="Game Title"
-            className="h-[150px] object-contain drop-shadow-[0_0_8px_black] drop-shadow-[0_2px_0_#222]"
-          />
-        </div>
-      </div>
-      <div className="flex flex-row justify-center items-center h-screen">
-        <div className="w-[340px]"></div>
-        <div className="flex flex-col items-center gap-5 z-20 pt-[100px] ml-[120px]">
-          <Button onClick={startGame}>Start Game</Button>
-          <Button onClick={continueGame}>Continue</Button>
-          <Button onClick={viewScores}>View Scores</Button>
-          <Button onClick={viewInstructions}>Instructions</Button>
-          <Button onClick={quitGame} variant="danger">
-            Quit Game
-          </Button>
-        </div>
-        <div className="w-20"></div>
-        <div className="flex items-end h-[500px] z-20">
-          <img
-            src="/characters/intern.png"
-            alt="Scientist Character"
-            className="h-[380px] mb-0"
-          />
-        </div>
+      {/* Title & Main content aligned */}
+      <div
+        className={`flex flex-col items-center justify-center flex-1 z-20${
+          layout.isMobile && layout.isHorizontal ? " mt-2" : " mt-8"
+        }`}
+      >
+        <motion.h1
+          className={`text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center ${
+            layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : "mb-10"
+          }`}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.1, type: "spring" }}
+        >
+          Good Manufacturing Quest
+        </motion.h1>
+        {/* items list */}
+        <motion.div
+          className={`relative flex flex-row justify-center items-center w-max max-w-3xl${layout.isMobile && layout.isHorizontal ? ' gap-2' : ''}`}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3, type: "spring" }}
+        >
+          <motion.ul
+            className={`flex flex-col items-center z-20 list-none p-0 m-0${layout.isMobile && layout.isHorizontal ? ' gap-1' : ' gap-3'}`}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.10,
+                },
+              },
+            }}
+          >
+            {[
+              { label: "Start Game", onClick: startGame },
+              { label: "Continue", onClick: continueGame },
+              { label: "View Scores", onClick: viewScores },
+              { label: "Instructions", onClick: viewInstructions },
+              {
+                label: "Quit Game",
+                onClick: quitGame,
+                variant: "danger" as const,
+              },
+            ].map((btn, idx) => (
+              <motion.li
+                key={btn.label}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.25, delay: 0.5 + idx * 0.07 }}
+                className={`w-full ${
+                  layout.isMobile && layout.isHorizontal ? " mb-1" : " mb-2"
+                }`}
+              >
+                <Button
+                  onClick={btn.onClick}
+                  {...(btn.variant ? { variant: btn.variant } : {})}
+                  className={
+                    layout.isMobile && layout.isHorizontal
+                      ? "px-0.5 py-0 !text-[14px] min-w-[60px] !h-9 !mb-2 rounded"
+                      : "px-3 py-2 text-base min-w-[120px] !h-12 rounded-lg"
+                  }
+                >
+                  {btn.label}
+                </Button>
+              </motion.li>
+            ))}
+          </motion.ul>
+          <motion.div
+            className={`absolute z-20 w-max right-0 bottom-0 translate-x-[100%]${
+              layout.isMobile && layout.isHorizontal
+                ? ""
+                : ""
+            }`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.0, delay: 0, type: "spring" }}
+          >
+            <img
+              src="/characters/intern.png"
+              alt="Scientist Character"
+              className={
+                layout.isMobile && layout.isHorizontal
+                  ? "h-[220px] mb-0"
+                  : "h-[380px] mb-0"
+              }
+            />
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
