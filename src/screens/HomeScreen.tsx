@@ -2,8 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
-
-import AvatarSelector from "../components/AvatarSelector";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDeviceLayout } from "../hooks/useOrientation";
 
 // Avatar options for modal
 const AVATAR_OPTIONS = [
@@ -27,7 +27,7 @@ import { useDeviceLayout } from "../hooks/useOrientation";
 const HomeScreen: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // Get user and logout
   const [profileOpen, setProfileOpen] = useState(false);
   const layout = useDeviceLayout();
 
