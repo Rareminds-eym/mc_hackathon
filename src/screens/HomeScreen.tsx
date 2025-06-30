@@ -2,8 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
-
-import AvatarSelector from "../components/AvatarSelector";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDeviceLayout } from "../hooks/useOrientation";
 
 // Avatar options for modal
 const AVATAR_OPTIONS = [
@@ -21,14 +21,10 @@ const AVATAR_OPTIONS = [
   },
 ];
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useDeviceLayout } from "../hooks/useOrientation";
-
-
 const HomeScreen: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // Get user and logout
   const [profileOpen, setProfileOpen] = useState(false);
   const layout = useDeviceLayout();
 
@@ -130,7 +126,6 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <div className="relative">
-
           <img
             src={avatar}
             alt="Player Avatar"
@@ -139,90 +134,29 @@ const HomeScreen: React.FC = () => {
             tabIndex={0}
             onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           />
-          {profileOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
-              <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
-                {user?.user_metadata?.full_name || user?.email || "Player"}
-              </span>
-              {/* Avatars button */}
-              <Button
-                size="sm"
-                className="w-full mb-3"
-                onClick={() => setShowAvatarModal(true)}
-              >
-                Avatars
-              </Button>
-              <Button size="sm" variant="secondary" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          )}
-          {/* Gamified profile icon - User profile icon */}
-          <motion.div
-            className={`w-10 h-10 flex items-center justify-center rounded-full border-2 border-yellow-400 bg-gradient-to-br from-yellow-200 via-yellow-100 to-yellow-400 shadow-lg cursor-pointer hover:scale-110 ring-1 ring-yellow-300${
-              layout.isMobile && layout.isHorizontal ? " w-8 h-8" : ""
-            }`}
-            onClick={() => setProfileOpen((v) => !v)}
-            tabIndex={0}
-            onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
-            role="button"
-            aria-label="Open profile menu"
-            whileHover={{ scale: 1.15, rotate: 6 }}
-            whileTap={{ scale: 0.95, rotate: -6 }}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          >
-            {/* User profile icon */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              className={`w-6 h-6 text-yellow-500 drop-shadow${
-                layout.isMobile && layout.isHorizontal ? " w-5 h-5" : ""
-              }`}
-            >
-              <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" />
-            </svg>
-          </motion.div>
           <AnimatePresence>
             {profileOpen && (
               <motion.div
-                key="profile-dropdown"
-                className={`absolute right-0 mt-2 w-52 bg-gradient-to-br from-yellow-100 via-yellow-50 to-yellow-200 border-2 border-yellow-300 rounded-2xl shadow-2xl py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md ring-2 ring-yellow-200${
-                  layout.isMobile && layout.isHorizontal
-                    ? " w-40 py-2 px-2 text-sm"
-                    : ""
-                }`}
                 initial={{ opacity: 0, y: -20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 transition={{ duration: 0.25, type: "spring" }}
+                className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
               >
-                <div className="flex flex-col items-center w-full">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="#facc15"
-                      viewBox="0 0 24 24"
-                      className="w-7 h-7 drop-shadow-lg"
-                    >
-                      <path d="M12 2.25l3.09 6.26 6.91 1-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.38l-5-4.87 6.91-1L12 2.25z" />
-                    </svg>
-                    <span className="font-bold text-lg text-yellow-700 tracking-wide text-center w-full">
-                      {user?.user_metadata?.full_name || user?.email || "Player"}
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    // variant="secondary"
-                    variant= "danger"
-                    onClick={handleLogout}
-                    className="w-full mt-1 !text-white"
-                  >
-                    Logout
-                  </Button>
-                </div>
+                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
+                  {user?.user_metadata?.full_name || user?.email || "Player"}
+                </span>
+                {/* Avatars button */}
+                <Button
+                  size="sm"
+                  className="w-full mb-3"
+                  onClick={() => setShowAvatarModal(true)}
+                >
+                  Avatars
+                </Button>
+                <Button size="sm" variant="secondary" onClick={handleLogout}>
+                  Logout
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>
