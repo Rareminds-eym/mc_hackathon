@@ -60,8 +60,8 @@ export const Product2D: React.FC<Product2DProps> = ({
           <h3 className="text-xs font-semibold text-gray-800">{productName}</h3>
           <p className="text-[9px] text-gray-600">Batch: {batchNumber}</p>
           <div className="mt-1">
-            <span className="inline-flex items-center px-1 py-0.5 rounded-full text-[8px] font-medium bg-red-100 text-red-800 animate-pulse whitespace-nowrap">
-              <AlertTriangle className="w-3 h-3 mr-1" />Deviation Detected
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs md:text-sm lg:text-base font-medium bg-red-100 text-red-800 animate-pulse whitespace-nowrap">
+              <AlertTriangle className="w-4 h-4 mr-1" />Deviation Detected
             </span>
           </div>
         </div>
