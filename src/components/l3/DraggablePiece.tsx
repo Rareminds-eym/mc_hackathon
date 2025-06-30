@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDrag } from 'react-dnd';
+import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Sparkles, Zap, Target } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 
@@ -15,7 +16,7 @@ interface DraggablePieceProps {
 }
 
 export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
-  const [{ isDragging }, drag] = useDrag({
+  const [{ isDragging }, drag, preview] = useDrag({
     type: 'puzzle-piece',
     item: piece,
     collect: (monitor) => ({
@@ -23,12 +24,14 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
     }),
   });
 
-  // Use a consistent Arsenal color for all pieces, including hover
+  // Always suppress the default drag preview so only CustomDragLayer is visible
+  useEffect(() => {
+    preview(getEmptyImage(), { captureDraggingState: true });
+  }, [preview]);
+
   const arsenalGradient = 'from-blue-500 via-cyan-500 to-teal-500';
   const arsenalBorder = 'border-cyan-400';
-
-  // Use device layout hook for responsive behavior
-  const { isMobile, isHorizontal } = useDeviceLayout();
+  const { isMobile: mobile } = useDeviceLayout();
   // console.log('Device Layout:', { isMobile, isHorizontal });
   return (
     <div
@@ -39,11 +42,11 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
         shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl 
         border-2 ${arsenalBorder} transform hover:rotate-1 game-font overflow-hidden
         ${isDragging ? 'opacity-50 scale-95 rotate-6' : 'opacity-100'}
-        ${isMobile && isHorizontal ? ' arsenal-piece-mobile-horizontal' : ''}
+        ${mobile ? ' arsenal-piece-mobile-horizontal' : ''}
       `}
       style={{
-        minHeight: isMobile && isHorizontal ? '58px' : '80px',
-        height: isMobile && isHorizontal ? '58px' : undefined,
+        minHeight: mobile ? '58px' : '80px',
+        height: mobile ? '58px' : undefined,
         filter: isDragging ? 'brightness(0.8)' : 'brightness(1)',
         // JIGSAW PIECE SHAPE
         clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',

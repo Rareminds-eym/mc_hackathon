@@ -647,11 +647,11 @@ export const JigsawBoard: React.FC = () => {
             </div>
           </header>
 
-          <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-auto">
+          <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-hidden">
             {/* Mission Zones with Arsenal in the middle */}
-            <div className="flex flex-row gap-2 flex-[2_2_0%] min-h-0 h-full justify-stretch items-stretch min-w-[400px] w-full">
+            <div className="flex flex-row gap-4 flex-1 min-h-0 h-full justify-center items-stretch w-full max-w-6xl mx-auto">
               {/* Violations Container */}
-              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
+              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
                   <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
                     VIOLATIONS DETECTED
@@ -757,7 +757,7 @@ export const JigsawBoard: React.FC = () => {
               </div>
 
               {/* Actions Container */}
-              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[120px] max-w-[50vw]">
+              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
                   <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1 whitespace-nowrap">
                     DEPLOY COUNTERMEASURES
@@ -966,6 +966,8 @@ const CustomDragLayer = () => {
     clientOffset: monitor.getClientOffset(),
   }));
 
+  const PREVIEW_WIDTH = 128; // w-32 in Tailwind (8rem)
+  const PREVIEW_HEIGHT = 60;
   const offset =
     clientOffset ||
     (typeof window !== "undefined"
@@ -975,11 +977,12 @@ const CustomDragLayer = () => {
 
   const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
   const categoryBorder = "border-cyan-400";
-  const transform = `translate(${offset.x}px, ${offset.y}px)`;
+  // Center the preview under the finger/cursor
+  const transform = `translate(${offset.x - PREVIEW_WIDTH / 2}px, ${offset.y - PREVIEW_HEIGHT / 2}px)`;
 
   return (
     <div
-      className={`pointer-events-none fixed z-50 left-0 top-0 w-32 opacity-90 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white p-4 rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
+      className={`pointer-events-none fixed z-[9999] left-0 top-0 w-32 h-32 opacity-95 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white p-4 rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
       style={{
         transform,
         clipPath:
@@ -988,7 +991,7 @@ const CustomDragLayer = () => {
         pointerEvents: "none",
       }}
     >
-      <div className="relative z-10">{item.text}</div>
+      <div className="relative z-10 text-lg flex items-center justify-center h-full w-full">{item.text}</div>
     </div>
   );
 };
