@@ -15,9 +15,10 @@ import './index.css';
 interface GameInterfaceProps {
   gameMode: GameMode;
   onBack: () => void;
+  onNextLevel?: () => void;
 }
 
-const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, onBack }) => {
+const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, onBack, onNextLevel }) => {
   const { isMobile } = useDeviceLayout();
   const [terms, setTerms] = useState<Term[]>(() =>
     gameMode.terms.map(term => ({ ...term, currentCategory: undefined }))
@@ -179,9 +180,12 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, onBack }) => {
   };
 
   const handleNextLevel = () => {
-    // For now, just go back to home page since we only have one level
-    // In the future, this could navigate to the next game mode
-    onBack();
+    // Navigate to next level if handler is provided, otherwise go back
+    if (onNextLevel) {
+      onNextLevel();
+    } else {
+      onBack();
+    }
   };
 
   const getTermsInCategory = (categoryId: string) => {

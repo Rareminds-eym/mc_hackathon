@@ -82,11 +82,27 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
               {/* EXIT Button - Mobile */}
               <button
                 onClick={() => onExit ? onExit() : navigate('/modules/1')}
-                className="absolute top-0 left-0 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md flex items-center space-x-1 font-bold shadow-md transition-all duration-200 text-xs z-10"
+                className="absolute top-0 left-0 bg-red-600 hover:bg-red-700 text-white px-3 py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-10 hover:shadow-xl"
+                style={{
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                }}
               >
-                <ArrowLeft className="w-3 h-3" />
+                <ArrowLeft className="w-4 h-4" />
                 <span>EXIT</span>
               </button>
+
+              {/* Compact Game Stats HUD - Top Right for Mobile */}
+              <div className="absolute top-0 right-0 flex space-x-2 z-10">
+                <div className="pixel-border bg-green-600 px-2 py-1">
+                  <div className="text-green-100 text-xs font-bold">LVL</div>
+                  <div className="text-white text-sm font-black">02</div>
+                </div>
+                <div className="pixel-border bg-blue-600 px-2 py-1">
+                  <div className="text-blue-100 text-xs font-bold">SCORE</div>
+                  <div className="text-white text-sm font-black">{gameStats.highScore.toString().padStart(4, '0')}</div>
+                </div>
+              </div>
+
               {/* Compact Game Logo */}
               <div className="inline-block relative mb-3">
                 <div className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 p-2 relative">
@@ -106,18 +122,6 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
                       <Gamepad2 className="w-4 h-4 text-orange-800" />
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Compact Game Stats HUD - Updated with stored scores */}
-              <div className="flex justify-center space-x-2 mb-3">
-                <div className="pixel-border bg-green-600 px-2 py-1">
-                  <div className="text-green-100 text-xs font-bold">LVL</div>
-                  <div className="text-white text-sm font-black">02</div>
-                </div>
-                <div className="pixel-border bg-blue-600 px-2 py-1">
-                  <div className="text-blue-100 text-xs font-bold">SCORE</div>
-                  <div className="text-white text-sm font-black">{gameStats.highScore.toString().padStart(4, '0')}</div>
                 </div>
               </div>
             </div>
