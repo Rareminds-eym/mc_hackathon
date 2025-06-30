@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import { useNavigate } from 'react-router-dom';
 
 interface PopupProps {
   open: boolean;
@@ -61,11 +62,36 @@ interface VictoryPopupProps {
   score: number;
   combo: number;
   health: number;
+  showNext?: boolean;
+  showGoToModules?: boolean;
+  moduleId?: string;
 }
 
-export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score }) => {
+export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score, combo, health, showNext, showGoToModules, moduleId }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
+  const navigate = useNavigate();
+
+  // Handler for Go to Levels
+  const handleGoToLevels = () => {
+    let id = moduleId;
+    if (!id) {
+      // Try to extract from window.location if not passed as prop
+      const match = window.location.pathname.match(/modules\/(\w+)/);
+      id = match ? match[1] : '';
+    }
+    console.log('moduleId:', id);
+    if (id) {
+      navigate(`/modules/${id}`);
+    } else {
+      navigate('/modules');
+    }
+  };
+
+  // Handler for Next
+  const handleNext = () => {
+    onClose(); // Just call onClose, parent will handle scenario change
+  };
 
   return (
     <Popup open={open} onClose={onClose}>
@@ -144,25 +170,20 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({ open, onClose, score
         >
           <button
             className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-2 text-xs' : ''}`}
-            onClick={() => alert('Retry Level')}
+            onClick={handleGoToLevels}
           >
-            <Icon icon="mdi:restart" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
-            Retry
+            <Icon icon="mdi:format-list-bulleted" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
+            Back to Levels
           </button>
-          <button
-            className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-3 text-xs' : ''}`}
-            onClick={onClose}
-          >
-            <Icon icon="mdi:arrow-right-bold-circle" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
-            Next
-          </button>
-          <button
-            className={`bg-lime-500 hover:bg-lime-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-2 text-xs' : ''}`}
-            onClick={() => alert('Open Map')}
-          >
-            <Icon icon="mdi:map-marker-radius" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
-            Map
-          </button>
+          {showNext && (
+            <button
+              className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2${isMobileHorizontal ? ' py-1 px-3 text-xs' : ''}`}
+              onClick={handleNext}
+            >
+              <Icon icon="mdi:arrow-right-bold-circle" className={`w-6 h-6${isMobileHorizontal ? ' w-4 h-4' : ''}`} />
+              Next
+            </button>
+          )}
         </motion.div>
       </motion.div>
     </Popup>

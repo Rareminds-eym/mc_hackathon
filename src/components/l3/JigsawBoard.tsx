@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { DndProvider, useDragLayer } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { TouchBackend } from "react-dnd-touch-backend";
@@ -19,8 +19,8 @@ import {
 import { VictoryPopup } from "../ui/Popup";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../contexts/AuthContext';
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface PuzzlePiece {
   id: string;
@@ -47,7 +47,12 @@ const scenarios: Scenario[] = [
         category: "violation",
         isCorrect: true,
       },
-      { id: "v2", text: "Documentation", category: "violation", isCorrect: true },
+      {
+        id: "v2",
+        text: "Documentation",
+        category: "violation",
+        isCorrect: true,
+      },
       {
         id: "v3",
         text: "Quality Control",
@@ -187,7 +192,8 @@ const scenarios: Scenario[] = [
 ];
 
 export const JigsawBoard = () => {
-  const scenario = scenarios[0];
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const scenario = scenarios[scenarioIndex];
   const correctViolations = scenario.pieces.filter(
     (p) => p.category === "violation" && p.isCorrect
   );
@@ -212,6 +218,16 @@ export const JigsawBoard = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const { user } = useAuth();
+
+  // Ref for arsenal scroll container
+  const arsenalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll arsenal to top when scenario changes
+    if (arsenalRef.current) {
+      arsenalRef.current.scrollTop = 0;
+    }
+  }, [scenarioIndex]);
 
   useEffect(() => {
     // Check if all correct pieces are placed
@@ -286,20 +302,30 @@ export const JigsawBoard = () => {
     ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0));
 
   // Memoize backend and options for DndProvider stability
-  const dndBackend = useMemo(() => (isTouchDevice ? TouchBackend : HTML5Backend), [isTouchDevice]);
-  const dndOptions = useMemo(() =>
-    isTouchDevice
-      ? {
-          enableMouseEvents: true,
-          enableTouchEvents: true,
-          delayTouchStart: 0,
-          delayMouseStart: 0,
-          touchSlop: 10,
-          pressDelay: 100, // Add press delay for mobile drag
-        }
-      : undefined,
+  const dndBackend = useMemo(
+    () => (isTouchDevice ? TouchBackend : HTML5Backend),
     [isTouchDevice]
   );
+  const dndOptions = useMemo(
+    () =>
+      isTouchDevice
+        ? {
+            enableMouseEvents: true,
+            enableTouchEvents: true,
+            delayTouchStart: 0,
+            delayMouseStart: 0,
+            touchSlop: 10,
+            pressDelay: 100, // Add press delay for mobile drag
+          }
+        : undefined,
+    [isTouchDevice]
+  );
+
+  // Get moduleId from URL for navigation
+  const moduleId = (() => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : '';
+  })();
 
   if (!isHorizontal) {
     return (
@@ -334,9 +360,9 @@ export const JigsawBoard = () => {
           // Remove overflow: hidden and position: fixed for mobile horizontal to allow drag events
           ...(isMobile && isHorizontal
             ? {
-                width: '100vw',
-                height: '100vh',
-                minHeight: '100vh',
+                width: "100vw",
+                height: "100vh",
+                minHeight: "100vh",
                 zIndex: 1000,
               }
             : {}),
@@ -349,8 +375,8 @@ export const JigsawBoard = () => {
               initial={{ opacity: 0, scale: 1, y: 0 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: 'easeInOut' }}
-              style={{ position: 'absolute', inset: 0, zIndex: 2000 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              style={{ position: "absolute", inset: 0, zIndex: 2000 }}
             >
               <ScenarioDialog
                 scenario={scenario}
@@ -422,55 +448,145 @@ export const JigsawBoard = () => {
                     onMouseDown={() => setIsMenuOpen(false)}
                   />
                   <div
-                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto w-64${isMobile && isHorizontal ? ' compact-dropdown-mobile-horizontal' : ''}`}
-                    style={isMobile && isHorizontal ? {
-                      minWidth: '10rem',
-                      maxWidth: '13rem',
-                      height: 'min-content',
-                      maxHeight: '70vh',
-                      padding: '0.5rem 0.5rem',
-                    } : {}}
+                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto w-64${
+                      isMobile && isHorizontal
+                        ? " compact-dropdown-mobile-horizontal"
+                        : ""
+                    }`}
+                    style={
+                      isMobile && isHorizontal
+                        ? {
+                            minWidth: "10rem",
+                            maxWidth: "13rem",
+                            height: "min-content",
+                            maxHeight: "70vh",
+                            padding: "0.5rem 0.5rem",
+                          }
+                        : {}
+                    }
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     {/* Menu Header */}
-                    <div className={`border-b border-cyan-500/30${isMobile && isHorizontal ? ' px-2 py-1' : ' px-4 py-3'}`}>
-                      <h3 className={`text-sm font-bold text-cyan-300 flex items-center gap-2${isMobile && isHorizontal ? ' text-xs' : ''}`}>
-                        <User className={`w-4 h-4${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
+                    <div
+                      className={`border-b border-cyan-500/30${
+                        isMobile && isHorizontal ? " px-2 py-1" : " px-4 py-3"
+                      }`}
+                    >
+                      <h3
+                        className={`text-sm font-bold text-cyan-300 flex items-center gap-2${
+                          isMobile && isHorizontal ? " text-xs" : ""
+                        }`}
+                      >
+                        <User
+                          className={`w-4 h-4${
+                            isMobile && isHorizontal ? " w-3 h-3" : ""
+                          }`}
+                        />
                         AGENT STATUS
                       </h3>
                     </div>
 
                     {/* Agent Info */}
-                    <div className={`space-y-2${isMobile && isHorizontal ? ' p-2' : ' p-4 space-y-3'}`}> 
+                    <div
+                      className={`space-y-2${
+                        isMobile && isHorizontal ? " p-2" : " p-4 space-y-3"
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow${isMobile && isHorizontal ? ' w-6 h-6 text-base' : ' w-8 h-8 text-lg'}`}> 
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border border-yellow-300 shadow${
+                              isMobile && isHorizontal
+                                ? " w-6 h-6 text-base"
+                                : " w-8 h-8 text-lg"
+                            }`}
+                          >
                             <span className="font-bold text-black">🕵️‍♂️</span>
                           </span>
                           <div>
-                            <div className={`text-cyan-200 font-bold${isMobile && isHorizontal ? ' text-xs' : ' text-sm'}`}>{displayName}</div>
-                            <div className={`text-xs text-cyan-400${isMobile && isHorizontal ? ' leading-tight' : ''}`}>Level 3 Operative</div>
+                            <div
+                              className={`text-cyan-200 font-bold${
+                                isMobile && isHorizontal
+                                  ? " text-xs"
+                                  : " text-sm"
+                              }`}
+                            >
+                              {displayName}
+                            </div>
+                            <div
+                              className={`text-xs text-cyan-400${
+                                isMobile && isHorizontal ? " leading-tight" : ""
+                              }`}
+                            >
+                              Level 3 Operative
+                            </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Stats Grid */}
-                      <div className={`grid grid-cols-2 gap-2${isMobile && isHorizontal ? '' : ' gap-3'}`}> 
-                        <div className={`bg-black/30 rounded-lg border border-green-400/50${isMobile && isHorizontal ? ' p-2' : ' p-3'}`}>
+                      <div
+                        className={`grid grid-cols-2 gap-2${
+                          isMobile && isHorizontal ? "" : " gap-3"
+                        }`}
+                      >
+                        <div
+                          className={`bg-black/30 rounded-lg border border-green-400/50${
+                            isMobile && isHorizontal ? " p-2" : " p-3"
+                          }`}
+                        >
                           <div className="flex items-center gap-2 mb-1">
-                            <Trophy className={`w-4 h-4 text-green-400${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
-                            <span className="text-xs font-bold text-green-300">SCORE</span>
+                            <Trophy
+                              className={`w-4 h-4 text-green-400${
+                                isMobile && isHorizontal ? " w-3 h-3" : ""
+                              }`}
+                            />
+                            <span className="text-xs font-bold text-green-300">
+                              SCORE
+                            </span>
                           </div>
-                          <div className={`font-bold text-green-200${isMobile && isHorizontal ? ' text-base' : ' text-lg'}`}>{score}</div>
-                          <div className="text-xs text-green-400">XP Points</div>
+                          <div
+                            className={`font-bold text-green-200${
+                              isMobile && isHorizontal
+                                ? " text-base"
+                                : " text-lg"
+                            }`}
+                          >
+                            {score}
+                          </div>
+                          <div className="text-xs text-green-400">
+                            XP Points
+                          </div>
                         </div>
-                        <div className={`bg-black/30 rounded-lg border border-red-400/50${isMobile && isHorizontal ? ' p-2' : ' p-3'}`}>
+                        <div
+                          className={`bg-black/30 rounded-lg border border-red-400/50${
+                            isMobile && isHorizontal ? " p-2" : " p-3"
+                          }`}
+                        >
                           <div className="flex items-center gap-2 mb-1">
-                            <Heart className={`w-4 h-4 text-red-400${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
-                            <span className="text-xs font-bold text-red-300">HEALTH</span>
+                            <Heart
+                              className={`w-4 h-4 text-red-400${
+                                isMobile && isHorizontal ? " w-3 h-3" : ""
+                              }`}
+                            />
+                            <span className="text-xs font-bold text-red-300">
+                              HEALTH
+                            </span>
                           </div>
-                          <div className={`font-bold text-red-200${isMobile && isHorizontal ? ' text-base' : ' text-lg'}`}>{health}%</div>
-                          <div className={`w-full${isMobile && isHorizontal ? ' h-1' : ' h-1.5'} bg-gray-700 rounded-full overflow-hidden mt-1`}>
+                          <div
+                            className={`font-bold text-red-200${
+                              isMobile && isHorizontal
+                                ? " text-base"
+                                : " text-lg"
+                            }`}
+                          >
+                            {health}%
+                          </div>
+                          <div
+                            className={`w-full${
+                              isMobile && isHorizontal ? " h-1" : " h-1.5"
+                            } bg-gray-700 rounded-full overflow-hidden mt-1`}
+                          >
                             <div
                               className="h-full bg-gradient-to-r from-red-500 to-green-400 transition-all duration-300"
                               style={{ width: `${health}%` }}
@@ -481,13 +597,33 @@ export const JigsawBoard = () => {
 
                       {/* Combo Counter */}
                       {combo > 0 && (
-                        <div className={`bg-black/30 rounded-lg border border-yellow-400/50${isMobile && isHorizontal ? ' p-2' : ' p-3'}`}>
+                        <div
+                          className={`bg-black/30 rounded-lg border border-yellow-400/50${
+                            isMobile && isHorizontal ? " p-2" : " p-3"
+                          }`}
+                        >
                           <div className="flex items-center gap-2 mb-1">
-                            <Zap className={`w-4 h-4 text-yellow-400${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
-                            <span className="text-xs font-bold text-yellow-300">COMBO</span>
+                            <Zap
+                              className={`w-4 h-4 text-yellow-400${
+                                isMobile && isHorizontal ? " w-3 h-3" : ""
+                              }`}
+                            />
+                            <span className="text-xs font-bold text-yellow-300">
+                              COMBO
+                            </span>
                           </div>
-                          <div className={`font-bold text-yellow-200${isMobile && isHorizontal ? ' text-base' : ' text-lg'}`}>{combo}x</div>
-                          <div className="text-xs text-yellow-400">Streak Multiplier</div>
+                          <div
+                            className={`font-bold text-yellow-200${
+                              isMobile && isHorizontal
+                                ? " text-base"
+                                : " text-lg"
+                            }`}
+                          >
+                            {combo}x
+                          </div>
+                          <div className="text-xs text-yellow-400">
+                            Streak Multiplier
+                          </div>
                         </div>
                       )}
 
@@ -497,9 +633,17 @@ export const JigsawBoard = () => {
                           setShowScenario(true);
                           setIsMenuOpen(false);
                         }}
-                        className={`w-full rounded-lg font-bold flex items-center justify-center gap-2 transition-all border border-cyan-300/50 shadow bg-gradient-to-r from-cyan-500 to-blue-500${isMobile && isHorizontal ? ' px-2 py-2 text-xs' : ' px-4 py-3'}`}
+                        className={`w-full rounded-lg font-bold flex items-center justify-center gap-2 transition-all border border-cyan-300/50 shadow bg-gradient-to-r from-cyan-500 to-blue-500${
+                          isMobile && isHorizontal
+                            ? " px-2 py-2 text-xs"
+                            : " px-4 py-3"
+                        }`}
                       >
-                        <FileText className={`w-4 h-4${isMobile && isHorizontal ? ' w-3 h-3' : ''}`} />
+                        <FileText
+                          className={`w-4 h-4${
+                            isMobile && isHorizontal ? " w-3 h-3" : ""
+                          }`}
+                        />
                         MISSION BRIEF
                       </button>
                     </div>
@@ -543,49 +687,69 @@ export const JigsawBoard = () => {
               {/* Arsenal - Now in the middle */}
               <div
                 className={`flex flex-col my-auto items-center justify-center w-max relative z-20${
-                  isMobile && isHorizontal ? ' arsenal-mobile-horizontal' : ''
+                  isMobile && isHorizontal ? " arsenal-mobile-horizontal" : ""
                 }`}
                 style={{
-                  height: isMobile && isHorizontal ? '220px' : '300px',
-                  minHeight: isMobile && isHorizontal ? '220px' : '300px',
-                  maxHeight: '100%',
+                  height: isMobile && isHorizontal ? "220px" : "300px",
+                  minHeight: isMobile && isHorizontal ? "220px" : "300px",
+                  maxHeight: "100%",
                 }}
               >
                 <div
                   className={`relative flex flex-col h-full w-max p-2 rounded-2xl shadow-2xl border-2 border-cyan-400/80 arsenal-glass-container items-center justify-between${
-                    isMobile && isHorizontal ? ' arsenal-glass-mobile-horizontal' : ''
+                    isMobile && isHorizontal
+                      ? " arsenal-glass-mobile-horizontal"
+                      : ""
                   }`}
                   style={{
-                    background: 'rgba(20, 30, 60, 0.35)',
-                    backdropFilter: 'blur(10px)',
-                    boxShadow: '0 0 24px 4px #22d3ee55, 0 2px 16px 0 #0008',
-                    border: '2.5px solid #22d3ee',
-                    overflow: 'hidden',
-                    width: 'max-content',
-                    padding: isMobile && isHorizontal ? '0.5rem' : '0.5rem 1rem',
+                    background: "rgba(20, 30, 60, 0.35)",
+                    backdropFilter: "blur(10px)",
+                    boxShadow: "0 0 24px 4px #22d3ee55, 0 2px 16px 0 #0008",
+                    border: "2.5px solid #22d3ee",
+                    overflow: "hidden",
+                    width: "max-content",
+                    padding:
+                      isMobile && isHorizontal ? "0.5rem" : "0.5rem 1rem",
                   }}
                 >
                   {/* Watermark Icon */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-10 z-0">
-                    <Zap className={
-                      `w-24 h-24 text-cyan-300 animate-pulse-slow${isMobile && isHorizontal ? ' w-14 h-14' : ''}`
-                    } />
+                    <Zap
+                      className={`w-24 h-24 text-cyan-300 animate-pulse-slow${
+                        isMobile && isHorizontal ? " w-14 h-14" : ""
+                      }`}
+                    />
                   </div>
                   {/* Arsenal Title */}
-                  <div className={`flex flex-row items-center justify-center gap-2 mb-2 relative z-10 w-full whitespace-nowrap${isMobile && isHorizontal ? ' text-base' : ''}`}>
-                    <Zap className={`w-6 h-6 text-yellow-300 drop-shadow-glow animate-flicker flex-shrink-0${isMobile && isHorizontal ? ' w-4 h-4' : ''}`} />
+                  <div
+                    className={`flex flex-row items-center justify-center gap-2 mb-2 relative z-10 w-full whitespace-nowrap${
+                      isMobile && isHorizontal ? " text-base" : ""
+                    }`}
+                  >
+                    <Zap
+                      className={`w-6 h-6 text-yellow-300 drop-shadow-glow animate-flicker flex-shrink-0${
+                        isMobile && isHorizontal ? " w-4 h-4" : ""
+                      }`}
+                    />
                     <h3
-                      className={`text-lg font-extrabold text-cyan-100 game-font tracking-widest neon-text drop-shadow-glow animate-gradient-move text-center whitespace-nowrap${isMobile && isHorizontal ? ' text-base' : ''}`}
+                      className={`text-lg font-extrabold text-cyan-100 game-font tracking-widest neon-text drop-shadow-glow animate-gradient-move text-center whitespace-nowrap${
+                        isMobile && isHorizontal ? " text-base" : ""
+                      }`}
                       style={{
-                        letterSpacing: '0.12em',
-                        textShadow: '0 0 8px #22d3ee, 0 0 16px #fde68a',
+                        letterSpacing: "0.12em",
+                        textShadow: "0 0 8px #22d3ee, 0 0 16px #fde68a",
                       }}
                     >
                       ARSENAL
                     </h3>
                   </div>
                   {/* Pieces List */}
-                  <div className={`space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2${isMobile && isHorizontal ? ' text-xs px-1 py-1' : ''}`}>
+                  <div
+                    ref={arsenalRef}
+                    className={`space-y-1 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2${
+                      isMobile && isHorizontal ? " text-xs px-1 py-1" : ""
+                    }`}
+                  >
                     {availablePieces.map((piece) => (
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
@@ -593,7 +757,7 @@ export const JigsawBoard = () => {
                   {/* Animated Glow Border */}
                   <div
                     className="absolute inset-0 rounded-2xl pointer-events-none border-4 border-cyan-400/60 animate-glow-border"
-                    style={{ boxShadow: '0 0 32px 8px #22d3ee55' }}
+                    style={{ boxShadow: "0 0 32px 8px #22d3ee55" }}
                   ></div>
                 </div>
               </div>
@@ -640,17 +804,15 @@ export const JigsawBoard = () => {
             >
               <div
                 className={`flex items-center gap-4 px-6 py-4 rounded-3xl shadow-2xl border-2 max-w-xl w-full sm:w-auto
-                  text-base md:text-lg font-extrabold game-font tracking-wide
-                  pointer-events-auto
-                  backdrop-blur-lg bg-opacity-90
-                  ${
-                    feedback.includes("🎯") || feedback.includes("🎉")
-                      ? "bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80"
-                      : "bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake"
-                  }
-                ${
-                  isMobile && isHorizontal ? " text-xs px-2 py-2 max-w-xs" : ""
-                }`}
+            text-base md:text-lg font-extrabold game-font tracking-wide
+            pointer-events-auto
+            backdrop-blur-lg bg-opacity-90
+            ${
+              feedback.includes("🎯") || feedback.includes("🎉")
+                ? "bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80"
+                : "bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake"
+            }
+          ${isMobile && isHorizontal ? " text-xs px-2 py-2 max-w-xs" : ""}`}
                 style={{
                   letterSpacing: "0.04em",
                   boxShadow:
@@ -792,16 +954,31 @@ export const JigsawBoard = () => {
           <VictoryPopup
             open={isComplete}
             onClose={() => {
-              setIsComplete(false);
-              setPlacedPieces({ violations: [], actions: [] });
-              setScore(0);
-              setCombo(0);
-              setHealth(100);
-              setFeedback("");
+              if (scenarioIndex < scenarios.length - 1) {
+                setScenarioIndex((prev) => prev + 1);
+                setPlacedPieces({ violations: [], actions: [] });
+                setScore(0);
+                setCombo(0);
+                setHealth(100);
+                setFeedback("");
+                setIsComplete(false);
+                setShowScenario(true);
+              } else {
+                setIsComplete(false);
+                setPlacedPieces({ violations: [], actions: [] });
+                setScore(0);
+                setCombo(0);
+                setHealth(100);
+                setFeedback("");
+                setShowScenario(true);
+                setScenarioIndex(0);
+              }
             }}
             score={score}
             combo={combo}
             health={health}
+            showNext={scenarioIndex < scenarios.length - 1}
+            moduleId={moduleId}
           />
         </div>
       </div>
@@ -811,15 +988,17 @@ export const JigsawBoard = () => {
 
 // Custom drag layer for mobile/desktop drag feedback
 const CustomDragLayer = () => {
-  const { item, isDragging, clientOffset } = useDragLayer(
-    (monitor) => ({
-      item: monitor.getItem(),
-      isDragging: monitor.isDragging(),
-      clientOffset: monitor.getClientOffset(),
-    })
-  );
+  const { item, isDragging, clientOffset } = useDragLayer((monitor) => ({
+    item: monitor.getItem(),
+    isDragging: monitor.isDragging(),
+    clientOffset: monitor.getClientOffset(),
+  }));
 
-  const offset = clientOffset || (typeof window !== 'undefined' ? { x: window.innerWidth / 2, y: window.innerHeight / 2 } : null);
+  const offset =
+    clientOffset ||
+    (typeof window !== "undefined"
+      ? { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+      : null);
   if (!isDragging || !item || !offset) return null;
 
   const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
@@ -841,38 +1020,3 @@ const CustomDragLayer = () => {
     </div>
   );
 };
-
-/* Add this to the bottom of the file or in your global CSS if not already present */
-// .custom-scrollbar::-webkit-scrollbar {
-//   width: 8px;
-//   background: transparent;
-// }
-// .custom-scrollbar::-webkit-scrollbar-thumb {
-//   background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-//   border-radius: 8px;
-//   min-height: 24px;
-// }
-// .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-//   background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
-// }
-// .custom-scrollbar {
-//   scrollbar-width: thin;
-//   scrollbar-color: #06b6d4 #1e293b;
-// }
-
-/* Arsenal Glassmorphism & Neon CSS */
-// Add these classes to your global CSS or tailwind config if not present:
-// .arsenal-glass-container { transition: box-shadow 0.3s, border 0.3s; }
-// .neon-text { text-shadow: 0 0 8px #22d3ee, 0 0 16px #fde68a; }
-// .drop-shadow-glow { filter: drop-shadow(0 0 8px #22d3ee) drop-shadow(0 0 16px #fde68a); }
-// .animate-glow-border { animation: glow-border 2s infinite alternate; }
-// @keyframes glow-border { 0% { box-shadow: 0 0 16px 2px #22d3ee55; } 100% { box-shadow: 0 0 32px 8px #22d3eeaa; } }
-// .animate-flicker { animation: flicker 1.5s infinite alternate; }
-// @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-// .animate-pulse-slow { animation: pulse 3s infinite; }
-// @keyframes pulse { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.22; } }
-
-/* Arsenal Mobile Horizontal Styles */
-// Add these classes to your global CSS or tailwind config if not present:
-// .arsenal-mobile-horizontal { height: 220px !important; min-height: 220px !important; }
-// .arsenal-glass-mobile-horizontal { padding: 0.5rem !important; }
