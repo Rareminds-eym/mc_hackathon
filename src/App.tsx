@@ -18,6 +18,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from 'react-router-dom';
+import Level2 from './screens/Level2/Index';
 import Level3 from './screens/Level3/Index';
 import InstructionsPage from './screens/InstructionsPage';
 import BingoGame from './screens/BingoGame';
@@ -73,6 +74,12 @@ const router = createBrowserRouter(
           element: <LevelList />,
           errorElement: <RouteErrorBoundary />
         },
+        {
+          path: '/modules/:moduleId/levels/2',
+          element: <Level2 />,
+          errorElement: <RouteErrorBoundary />
+        },
+       
         {
           path: '/modules/:moduleId/levels/3',
           element: <Level3 />,
