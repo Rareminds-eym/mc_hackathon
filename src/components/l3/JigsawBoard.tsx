@@ -966,8 +966,21 @@ const CustomDragLayer = () => {
     clientOffset: monitor.getClientOffset(),
   }));
 
-  const PREVIEW_WIDTH = 128; // w-32 in Tailwind (8rem)
-  const PREVIEW_HEIGHT = 60;
+  // Dynamically size the preview to match the dragged piece's DOM size
+  const [pieceSize, setPieceSize] = React.useState<{ width: number; height: number } | null>(null);
+  React.useEffect(() => {
+    if (!item || !item.id) {
+      setPieceSize(null);
+      return;
+    }
+    // Try to find the DOM node of the dragged piece
+    const el = document.querySelector(`[data-piece-id='${item.id}']`);
+    if (el) {
+      const rect = (el as HTMLElement).getBoundingClientRect();
+      setPieceSize({ width: rect.width, height: rect.height });
+    }
+  }, [item]);
+
   const offset =
     clientOffset ||
     (typeof window !== "undefined"
@@ -975,23 +988,33 @@ const CustomDragLayer = () => {
       : null);
   if (!isDragging || !item || !offset) return null;
 
+  const width = pieceSize?.width || 128;
+  const height = pieceSize?.height || 60;
   const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
   const categoryBorder = "border-cyan-400";
   // Center the preview under the finger/cursor
-  const transform = `translate(${offset.x - PREVIEW_WIDTH / 2}px, ${offset.y - PREVIEW_HEIGHT / 2}px)`;
+  const transform = `translate(${offset.x - width / 2}px, ${offset.y - height / 2}px)`;
 
   return (
     <div
-      className={`pointer-events-none fixed z-[9999] left-0 top-0 w-32 h-32 opacity-95 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white p-4 rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
+      className={`pointer-events-none fixed z-[9999] left-0 top-0 opacity-95 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
       style={{
+        width: `${width}px`,
+        height: `${height}px`,
         transform,
         clipPath:
           "polygon(0% 20%, 10% 20%, 15% 0%, 25% 0%, 30% 20%, 70% 20%, 75% 0%, 85% 0%, 90% 20%, 100% 20%, 100% 80%, 90% 80%, 85% 100%, 75% 100%, 70% 80%, 30% 80%, 25% 100%, 15% 100%, 10% 80%, 0% 80%)",
         filter: "drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
         pointerEvents: "none",
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <div className="relative z-10 text-lg flex items-center justify-center h-full w-full">{item.text}</div>
+      <div className="relative z-10 flex items-center justify-center h-full w-full text-xs md:text-sm px-1">
+        {item.text}
+      </div>
     </div>
   );
 };
