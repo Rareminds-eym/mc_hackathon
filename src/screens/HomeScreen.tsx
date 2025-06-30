@@ -21,6 +21,9 @@ const AVATAR_OPTIONS = [
   },
 ];
 
+import { motion, AnimatePresence } from "framer-motion";
+import { useDeviceLayout } from "../hooks/useOrientation";
+
 const HomeScreen: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const navigate = useNavigate();
@@ -29,8 +32,8 @@ const HomeScreen: React.FC = () => {
   const layout = useDeviceLayout();
 
   // Avatar selection state, default to Intern 1, load from localStorage if available
-  const [avatar, setAvatar] = useState<string>(() =>
-    localStorage.getItem("selectedAvatar") || "/characters/Intern1.png"
+  const [avatar, setAvatar] = useState<string>(
+    () => localStorage.getItem("selectedAvatar") || "/characters/Intern1.png"
   );
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
@@ -134,32 +137,24 @@ const HomeScreen: React.FC = () => {
             tabIndex={0}
             onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           />
-          <AnimatePresence>
-            {profileOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.25, type: "spring" }}
-                className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
+          {profileOpen && (
+            <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
+              <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
+                {user?.user_metadata?.full_name || user?.email || "Player"}
+              </span>
+              {/* Avatars button */}
+              <Button
+                size="sm"
+                className="w-full mb-3"
+                onClick={() => setShowAvatarModal(true)}
               >
-                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
-                  {user?.user_metadata?.full_name || user?.email || "Player"}
-                </span>
-                {/* Avatars button */}
-                <Button
-                  size="sm"
-                  className="w-full mb-3"
-                  onClick={() => setShowAvatarModal(true)}
-                >
-                  Avatars
-                </Button>
-                <Button size="sm" variant="secondary" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                Avatars
+              </Button>
+              <Button size="sm" variant="secondary" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       {/* Lab game sound */}
@@ -182,20 +177,24 @@ const HomeScreen: React.FC = () => {
         </motion.h1>
         {/* items list */}
         <motion.div
-          className={`relative flex flex-row justify-center items-center w-max max-w-3xl${layout.isMobile && layout.isHorizontal ? ' gap-2' : ''}`}
+          className={`relative flex flex-row justify-center items-center w-max max-w-3xl${
+            layout.isMobile && layout.isHorizontal ? " gap-2" : ""
+          }`}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3, type: "spring" }}
         >
           <motion.ul
-            className={`flex flex-col items-center z-20 list-none p-0 m-0${layout.isMobile && layout.isHorizontal ? ' gap-1' : ' gap-3'}`}
+            className={`flex flex-col items-center z-20 list-none p-0 m-0${
+              layout.isMobile && layout.isHorizontal ? " gap-1" : " gap-3"
+            }`}
             initial="hidden"
             animate="visible"
             variants={{
               hidden: {},
               visible: {
                 transition: {
-                  staggerChildren: 0.10,
+                  staggerChildren: 0.1,
                 },
               },
             }}
@@ -236,9 +235,7 @@ const HomeScreen: React.FC = () => {
           </motion.ul>
           <motion.div
             className={`absolute z-20 w-max right-0 bottom-0 translate-x-[100%]${
-              layout.isMobile && layout.isHorizontal
-                ? ""
-                : ""
+              layout.isMobile && layout.isHorizontal ? "" : ""
             }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

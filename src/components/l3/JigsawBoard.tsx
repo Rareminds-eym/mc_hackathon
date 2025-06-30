@@ -39,7 +39,7 @@ interface Scenario {
 // --- Scenario Data (Consider moving to a separate file for scalability) ---
 const scenarios: Scenario[] = [
   {
-    title: "MISSION: Cleanroom Entry Violation",
+    title: "Cleanroom Entry Violation",
     description:
       "A production worker enters the cleanroom without gloves and skips the entry logbook. Your mission: Identify the violations and deploy corrective actions!",
     pieces: [
@@ -94,7 +94,7 @@ const scenarios: Scenario[] = [
     ],
   },
   {
-    title: "MISSION: Expired Balance Used",
+    title: "Expired Balance Used",
     description:
       "An expired balance is used to weigh materials for a production batch. Your mission: Identify the violated GMP principle and deploy corrective actions!",
     pieces: [
@@ -149,7 +149,7 @@ const scenarios: Scenario[] = [
     ],
   },
   {
-    title: "MISSION: Batch Record Not Reviewed by QA",
+    title: "Batch Record Not Reviewed by QA",
     description:
       "A batch record is signed only by Production Head. QA has not reviewed or signed. Your mission: Identify the violated GMP principle and deploy corrective actions!",
     pieces: [
