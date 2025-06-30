@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDeviceLayout } from '../../hooks/useOrientation';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'game';
@@ -21,6 +22,7 @@ const Button: React.FC<ButtonProps> = ({
   'aria-describedby': ariaDescribedBy,
   ...props 
 }) => {
+  const layout = useDeviceLayout();
   const variants = {
     primary: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%)',
     secondary: 'linear-gradient(90deg, #6b7280 0%, #4b5563 100%)',
@@ -34,6 +36,22 @@ const Button: React.FC<ButtonProps> = ({
     md: { width: '270px', height: '44px', fontSize: '20px' },
     lg: { width: '320px', height: '52px', fontSize: '24px' }
   };
+
+  // Responsive/compact for mobile horizontal
+  const compactMobile = layout.isMobile && layout.isHorizontal;
+  const compactStyle = compactMobile
+    ? {
+        width: '200px',
+        minWidth: 'max-content',
+        maxWidth: '100%',
+        height: '28px',
+        fontSize: '12px',
+        padding: '0 6px',
+        borderRadius: '6px',
+        margin: '0 0 6px 0',
+        border: '2px solid #222', // reduced border size
+      }
+    : {};
 
   const baseStyle = {
     margin: '0 auto 28px auto',
@@ -53,6 +71,7 @@ const Button: React.FC<ButtonProps> = ({
     alignItems: 'center',
     justifyContent: 'center',
     ...sizes[size],
+    ...compactStyle,
     ...style
   };
 
