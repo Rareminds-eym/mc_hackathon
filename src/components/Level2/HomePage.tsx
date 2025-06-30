@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { gameModes } from '../../data/Level2/gameModes';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { GameStorage, GameStats } from '../../utils/Level2/gameStorage';
-import { Play, Filter, Star, Trophy, Zap, Crown, Gamepad2, ArrowLeft } from 'lucide-react';
+import { Play, Filter, Zap, Crown, Gamepad2, ArrowLeft } from 'lucide-react';
 import './index.css';
 
 interface HomePageProps {
@@ -228,31 +228,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
               </div>
             </div>
 
-            {/* Compact Bottom Game UI */}
-            <div className="text-center mt-4">
-              <div className="inline-block pixel-border-thick bg-gray-800 p-3">
-                <div className="flex items-center space-x-4">
-                  <div className="text-center">
-                    <div className="w-8 h-8 bg-yellow-500 pixel-border flex items-center justify-center mb-1">
-                      <Trophy className="w-4 h-4 text-yellow-900" />
-                    </div>
-                    <div className="text-yellow-300 text-xs font-bold pixel-text">TROPHIES</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-8 h-8 bg-cyan-500 pixel-border flex items-center justify-center mb-1">
-                      <Zap className="w-4 h-4 text-cyan-900" />
-                    </div>
-                    <div className="text-cyan-300 text-xs font-bold pixel-text">POWER-UPS</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-8 h-8 bg-green-500 pixel-border flex items-center justify-center mb-1">
-                      <Star className="w-4 h-4 text-green-900" />
-                    </div>
-                    <div className="text-green-300 text-xs font-bold pixel-text">PROGRESS</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
         ) : (
           /* Desktop Layout - Updated */
@@ -406,31 +382,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
               </div>
             </div>
 
-            {/* Bottom Game UI */}
-            <div className="mt-16 text-center">
-              <div className="inline-block pixel-border-thick bg-gray-800 p-6">
-                <div className="flex items-center space-x-8">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-yellow-500 pixel-border flex items-center justify-center mb-2">
-                      <Trophy className="w-6 h-6 text-yellow-900" />
-                    </div>
-                    <div className="text-yellow-300 text-sm font-bold pixel-text">TROPHIES</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-cyan-500 pixel-border flex items-center justify-center mb-2">
-                      <Zap className="w-6 h-6 text-cyan-900" />
-                    </div>
-                    <div className="text-cyan-300 text-sm font-bold pixel-text">POWER-UPS</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-green-500 pixel-border flex items-center justify-center mb-2">
-                      <Star className="w-6 h-6 text-green-900" />
-                    </div>
-                    <div className="text-green-300 text-sm font-bold pixel-text">PROGRESS</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </>
         )}
       </div>

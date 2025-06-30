@@ -90,7 +90,7 @@ const CategoryBox: React.FC<CategoryBoxProps> = ({
 
       return baseStyles;
     } else {
-      let baseStyles = `pixel-border-thick bg-gradient-to-br ${getCategoryColor()} min-h-80 relative overflow-hidden transition-all duration-300 rounded-lg`;
+      let baseStyles = `pixel-border-thick bg-gradient-to-br ${getCategoryColor()} h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col`;
 
       if (isOver) {
         baseStyles += ' game-zone-active transform scale-105 shadow-2xl';
@@ -275,108 +275,91 @@ const CategoryBox: React.FC<CategoryBoxProps> = ({
           )}
 
 
-          {/* Header with Game UI Style */}
-          <div className="relative z-10 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
+          {/* Compact Header for Horizontal Layout */}
+          <div className="relative z-10 p-4 flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
                 {/* Zone Icon */}
-                <div className={`w-14 h-14 pixel-border flex items-center justify-center transition-all duration-300 ${
+                <div className={`w-10 h-10 pixel-border flex items-center justify-center transition-all duration-300 ${
                   isOver ? 'bg-cyan-300 animate-spin' : 'bg-white'
                 }`}>
                   {isOver ? (
-                    <Crosshair className="w-8 h-8 text-cyan-800" />
+                    <Crosshair className="w-6 h-6 text-cyan-800" />
                   ) : (
-                    <Target className="w-8 h-8 text-gray-800" />
+                    <Target className="w-6 h-6 text-gray-800" />
                   )}
                 </div>
-                
+
                 {/* Zone Title */}
                 <div>
-                  <h3 className={`text-xl font-black pixel-text tracking-wide transition-all duration-300 ${
+                  <h3 className={`text-lg font-black pixel-text tracking-wide transition-all duration-300 ${
                     isOver ? 'text-yellow-300 animate-pulse' : 'text-white'
                   }`}>
-                    {category.name.toUpperCase()}
+                    {getCategoryName()}
                   </h3>
-                  <div className={`text-sm font-bold transition-all duration-300 ${
+                  <div className={`text-xs font-bold transition-all duration-300 ${
                     isOver ? 'text-yellow-200 animate-pulse' : 'text-gray-300'
                   }`}>
-                    {isOver ? 'DROP HERE!' : 'TARGET ZONE'}
+                    {getCategorySubtitle()}
                   </div>
                 </div>
               </div>
 
-              {/* Results HUD */}
-              {showResults && (
-                <div className="flex items-center space-x-3">
-                  {getCorrectCount() > 0 && (
-                    <div className="pixel-border bg-green-500 px-2 py-2 flex items-center space-x-2 animate-bounce">
-                      <div className="w-4 h-4 pixel-dot bg-green-300"></div>
-                      <span className="text-white text-lg font-black">{getCorrectCount()}</span>
-                    </div>
-                  )}
-                  {getIncorrectCount() > 0 && (
-                    <div className="pixel-border bg-red-500 px-2 py-2 flex items-center space-x-2 animate-pulse">
-                      <div className="w-4 h-4 pixel-dot bg-red-300"></div>
-                      <span className="text-white text-lg font-black">{getIncorrectCount()}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Results Counter */}
+              <div className="flex items-center space-x-2">
+                {showResults && getCorrectCount() > 0 && (
+                  <div className="pixel-border bg-green-500 px-2 py-1 flex items-center space-x-1 animate-bounce">
+                    <div className="w-3 h-3 pixel-dot bg-green-300"></div>
+                    <span className="text-white text-sm font-black">{getCorrectCount()}</span>
+                  </div>
+                )}
+                {showResults && getIncorrectCount() > 0 && (
+                  <div className="pixel-border bg-red-500 px-2 py-1 flex items-center space-x-1 animate-pulse">
+                    <div className="w-3 h-3 pixel-dot bg-red-300"></div>
+                    <span className="text-white text-sm font-black">{getIncorrectCount()}</span>
+                  </div>
+                )}
+                {!showResults && (
+                  <div className="pixel-border bg-white/20 px-2 py-1 flex items-center space-x-1">
+                    <div className="w-3 h-3 pixel-dot bg-white/60"></div>
+                    <span className="text-white text-sm font-black">{terms.length}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Description */}
-            <p className={`text-base leading-relaxed mb-4 font-medium transition-all duration-300 ${
+            {/* Compact Description */}
+            <p className={`text-sm leading-relaxed mb-3 font-medium transition-all duration-300 ${
               isOver ? 'text-yellow-100' : 'text-gray-200'
             }`}>
               {category.description}
             </p>
-
-            {/* Progress Bar */}
-            {terms.length > 0 && (
-              <div className="mb-4">
-                <div className="pixel-border bg-gray-800 h-3 overflow-hidden rounded">
-                  <div 
-                    className={`h-full transition-all duration-500 ease-out pixel-fill ${
-                      isOver 
-                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 animate-pulse' 
-                        : 'bg-gradient-to-r from-cyan-400 to-blue-500'
-                    }`}
-                    style={{ width: `${Math.min((terms.length / 5) * 100, 100)}%` }}
-                  ></div>
-                </div>
-                <div className={`text-sm mt-2 font-bold transition-all duration-300 ${
-                  isOver ? 'text-yellow-200' : 'text-gray-300'
-                }`}>
-                  {terms.length}/5 items
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Drop Zone */}
-          <div className="px-6 pb-6 space-y-4 min-h-40 relative z-10">
+          {/* Compact Drop Zone */}
+          <div className="px-4 pb-4 space-y-3 flex-1 min-h-0 overflow-y-auto relative z-10">
             {terms.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 {isOver ? (
                   <div className="animate-bounce">
-                    <div className="w-20 h-20 pixel-border bg-yellow-400 mx-auto mb-4 flex items-center justify-center animate-spin rounded-full">
-                      <Sparkles className="w-10 h-10 text-yellow-800" />
+                    <div className="w-16 h-16 pixel-border bg-yellow-400 mx-auto mb-3 flex items-center justify-center animate-spin rounded-full">
+                      <Sparkles className="w-8 h-8 text-yellow-800" />
                     </div>
-                    <p className="text-cyan-300 font-black text-2xl pixel-text">DROP HERE!</p>
-                    <p className="text-yellow-300 text-lg mt-2 animate-pulse font-bold">Release to sort item</p>
+                    <p className="text-cyan-300 font-black text-lg pixel-text">DROP HERE!</p>
+                    <p className="text-yellow-300 text-sm mt-1 animate-pulse font-bold">Release to sort item</p>
                   </div>
                 ) : (
                   <div className="text-gray-400">
-                    <div className="w-16 h-16 pixel-border bg-gray-600 mx-auto mb-4 flex items-center justify-center opacity-50 rounded-lg">
-                      <Target className="w-8 h-8" />
+                    <div className="w-12 h-12 pixel-border bg-gray-600 mx-auto mb-3 flex items-center justify-center opacity-50 rounded-lg">
+                      <Target className="w-6 h-6" />
                     </div>
-                    <p className="font-bold pixel-text text-lg">EMPTY ZONE</p>
-                    <p className="text-sm mt-1">Drag items here to sort</p>
+                    <p className="font-bold pixel-text text-sm">EMPTY ZONE</p>
+                    <p className="text-xs mt-1">Drag items here to sort</p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {terms.map((term, index) => (
                   <div
                     key={term.id}
@@ -396,19 +379,19 @@ const CategoryBox: React.FC<CategoryBoxProps> = ({
           </div>
 
           {/* Zone Status Indicator */}
-          <div className="absolute bottom-4 right-4">
-            <div className={`w-6 h-6 pixel-dot transition-all duration-300 rounded-full ${
-              isOver 
-                ? 'bg-yellow-400 animate-ping scale-150' 
-                : terms.length > 0 
-                  ? 'bg-green-400 animate-pulse' 
+          <div className="absolute bottom-3 right-3">
+            <div className={`w-4 h-4 pixel-dot transition-all duration-300 rounded-full ${
+              isOver
+                ? 'bg-yellow-400 animate-ping scale-150'
+                : terms.length > 0
+                  ? 'bg-green-400 animate-pulse'
                   : 'bg-gray-500'
             }`}></div>
           </div>
 
           {/* Desktop Drop Zone Highlight */}
           {isOver && (
-            <div className="absolute inset-2 border-4 border-yellow-400 border-dashed animate-pulse rounded-lg pointer-events-none"></div>
+            <div className="absolute inset-2 border-3 border-yellow-400 border-dashed animate-pulse rounded-lg pointer-events-none"></div>
           )}
         </>
       )}
