@@ -51,10 +51,6 @@ const CharacterSprite: React.FC<CharacterSpriteProps> = ({
           <div className="w-2 h-2 bg-gray-700 rounded-b-lg border border-gray-400 animate-boot-bounce" />
           <div className="w-2 h-2 bg-gray-700 rounded-b-lg border border-gray-400 animate-boot-bounce" />
         </div>
-        {/* Simple jetpack flames */}
-        {/* <div className="absolute left-1/2" style={{ top: 68, transform: 'translateX(-50%)' }}>
-          <div className="w-1.5 h-4 rounded-full opacity-60 animate-flame-simple" style={{ background: 'linear-gradient(to bottom, #fbbf24, #f87171)', filter: 'blur(1px)' }} />
-        </div> */}
       </div>
       <style>{`
         @keyframes bobble {
