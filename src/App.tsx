@@ -20,6 +20,8 @@ import {
 } from 'react-router-dom';
 import InstructionsPage from './screens/InstructionsPage';
 import BingoGame from './screens/BingoGame';
+import SplashScreen from './components/ui/SplashScreen';
+import React, { useState } from 'react';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -46,32 +48,49 @@ function RouteErrorBoundary() {
   );
 }
 
-const router = createBrowserRouter(
-  [
-    {
-      element: <GameLayout><Outlet /></GameLayout>,
-      errorElement: <RouteErrorBoundary />,
-      children: [
-
-        { path: '/', element: <LoaderScreen /> },
-        { path: '/home', element: <HomeScreen /> },
-        { path: '/modules', element: <ModuleMapScreen /> },
-        { path: '/modules/:moduleId', element: <LevelList /> },
-        { path: '/modules/:moduleId/levels/:levelId', element: <LevelScene /> },
-        { path: '/modules/:moduleId/levels/1',element: <BingoGame />, errorElement: <RouteErrorBoundary /> },
-        { path: '/auth', element: <AuthPage /> },
-        { path: '/instructions', element: <InstructionsPage /> },
-        { path: '*', element: <Navigate to="/" replace /> },
-      ],
-    },
-  ]
-);
-
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSplashComplete = () => setShowSplash(false);
+
+  // Optionally, you can provide setIsLoading to children via context for global loading state
+
+  if (isLoading) {
+    return <LoaderScreen />;
+  }
+
   return (
     <Provider store={store}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <RouterProvider
+          router={createBrowserRouter(
+            [
+              {
+                element: <GameLayout><Outlet /></GameLayout>,
+                errorElement: <RouteErrorBoundary />,
+                children: [
+                  {
+                    path: '/',
+                    element: showSplash ? (
+                      <SplashScreen onComplete={handleSplashComplete} />
+                    ) : (
+                      <AuthPage />
+                    ),
+                  },
+                  { path: '/home', element: <HomeScreen /> },
+                  { path: '/modules', element: <ModuleMapScreen /> },
+                  { path: '/modules/:moduleId', element: <LevelList /> },
+                  { path: '/modules/:moduleId/levels/:levelId', element: <LevelScene /> },
+                  { path: '/modules/:moduleId/levels/1',element: <BingoGame />, errorElement: <RouteErrorBoundary /> },
+                  { path: '/auth', element: <AuthPage /> },
+                  { path: '/instructions', element: <InstructionsPage /> },
+                  { path: '*', element: <Navigate to="/" replace /> },
+                ],
+              },
+            ]
+          )}
+        />
       </AuthProvider>
     </Provider>
   );

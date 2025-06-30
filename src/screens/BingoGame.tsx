@@ -8,6 +8,7 @@ import GameCompleteModal from '../components/Level1/GameCompleteModal';
 import AnswerModal from '../components/Level1/AnswerModal';
 import TutorialToast from '../components/Level1/TutorialToast';
 import { Clock } from 'lucide-react';
+import LoaderScreen from './LoaderScreen';
 
 const BingoGame: React.FC = () => {
   const {
@@ -138,6 +139,19 @@ const BingoGame: React.FC = () => {
       };
     }
   }, [isEnabled, effectiveVolume, setCurrentTrack]);
+
+  // Loader state
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    // Simulate loading for 1s, or replace with real loading logic
+    const timeout = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  if (loading) {
+    return <LoaderScreen />;
+  }
 
   return (
     <div style={rootStyle}>

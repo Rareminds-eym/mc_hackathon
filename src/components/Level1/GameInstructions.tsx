@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-// Use placeholder images for Trainer and Intern
+// Use placeholder image for Trainer and use selected avatar for Intern
 const TRAINER_IMG = "https://via.placeholder.com/40x40?text=T";
-const INTERN_IMG = "https://via.placeholder.com/40x40?text=I";
+// Get avatar from localStorage, fallback to Intern1
+const INTERN_IMG = typeof window !== "undefined"
+  ? (localStorage.getItem("selectedAvatar") || "/characters/Intern1.png")
+  : "/characters/Intern1.png";
 
 interface GameInstructionsProps {
   selectedDefinition: string;
@@ -92,13 +95,16 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
   const tailBase = "absolute z-10 transition-all";
   let tailClass = "";
   let tailStyle = {};
+  // Use same border color as the box (blue-400 or black)
+  const borderColor = inConversation ? "#60a5fa" : "#000"; // #60a5fa is Tailwind blue-400
+
   if (pointerDirection === "left") {
     tailClass = `${tailBase} left-[-24px] bottom-[18px]`;
     tailStyle = {
       borderTop: "16px solid transparent",
-      borderRight: "24px solid #fff",
+      borderRight: `24px solid ${borderColor}`,
       borderBottom: "16px solid transparent",
-      filter: "drop-shadow(-2px 0 0 #000)",
+      filter: `drop-shadow(-2px 0 0 ${borderColor})`,
       width: 0,
       height: 0,
     };
@@ -106,9 +112,9 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
     tailClass = `${tailBase} right-[-24px] bottom-[18px]`;
     tailStyle = {
       borderTop: "16px solid transparent",
-      borderLeft: "24px solid #fff",
+      borderLeft: `24px solid ${borderColor}`,
       borderBottom: "16px solid transparent",
-      filter: "drop-shadow(2px 0 0 #000)",
+      filter: `drop-shadow(2px 0 0 ${borderColor})`,
       width: 0,
       height: 0,
     };
@@ -117,8 +123,8 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
     tailStyle = {
       borderLeft: "16px solid transparent",
       borderRight: "16px solid transparent",
-      borderTop: "24px solid #fff",
-      filter: "drop-shadow(0 2px 0 #000)",
+      borderTop: `24px solid ${borderColor}`,
+      filter: `drop-shadow(0 2px 0 ${borderColor})`,
       width: 0,
       height: 0,
     };
@@ -148,21 +154,31 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
         `}
       </style>
       <div
-        className={`relative bg-white border-4 ${
-          inConversation ? "border-blue-500 animate-[fairyGlow_1.2s_infinite_alternate]" : "border-black"
+        className={`relative bg-white ${
+          inConversation
+            ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
+            : "border-2 border-black"
         } rounded-[2rem_2rem_2rem_0.5rem] p-4 text-base min-w-full min-h-[72px] ml-[0.1rem] shadow-lg transition-shadow`}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           <div
-            className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-              current.speaker === "Trainer" ? "bg-blue-500" : "bg-emerald-500"
+            className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center ${
+              current.speaker === "Trainer" ? "bg-blue-500" : ""
             }`}
           >
-            <img
-              src={current.icon}
-              alt={current.speaker}
-              className="w-8 h-8 rounded-full object-cover"
-            />
+            {current.speaker === "Intern" ? (
+              <img
+                src={current.icon}
+                alt={current.speaker}
+                className="w-16 h-16 rounded-full object-cover border-2 border-green-400 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]"
+              />
+            ) : (
+              <img
+                src={current.icon}
+                alt={current.speaker}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            )}
           </div>
           <div className="flex-1">
             <div>
