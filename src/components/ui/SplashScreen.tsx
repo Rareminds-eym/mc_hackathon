@@ -185,7 +185,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       </div>
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style>{`
         @keyframes float-particle {
           0%, 100% {
             transform: translateY(0px) rotate(0deg);
