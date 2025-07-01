@@ -1,5 +1,5 @@
 import React from "react";
-import { useDrop } from "react-dnd";
+import { useDroppable } from "@dnd-kit/core";
 import { Target, CheckCircle, Puzzle } from "lucide-react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 
@@ -29,19 +29,10 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
   onDrop,
 }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
-  const [{ isOver, canDrop }, drop] = useDrop({
-    accept: "puzzle-piece",
-    drop: (item: PuzzlePiece) => {
-      const result = onDrop(type, item);
-      return result;
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-    }),
+  const { setNodeRef, isOver } = useDroppable({
+    id: type,
+    data: { type },
   });
-
-  const isActive = isOver && canDrop;
   const isComplete = pieces.length === maxPieces;
   // const containerColor = type === 'violations' ? 'border-red-400' : 'border-cyan-400';
   // const gradientColor = type === 'violations' ? 'from-red-900 to-pink-900' : 'from-blue-900 to-cyan-900';
@@ -81,7 +72,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
       </div>
 
       <div
-        ref={drop}
+        ref={setNodeRef}
         className={`
         min-h-4 border-2 border-dashed rounded-lg p-6 transition-all duration-300 relative overflow-hidden
         ${
@@ -90,7 +81,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
             : "border-gray-500 bg-gray-800/50"
         }
         ${
-          isActive
+          isOver
             ? "border-cyan-400 bg-cyan-900/30 scale-105 glow-border-cyan"
             : ""
         }

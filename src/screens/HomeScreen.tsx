@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { Icon } from '@iconify/react';
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
@@ -136,9 +137,9 @@ const HomeScreen: React.FC = () => {
           />
           {profileOpen && (
             <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
-              <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
-                {user?.user_metadata?.full_name || user?.email || "Player"}
-              </span>
+                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide break-words break-all">
+                  {user?.user_metadata?.full_name || user?.email || "Player"}
+                </span>
               {/* Avatars button */}
               <Button
                 size="sm"
@@ -163,14 +164,32 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <motion.h1
-          className={`text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center ${
+          className={`relative text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
             layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : "mb-10"
           }`}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.1, type: "spring" }}
+          initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ duration: 0.7, delay: 0.1, type: "spring" }}
         >
-          Good Manufacturing Quest
+          <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg mr-2">
+            <Icon icon="mdi:cube-outline" width={38} height={38} />
+          </span>
+          <span
+            className="bg-gradient-to-r from-green-300 via-emerald-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg shadow-green-200 px-2 rounded-lg border-b-4 border-green-400"
+            style={{
+              WebkitTextStroke: '2px #064e3b',
+              // textStroke is not standard in React, so only WebkitTextStroke is used
+              filter: 'drop-shadow(0 2px 4px #34d399)' // extra glow for outline
+            }}
+          >
+            GMP QUEST
+          </span>
+          <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2" style={{ animationDelay: '0.2s' }}>
+            <Icon icon="mdi:clipboard-check-outline" width={38} height={38} />
+          </span>
+          <span className="block text-base md:text-lg font-semibold text-emerald-200 mt-2 tracking-normal animate-fade-in-slow">
+            Embark on your adventure!
+          </span>
         </motion.h1>
         {/* items list */}
         <motion.div
