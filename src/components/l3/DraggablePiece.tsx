@@ -44,7 +44,8 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
         maxWidth: mobile ? '220px' : '260px',
         filter: isDragging ? 'brightness(0.8)' : 'brightness(1)',
         clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
-        borderRadius: '8px'
+        borderRadius: '8px',
+        touchAction: 'none', // Required for DnD Kit mobile support
       }}
     >
       {/* Animated Background Effect */}

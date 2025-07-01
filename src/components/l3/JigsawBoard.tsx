@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
@@ -46,6 +46,12 @@ export const JigsawBoard: React.FC = () => {
   const correctActions = useMemo(() => scenario?.pieces.filter(
     (p: PuzzlePiece) => p.category === "action" && p.isCorrect
   ) ?? [], [scenario]);
+
+  // --- DnD Kit Sensors for mobile support ---
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor)
+  );
 
   const [placedPieces, setPlacedPieces] = useState<{ violations: PuzzlePiece[]; actions: PuzzlePiece[] }>({
     violations: [],
@@ -176,6 +182,7 @@ export const JigsawBoard: React.FC = () => {
 
   return (
     <DndContext
+      sensors={sensors}
       onDragStart={event => {
         const piece = availablePieces.find((p: PuzzlePiece) => p.id === event.active.id);
         setActiveDragPiece(piece || null);
@@ -822,6 +829,3 @@ export const JigsawBoard: React.FC = () => {
     </DndContext>
   );
 };
-
-
-
