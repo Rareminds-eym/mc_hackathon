@@ -3,6 +3,8 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/types";
 import {
   RotateCcw,
   Zap,
@@ -21,175 +23,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 
 // --- Types ---
-interface PuzzlePiece {
-  id: string;
-  text: string;
-  category: "violation" | "action";
-  isCorrect: boolean;
-}
+import type { PuzzlePiece } from "../../data/level3Scenarios";
 
-interface Scenario {
-  title: string;
-  description: string;
-  pieces: PuzzlePiece[];
-}
-
-// --- Scenario Data (Consider moving to a separate file for scalability) ---
-const scenarios: Scenario[] = [
-  {
-    title: "Cleanroom Entry Violation",
-    description:
-      "A production worker enters the cleanroom without gloves and skips the entry logbook. Your mission: Identify the violations and deploy corrective actions!",
-    pieces: [
-      {
-        id: "v1",
-        text: "Personnel Hygiene",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "v2",
-        text: "Documentation",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "v3",
-        text: "Quality Control",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "v4",
-        text: "Equipment Qualification",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "a1",
-        text: "Follow gowning SOP",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "a2",
-        text: "Sign and verify entry in log",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "a3",
-        text: "Use cleanroom air filters",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "a4",
-        text: "Initiate audit trail",
-        category: "action",
-        isCorrect: false,
-      },
-    ],
-  },
-  {
-    title: "Expired Balance Used",
-    description:
-      "An expired balance is used to weigh materials for a production batch. Your mission: Identify the violated GMP principle and deploy corrective actions!",
-    pieces: [
-      {
-        id: "s2v1",
-        text: "Equipment Calibration",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "s2v2",
-        text: "Training",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s2v3",
-        text: "Cleaning Validation",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s2v4",
-        text: "Material Storage",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s2a1",
-        text: "Stop use, recalibrate",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "s2a2",
-        text: "Repeat training",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "s2a3",
-        text: "Update MSDS",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "s2a4",
-        text: "Document deviation & assess risk",
-        category: "action",
-        isCorrect: true,
-      },
-    ],
-  },
-  {
-    title: "Batch Record Not Reviewed by QA",
-    description:
-      "A batch record is signed only by Production Head. QA has not reviewed or signed. Your mission: Identify the violated GMP principle and deploy corrective actions!",
-    pieces: [
-      {
-        id: "s3v1",
-        text: "Documentation",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "s3v2",
-        text: "Root Cause Analysis",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s3v3",
-        text: "Market Complaint Handling",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s3a1",
-        text: "QA counter-sign required",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "s3a2",
-        text: "Recall product",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "s3a3",
-        text: "Skip QA review",
-        category: "action",
-        isCorrect: false,
-      },
-    ],
-  },
-];
+// --- Scenario Data from Redux ---
+// scenarios will be selected from Redux store
 
 // --- Utility: Get moduleId from URL ---
 const getModuleIdFromPath = () => {
@@ -198,15 +35,17 @@ const getModuleIdFromPath = () => {
 };
 
 export const JigsawBoard: React.FC = () => {
+  // --- Redux: Get scenarios from store ---
+  const scenarios = useSelector((state: RootState) => state.level3.scenarios);
   // --- State ---
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const scenario = scenarios[scenarioIndex];
-  const correctViolations = useMemo(() => scenario.pieces.filter(
-    (p) => p.category === "violation" && p.isCorrect
-  ), [scenario]);
-  const correctActions = useMemo(() => scenario.pieces.filter(
-    (p) => p.category === "action" && p.isCorrect
-  ), [scenario]);
+  const correctViolations = useMemo(() => scenario?.pieces.filter(
+    (p: PuzzlePiece) => p.category === "violation" && p.isCorrect
+  ) ?? [], [scenario]);
+  const correctActions = useMemo(() => scenario?.pieces.filter(
+    (p: PuzzlePiece) => p.category === "action" && p.isCorrect
+  ) ?? [], [scenario]);
 
   const [placedPieces, setPlacedPieces] = useState<{ violations: PuzzlePiece[]; actions: PuzzlePiece[] }>({
     violations: [],
@@ -298,11 +137,11 @@ export const JigsawBoard: React.FC = () => {
   const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(null);
 
   // --- Derived ---
-  const availablePieces = useMemo(() => scenario.pieces.filter(
-    (piece) =>
-      !placedPieces.violations.some((p) => p.id === piece.id) &&
-      !placedPieces.actions.some((p) => p.id === piece.id)
-  ), [scenario, placedPieces]);
+  const availablePieces = useMemo(() => scenario?.pieces.filter(
+    (piece: PuzzlePiece) =>
+      !placedPieces.violations.some((p: PuzzlePiece) => p.id === piece.id) &&
+      !placedPieces.actions.some((p: PuzzlePiece) => p.id === piece.id)
+  ) ?? [], [scenario, placedPieces]);
 
   // --- Display Name ---
   const displayName = user?.user_metadata?.full_name || user?.email || "Player";
@@ -326,10 +165,19 @@ export const JigsawBoard: React.FC = () => {
 
   // --- Main Render ---
   // --- DnD Kit Drop Handler ---
+  // If scenarios are not loaded yet, show loading
+  if (!scenario) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+        <div className="text-white text-xl font-bold">Loading scenario...</div>
+      </div>
+    );
+  }
+
   return (
     <DndContext
       onDragStart={event => {
-        const piece = availablePieces.find(p => p.id === event.active.id);
+        const piece = availablePieces.find((p: PuzzlePiece) => p.id === event.active.id);
         setActiveDragPiece(piece || null);
       }}
       onDragEnd={event => {
@@ -338,7 +186,7 @@ export const JigsawBoard: React.FC = () => {
         // event.active.id is the piece id
         if (event.over && event.active) {
           const containerType = event.over.id;
-          const piece = availablePieces.find(p => p.id === event.active.id);
+          const piece = availablePieces.find((p: PuzzlePiece) => p.id === event.active.id);
           if ((containerType === "violations" || containerType === "actions") && piece) {
             handleDrop(containerType, piece);
           }
@@ -761,7 +609,7 @@ export const JigsawBoard: React.FC = () => {
                       isMobile && isHorizontal ? " text-xs px-1 py-1" : ""
                     }`}
                   >
-                    {availablePieces.map((piece) => (
+                    {availablePieces.map((piece: PuzzlePiece) => (
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
                   </div>
@@ -975,4 +823,5 @@ export const JigsawBoard: React.FC = () => {
   );
 };
 
-// --- Custom Drag Layer removed: now handled by DragOverlay from @dnd-kit/core --- 
+
+

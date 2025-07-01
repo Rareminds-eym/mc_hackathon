@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Sparkles, Zap, Target } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
@@ -24,7 +24,7 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
   const arsenalGradient = 'from-blue-500 via-cyan-500 to-teal-500';
   const arsenalBorder = 'border-cyan-400';
   const { isMobile: mobile } = useDeviceLayout();
-  // console.log('Device Layout:', { isMobile, isHorizontal });
+  //
   return (
     <div
       ref={setNodeRef}
