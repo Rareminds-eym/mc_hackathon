@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { DndProvider, useDragLayer } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { TouchBackend } from "react-dnd-touch-backend";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
@@ -296,24 +294,8 @@ export const JigsawBoard: React.FC = () => {
     }
   }, [scenarioIndex]);
 
-  // --- DnD Backend ---
-  const isTouchDevice = useMemo(() =>
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0)),
-    []
-  );
-  const dndBackend = useMemo(() => (isTouchDevice ? TouchBackend : HTML5Backend), [isTouchDevice]);
-  const dndOptions = useMemo(() =>
-    isTouchDevice ? {
-      enableMouseEvents: true,
-      enableTouchEvents: true,
-      delayTouchStart: 0,
-      delayMouseStart: 0,
-      touchSlop: 10,
-      pressDelay: 100,
-    } : undefined,
-    [isTouchDevice]
-  );
+  // --- DnD Kit State ---
+  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(null);
 
   // --- Derived ---
   const availablePieces = useMemo(() => scenario.pieces.filter(
@@ -343,10 +325,45 @@ export const JigsawBoard: React.FC = () => {
   }
 
   // --- Main Render ---
+  // --- DnD Kit Drop Handler ---
   return (
-    <DndProvider backend={dndBackend} options={dndOptions}>
-      {/* Custom drag layer for better mobile feedback */}
-      <CustomDragLayer />
+    <DndContext
+      onDragStart={event => {
+        const piece = availablePieces.find(p => p.id === event.active.id);
+        setActiveDragPiece(piece || null);
+      }}
+      onDragEnd={event => {
+        setActiveDragPiece(null);
+        // event.over?.id is the droppable id ("violations" or "actions")
+        // event.active.id is the piece id
+        if (event.over && event.active) {
+          const containerType = event.over.id;
+          const piece = availablePieces.find(p => p.id === event.active.id);
+          if ((containerType === "violations" || containerType === "actions") && piece) {
+            handleDrop(containerType, piece);
+          }
+        }
+      }}
+      onDragCancel={() => setActiveDragPiece(null)}
+    >
+      {/* DragOverlay for custom drag preview */}
+      <DragOverlay>
+        {activeDragPiece ? (
+          <div
+            className="pointer-events-none z-[9999] opacity-95 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white rounded-lg font-bold text-center shadow-2xl border-2 border-cyan-400 game-font flex items-center justify-center px-4 py-2"
+            style={{
+              minWidth: 100,
+              minHeight: 40,
+              fontSize: '1rem',
+              clipPath:
+                "polygon(0% 20%, 10% 20%, 15% 0%, 25% 0%, 30% 20%, 70% 20%, 75% 0%, 85% 0%, 90% 20%, 100% 20%, 100% 80%, 90% 80%, 85% 100%, 75% 100%, 70% 80%, 30% 80%, 25% 100%, 15% 100%, 10% 80%, 0% 80%)",
+              filter: "drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
+            }}
+          >
+            {activeDragPiece.text}
+          </div>
+        ) : null}
+      </DragOverlay>
       <div
         className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
         style={{
@@ -954,67 +971,8 @@ export const JigsawBoard: React.FC = () => {
           />
         </div>
       </div>
-    </DndProvider>
+    </DndContext>
   );
 };
 
-// --- Custom Drag Layer (unchanged, but consider extracting for clarity) ---
-const CustomDragLayer = () => {
-  const { item, isDragging, clientOffset } = useDragLayer((monitor: any) => ({
-    item: monitor.getItem(),
-    isDragging: monitor.isDragging(),
-    clientOffset: monitor.getClientOffset(),
-  }));
-
-  // Dynamically size the preview to match the dragged piece's DOM size
-  const [pieceSize, setPieceSize] = React.useState<{ width: number; height: number } | null>(null);
-  React.useEffect(() => {
-    if (!item || !item.id) {
-      setPieceSize(null);
-      return;
-    }
-    // Try to find the DOM node of the dragged piece
-    const el = document.querySelector(`[data-piece-id='${item.id}']`);
-    if (el) {
-      const rect = (el as HTMLElement).getBoundingClientRect();
-      setPieceSize({ width: rect.width, height: rect.height });
-    }
-  }, [item]);
-
-  const offset =
-    clientOffset ||
-    (typeof window !== "undefined"
-      ? { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-      : null);
-  if (!isDragging || !item || !offset) return null;
-
-  const width = pieceSize?.width || 128;
-  const height = pieceSize?.height || 60;
-  const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
-  const categoryBorder = "border-cyan-400";
-  // Center the preview under the finger/cursor
-  const transform = `translate(${offset.x - width / 2}px, ${offset.y - height / 2}px)`;
-
-  return (
-    <div
-      className={`pointer-events-none fixed z-[9999] left-0 top-0 opacity-95 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
-      style={{
-        width: `${width}px`,
-        height: `${height}px`,
-        transform,
-        clipPath:
-          "polygon(0% 20%, 10% 20%, 15% 0%, 25% 0%, 30% 20%, 70% 20%, 75% 0%, 85% 0%, 90% 20%, 100% 20%, 100% 80%, 90% 80%, 85% 100%, 75% 100%, 70% 80%, 30% 80%, 25% 100%, 15% 100%, 10% 80%, 0% 80%)",
-        filter: "drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
-        pointerEvents: "none",
-        padding: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div className="relative z-10 flex items-center justify-center h-full w-full text-xs md:text-sm px-1">
-        {item.text}
-      </div>
-    </div>
-  );
-};
+// --- Custom Drag Layer removed: now handled by DragOverlay from @dnd-kit/core --- 
