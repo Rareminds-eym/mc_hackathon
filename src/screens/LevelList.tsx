@@ -104,7 +104,11 @@ const LevelList: React.FC = () => {
         margin: '0 auto',
         flex: 1,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        // Enable vertical scroll for mobile
+        overflowY: isMobile ? 'auto' : undefined,
+        maxHeight: isMobile ? '100vh' : undefined,
+        WebkitOverflowScrolling: isMobile ? 'touch' : undefined
       }}>
         {/* Header */}
         <div style={{
@@ -304,15 +308,28 @@ const LevelList: React.FC = () => {
           </div>
 
           {/* Level Cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobileLandscape
-              ? `repeat(${Math.min(module.levels.length, 4)}, 1fr)`
-              : `repeat(${Math.min(module.levels.length, 4)}, 1fr)`,
-            gap: isMobileLandscape ? '15px' : '30px',
-            width: '100%',
-            maxWidth: isMobileLandscape ? '100%' : '1200px'
-          }}>
+          <div
+            style={{
+              ...(isMobile
+                ? {
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
+                    overflowX: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    width: '100%',
+                    maxWidth: '100%',
+                    gap: '15px',
+                  }
+                : {
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${Math.min(module.levels.length, 4)}, 1fr)`,
+                    gap: isMobileLandscape ? '15px' : '30px',
+                    width: '100%',
+                    maxWidth: isMobileLandscape ? '100%' : '1200px',
+                  }),
+            }}
+          >
             {module.levels.map((level: Level, index: number) => {
               const levelScore = getLevelScore(module.id, level.id);
               const isCompleted = isLevelCompleted(module.id, level.id);
