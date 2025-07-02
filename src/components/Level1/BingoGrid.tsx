@@ -38,7 +38,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   // Helper for cell button classes - now includes landscape-specific classes
   const getCellClasses = (cell: BingoCell) => {
     const inCompletedLine = isInCompletedLine(cell.id);
-    
+
     let classes = [
       'flex',
       'items-center',
@@ -100,6 +100,12 @@ const BingoGrid: React.FC<BingoGridProps> = ({
           'shadow-[0_4px_16px_rgba(16,185,129,0.2)]'
         );
       }
+      // Always re-apply the correct text size class for selected cells
+      if (isMobile && isHorizontal) {
+        classes.push('text-[0.65rem]');
+      } else {
+        classes.push('text-[0.8rem]');
+      }
     }
 
     if (cell.id === 24) {
@@ -115,10 +121,25 @@ const BingoGrid: React.FC<BingoGridProps> = ({
     return classes.join(' ');
   };
 
-  // Hover effect classes
+  // Hover/touch effect classes
   const hoverClasses = (cell: BingoCell) => {
     if (cell.selected || gameComplete) return '';
-    return 'hover:shadow-[0_8px_24px_0_rgba(37,99,235,0.25)] hover:text-blue-600 hover:border-2 hover:border-blue-600 hover:-translate-y-1 hover:scale-[1.05]';
+    // Use both hover and active for seamless pop-out on touch devices
+    return `
+      hover:shadow-[0_8px_24px_0_rgba(37,99,235,0.25)]
+      hover:text-blue-600
+      hover:border-2
+      hover:border-blue-600
+      hover:-translate-y-1
+      hover:scale-[1.05]
+      active:shadow-[0_8px_24px_0_rgba(37,99,235,0.25)]
+      active:text-blue-600
+      active:border-2
+      active:border-blue-600
+      active:-translate-y-1
+      active:scale-[1.05]
+      transition-all duration-150
+    `;
   };
 
   // Container classes based on orientation
