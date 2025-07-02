@@ -93,13 +93,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   }
 
   return (
-    <div className={`w-full mx-auto ${isMobileLandscape ? 'max-w-xs' : 'max-w-md'}`}>
+    <div className={`w-full mx-auto ${
+      isMobileLandscape && mode === 'signup'
+        ? 'max-w-lg flex justify-center items-center'
+        : isMobileLandscape
+          ? 'max-w-xs'
+          : 'max-w-md'
+    }`}>
       <div
         className={`bg-gray-800/60 rounded-lg shadow-2xl relative z-10 w-full mx-auto
-        ${isMobileLandscape ? 'p-4 max-w-xs' : 'p-8 max-w-md'}`}
+        ${
+          isMobileLandscape && mode === 'signup'
+            ? 'p-6 max-w-lg flex flex-col justify-center items-center'
+            : isMobileLandscape
+              ? 'p-4 max-w-xs'
+              : 'p-8 max-w-md'
+        }`}
       >
         {/* Form Header */}
-        <div className={`text-center ${isMobileLandscape ? 'mb-2' : 'mb-8'}`}>
+        <div className={`text-center ${isMobileLandscape ? 'mb-6' : 'mb-8'}`}>
           <h2 className={`${isMobileLandscape ? 'text-base' : 'text-3xl'} font-bold text-white mb-1`}>
             {mode === 'login' ? 'Welcome Back' : 'Join GMP Quest'}
           </h2>
@@ -127,14 +139,28 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className={`space-y-2 ${
+            isMobileLandscape && mode === 'signup'
+              ? 'grid grid-cols-2 gap-4'
+              : ''
+          }`}
+          style={
+            isMobileLandscape && mode === 'signup'
+              ? { width: '100%' }
+              : undefined
+          }
+        >
           {/* Full Name (Signup only) */}
           {mode === 'signup' && (
-            <div className="space-y-2">
-              <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
-                Full Name
-              </label>
-              <div className="relative">
+            <div className={`${isMobileLandscape ? 'col-span-1 flex flex-col justify-end' : ''} space-y-2`}>
+              {!isMobileLandscape && (
+                <label className="block font-medium text-white mb-1 text-sm">
+                  Full Name
+                </label>
+              )}
+              <div className={`relative w-full ${isMobileLandscape ? '' : 'flex justify-center'}`}>
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
                 </div>
@@ -147,16 +173,23 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   required
                   className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 ${isMobileLandscape ? 'text-xs' : ''}`}
                   placeholder="Enter your full name"
+                  style={
+                    isMobileLandscape && mode === 'signup'
+                      ? { minWidth: 0, width: '100%', alignSelf: 'flex-end' }
+                      : undefined
+                  }
                 />
               </div>
             </div>
           )}
 
           {/* Email */}
-          <div className="space-y-2">
-            <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
-              Email Address
-            </label>
+          <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-1' : ''} space-y-2`}>
+            {!isMobileLandscape && (
+              <label className="block font-medium text-white mb-1 text-sm">
+                Email Address
+              </label>
+            )}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
@@ -175,10 +208,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
-            <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
-              Password
-            </label>
+          <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-1' : ''} space-y-2`}>
+            {!isMobileLandscape && (
+              <label className="block font-medium text-white mb-1 text-sm">
+                Password
+              </label>
+            )}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
@@ -191,7 +226,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 onChange={handleInputChange}
                 required
                 className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 pr-10 ${isMobileLandscape ? 'text-xs' : ''}`}
-                placeholder="Enter your password"
+                placeholder="Enter Password"
               />
               <button
                 type="button"
@@ -209,10 +244,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Confirm Password (Signup only) */}
           {mode === 'signup' && (
-            <div className={`space-y-1 ${isMobileLandscape ? 'mb-1' : ''}`}>
-              <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
-                Confirm Password
-              </label>
+            <div className={`${isMobileLandscape ? 'col-span-1' : ''} space-y-1 ${isMobileLandscape ? 'mb-1' : ''}`}>
+              {!isMobileLandscape && (
+                <label className="block font-medium text-white mb-1 text-sm">
+                  Confirm Password
+                </label>
+              )}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300`} />
@@ -225,7 +262,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   onChange={handleInputChange}
                   required
                   className={`w-full px-3 py-1.5 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-8 pr-8 ${isMobileLandscape ? 'text-xs' : ''}`}
-                  placeholder="Confirm your password"
+                  placeholder="Confirm Password"
                 />
                 <button
                   type="button"
@@ -243,21 +280,23 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           )}
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200
-              ${isMobileLandscape ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'}`}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                {mode === 'login' ? 'Signing In...' : 'Creating Account...'}
-              </>
-            ) : (
-              mode === 'login' ? 'Sign In' : 'Create Account'
-            )}
-          </button>
+          <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-2 flex justify-center' : ''}`}>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200
+                ${isMobileLandscape ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'}`}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                  {mode === 'login' ? 'Signing In...' : 'Creating Account...'}
+                </>
+              ) : (
+                mode === 'login' ? 'Sign In' : 'Create Account'
+              )}
+            </button>
+          </div>
         </form>
 
         {/* Toggle Mode */}

@@ -30,7 +30,7 @@ const AuthPage: React.FC = () => {
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900">
       <BackgroundAnimation />
       
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className={`relative z-10 min-h-screen flex items-center justify-center ${window.innerWidth > window.innerHeight ? 'p-1' : 'p-4'}`}>
         <div className="w-full max-w-md">
           <AnimatedLogo />
           <AuthForm mode={authMode} onToggleMode={toggleAuthMode} />
