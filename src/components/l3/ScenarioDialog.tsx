@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -69,6 +69,22 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
       ))}
     </div>
   );
+
+  // Typewriter effect for scenario description
+  const [typedDescription, setTypedDescription] = useState("");
+  useEffect(() => {
+    if (step === 0) {
+      setTypedDescription("");
+      let i = 0;
+      const desc = scenario.description;
+      const interval = setInterval(() => {
+        setTypedDescription((prev) => prev + desc[i]);
+        i++;
+        if (i >= desc.length) clearInterval(interval);
+      }, 18);
+      return () => clearInterval(interval);
+    }
+  }, [scenario.description, step]);
 
   // Animated card effect
   return (
@@ -146,8 +162,10 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
                     className={`bg-gray-800/60 border border-cyan-700 rounded-xl px-4 py-3 text-gray-200 shadow-inner ${
                       isMobileHorizontal ? "text-sm" : "text-lg"
                     }`}
+                    style={{ minHeight: 32 }}
                   >
-                    {scenario.description}
+                    {typedDescription}
+                    <span className="inline-block w-2 h-5 align-middle animate-pulse bg-cyan-300 ml-1" style={{ borderRadius: 2, verticalAlign: 'middle', opacity: typedDescription.length < scenario.description.length ? 1 : 0 }} />
                   </p>
                 </motion.div>
               )}
