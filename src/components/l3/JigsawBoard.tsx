@@ -5,6 +5,13 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+// --- Preload Background Image ---
+const BACKGROUND_IMAGE_URL = "/backgrounds/m1l3.webp";
+
+function preloadImage(url: string) {
+  const img = new window.Image();
+  img.src = url;
+}
 import {
   DndContext,
   DragOverlay,
@@ -48,6 +55,10 @@ const getModuleIdFromPath = () => {
 };
 
 export const JigsawBoard: React.FC = () => {
+  // Preload background image on mount (must be inside the component, not at the top level)
+  React.useEffect(() => {
+    preloadImage(BACKGROUND_IMAGE_URL);
+  }, []);
   // --- Redux: Get scenarios from store ---
   const scenarios = useSelector((state: RootState) => state.level3.scenarios);
   // --- State ---
@@ -330,7 +341,7 @@ export const JigsawBoard: React.FC = () => {
       <div
         className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
         style={{
-          backgroundImage: "url('/backgrounds/m1l3.webp')",
+          backgroundImage: `url('${BACKGROUND_IMAGE_URL}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
