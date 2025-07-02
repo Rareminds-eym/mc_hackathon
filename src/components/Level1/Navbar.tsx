@@ -57,8 +57,8 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
     <nav
       className={`bg-white/30 backdrop-blur-xl shadow-[0_4px_24px_0_rgba(0,0,0,0.10)] border-b border-white/30 relative z-50`}
       style={{
-        height: isMobileLandscape ? '36px' : undefined, // Reduce navbar height
-        minHeight: isMobileLandscape ? '36px' : undefined,
+        height: isMobileLandscape ? '38px' : undefined, // Reduce navbar height
+        minHeight: isMobileLandscape ? '38px' : undefined,
       }}
     >
       <div className={`max-w-[1120px] mx-auto ${isMobileLandscape ? 'px-6' : 'px-6'}`}>
@@ -72,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
                 if (onBackClick) onBackClick();
                 window.history.back();
               }}
-              className={`flex items-center justify-center ${isMobileLandscape ? 'w-7 h-7 p-1' : 'w-10 h-10 sm:w-10 sm:h-10 w-8 h-8 p-2'} text-white bg-transparent border-none rounded-full cursor-pointer transition-all duration-300 outline-none`}
+              className={`flex items-center justify-center ${isMobileLandscape ? 'w-8 h-8 p-1' : 'w-10 h-10 sm:w-10 sm:h-10 w-8 h-8 p-2'} text-white bg-transparent border-none rounded-full cursor-pointer transition-all duration-300 outline-none`}
               onMouseOver={() => setHoveredBtn('back')}
               onMouseOut={() => setHoveredBtn(null)}
               style={{
@@ -88,7 +88,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
             </button>
             <button
               onClick={toggleMenu}
-              className={`flex items-center justify-center ${isMobileLandscape ? 'w-7 h-7 p-1' : 'w-10 h-10 sm:w-10 sm:h-10 w-8 h-8 p-2'} text-white bg-transparent border-none rounded-full cursor-pointer transition-all duration-300 outline-none`}
+              className={`flex items-center justify-center ${isMobileLandscape ? 'w-8 h-8 p-1' : 'w-10 h-10 sm:w-10 sm:h-10 w-8 h-8 p-2'} text-white bg-transparent border-none rounded-full cursor-pointer transition-all duration-300 outline-none`}
               onMouseOver={() => setHoveredBtn('menu')}
               onMouseOut={() => setHoveredBtn(null)}
               style={{

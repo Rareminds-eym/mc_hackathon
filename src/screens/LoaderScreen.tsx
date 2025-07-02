@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDeviceLayout } from "../hooks/useOrientation";
 
 interface LoaderScreenProps {
   onComplete?: () => void;
@@ -12,6 +13,7 @@ function isAuthenticated() {
 const LoaderScreen: React.FC<LoaderScreenProps> = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
+  const { isMobile, isHorizontal } = useDeviceLayout();
 
   useEffect(() => {
     if (progress < 100) {
@@ -97,22 +99,28 @@ const LoaderScreen: React.FC<LoaderScreenProps> = ({ onComplete }) => {
           boxShadow: "0 4px 16px rgba(31, 38, 135, 0.3)",
           border: "1px solid rgba(59, 130, 246, 0.5)",
           borderRadius: "2rem",
-          width: "320px", // Increased width for loader visibility
-          height: "200px", // Increased height for loader visibility
+          width: isMobile && isHorizontal ? "220px" : "320px",
+          height: isMobile && isHorizontal ? "140px" : "200px",
           textAlign: "center",
-          padding: "24px",
+          padding: isMobile && isHorizontal ? "12px" : "24px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           position: "absolute",
           top: "60%",
-          left: "50%",
+          left: "60%",
           transform: "translate(-50%, -100%)",
-          color: "#0a2240", // Dark blue
+          color: "#0a2240",
         }}
       >
-        <div className="mb-4" style={{ fontSize: "1.25rem", fontWeight: 600 }}>
+        <div
+          className="mb-4"
+          style={{
+            fontSize: isMobile && isHorizontal ? "0.95rem" : "1.25rem",
+            fontWeight: 600,
+          }}
+        >
           SYSTEM LOADING... {Math.min(Math.floor(progress), 100)}%
         </div>
         {/* Loader animation replaces Cog icon */}
