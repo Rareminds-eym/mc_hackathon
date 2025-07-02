@@ -225,9 +225,9 @@ const BingoGame: React.FC = () => {
                     alt="Bingo Logo"
                     style={{
                       display: 'block',
-                      height: '120px',
+                      height: '140px',
                       padding: '0.6rem 0 1rem 0',
-                      marginLeft: '4rem', // move image more to the right
+                      marginLeft: '3rem', // move image more to the right
                     }}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
