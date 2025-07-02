@@ -1,13 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  AlertTriangle,
-  Target,
-  ChevronRight,
-  ChevronLeft,
-  Star,
-} from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Star } from "lucide-react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 
 interface Scenario {
@@ -28,38 +21,41 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
   const isMobileHorizontal = isMobile && isHorizontal;
   const [step, setStep] = useState(0);
   // Each objective is a step after the briefing
-  const objectives = [
-    {
-      color: "red",
-      border: "border-red-400",
-      bg: "bg-red-500",
-      text: "text-red-300",
-      label: "violated GMP principles",
-      description: "Identify the ",
-    },
-    {
-      color: "blue",
-      border: "border-blue-400",
-      bg: "bg-blue-500",
-      text: "text-blue-300",
-      label: "corrective actions",
-      description: "Deploy appropriate ",
-    },
-    {
-      color: "green",
-      border: "border-green-400",
-      bg: "bg-green-500",
-      text: "text-green-300",
-      label: "efficiency",
-      description: "Complete mission with maximum ",
-    },
-  ];
+  const objectives = useMemo(
+    () => [
+      {
+        color: "red",
+        border: "border-red-400",
+        bg: "bg-red-500",
+        text: "text-red-300",
+        label: "violated GMP principles",
+        description: "Identify the ",
+      },
+      {
+        color: "blue",
+        border: "border-blue-400",
+        bg: "bg-blue-500",
+        text: "text-blue-300",
+        label: "corrective actions",
+        description: "Deploy appropriate ",
+      },
+      {
+        color: "green",
+        border: "border-green-400",
+        bg: "bg-green-500",
+        text: "text-green-300",
+        label: "efficiency",
+        description: "Complete mission with maximum ",
+      },
+    ],
+    []
+  );
   const totalSteps = 1 + objectives.length; // 1 for briefing, rest for objectives
 
   // Progress bar or dots
   const renderProgress = () => (
     <div className="flex justify-center items-center gap-2 mb-4">
-      {[...Array(totalSteps)].map((_, i) => (
+      {Array.from({ length: totalSteps }).map((_, i) => (
         <span
           key={i}
           className={`transition-all duration-300 rounded-full ${
@@ -70,20 +66,36 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
     </div>
   );
 
-  // Typewriter effect for scenario description
+  // Typewriter effect for scenario description (robust, no stale closure, no double start)
   const [typedDescription, setTypedDescription] = useState("");
+  const timeoutRef = useRef<number | null>(null);
   useEffect(() => {
-    if (step === 0) {
+    if (step !== 0) {
       setTypedDescription("");
-      let i = 0;
-      const desc = scenario.description;
-      const interval = setInterval(() => {
-        setTypedDescription((prev) => prev + desc[i]);
-        i++;
-        if (i >= desc.length) clearInterval(interval);
-      }, 18);
-      return () => clearInterval(interval);
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      return;
     }
+    setTypedDescription("");
+    let i = 0;
+    const desc = scenario.description;
+    function typeNext() {
+      setTypedDescription((prev) => {
+        // Always use prev.length as the index to avoid race conditions
+        if (prev.length >= desc.length) return prev;
+        return prev + desc.charAt(prev.length);
+      });
+      i++;
+      if (i < desc.length) {
+        timeoutRef.current = window.setTimeout(typeNext, 18);
+      }
+    }
+    if (desc.length > 0) {
+      timeoutRef.current = window.setTimeout(typeNext, 18);
+    }
+    return () => {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario.description, step]);
 
   // Animated card effect
@@ -91,6 +103,8 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 flex items-center justify-center z-50"
+        role="dialog"
+        aria-modal="true"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -136,6 +150,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
               onClick={onClose}
               className="p-2 rounded-full bg-cyan-900/60 hover:bg-cyan-700/80 text-cyan-300 hover:text-white shadow-lg transition-all"
               aria-label="Close dialog"
+              autoFocus
             >
               <X className={isMobileHorizontal ? "w-5 h-5" : "w-7 h-7"} />
             </button>
@@ -143,7 +158,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
           {/* Animated content */}
           <div className="transition-all duration-300 min-h-[120px]">
             <AnimatePresence mode="wait">
-              {step === 0 && (
+              {step === 0 ? (
                 <motion.div
                   key="briefing"
                   className="flex flex-col items-center text-center gap-3 animate-fadeIn"
@@ -168,8 +183,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
                     <span className="inline-block w-2 h-5 align-middle animate-pulse bg-cyan-300 ml-1" style={{ borderRadius: 2, verticalAlign: 'middle', opacity: typedDescription.length < scenario.description.length ? 1 : 0 }} />
                   </p>
                 </motion.div>
-              )}
-              {step > 0 && step <= objectives.length && (
+              ) : step > 0 && step <= objectives.length ? (
                 <motion.div
                   key={`objective-${step}`}
                   className="flex flex-col items-center gap-3 animate-fadeIn w-full"
@@ -193,9 +207,9 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
                         OBJECTIVE {step}
                       </h3>
                     </div>
-                    <div className={`flex flex-col items-center w-full`}>
+                    <div className="flex flex-col items-center w-full">
                       <div
-                        className={`flex items-center gap-2 bg-gray-800/60 ${
+                        className={`flex items-center gap-2 bg-gray-800/60 border border-cyan-700 ${
                           objectives[step - 1].border
                         } rounded-lg px-3 py-2 justify-center mx-auto`}
                         style={{ maxWidth: "420px" }}
@@ -217,22 +231,20 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
                     </div>
                   </div>
                 </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
           </div>
           {/* Navigation */}
           <div className="mt-4">{renderProgress()}</div>
-
           <div className="flex items-center justify-between mt-2 gap-2">
             <button
               onClick={() => setStep(Math.max(0, step - 1))}
               disabled={step === 0}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg font-bold transition-all
-                ${
-                  step === 0
-                    ? "bg-gray-700/40 text-gray-400 cursor-not-allowed"
-                    : "bg-cyan-800/70 text-cyan-200 hover:bg-cyan-700/80 hover:text-white"
-                }`}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg font-bold transition-all ${
+                step === 0
+                  ? "bg-gray-700/40 text-gray-400 cursor-not-allowed"
+                  : "bg-cyan-800/70 text-cyan-200 hover:bg-cyan-700/80 hover:text-white"
+              }`}
             >
               <ChevronLeft className="w-4 h-4" /> Prev
             </button>
