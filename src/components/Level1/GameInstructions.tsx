@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDeviceLayout } from '../../hooks/useOrientation';
 
 // Use placeholder image for Trainer and use selected avatar for Intern
 const TRAINER_IMG = "https://via.placeholder.com/40x40?text=T";
@@ -64,6 +65,8 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
   const [step, setStep] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const { isHorizontal, isMobile } = useDeviceLayout();
+  const isMobileLandscape = isMobile && isHorizontal;
 
   // Determine if we're in conversation or showing the definition
   const inConversation = step < conversation.length;
@@ -96,9 +99,12 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
   let tailClass = "";
   let tailStyle = {};
   // Use same border color as the box (blue-400 or black)
-  const borderColor = inConversation ? "#60a5fa" : "#000"; // #60a5fa is Tailwind blue-400
+  const borderColor = inConversation ? "#60a5fa" : "#000";
 
-  if (pointerDirection === "left") {
+  if (isMobileLandscape) {
+    // Remove tails in landscape mode
+    tailClass = "hidden";
+  } else if (pointerDirection === "left") {
     tailClass = `${tailBase} left-[-24px] bottom-[18px]`;
     tailStyle = {
       borderTop: "16px solid transparent",
@@ -158,31 +164,35 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
           inConversation
             ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
             : "border-2 border-black"
-        } rounded-[2rem_2rem_2rem_0.5rem] p-4 text-base min-w-full min-h-[72px] ml-[0.1rem] shadow-lg transition-shadow`}
+        } rounded-[2rem_2rem_2rem_0.5rem] shadow-lg transition-shadow ml-[0.1rem] ${
+          isMobileLandscape
+            ? "p-2 text-xs min-h-[40px]"
+            : "p-4 text-base min-h-[72px]"
+        } min-w-full`}
       >
-        <div className="flex items-start gap-4">
+        <div className={`flex items-start ${isMobileLandscape ? "gap-2" : "gap-4"}`}>
           <div
-            className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center ${
+            className={`flex-shrink-0 rounded-full flex items-center justify-center ${
               current.speaker === "Trainer" ? "bg-blue-500" : ""
-            }`}
+            } ${isMobileLandscape ? "w-8 h-8" : "w-16 h-16"}`}
           >
             {current.speaker === "Intern" ? (
               <img
                 src={current.icon}
                 alt={current.speaker}
-                className="w-16 h-16 rounded-full object-cover border-2 border-green-400 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]"
+                className={`${isMobileLandscape ? "w-8 h-8" : "w-16 h-16"} rounded-full object-cover border-2 border-green-400 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]`}
               />
             ) : (
               <img
                 src={current.icon}
                 alt={current.speaker}
-                className="w-8 h-8 rounded-full object-cover"
+                className={`${isMobileLandscape ? "w-4 h-4" : "w-8 h-8"} rounded-full object-cover`}
               />
             )}
           </div>
           <div className="flex-1">
             <div>
-              <p className="text-gray-800 leading-7 font-semibold text-base">
+              <p className={`text-gray-800 leading-7 font-semibold ${isMobileLandscape ? "text-xs" : "text-base"}`}>
                 {displayedText}
                 {isTyping && (
                   <span
@@ -196,9 +206,9 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
                 )}
               </p>
               {inConversation && (
-                <div className="flex gap-2 mt-2">
+                <div className={`flex gap-2 mt-2`}>
                   <button
-                    className={`mt-2 px-3 py-1.5 rounded-xl bg-blue-500 text-white font-bold text-sm shadow transition-opacity outline-none mr-2 ${
+                    className={`mt-2 px-3 py-1.5 rounded-xl bg-blue-500 text-white font-bold ${isMobileLandscape ? "text-xs" : "text-sm"} shadow transition-opacity outline-none mr-2 ${
                       isTyping ? "opacity-60 cursor-not-allowed" : "hover:bg-blue-600"
                     }`}
                     onClick={() => setStep((s) => s + 1)}
@@ -208,7 +218,7 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
                     {current.isLetsPlay ? "Show Definition" : "Next"}
                   </button>
                   <button
-                    className={`mt-2 px-3 py-1.5 rounded-xl bg-gray-200 text-gray-800 font-semibold text-sm shadow transition-opacity outline-none ${
+                    className={`mt-2 px-3 py-1.5 rounded-xl bg-gray-200 text-gray-800 font-semibold ${isMobileLandscape ? "text-xs" : "text-sm"} shadow transition-opacity outline-none ${
                       isTyping ? "opacity-60 cursor-not-allowed" : "hover:bg-gray-300"
                     }`}
                     onClick={() => setStep(conversation.length)}
@@ -222,8 +232,8 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
             </div>
           </div>
         </div>
-        {/* Pointer Tail */}
-        <div className={tailClass} style={tailStyle}></div>
+        {/* Pointer Tail - hidden in landscape mode */}
+        {!isMobileLandscape && <div className={tailClass} style={tailStyle}></div>}
       </div>
     </div>
   );
