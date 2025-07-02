@@ -58,10 +58,9 @@ const BingoGrid: React.FC<BingoGridProps> = ({
     // Only use horizontal mode for mobile devices in landscape
     if (isMobile && isHorizontal) {
       classes.push(
-        'min-w-[22px]',
-        'text-[0.7rem]',
-        'aspect-[1.8/1]', 
-        'letter-spacing-[0.1rem]',
+        'min-w-[20px]',
+        'text-[0.65rem]',
+        'aspect-[1.2/0.64]', 
       );
     } else {
       classes.push(

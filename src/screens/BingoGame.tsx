@@ -86,7 +86,7 @@ const BingoGame: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: isMobile ? '0.25rem' : '1rem',
+    padding: isMobile ? '2rem 3.5rem 1rem 3.5rem' : '1rem', // top/right/left: 3rem, bottom: 1rem for mobile
   };
   const gridStyle: React.CSSProperties = {
     width: '100%',
@@ -112,7 +112,9 @@ const BingoGame: React.FC = () => {
     textAlign: 'center',
     padding: isMobile ? '0.5rem 0' : '1rem 0',
     color: 'white',
-    fontSize: isMobile ? '1rem' : '1.2rem',
+    fontSize: isMobile
+      ? (isHorizontal ? '0.7rem' : '1rem')
+      : '1.2rem',
     opacity: 0.75,
   };
 
@@ -195,7 +197,7 @@ const BingoGame: React.FC = () => {
               flexDirection: 'row',
               width: '100%',
               maxWidth: '100vw',
-              gap: '0.5rem',
+              gap: '2rem',
               minHeight: isHorizontal ? '28dvh' : '18dvh',
             }}
             initial={{ opacity: 0, y: 30 }}
@@ -216,6 +218,22 @@ const BingoGame: React.FC = () => {
               transition={{ duration: 0.4, delay: 0.2 }}
             >
               <motion.div style={{ width: '100%' }}>
+                {/* Show Bingo logo above instructions in landscape mode */}
+                {isHorizontal && (
+                  <motion.img
+                    src="/logos/Bingo.png"
+                    alt="Bingo Logo"
+                    style={{
+                      display: 'block',
+                      height: '120px',
+                      padding: '0.6rem 0 1rem 0',
+                      marginLeft: '4rem', // move image more to the right
+                    }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.18 }}
+                  />
+                )}
                 <GameInstructions selectedDefinition={selectedDefinition} />
               </motion.div>
             </motion.div>
