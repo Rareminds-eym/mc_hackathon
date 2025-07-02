@@ -424,22 +424,22 @@ export const JigsawBoard: React.FC = () => {
                     onMouseDown={() => setIsMenuOpen(false)}
                   />
                   <div
-                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto w-64${
+                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto${
                       isMobile && isHorizontal
                         ? " compact-dropdown-mobile-horizontal"
-                        : ""
+                        : " w-72"
                     }`}
-                    style={
-                      isMobile && isHorizontal
-                        ? {
-                            minWidth: "10rem",
-                            maxWidth: "13rem",
-                            height: "min-content",
-                            maxHeight: "70vh",
-                            padding: "0.5rem 0.5rem",
-                          }
-                        : {}
-                    }
+                    style={{
+                      minWidth: isMobile && isHorizontal ? "12rem" : "18rem",
+                      maxWidth: isMobile && isHorizontal ? "90vw" : "22rem",
+                      width: isMobile && isHorizontal ? "90vw" : "22rem",
+                      height: "min-content",
+                      maxHeight: isMobile && isHorizontal ? "70vh" : "80vh",
+                      padding: isMobile && isHorizontal ? "0.5rem 0.5rem" : "1rem 1.2rem",
+                      boxSizing: "border-box",
+                      overflowX: "hidden",
+                      overflowY: "auto",
+                    }}
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     {/* Menu Header */}
@@ -635,9 +635,9 @@ export const JigsawBoard: React.FC = () => {
               {/* Violations Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
+                  {/* <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
                     VIOLATIONS DETECTED
-                  </h2>
+                  </h2> */}
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
@@ -741,9 +741,9 @@ export const JigsawBoard: React.FC = () => {
               {/* Actions Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
+                  {/* <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
                     DEPLOY COUNTERMEASURES
-                  </h2>
+                  </h2> */}
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
