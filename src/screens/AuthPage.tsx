@@ -38,7 +38,9 @@ const AuthPage: React.FC = () => {
           {/* Footer */}
           <div className="text-center mt-8">
             <p className="text-sm text-gray-500">
-              © 2025 Rareminds. All rights reserved.
+              <span className="block md:inline-block text-xs sm:text-sm">
+                © 2025 Rareminds. All rights reserved.
+              </span>
             </p>
           </div>
         </div>
