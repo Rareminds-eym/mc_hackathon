@@ -244,7 +244,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Confirm Password (Signup only) */}
           {mode === 'signup' && (
-            <div className={`${isMobileLandscape ? 'col-span-1' : ''} space-y-1 ${isMobileLandscape ? 'mb-1' : ''}`}>
+            <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-1' : ''} space-y-2`}>
               {!isMobileLandscape && (
                 <label className="block font-medium text-white mb-1 text-sm">
                   Confirm Password
@@ -252,7 +252,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               )}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300`} />
+                  <Lock className={`${isMobileLandscape ? 'h-5 w-5' : 'h-5 w-5'} text-blue-300`} />
                 </div>
                 <input
                   id="confirmPassword"
@@ -261,7 +261,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-1.5 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-8 pr-8 ${isMobileLandscape ? 'text-xs' : ''}`}
+                  className={`w-full px-3 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-8 pr-8 ${isMobileLandscape ? 'text-xs' : ''}`}
                   placeholder="Confirm Password"
                 />
                 <button
