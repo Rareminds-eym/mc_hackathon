@@ -1,21 +1,26 @@
 export interface Level {
   id: number;
+  name: string;
   score: number;
-  stars: number;
-  completed: boolean;
-  timeSpent: string;
+}
+
+export interface ModuleLevel extends Level {
+  stars?: number;
+  completed?: boolean;
+  timeSpent?: string;
 }
 
 export interface Module {
   id: number;
-  name: string;
-  icon: string;
-  color: string;
-  gradient: string;
+  status: 'completed' | 'unlocked' | 'locked';
+  stars: number;
   levels: Level[];
-  completedLevels: number;
-  totalScore: number;
-  category: string;
+  isGiftBox?: boolean;
+}
+
+export interface ModulePosition {
+  x: number;
+  y: number;
 }
 
 export interface UserProfile {
@@ -26,4 +31,17 @@ export interface UserProfile {
   level: number;
   completedModules: number;
   totalModules: number;
+}
+
+// Props interfaces for components
+export interface ModuleDetailModalProps {
+  isOpen: boolean;
+  module: Module | null;
+  onClose: () => void;
+}
+
+export interface ModuleStoneProps {
+  module: Module;
+  position: ModulePosition;
+  onClick: () => void;
 }
