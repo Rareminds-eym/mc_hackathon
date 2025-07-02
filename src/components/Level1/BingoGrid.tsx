@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useDeviceLayout } from '../../hooks/useOrientation'; // Adjust the import path as needed
 
 interface BingoCell {
   id: number;
@@ -22,11 +23,10 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   onCellClick, 
   isInCompletedLine 
 }) => {
-  // Ref to track previous completed lines
+  const { isHorizontal, isMobile } = useDeviceLayout();
   const prevCompletedLinesRef = useRef<number>(0);
 
   useEffect(() => {
-    // Play Bingo sound if a new line (horizontal, vertical, or diagonal) is completed
     if (completedLines && completedLines.length > prevCompletedLinesRef.current) {
       const bingoAudio = new Audio('/Bingo.mp3');
       bingoAudio.volume = 0.5;
@@ -35,20 +35,16 @@ const BingoGrid: React.FC<BingoGridProps> = ({
     prevCompletedLinesRef.current = completedLines ? completedLines.length : 0;
   }, [completedLines]);
 
-  // Helper for cell button classes
+  // Helper for cell button classes - now includes landscape-specific classes
   const getCellClasses = (cell: BingoCell) => {
     const inCompletedLine = isInCompletedLine(cell.id);
     
-    // Base classes
     let classes = [
-      'aspect-[1.2/1]', // aspect ratio
-      'min-w-[90px]',   // min width
       'flex',
       'items-center',
       'justify-center',
       'p-0',
       'font-semibold',
-      'text-base',
       'transition-all',
       'duration-200',
       'ease-[cubic-bezier(.4,2,.6,1)]',
@@ -58,6 +54,23 @@ const BingoGrid: React.FC<BingoGridProps> = ({
       'text-gray-800',
       'box-border',
     ];
+
+    // Only use horizontal mode for mobile devices in landscape
+    if (isMobile && isHorizontal) {
+      classes.push(
+        'min-w-[22px]',
+        'text-[0.7rem]',
+        'aspect-[1.8/1]', 
+        'letter-spacing-[0.1rem]',
+      );
+    } else {
+      classes.push(
+        'aspect-[1.4/1.2]',
+        'min-w-[100px]',
+        'text-base', 
+        'text-[0.8rem]',
+      );
+    }
 
     // Corner radius
     if (cell.id === 0) classes.push('rounded-tl-lg');
@@ -90,12 +103,10 @@ const BingoGrid: React.FC<BingoGridProps> = ({
       }
     }
 
-    // Special styling for cell 24
     if (cell.id === 24) {
       classes.push('border-2 border-emerald-400 shadow-[0_0_0_2px_#4ade80]');
     }
 
-    // Disabled state
     if (gameComplete || cell.selected) {
       classes.push('cursor-not-allowed');
     } else {
@@ -111,67 +122,28 @@ const BingoGrid: React.FC<BingoGridProps> = ({
     return 'hover:shadow-[0_8px_24px_0_rgba(37,99,235,0.25)] hover:text-blue-600 hover:border-2 hover:border-blue-600 hover:-translate-y-1 hover:scale-[1.05]';
   };
 
-  return (
-    <div className="rounded-[8rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)] p-2 transition-[box-shadow,transform] duration-300">
-      {/* Responsive styles */}
-      <style>{`
-        @media (max-width: 900px) {
-          .bingo-grid-container {
-            padding: 0.2rem !important;
-            border-radius: 3rem !important;
-          }
-          .bingo-grid-grid {
-            grid-template-columns: repeat(5, 1fr) !important;
-          }
-          .bingo-grid-cell {
-            min-width: 60px !important;
-            font-size: 0.9rem !important;
-          }
-          .bingo-grid-cell-text {
-            font-size: 0.72rem !important;
-          }
-        }
-        @media (max-width: 600px) {
-          .bingo-grid-container {
-            padding: 0.1rem !important;
-            border-radius: 1.2rem !important;
-          }
-          .bingo-grid-grid {
-            grid-template-columns: repeat(5, 1fr) !important;
-            gap: 0.5px !important;
-          }
-          .bingo-grid-cell {
-            min-width: 38px !important;
-            font-size: 0.7rem !important;
-            aspect-ratio: 1 / 1 !important;
-          }
-          .bingo-grid-cell-text {
-            font-size: 0.62rem !important;
-          }
-        }
-        @media (max-width: 400px) {
-          .bingo-grid-cell {
-            min-width: 28px !important;
-            font-size: 0.6rem !important;
-          }
-          .bingo-grid-cell-text {
-            font-size: 0.5rem !important;
-          }
-        }
-      `}</style>
+  // Container classes based on orientation
+  const containerClasses = `rounded-[8rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)] p-2 transition-[box-shadow,transform] duration-300 ${
+    isHorizontal ? 'p-1 rounded-[3rem]' : ''
+  }`;
 
-      <div 
-        className="bingo-grid-grid grid grid-cols-5 gap-px border border-black bg-black rounded-lg shadow-[0_0_32px_8px_rgba(255,255,255,0.5),0_0_32px_16px_rgba(255,255,255,0.25)]"
-      >
+  // Grid classes based on orientation
+  const gridClasses = `bingo-grid-grid grid grid-cols-5 gap-px border border-black bg-black rounded-lg shadow-[0_0_32px_8px_rgba(255,255,255,0.5),0_0_32px_16px_rgba(255,255,255,0.25)] ${
+    isHorizontal ? 'gap-0.5' : ''
+  }`;
+
+  return (
+    <div className={containerClasses}>
+      <div className={gridClasses}>
         {cells.map((cell) => (
           <button
             key={cell.id}
-            className={`bingo-grid-cell ${getCellClasses(cell)} ${hoverClasses(cell)}`}
+            className={`${getCellClasses(cell)} ${hoverClasses(cell)}`}
             onClick={() => onCellClick(cell.id)}
             disabled={gameComplete || cell.selected}
             title={cell.definition}
           >
-            <span className="bingo-grid-cell-text text-center leading-tight text-[14px] w-full break-words">
+            <span className="text-center leading-tight w-full break-words">
               {cell.term}
             </span>
           </button>

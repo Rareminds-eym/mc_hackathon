@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useDeviceLayout } from '../../hooks/useOrientation' // Add this import
 
 interface AuthFormProps {
   mode: 'login' | 'signup'
@@ -21,6 +22,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { signIn, signUp } = useAuth()
+  const { isHorizontal, isMobile } = useDeviceLayout(); // Add this line
+  const isMobileLandscape = isMobile && isHorizontal;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -90,17 +93,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className={`w-full mx-auto ${isMobileLandscape ? 'max-w-xs' : 'max-w-md'}`}>
       <div
-        className="bg-gray-800/60 rounded-lg shadow-2xl p-8 
-        w-full max-w-md relative z-10 "
+        className={`bg-gray-800/60 rounded-lg shadow-2xl relative z-10 w-full mx-auto
+        ${isMobileLandscape ? 'p-4 max-w-xs' : 'p-8 max-w-md'}`}
       >
         {/* Form Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">
+        <div className={`text-center ${isMobileLandscape ? 'mb-2' : 'mb-8'}`}>
+          <h2 className={`${isMobileLandscape ? 'text-base' : 'text-3xl'} font-bold text-white mb-1`}>
             {mode === 'login' ? 'Welcome Back' : 'Join GMP Quest'}
           </h2>
-          <p className={mode === 'login' ? "text-gray-300" : "text-white"}>
+          <p className={`${isMobileLandscape ? 'text-xs text-white' : (mode === 'login' ? 'text-gray-300' : 'text-white')}`}>
             {mode === 'login' 
               ? 'Sign in to continue your quality journey' 
               : 'Start your manufacturing excellence adventure'
@@ -110,16 +113,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
         {/* Error/Success Messages */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 animate-shake">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 animate-shake`}>
+            <AlertCircle className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-red-500 flex-shrink-0`} />
+            <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-red-700`}>{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2 animate-bounce-in">
-            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-            <p className="text-green-700 text-sm">{success}</p>
+          <div className={`mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2 animate-bounce-in`}>
+            <CheckCircle className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-green-500 flex-shrink-0`} />
+            <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-green-700`}>{success}</p>
           </div>
         )}
 
@@ -128,12 +131,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           {/* Full Name (Signup only) */}
           {mode === 'signup' && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-white mb-1">
+              <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
                 Full Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-blue-300" />
+                  <User className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
                 </div>
                 <input
                   id="fullName"
@@ -142,10 +145,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   value={formData.fullName}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
-                  rounded-md shadow-sm placeholder-slate-400
-                  focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                  text-white pl-10"
+                  className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 ${isMobileLandscape ? 'text-xs' : ''}`}
                   placeholder="Enter your full name"
                 />
               </div>
@@ -154,12 +154,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Email */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-white mb-1">
+            <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
               Email Address
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-blue-300" />
+                <Mail className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
               </div>
               <input
                 id="email"
@@ -168,10 +168,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
-                rounded-md shadow-sm placeholder-slate-400
-                focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                text-white pl-10"
+                className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 ${isMobileLandscape ? 'text-xs' : ''}`}
                 placeholder="Enter your email"
               />
             </div>
@@ -179,12 +176,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Password */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-white mb-1">
+            <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
               Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-blue-300" />
+                <Lock className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
               </div>
               <input
                 id="password"
@@ -193,10 +190,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
-                rounded-md shadow-sm placeholder-slate-400
-                focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                text-white pl-10 pr-10"
+                className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 pr-10 ${isMobileLandscape ? 'text-xs' : ''}`}
                 placeholder="Enter your password"
               />
               <button
@@ -205,9 +199,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                  <EyeOff className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
                 ) : (
-                  <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                  <Eye className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
                 )}
               </button>
             </div>
@@ -215,13 +209,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
           {/* Confirm Password (Signup only) */}
           {mode === 'signup' && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-white mb-1">
+            <div className={`space-y-1 ${isMobileLandscape ? 'mb-1' : ''}`}>
+              <label className={`block font-medium text-white mb-1 ${isMobileLandscape ? 'text-xs' : 'text-sm'}`}>
                 Confirm Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-blue-300" />
+                  <Lock className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300`} />
                 </div>
                 <input
                   id="confirmPassword"
@@ -230,21 +224,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 bg-white/10 border border-slate-700/50
-                  rounded-md shadow-sm placeholder-slate-400
-                  focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                  text-white pl-10 pr-10"
+                  className={`w-full px-3 py-1.5 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-8 pr-8 ${isMobileLandscape ? 'text-xs' : ''}`}
                   placeholder="Confirm your password"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-2 flex items-center"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                    <EyeOff className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
                   ) : (
-                    <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                    <Eye className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
                   )}
                 </button>
               </div>
@@ -255,7 +246,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200"
+            className={`w-full flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200
+              ${isMobileLandscape ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'}`}
           >
             {isSubmitting ? (
               <>
@@ -269,8 +261,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         </form>
 
         {/* Toggle Mode */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="mt-4 text-center">
+          <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-gray-600`}>
             {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
             <button
               type="button"
