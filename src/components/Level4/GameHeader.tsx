@@ -11,7 +11,7 @@ interface GameHeaderProps {
 
 const GameHeader: React.FC<GameHeaderProps> = ({ currentCase, totalCases, score, totalQuestions, onBack }) => {
   return (
-    <header className="game-header flex flex-col bg-white/60 items-center justify-center py-1 text-center w-full">
+    <header className="game-header flex flex-col  items-center justify-center py-1 text-center w-full">
       {onBack && (
         <div className="w-full flex justify-start mb-2">
           <button
@@ -23,9 +23,9 @@ const GameHeader: React.FC<GameHeaderProps> = ({ currentCase, totalCases, score,
           </button>
         </div>
       )}
-      <div className="flex flex-col items-center w-full">
+      <div className="flex flex-col items-center w-full bg-black/10">
         <h2 className="text-sm font-bold text-red-600 lg:text-2xl xl:text-3xl">Deviation Investigation Game</h2>
-        <div className="flex space-x-4 text-[10px] mt-1 lg:text-lg xl:text-xl">
+        <div className="flex space-x-4 text-[10px] mt-1 lg:text-lg xl:text-xl text-white ">
           <span>Case: {currentCase} / {totalCases}</span>
           <span>Score: {score}</span>
           <span>Questions: {totalQuestions}</span>

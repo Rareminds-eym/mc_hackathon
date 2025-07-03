@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameState } from './types';
 import { cases } from './data/cases';
 import { Product2D } from './Product2D';
@@ -7,6 +8,7 @@ import { DragDropZone } from './DragDropZone';
 import { FeedbackPanel } from './FeedbackPanel';
 import { GameHeader } from './GameHeader';
 import BoyBook from './boybook';
+import Animation_manufacture from './animated_manufacture'
 import { 
   ChevronRight, 
   AlertTriangle, 
@@ -18,10 +20,13 @@ import {
 import CharacterRotator from './CharacterRotator';
 import Characterboybook from './Characterboybook';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import { FeedbackPopup } from './Popup';
 
 type GamePhase = 'login' | 'reportView' | 'step1' | 'step2' | 'step3' | 'feedback';
 
 export const GameBoard2D: React.FC = () => {
+  const navigate = useNavigate();
+
   const [gameState, setGameState] = useState<GameState>({
     currentCase: 0,
     answers: {
@@ -42,6 +47,7 @@ export const GameBoard2D: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   // Track which questions have been scored for each case
   const [scoredQuestions, setScoredQuestions] = useState<Record<number, Set<'violation' | 'rootCause' | 'impact'>>>({});
+  const [popupOpen, setPopupOpen] = useState(false);
 
   const currentCase = cases[gameState.currentCase];
 
@@ -140,6 +146,10 @@ export const GameBoard2D: React.FC = () => {
 
   const handleBack = () => {
     switch (currentPhase) {
+      case 'login':
+        // Dynamic module navigation based on current case (SPA routing)
+        navigate(`/modules/${gameState.currentCase + 1}`);
+        break;
       case 'reportView':
         setCurrentPhase('login');
         setCanContinue(true);
@@ -205,49 +215,51 @@ export const GameBoard2D: React.FC = () => {
   };  const renderCharacter = () => (
     <div className="flex flex-col items-center ">
       <div className="w-full h-full flex items-center justify-center">
-        <img 
+        {/* <img 
           src="/rendering-cartoon-fantasy-scene-illustration.png" 
           alt="Alert" 
           className="landscape:w-48 landscape:h-48 landscape:max-w-[192px] landscape:max-h-[192px] landscape:object-contain object-contain" 
           style={{ maxWidth: '100%', height: 'auto' }}
-        />
+        /> */}
+        <Animation_manufacture />
       </div>
     </div>
   );// Phase 1: Login/Deviation Report
   const renderLogin = () => (
-    <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-white">
-      {/* Blurred, low-opacity background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{
-          backgroundImage: "url('/background.png')",
-          opacity: 1
-        }}
-        aria-hidden="true"
-      />
+    <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+      {/* Neon Animated SVG Background - only one layer */}
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        <Animation_manufacture />
+      </div>
+      {/* Case label top left on login page */}
+      <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start bg-black/40 backdrop-blur-md border border-cyan-400/30">
+        <span className="text-cyan-300 font-bold text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
+      </div>
       {/* Main content with gradient overlay */}
       <div className="relative z-10 h-full w-full flex flex-col text-xs md:text-sm lg:text-base">
         {/* Header */}
         <div className="flex flex-col items-center justify-center w-full z-10 landscape:relative landscape:z-20 landscape:bg-transparent landscape:pt-2 ">
-          <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-red-600 bg-white/70 ">DEVIATION REPORT</h1>
-          <p className="text-xs md:text-base lg:text-2xl bg-white/70 text-gray-700 landscape:text-xs landscape:mb-1 lg:mb-2">Quality deviation detected - Investigation required</p>
+          <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-red-600  ">DEVIATION REPORT</h1>
+          <p className="text-xs md:text-base lg:text-2xl text-cyan-400 landscape:text-xs landscape:mb-1 lg:mb-2 glow-cyan-2">
+            Quality deviation detected - Investigation required
+          </p>
         </div>
 
         {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-        <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-full h-full lg:gap-[2vw] lg:px-8 lg:pt-6 lg:pb-0">
-          {/* Left: Character */}
-          <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
-            <div className="w-full h-full flex items-center justify-center">
-              {/* Interactive CharacterRotator */}
-              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
-                <CharacterRotator />
-              </div>
-            </div>
-          </div>
-          {/* Right: Product Showcase */}
-          <div className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center bg-white/70 border-2 border-cyan-400 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]">
-            <div className="w-full flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible">
-              <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0">Product Under Investigation</h2>
+        <div className="pt-2 items-center justify-center flex-1 w-full h-full lg:flex lg:items-center lg:justify-center">
+          <div
+            className="rounded-2xl shadow-xl bg-black/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-100 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
+            style={{
+              backgroundImage: `url('/exam-pad-bg.png')`,
+              backgroundSize: 'cover',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              minHeight: '160px',
+              // boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
+            }}
+          >
+            <div className=" flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible w-auto h-auto max-w-full max-h-full">
+              <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-cyan-400  text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0">Product Under Investigation</h2>
               <div className="w-full h-full flex flex-col items-center justify-center lg:overflow-visible">
                 <Product2D
                   productName="Pharmaceutical Tablet"
@@ -260,67 +272,75 @@ export const GameBoard2D: React.FC = () => {
           </div>
         </div>
         {/* Navigation - always visible in mobile landscape */}
-        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full px-2 md:w-[100%] gap-16 pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
+        <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
           <button
             onClick={handleBack}
-            className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm mb-2 sm:mb-0"
+            className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg  flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
           >
-            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3" />
+            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
             <span>Back</span>
           </button>
-          <div className="flex-1 flex justify-center sm:justify-start w-full sm:w-auto">
+          <div className="flex w-auto justify-end">
             <button
               onClick={handleContinue}
-              className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
+              className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
             >
               <span>Start Investigation</span>
-              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4" />
+              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4 ml-1" />
             </button>
           </div>
         </div>
       </div>
+      {/* Custom CSS for floating shapes and neon theme */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          25% { transform: translateY(-20px) translateX(10px); }
+          50% { transform: translateY(-10px) translateX(-5px); }
+          75% { transform: translateY(-25px) translateX(5px); }
+        }
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .triangle-shape {
+          clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .square-shape {
+          border-radius: 2px;
+        }
+        .floating-shape {
+          will-change: transform;
+        }
+      `}</style>
     </div>
   );
   // Phase 2: Report View
   const renderReportView = () => (
     <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
-      style={{
-        backgroundImage: "url('/background.png')",
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        opacity: 1
-      }}
-      aria-hidden="true"
+    
     >
-      <div className="w-[100%] h-[100%] flex-1 flex flex-col">
+      {/* Animated background layer */}
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        <Animation_manufacture />
+      </div>
+      <div className="w-[100%] h-[100%] flex-1 flex flex-col relative z-10">
         {/* Header */}
         <div className="text-center mb-[1vw] w-[100%]">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 bg-white/70">Deviation Investigation Game</h1>
-          <p className="text-base text-gray-600  bg-white/60">Case Report Review</p>
+          <h1 className="text-xl md:text-2xl font-bold text-cyan-400  ">Deviation Investigation Game</h1>
+          <p className="text-base text-cyan-400  ">Case Report Review</p>
         </div>
         {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-        <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-[100%] h-auto lg:gap-[2vw] lg:px-2 lg:pt-6 lg:pb-">
-          {/* Left: Character */}
-           <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
-            <div className="w-full h-full flex items-center justify-center">
-              {/* Interactive CharacterRotator */}
-              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
-                <CharacterRotator />
-              </div>
-            </div>
-          </div>
-          {/* Right: Deviation Report in Pad/Paper Format */}
+        <div className="flex flex-col items-center justify-center flex-1 w-full h-full mb-4 md:mb-0 mt-2 lg:flex lg:items-center lg:justify-center">
           <div
-            className="rounded-2xl shadow-xl bg-white/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center
-              bg-white/70 border-2 border-cyan-400 relative w-full landscape:w-1/2 max-w-xl min-h-0 lg:max-w-4xl xl:max-w-5xl lg:min-h-[420px] xl:min-h-[520px]"
+            className="rounded-2xl shadow-xl bg-black/60  lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-400 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
             style={{
               backgroundImage: `url('/exam-pad-bg.png')`,
               backgroundSize: 'cover',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
-              minHeight: '200px',
-              boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
+              minHeight: '160px',
+              // boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
             }}
           >
             {/* Exam pad ring/clip at the top */}
@@ -328,26 +348,24 @@ export const GameBoard2D: React.FC = () => {
               <div className="w-8 h-2 bg-gray-400 rounded-full"></div>
             </div>
             {/* Paper styling */}
-            <div className="mt-[1vw] w-full h-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl overflow-auto max-h-[320px] lg:max-h-[420px] lg:scale-110 xl:scale-125 px-2 md:px-4 lg:px-0">
+            <div className="mt-[1vw] w-full h-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl max-h-full max-w-full overflow-auto break-words px-2 md:px-4 lg:px-0">
               <div className="text-center mb-2 w-full">
                 <h2 className="text-xs md:text-sm lg:text-2xl xl:text-3xl font-bold text-red-600 mb-1">DEVIATION REPORT</h2>
                 <div className="w-full h-px bg-gray-300 mb-1"></div>
               </div>
-              <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl">
-                <div className="grid grid-cols-2 gap-1">
-                  <div>
-                    <span className="font-bold">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
-                  </div>
-                  <div>
-                    <span className="font-bold">Date:</span> {new Date().toLocaleDateString()}
-                  </div>
+              <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl text-cyan-400">
+                <div>
+                  <span className="font-bold">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
+                </div>
+                <div>
+                  <span className="font-bold">Date:</span> {new Date().toLocaleDateString()}
                 </div>
                 <div>
                   <span className="font-bold">Title:</span> <span className="break-words text-[10px] md:text-xs">{currentCase.title}</span>
                 </div>
                 <div>
                   <span className="font-bold">Description:</span>
-                  <p className="mt-1 text-gray-700 leading-relaxed text-[10px] md:text-xs break-words">{currentCase.scenario}</p>
+                  <p className="mt-1 text-cyan-400 leading-relaxed text-[10px] md:text-xs break-words">{currentCase.scenario}</p>
                 </div>
                 <div>
                   <span className="font-bold">Product:</span> <span className="text-[10px] md:text-xs">Pharmaceutical Tablet</span>
@@ -370,21 +388,21 @@ export const GameBoard2D: React.FC = () => {
           </div>
         </div>
         {/* Navigation */}
-        <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full px-2 md:w-[100%] gap-[10%] pb-4 pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
+        <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
           <button
             onClick={handleBack}
-            className="px-3 py-2 md:px-[1vw] md:py-[0.5vw] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm mb-2 sm:mb-0"
+            className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
           >
-            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3" />
+            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
             <span>Back</span>
           </button>
-          <div className="flex-1 flex justify-center sm:justify-start w-full sm:w-auto">
+          <div className="flex w-auto justify-end">
             <button
               onClick={handleContinue}
-              className="px-4 py-2 md:px-[2vw] md:py-[0.8vw] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
+              className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
             >
               <span>Start Investigation</span>
-              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4" />
+              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4 ml-1" />
             </button>
           </div>
         </div>
@@ -408,38 +426,25 @@ export const GameBoard2D: React.FC = () => {
 
     const StepIcon = stepIcons[currentPhase as keyof typeof stepIcons];    return (
       <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
-       style={{
-      backgroundImage: "url('/background.png')",
-      backgroundSize: 'cover',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center',
-      opacity: 1
-    }}
-    aria-hidden="true"
+       aria-hidden="true"
       >
-        <div className="w-[100%] h-[100%] flex-1 flex flex-col">
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+          <Animation_manufacture />
+        </div>
+        <div className="relative w-[100%] h-[100%] flex-1 flex flex-col z-10">
           {/* Header */}
           <div className="text-center mb-[1vw] w-[100%]">
             {/* <div className="inline-flex items-center justify-center w-[3vw] h-[3vw] min-w-[24px] min-h-[24px] bg-blue-100 rounded-full mb-[0.5vw]">
               <StepIcon className="w-[1.5vw] h-[1.5vw] min-w-[12px] min-h-[12px] text-blue-600" />
             </div> */}
-            <h1 className="text-lg md:text-xl font-bold text-gray-800 mb-1 bg-white/70">{stepTitles[currentPhase as keyof typeof stepTitles]}</h1>
-            <p className="text-base text-gray-600 bg-white/70">Deviation Investigation Game</p>
+            <h1 className="text-lg md:text-xl font-bold text-cyan-400 mb-1 ">{stepTitles[currentPhase as keyof typeof stepTitles]}</h1>
+            <p className="text-base text-cyan-400">Deviation Investigation Game</p>
           </div>
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-          <div className="flex flex-col landscape:flex-row lg:grid lg:grid-cols-2 gap-[2vw] items-center justify-center flex-1 w-[100%] h-auto min-h-0 overflow-visible lg:gap-[2vw] lg:px-2 lg:py-6">
-            {/* Left: Character */}
-            <div className="flex items-center justify-center w-full h-auto col-span-1 landscape:w-1/2 landscape:h-auto lg:w-full lg:h-full lg:min-h-[420px] lg:min-w-[420px]">
-            <div className="w-full h-full flex items-center justify-center">
-              {/* Interactive CharacterRotator */}
-              <div className={`lg:scale-150 xl:scale-[2] transition-transform duration-300 flex items-center justify-center ${true ? '' : 'w-full h-full flex items-center justify-center'}`}>
-                <CharacterRotator />
-              </div>
-            </div>
-          </div>
-            {/* Right: Question Panel */}
-            <div className="bg-white/70 rounded-2xl shadow-xl p-[1vw] flex-1 w-full landscape:w-1/2 h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs col-span-1 lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto">
-              <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] landscape:leading-tight">
+          <div className="flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[60px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0">
+            {/* Centered: Question Panel */}
+            <div className=" rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto">
+              <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
                 <QuestionPanel
                   case={currentCase}
                   currentQuestion={
@@ -457,26 +462,28 @@ export const GameBoard2D: React.FC = () => {
             </div>
           </div>
           {/* Navigation */}
-          <div className="flex justify-start mt-[1vw] w-[100%] min-h-0 overflow-visible fixed bottom-0 left-0 z-50 bg-transparent p-2 ">
+          <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
             <button
               onClick={handleBack}
-              className="px-[1vw] py-[0.5vw] min-px-2 min-py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 font-semibold flex items-center space-x-1 text-xs md:text-sm"
+              className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
             >
-              <ChevronLeft className="w-[0.7vw] h-[0.7vw] min-w-3 min-h-3" />
+              <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
               <span>Back</span>
             </button>
-            <button
-              onClick={handleContinue}
-              disabled={!canContinue}
-              className={`px-[2vw] py-[0.8vw] min-px-4 min-py-2 rounded-xl transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm ${
-                canContinue
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <span>Continue</span>
-              <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
-            </button>
+            <div className="flex w-auto justify-end">
+              <button
+                onClick={handleContinue}
+                disabled={!canContinue}
+                className={`top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold flex flex-row items-center z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg sm:font-bold sm:rounded-lg sm:transition-all sm:duration-300 sm:bg-black/40 sm:backdrop-blur-md sm:border sm:border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0 ${
+                  canContinue
+                    ? 'text-cyan-400'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <span>Continue</span>
+                <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4 ml-1" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -502,17 +509,26 @@ export const GameBoard2D: React.FC = () => {
     const impactUser = gameState.answers.impact !== null ? currentCase.questions.impact.options[gameState.answers.impact] : null;
     const impactIsCorrect = gameState.answers.impact === currentCase.questions.impact.correct;
 
+    // Only show Submit in feedback phase of case 2 if all answers are provided and all are correct
+    const allAnswersProvided =
+      gameState.answers.violation !== null &&
+      gameState.answers.rootCause !== null &&
+      gameState.answers.impact !== null;
+    const allAnswersCorrect =
+      gameState.answers.violation === currentCase.questions.violation.correct &&
+      gameState.answers.rootCause === currentCase.questions.rootCause.correct &&
+      gameState.answers.impact === currentCase.questions.impact.correct;
+
+    const allAnswersReviewed = Object.keys(scoredQuestions).length > 0 && Object.values(scoredQuestions).some(set => set.size === 3);
+
     return (
       <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm overflow-hidden"
-        style={{
-          backgroundImage: "url('/background.png')",
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          opacity: 1
-        }}
+      
       >
-        <div className="w-full h-full flex-1 flex flex-col overflow-hidden">
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+          <Animation_manufacture />
+        </div>
+        <div className="relative z-10 w-full h-full flex-1 flex flex-col overflow-hidden">
           <GameHeader
             currentCase={gameState.currentCase + 1}
             totalCases={cases.length}
@@ -528,7 +544,8 @@ export const GameBoard2D: React.FC = () => {
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
-                "bg-white/60 rounded-lg mb-4 shadow p-1 flex flex-col gap-0.5 items-stretch flex-1 min-w-0 min-h-0 w-full h-full text-[9px] md:text-xs lg:p-8 xl:p-12 lg:text-lg xl:text-xl overflow-y-auto lg:overflow-auto lg:max-h-[70vh]"
+                // Responsive: larger on desktop
+                "bg-black/60 rounded-lg mb-4 shadow p-1 flex flex-col gap-0.5 items-stretch flex-1 min-w-0 min-h-0 w-full h-full text-[9px] md:text-xs lg:p-8 xl:p-12 lg:text-lg xl:text-xl overflow-y-auto lg:overflow-auto lg:max-h-[80vh] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto"
               }
               style={{ minHeight: 0 }}
             >
@@ -537,89 +554,111 @@ export const GameBoard2D: React.FC = () => {
                 {/* Header */}
                 <div className="flex flex-col items-start mb-0.5">
                   <span className="text-yellow-700 font-bold text-[9px] md:text-xs leading-tight lg:text-base xl:text-lg">{isAllCorrect ? 'Excellent!' : 'Needs Improvement'}</span>
-                  <span className="text-gray-800 text-[8px] md:text-xs font-semibold leading-tight lg:text-base xl:text-lg">Case analysis complete - Review your results</span>
+                  <span className="text-cyan-400 text-[8px] md:text-xs font-semibold leading-tight lg:text-base xl:text-lg">Case analysis complete - Review your results</span>
                 </div>
                 {/* Score summary */}
                 <div className="flex flex-row items-center gap-1 mt-0.5">
-                  <div className="flex flex-col items-center justify-center bg-red-100 rounded px-1 py-0.5">
+                  <div className="flex flex-col items-center justify-center bg-white/40 rounded px-1 py-0.5">
                     <span className="text-red-600 font-bold text-xs leading-tight lg:text-base xl:text-lg">{correctAnswers}/3 Correct</span>
                     <span className="text-gray-700 text-[8px] leading-tight lg:text-base xl:text-lg">Case Accuracy: {caseAccuracy}%</span>
                   </div>
-                  <div className="flex flex-col items-center justify-center bg-gray-100 rounded px-1 py-0.5">
-                    <span className="text-gray-800 font-bold text-xs leading-tight lg:text-base xl:text-lg">{performance}%</span>
+                  <div className="flex flex-col items-center justify-center bg-white/40 rounded px-1 py-0.5">
+                    <span className="text-cyan-400 font-bold text-xs leading-tight lg:text-base xl:text-lg">{performance}%</span>
                     <span className="text-gray-700 text-[8px] leading-tight lg:text-base xl:text-lg">Performance</span>
                   </div>
                 </div>
                 {/* Detailed Analysis */}
                 <div className="mt-0.5">
-                  <span className="font-bold text-[9px] text-gray-800 leading-tight lg:text-base xl:text-lg">Detailed Analysis</span>
+                  <span className="font-bold text-[9px] text-cyan-400 leading-tight lg:text-base xl:text-lg">Detailed Analysis</span>
                   <div className="flex flex-col gap-0.5 mt-0.5">
-                    <div className="flex flex-col bg-white/40 border-l-4 border-yellow-400 rounded p-0.5">
+                    <div className="flex flex-col bg-white/20 border-l-4 border-yellow-400 rounded p-0.5">
                       <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">🔍 GMP Violation Identification</span>
                       <div className="flex flex-row justify-between items-center w-full text-[8px]">
-                        <span className="text-gray-800 lg:text-base xl:text-lg">Correct: {violationCorrect}</span>
+                        <span className="text-cyan-400 lg:text-base xl:text-lg">Correct: {violationCorrect}</span>
                         <span className={violationIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {violationUser || '-'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col bg-white/40 border-l-4 border-yellow-400 rounded p-0.5">
+                    <div className="flex flex-col bg-white/20 border-l-4 border-yellow-400 rounded p-0.5">
                       <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">🎯 Root Cause Analysis</span>
                       <div className="flex flex-row justify-between items-center w-full text-[8px]">
-                        <span className="text-gray-800 lg:text-base xl:text-lg">Correct: {rootCauseCorrect}</span>
+                        <span className="text-cyan-400 lg:text-base xl:text-lg">Correct: {rootCauseCorrect}</span>
                         <span className={rootCauseIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {rootCauseUser || '-'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col bg-white/40 border-l-4 border-yellow-400 rounded p-0.5">
+                    <div className="flex flex-col bg-white/20 border-l-4 border-yellow-400 rounded p-0.5">
                       <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">⚡ Impact Assessment</span>
                       <div className="flex flex-row justify-between items-center w-full text-[8px]">
-                        <span className="text-gray-800 lg:text-base xl:text-lg">Correct: {impactCorrect}</span>
+                        <span className="text-cyan-400 lg:text-base xl:text-lg">Correct: {impactCorrect}</span>
                         <span className={impactIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {impactUser || '-'}</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* Learning Insight */}
-                <div className="mt-0.5 bg-blue-50 border-l-4 border-blue-400 rounded p-0.5 flex flex-col">
+                <div className="mt-0.5 bg-white/30 border-l-4 border-blue-400 rounded p-0.5 flex flex-col">
                   <span className="font-bold text-blue-700 text-[9px] leading-tight lg:text-base xl:text-lg">💡 Learning Insight</span>
-                  <span className="text-gray-800 text-[8px] flex items-center mt-0.5 leading-tight lg:text-base xl:text-lg"><span className="mr-1" role="img" aria-label="book">📚</span>This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
+                  <span className="text-cyan-400 text-[8px] flex items-center mt-0.5 leading-tight lg:text-base xl:text-lg"><span className="mr-1" role="img" aria-label="book">📚</span>This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
                 </div>
                 {/* Next Case button - only show if not last case */}
                 {gameState.currentCase < cases.length - 1 }
                 {/* Summary message at the bottom */}
-                <div className="flex flex-col items-start justify-center bg-white/40 border-l-4 border-yellow-500 p-0.5 w-full rounded mt-1">
+                <div className="flex flex-col items-start justify-center bg-white/20 border-l-4 border-yellow-500 p-0.5 w-full rounded mt-1">
                   <div className="flex items-center min-h-[18px] py-0.5">
                     <span className="text-yellow-700 font-medium text-[8px] md:text-xs mr-1 leading-tight lg:text-base xl:text-lg">Needs Improvement - You must get all answers correct to continue</span>
                     <AlertTriangle className="w-3 h-3 min-w-2 min-h-2 text-yellow-500 mr-1" />
                     <span className="ml-1 text-xs" role="img" aria-label="book">📚</span>
                   </div>
-                  <div className="text-gray-800 text-[8px] md:text-xs font-semibold text-start pl-[10%] w-full bg-transparent mt-0.5 leading-tight lg:text-base xl:text-lg">Case analysis complete - Review your results</div>
+                  <div className="text-cyan-400 text-[8px] md:text-xs font-semibold text-start pl-[10%] w-full bg-transparent mt-0.5 leading-tight lg:text-base xl:text-lg">Case analysis complete - Review your results</div>
                 </div>
               </div>
             </div>
           </div>
           {/* Navigation - fixed at bottom, full width, justify-between */}
-          <div className="flex justify-between mt-[1vw] w-full fixed bottom-0 left-0 z-50 bg-transparent p-2">
+          <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
             <button
               onClick={handleBack}
               disabled={isAllCorrect}
-              className={`px-[1vw] py-[0.5vw] min-px-2 min-py-1 rounded-lg font-semibold flex items-center space-x-1 text-xs md:text-sm transition-all duration-300 ${
+              className={`px-1.5 py-0.5 text-[10px] rounded-lg font-semibold flex items-center space-x-1 transition-all duration-300 sm:px-4 sm:py-2 sm:text-sm lg:text-lg ${
                 isAllCorrect
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gray-200 text-gray-700 hover:bg-cyan-400/30 hover:text-cyan-200 border border-cyan-400/30 shadow-md'
               }`}
             >
               <ChevronLeft className="w-[0.7vw] h-[0.7vw] min-w-3 min-h-3" />
               <span>Back</span>
             </button>
-            {isAllCorrect && (
-              <button
-                onClick={handleContinue}
-                className="px-[2vw] py-[0.8vw] min-px-4 min-py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg text-xs md:text-sm"
-              >
-                <span>{gameState.currentCase < cases.length - 1 ? 'Next Case' : 'Complete Game'}</span>
-                <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
-              </button>
-            )}
+            <div className="flex w-auto justify-end">
+              {/* Show Submit only in feedback phase for case2 (index 1), all answers provided, and all correct */}
+              {currentPhase === 'feedback' && gameState.currentCase === 1 && allAnswersProvided && allAnswersCorrect && (
+                <button
+                  onClick={() => setPopupOpen(true)}
+                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-cyan-400 rounded-xl hover:from-cyan-300 hover:to-purple-700 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
+                >
+                  <span>Submit</span>
+                </button>
+              )}
+              {isAllCorrect && (
+                <button
+                  onClick={handleContinue}
+                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-green-400 via-cyan-500 to-blue-700 text-cyan-400 rounded-xl hover:from-green-500 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
+                >
+                  <span>{gameState.currentCase < cases.length - 1 ? 'Next Case' : 'Complete Game'}</span>
+                  <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
+                </button>
+              )}
+            </div>
           </div>
+          {/* Feedback Popup - only for case2 feedback phase */}
+          {currentPhase === 'feedback' && gameState.currentCase === 1 && (
+            <FeedbackPopup
+              open={popupOpen}
+              onClose={() => setPopupOpen(false)}
+              onNext={handleContinue}
+              onBackToLevels={() => window.location.assign('/modules')}
+              score={gameState.score}
+              time={formatTimer(timer)}
+            />
+          )}
         </div>
       </div>
     );
@@ -637,31 +676,61 @@ export const GameBoard2D: React.FC = () => {
 
   // Main render logic
   return (
-    <div className="relative h-full w-full">
-      {/* Timer and Score always top left */}
+    <div className="relative h-full w-full min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 overflow-hidden">
+      {/* Neon Animated SVG Background */}
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
+       
+      </div>
+      {/* Case label and Timer/Score always top left */}
       {showTimer && (
-        <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-blue-700 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start">
-          <span>Time : {formatTimer(timer)}</span>
-          <span className="text-green-700 font-bold mt-1">Score : {gameState.score}</span>
+        <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 flex flex-col items-start bg-black/40 backdrop-blur-md border border-cyan-400/30">
+          {/* Case label above timer */}
+          <span className="text-cyan-300 font-bold text-[9px] sm:text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
+          <span className="text-[9px] sm:text-xs md:text-base">Time : {formatTimer(timer)}</span>
+          <span className="text-green-400 font-bold mt-1 text-[9px] sm:text-xs md:text-base">Score : {gameState.score}</span>
         </div>
       )}
       {/* Phase rendering */}
-      {(() => {
-        switch (currentPhase) {
-          case 'login':
-            return renderLogin();
-          case 'reportView':
-            return renderReportView();
-          case 'step1':
-          case 'step2':
-          case 'step3':
-            return renderInvestigationStep();
-          case 'feedback':
-            return renderFeedback();
-          default:
-            return renderLogin();
+      <div className="relative z-10">
+        {(() => {
+          switch (currentPhase) {
+            case 'login':
+              return renderLogin();
+            case 'reportView':
+              return renderReportView();
+            case 'step1':
+            case 'step2':
+            case 'step3':
+              return renderInvestigationStep();
+            case 'feedback':
+              return renderFeedback();
+            default:
+              return renderLogin();
+          }
+        })()}
+      </div>
+      {/* Custom CSS for floating shapes and neon theme */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          25% { transform: translateY(-20px) translateX(10px); }
+          50% { transform: translateY(-10px) translateX(-5px); }
+          75% { transform: translateY(-25px) translateX(5px); }
         }
-      })()}
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .triangle-shape {
+          clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .square-shape {
+          border-radius: 2px;
+        }
+        .floating-shape {
+          will-change: transform;
+        }
+      `}</style>
     </div>
   );
 };

@@ -177,7 +177,7 @@ const CharacterRotator = () => {
         }}
       >
         {/* Replace SVG with Boy character */}
-        <Boy width="100%" height="100%" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+        {/* <Boy width="100%" height="100%" style={{ maxWidth: '100%', maxHeight: '100%' }} /> */}
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
+import { Icon } from '@iconify/react';
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useDeviceLayout } from "../hooks/useOrientation";
 
 // Avatar options for modal
@@ -29,8 +30,8 @@ const HomeScreen: React.FC = () => {
   const layout = useDeviceLayout();
 
   // Avatar selection state, default to Intern 1, load from localStorage if available
-  const [avatar, setAvatar] = useState<string>(() =>
-    localStorage.getItem("selectedAvatar") || "/characters/Intern1.png"
+  const [avatar, setAvatar] = useState<string>(
+    () => localStorage.getItem("selectedAvatar") || "/characters/Intern1.png"
   );
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
@@ -134,32 +135,24 @@ const HomeScreen: React.FC = () => {
             tabIndex={0}
             onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           />
-          <AnimatePresence>
-            {profileOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.25, type: "spring" }}
-                className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
-              >
-                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide">
+          {profileOpen && (
+            <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
+                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide break-words break-all">
                   {user?.user_metadata?.full_name || user?.email || "Player"}
                 </span>
-                {/* Avatars button */}
-                <Button
-                  size="sm"
-                  className="w-full mb-3"
-                  onClick={() => setShowAvatarModal(true)}
-                >
-                  Avatars
-                </Button>
-                <Button size="sm" variant="secondary" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              {/* Avatars button */}
+              <Button
+                size="sm"
+                className="w-full mb-3"
+                onClick={() => setShowAvatarModal(true)}
+              >
+                Avatars
+              </Button>
+              <Button size="sm" variant="secondary" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       {/* Lab game sound */}
@@ -171,31 +164,53 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <motion.h1
-          className={`text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center ${
+          className={`relative text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
             layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : "mb-10"
           }`}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.1, type: "spring" }}
+          initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ duration: 0.7, delay: 0.1, type: "spring" }}
         >
-          Good Manufacturing Quest
+          <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg mr-2">
+            <Icon icon="mdi:cube-outline" width={38} height={38} />
+          </span>
+          <span
+            className="bg-gradient-to-r from-green-300 via-emerald-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg shadow-green-200 px-2 rounded-lg border-b-4 border-green-400"
+            style={{
+              WebkitTextStroke: '2px #064e3b',
+              // textStroke is not standard in React, so only WebkitTextStroke is used
+              filter: 'drop-shadow(0 2px 4px #34d399)' // extra glow for outline
+            }}
+          >
+            GMP QUEST
+          </span>
+          <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2" style={{ animationDelay: '0.2s' }}>
+            <Icon icon="mdi:clipboard-check-outline" width={38} height={38} />
+          </span>
+          <span className="block text-base md:text-lg font-semibold text-emerald-200 mt-2 tracking-normal animate-fade-in-slow">
+            Embark on your adventure!
+          </span>
         </motion.h1>
         {/* items list */}
         <motion.div
-          className={`relative flex flex-row justify-center items-center w-max max-w-3xl${layout.isMobile && layout.isHorizontal ? ' gap-2' : ''}`}
+          className={`relative flex flex-row justify-center items-center w-max max-w-3xl${
+            layout.isMobile && layout.isHorizontal ? " gap-2" : ""
+          }`}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3, type: "spring" }}
         >
           <motion.ul
-            className={`flex flex-col items-center z-20 list-none p-0 m-0${layout.isMobile && layout.isHorizontal ? ' gap-1' : ' gap-3'}`}
+            className={`flex flex-col items-center z-20 list-none p-0 m-0${
+              layout.isMobile && layout.isHorizontal ? " gap-1" : " gap-3"
+            }`}
             initial="hidden"
             animate="visible"
             variants={{
               hidden: {},
               visible: {
                 transition: {
-                  staggerChildren: 0.10,
+                  staggerChildren: 0.1,
                 },
               },
             }}
@@ -236,9 +251,7 @@ const HomeScreen: React.FC = () => {
           </motion.ul>
           <motion.div
             className={`absolute z-20 w-max right-0 bottom-0 translate-x-[100%]${
-              layout.isMobile && layout.isHorizontal
-                ? ""
-                : ""
+              layout.isMobile && layout.isHorizontal ? "" : ""
             }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

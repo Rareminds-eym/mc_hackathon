@@ -69,9 +69,12 @@ export interface Achievement {
 }
 
 // Root State Interface
+import type { Level3State } from './slices/level3Slice';
+
 export interface RootState {
   game: GameState;
   audio: AudioState;
   ui: UIState;
   progress: ProgressState;
+  level3: Level3State;
 }

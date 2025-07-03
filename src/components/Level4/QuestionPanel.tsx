@@ -65,7 +65,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   const isCorrect = (index: number) => question.correct === index;
 
   return (
-    <div className="bg-white/60 rounded-xl shadow-xl border border-gray-200 overflow-hidden transform hover:scale-[1.01] transition-all duration-300 landscape:text-[10px] landscape:leading-tight sm:landscape:text-xs lg:text-lg xl:text-xl">
+    <div className="bg-black/60 rounded-2xl shadow-xl p-[4vw] pt-6 pb-28 flex flex-col w-[90vw] max-w-[370px] mx-auto mt-8 sm:mt-24 sm:mb-24 overflow-visible landscape:p-2 landscape:text-[9px] sm:text-xs lg:w-[520px] lg:max-w-[520px] xl:w-[600px] xl:max-w-[600px] lg:p-8 xl:p-12 transition-all duration-300 transform hover:scale-[1.01]">
       {/* QuestionPannelHeader */}
       <div className={`bg-gradient-to-r ${config.gradient} px-2 py-1 border-b-2 ${config.borderColor} landscape:px-2 landscape:py-2 sm:landscape:px-3 sm:landscape:py-2`}>
         <div className="flex items-center space-x-3">
@@ -85,7 +85,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
         </div>
       </div>
 
-      <div className="px-1 py-1 ">
+      <div className="px-1 py-1 flex-1 flex flex-col w-full">
         {/* Question */}
         <div className={`bg-gradient-to-r ${config.bgGradient} rounded-lg border-2 ${config.borderColor} px-2 py-2 lg:px-4 lg:py-2 xl:px-6 xl:py-3`}>
           <h4 className="text-xs font-bold text-gray-900 flex items-center lg:text-lg xl:text-xl">
@@ -93,7 +93,6 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
             <span className="ml-1 lg:text-lg xl:text-xl">{question.question}</span>
           </h4>
         </div>
-        
         {/* Options */}
         {currentQuestion === 'rootCause' ? (
           <div className="">
@@ -121,7 +120,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
             )}
           </div>
         ) : (
-          <div className="space-y-2 overflow-y-auto max-h-[50vh] sm:max-h-[60vh]">
+          <div className="space-y-2 overflow-y-auto flex-1 sm:max-h-[80vh]">
             {question.options.map((option, index) => {
               const isSelected = selectedAnswers[currentQuestion] === index;
               const optionLetter = String.fromCharCode(97 + index).toUpperCase();
@@ -130,16 +129,16 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                 <div
                   key={index}
                   className={`
-                    group relative flex items-center rounded-lg border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.01] lg:px-4 lg:py-2 xl:px-6 xl:py-3 min-w-0 w-full
+                    group relative flex items-center rounded-lg border-2  lg:px-4 lg:py-2 xl:px-6 xl:py-3 min-w-0 w-full
                     ${isSelected 
                       ? showFeedback
                         ? isCorrect(index)
-                          ? 'border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg shadow-green-200/50'
-                          : 'border-red-400 bg-gradient-to-r from-red-50 to-pink-50 shadow-lg shadow-red-200/50'
-                        : 'border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg shadow-blue-200/50'
+                          ? 'border-green-400  bg-white/50 shadow-lg shadow-green-200/50'
+                          : 'border-red-400 bg-white/50  shadow-lg shadow-red-200/50'
+                        : 'border-blue-400 bg-white/50 shadow-lg shadow-blue-200/50'
                       : showFeedback && isCorrect(index)
-                        ? 'border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg shadow-green-200/50'
-                        : 'border-gray-200 bg-gradient-to-r from-white to-gray-50 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/50'
+                        ? 'border-green-400 bg-white/50 shadow-lg shadow-green-200/50'
+                        : 'border-gray-200 bg-white/50 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/50'
                     }
                   `}
                   onClick={() => !showFeedback && onAnswerSelect(currentQuestion, index)}
@@ -157,7 +156,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                         : 'bg-blue-500 border-blue-600 text-white'
                       : showFeedback && isCorrect(index)
                         ? 'bg-green-500 border-green-600 text-white'
-                        : 'bg-gray-100 border-gray-300 text-gray-600 group-hover:bg-gray-200'
+                        : 'bg-gray-100 border-gray-300 text-black group-hover:bg-gray-200'
                   }`}>
                     {optionLetter}
                   </div>
@@ -185,7 +184,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                         : 'text-blue-900'
                       : showFeedback && isCorrect(index)
                         ? 'text-green-900'
-                        : 'text-gray-800 group-hover:text-gray-900'
+                        : 'text-black group-hover:text-gray-900'
                   }`}>
                     {option}
                   </span>

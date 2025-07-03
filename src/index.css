@@ -5,6 +5,10 @@
 @tailwind components;
 @tailwind utilities;
 
+*{
+  letter-spacing: 2px;
+}
+
 body {
   font-family: 'Orbitron', 'ui-sans-serif', 'system-ui', 'sans-serif';
 }
