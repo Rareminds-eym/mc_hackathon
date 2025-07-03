@@ -30,27 +30,27 @@ export const Popup: React.FC<PopupProps> = ({
           transition={{ duration: 0.25 }}
         >
           <motion.div
-            className={`relative overflow-visible max-w-md w-full shadow-2xl rounded-2xl ${
+            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 w-full overflow-visible ${isMobileHorizontal ? 'max-w-xs p-2' : 'max-w-md p-6'}`}
+            style={
               isMobileHorizontal
-                ? "py-1 px-2 rounded-lg max-w-[90vw] w-[320px] min-h-[120px] border-4 border-cyan-300/80"
-                : "p-6 border-4 border-cyan-300/80"
-            }`}
-            style={{
-              background: `url('/backgrounds/BingoBg3.jpg'), linear-gradient(135deg, rgba(255,255,255,0.18) 60%, rgba(200,240,255,0.10) 100%)`,
-              backgroundSize: isMobileHorizontal
-                ? "cover, cover"
-                : "cover, cover",
-              backgroundPosition: "center, center",
-              backgroundRepeat: "no-repeat, no-repeat",
-              borderRadius: isMobileHorizontal ? "0.75rem" : "1rem",
-              backdropFilter: "blur(48px)",
-              WebkitBackdropFilter: "blur(48px)",
-              padding: isMobileHorizontal ? "0.5rem 0.75rem" : undefined,
-              maxWidth: isMobileHorizontal ? "90vw" : undefined,
-              width: isMobileHorizontal ? "320px" : undefined,
-              minHeight: isMobileHorizontal ? "120px" : undefined,
-              boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)",
-            }}
+                ? {
+                    borderRadius: '0.75rem',
+                    background:
+                      'linear-gradient(135deg, rgba(255,255,255,0.16) 60%, rgba(200,240,255,0.08) 100%)',
+                    backdropFilter: 'blur(64px)',
+                    WebkitBackdropFilter: 'blur(64px)',
+                    padding: '0.5rem',
+                    maxWidth: '90vw',
+                    width: '95vw',
+                    minHeight: '120px',
+                  }
+                : {
+                    background:
+                      'linear-gradient(135deg, rgba(255,255,255,0.16) 60%, rgba(200,240,255,0.08) 100%)',
+                    backdropFilter: 'blur(64px)',
+                    WebkitBackdropFilter: 'blur(64px)',
+                  }
+            }
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -61,14 +61,13 @@ export const Popup: React.FC<PopupProps> = ({
               duration: 0.4,
             }}
           >
-            {/* Optional: Soft overlay for extra contrast */}
+            {/* Background Glow */}
             <div
-              className="absolute inset-0 z-0 rounded-2xl pointer-events-none"
+              className="absolute -inset-1 pointer-events-none z-0 rounded-2xl"
               style={{
-                background:
-                  "linear-gradient(120deg, rgba(255,255,255,0.12) 60%, rgba(200,240,255,0.10) 100%)",
-                borderRadius: isMobileHorizontal ? "0.75rem" : "1rem",
-                mixBlendMode: "lighten",
+                boxShadow:
+                  "0 0 16px 4px rgba(34,211,238,0.07), 0 0 32px 8px rgba(59,130,246,0.04), 0 0 48px 12px rgba(16,185,129,0.03)",
+                filter: "blur(0.8px)",
               }}
             />
             {showNext && (
@@ -93,7 +92,7 @@ export const Popup: React.FC<PopupProps> = ({
                   <span className="relative z-10 animate-pop-scale">
                     <Icon
                       icon="mdi:close-circle"
-                      className={`$${
+                      className={`${
                         isMobileHorizontal ? "w-4 h-4" : "w-7 h-7"
                       } text-cyan-700 group-hover:text-pink-500 drop-shadow-glow`}
                       style={{
@@ -232,8 +231,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                     ? `${x}px`
                     : `calc(50% + ${x - 300}px)`,
                   top: `${y}px`,
-                  filter:
-                    "drop-shadow(0 0 3px #fde68a) drop-shadow(0 0 6px #fbbf24)",
                 }}
                 initial={{ scale: 0, rotate: -90 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -251,19 +248,14 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         </motion.div>
         {/* 🎉 Message */}
         <motion.h2
-          className={`text-xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-1 mt-2 ${
-            isMobileHorizontal ? " text-sm mb-0 w-full" : ""
+          className={`text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-1 mt-4${
+            isMobileHorizontal ? " text-xl mb-0 w-full" : ""
           }`}
-          style={{
-            ...(isMobileHorizontal
+          style={
+            isMobileHorizontal
               ? { textAlign: "center", width: "100%", marginBottom: 0 }
-              : { marginBottom: "0.2rem" }),
-            display: "block",
-            width: "100%",
-            position: "relative",
-            pointerEvents: "none",
-            overflow: "visible",
-          }}
+              : { marginBottom: "0.2rem" }
+          }
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{
@@ -273,115 +265,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             damping: 18,
           }}
         >
-          {/* <svg
-            width="100%"
-            height={isMobileHorizontal ? 110 : 150}
-            viewBox="0 0 300 110"
-            style={{ display: "block", margin: "0 auto" }}
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="Well Done!"
-          >
-            <defs>
-              <linearGradient id="wellDoneGradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="30%" stopColor="#fbbf24" />
-                <stop offset="70%" stopColor="#f472b6" />
-              </linearGradient>
-              <filter id="wellDoneShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.25" />
-              </filter>
-            </defs>
-            <path
-              id="arcPath"
-              d="M 40 70 Q 150 -40 260 70"
-              fill="transparent"
-            />
-            <text
-              fontFamily="inherit"
-              fontWeight="500"
-              fontSize={isMobileHorizontal ? 13 : 18}
-              fill="url(#wellDoneGradient)"
-              stroke="#fff"
-              strokeWidth="1"
-              filter="url(#wellDoneShadow)"
-              letterSpacing="0.04em"
-            >
-              <textPath
-                href="#arcPath"
-                startOffset="50%"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                dominantBaseline="middle"
-              >
-                Well Done!
-              </textPath>
-            </text>
-            <path
-              id="arcPath"
-              d="M 40 50 Q 150 10 260 50"
-              fill="transparent"
-            />
-          </svg> */}
-          <svg
-            style={{
-              maxHeight: isMobileHorizontal ? "60px" : "110px",
-              marginLeft: "auto",
-              marginRight: "auto",
-              width: isMobileHorizontal ? "120px" : "170.99999999999997px",
-              height: isMobileHorizontal ? "26px" : "36.86648501362398px",
-            }}
-            aria-label="Well Done!"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="62.099999999999994 0 170.99999999999997 36.86648501362398"
-            width={isMobileHorizontal ? 120 : 170.99999999999997}
-            height={isMobileHorizontal ? 26 : 36.86648501362398}
-          >
-            <defs>
-              <linearGradient y2="0" x2="1" y1="0" x1="0" id="wellDoneGradient">
-                <stop stopColor="#fbbf24" offset="30%" />
-                <stop stopColor="#f472b6" offset="70%" />
-              </linearGradient>
-              <filter
-                height="140%"
-                width="140%"
-                y="-20%"
-                x="-20%"
-                id="wellDoneShadow"
-              >
-                <feDropShadow
-                  floodOpacity="0.25"
-                  floodColor="#000"
-                  stdDeviation="3"
-                  dy="2"
-                  dx="0"
-                />
-              </filter>
-            </defs>
-            <path
-              fill="transparent"
-              d="M 40 70 Q 150 -40 260 70"
-              id="arcPath"
-            />
-            <text
-              letterSpacing="0.04em"
-              filter="url(#wellDoneShadow)"
-              strokeWidth="1"
-              stroke="#fff"
-              fill="url(#wellDoneGradient)"
-              fontSize="18"
-              fontWeight="500"
-              fontFamily="inherit"
-            >
-              <textPath
-                alignmentBaseline="middle"
-                textAnchor="middle"
-                startOffset="50%"
-                href="#arcPath"
-              >
-                Well Done!
-              </textPath>
-            </text>
-            <path fill="transparent" d="M 40 50 Q 150 10 260 50" id="arcPath" />
-          </svg>
+          Well Done!
         </motion.h2>
         {/* 🧑‍🔬 Character */}
         <motion.div
@@ -431,34 +315,32 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         >
           {showGoToModules && (
             <button
-              className={`bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center gap-1 border border-green-200/60 px-2 py-1 text-sm min-h-0 min-w-0${
-                isMobileHorizontal ? " px-1 py-0.5 text-xs" : ""
-              }`}
+              className={`bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2$${
+                isMobileHorizontal ? " py-1 px-2 text-xs" : ""
+              } border border-green-200/60`}
               style={{
                 boxShadow: "0 2px 8px 0 rgba(34,197,94,0.10)",
                 background: undefined,
-                lineHeight: 1.1,
               }}
               onClick={handleGoToLevels}
               aria-label="Back to Levels"
               type="button"
             >
               <Icon
-                icon="mdi:home-map-marker"
-                className={`w-5 h-5${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                icon="mdi:map-marker-path"
+                className={`w-6 h-6${isMobileHorizontal ? " w-4 h-4" : ""}`}
               />
-              <span className="whitespace-nowrap">Back to Levels</span>
+              Back to Levels
             </button>
           )}
           {showNext && (
             <button
-              className={`bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center gap-1 border border-blue-200/60 px-2 py-1 text-sm min-h-0 min-w-0${
-                isMobileHorizontal ? " px-1 py-0.5 text-xs" : ""
-              }`}
+              className={`bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2$${
+                isMobileHorizontal ? " py-1 px-3 text-xs" : ""
+              } border border-blue-200/60`}
               style={{
                 boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
                 background: undefined,
-                lineHeight: 1.1,
               }}
               onClick={handleNext}
               aria-label="Next"
@@ -466,13 +348,178 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             >
               <Icon
                 icon="mdi:arrow-right-bold"
-                className={`w-5 h-5${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                className={`w-6 h-6${isMobileHorizontal ? " w-4 h-4" : ""}`}
               />
-              <span className="whitespace-nowrap">Next</span>
+              Next
             </button>
           )}
         </motion.div>
       </motion.div>
     </Popup>
+  );
+};
+
+// FeedbackPopup component matching the provided design
+interface FeedbackPopupProps {
+  open: boolean;
+  onClose: () => void;
+  onNext: () => void;
+  onBackToLevels: () => void;
+  score: number;
+  time: string;
+}
+
+export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
+  open,
+  onClose,
+  onNext,
+  onBackToLevels,
+  score,
+  time,
+}) => {
+  // Calculate stars: 0-5 based on score (max 30)
+  const maxScore = 30;
+  const stars = Math.round((score / maxScore) * 5);
+  const isMobile = window.innerWidth <= 600;
+  const popupHeight = isMobile ? 'auto' : 'auto';
+  const popupMaxHeight = isMobile ? '80vh' : '90vh';
+  const navigate = useNavigate();
+  // Try to get moduleId from URL, fallback to 1
+  let moduleId = 1;
+  const match = window.location.pathname.match(/modules\/(\d+)/);
+  if (match && match[1]) moduleId = match[1];
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <motion.div
+            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 w-full overflow-visible ${isMobile ? 'max-w-xs p-2' : 'max-w-md p-6'}`}
+            style={
+              isMobile
+                ? {
+                    borderRadius: '0.75rem',
+                    background:
+                      'linear-gradient(135deg, rgba(255,255,255,0.16) 60%, rgba(200,240,255,0.08) 100%)',
+                    backdropFilter: 'blur(64px)',
+                    WebkitBackdropFilter: 'blur(64px)',
+                    padding: '0.5rem',
+                    maxWidth: '95vw',
+                    width: '98vw',
+                    minHeight: '120px',
+                    height: popupHeight,
+                    maxHeight: popupMaxHeight,
+                    overflowY: 'auto',
+                  }
+                : {
+                    background:
+                      'linear-gradient(135deg, rgba(255,255,255,0.16) 60%, rgba(200,240,255,0.08) 100%)',
+                    backdropFilter: 'blur(64px)',
+                    WebkitBackdropFilter: 'blur(64px)',
+                    maxHeight: popupMaxHeight,
+                  }
+            }
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25,
+              duration: 0.4,
+            }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute top-2 right-2 z-10 rounded-full transition-all duration-200 bg-gradient-to-br from-cyan-200 via-blue-200 to-teal-100 hover:from-pink-200 hover:to-yellow-100 shadow-lg border-2 border-cyan-300/70 hover:border-pink-400/70 focus:outline-none group"
+              aria-label="Close"
+              style={{ width: 36, height: 36 }}
+            >
+              <span className="relative flex items-center justify-center">
+                <span className="absolute w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400/30 via-blue-300/20 to-yellow-200/10 blur-md animate-pulse-slow z-0"></span>
+                <span className="relative z-10 animate-pop-scale">
+                  <Icon
+                    icon="mdi:close-circle"
+                    className="w-7 h-7 text-cyan-700 group-hover:text-pink-500 drop-shadow-glow"
+                    style={{
+                      filter:
+                        "drop-shadow(0 0 8px #22d3ee) drop-shadow(0 0 16px #f472b6)",
+                    }}
+                  />
+                </span>
+                <span className="absolute -top-1 -right-1 text-yellow-300 text-xs animate-bounce select-none pointer-events-none">
+                  ✦
+                </span>
+              </span>
+            </button>
+            {/* Stars */}
+            <div className="flex justify-center mt-2 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <span
+                  key={i}
+                  className={`text-4xl mx-1 ${
+                    i < stars ? "text-yellow-400" : "text-gray-300"
+                  }`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            {/* Well Done! */}
+            <h2 className="text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-2 text-center">
+              Well Done!
+            </h2>
+            {/* Score and Time */}
+            <div className="flex justify-center gap-6 mb-4">
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-bold text-blue-700">Score</span>
+                <span className="text-2xl font-extrabold text-green-600">
+                  {score} / 30
+                </span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-bold text-blue-700">Time</span>
+                <span className="text-2xl font-extrabold text-yellow-600">
+                  {time}
+                </span>
+              </div>
+            </div>
+            {/* Character and background */}
+            {/* <div className="flex justify-center items-center mb-4">
+              <img
+                src="/characters/worker.webp"
+                alt="Character"
+                className="object-contain w-[120px] h-[120px] rounded-lg bg-white/40 border border-gray-200 shadow"
+              />
+              <img
+                src="/backgrounds/BingoBg3.jpg"
+                alt="Background"
+                className="absolute w-full h-full object-cover opacity-10 pointer-events-none select-none"
+                style={{ zIndex: -1, top: 0, left: 0 }}
+              />
+            </div> */}
+            {/* Buttons */}
+            <div className="flex justify-center gap-4 mt-4">
+              <button
+                className="bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2 border border-green-200/60"
+                onClick={() => navigate(`/modules/${moduleId}/`)}
+                aria-label="Back to Levels"
+                type="button"
+              >
+                <Icon icon="mdi:map-marker-path" className="w-6 h-6" />
+                Back to Levels
+              </button>
+             
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

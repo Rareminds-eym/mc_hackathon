@@ -1,10 +1,30 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { DndProvider, useDragLayer } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { TouchBackend } from "react-dnd-touch-backend";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
+// --- Preload Background Image ---
+const BACKGROUND_IMAGE_URL = "/backgrounds/m1l3.webp";
+
+function preloadImage(url: string) {
+  const img = new window.Image();
+  img.src = url;
+}
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { JigsawContainer } from "./JigsawContainer";
 import { DraggablePiece } from "./DraggablePiece";
 import { ScenarioDialog } from "./ScenarioDialog";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/types";
 import {
   RotateCcw,
   Zap,
@@ -23,194 +43,57 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 
 // --- Types ---
-interface PuzzlePiece {
-  id: string;
-  text: string;
-  category: "violation" | "action";
-  isCorrect: boolean;
-}
+import type { PuzzlePiece } from "../../data/level3Scenarios";
 
-interface Scenario {
-  title: string;
-  description: string;
-  pieces: PuzzlePiece[];
-}
-
-// --- Scenario Data (Consider moving to a separate file for scalability) ---
-const scenarios: Scenario[] = [
-  {
-    title: "MISSION: Cleanroom Entry Violation",
-    description:
-      "A production worker enters the cleanroom without gloves and skips the entry logbook. Your mission: Identify the violations and deploy corrective actions!",
-    pieces: [
-      {
-        id: "v1",
-        text: "Personnel Hygiene",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "v2",
-        text: "Documentation",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "v3",
-        text: "Quality Control",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "v4",
-        text: "Equipment Qualification",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "a1",
-        text: "Follow gowning SOP",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "a2",
-        text: "Sign and verify entry in log",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "a3",
-        text: "Use cleanroom air filters",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "a4",
-        text: "Initiate audit trail",
-        category: "action",
-        isCorrect: false,
-      },
-    ],
-  },
-  {
-    title: "MISSION: Expired Balance Used",
-    description:
-      "An expired balance is used to weigh materials for a production batch. Your mission: Identify the violated GMP principle and deploy corrective actions!",
-    pieces: [
-      {
-        id: "s2v1",
-        text: "Equipment Calibration",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "s2v2",
-        text: "Training",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s2v3",
-        text: "Cleaning Validation",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s2v4",
-        text: "Material Storage",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s2a1",
-        text: "Stop use, recalibrate",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "s2a2",
-        text: "Repeat training",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "s2a3",
-        text: "Update MSDS",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "s2a4",
-        text: "Document deviation & assess risk",
-        category: "action",
-        isCorrect: true,
-      },
-    ],
-  },
-  {
-    title: "MISSION: Batch Record Not Reviewed by QA",
-    description:
-      "A batch record is signed only by Production Head. QA has not reviewed or signed. Your mission: Identify the violated GMP principle and deploy corrective actions!",
-    pieces: [
-      {
-        id: "s3v1",
-        text: "Documentation",
-        category: "violation",
-        isCorrect: true,
-      },
-      {
-        id: "s3v2",
-        text: "Root Cause Analysis",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s3v3",
-        text: "Market Complaint Handling",
-        category: "violation",
-        isCorrect: false,
-      },
-      {
-        id: "s3a1",
-        text: "QA counter-sign required",
-        category: "action",
-        isCorrect: true,
-      },
-      {
-        id: "s3a2",
-        text: "Recall product",
-        category: "action",
-        isCorrect: false,
-      },
-      {
-        id: "s3a3",
-        text: "Skip QA review",
-        category: "action",
-        isCorrect: false,
-      },
-    ],
-  },
-];
+// --- Scenario Data from Redux ---
+// scenarios will be selected from Redux store
 
 // --- Utility: Get moduleId from URL ---
 const getModuleIdFromPath = () => {
   const match = window.location.pathname.match(/modules\/(\w+)/);
-  return match ? match[1] : '';
+  return match ? match[1] : "";
 };
 
 export const JigsawBoard: React.FC = () => {
+  // Preload background image on mount (must be inside the component, not at the top level)
+  React.useEffect(() => {
+    preloadImage(BACKGROUND_IMAGE_URL);
+  }, []);
+  // --- Redux: Get scenarios from store ---
+  const scenarios = useSelector((state: RootState) => state.level3.scenarios);
   // --- State ---
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const scenario = scenarios[scenarioIndex];
-  const correctViolations = useMemo(() => scenario.pieces.filter(
-    (p) => p.category === "violation" && p.isCorrect
-  ), [scenario]);
-  const correctActions = useMemo(() => scenario.pieces.filter(
-    (p) => p.category === "action" && p.isCorrect
-  ), [scenario]);
+  const correctViolations = useMemo(
+    () =>
+      scenario?.pieces.filter(
+        (p: PuzzlePiece) => p.category === "violation" && p.isCorrect
+      ) ?? [],
+    [scenario]
+  );
+  const correctActions = useMemo(
+    () =>
+      scenario?.pieces.filter(
+        (p: PuzzlePiece) => p.category === "action" && p.isCorrect
+      ) ?? [],
+    [scenario]
+  );
 
-  const [placedPieces, setPlacedPieces] = useState<{ violations: PuzzlePiece[]; actions: PuzzlePiece[] }>({
+  // --- DnD Kit Sensors for mobile support ---
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 0,
+        tolerance: 5,
+      },
+    })
+  );
+
+  const [placedPieces, setPlacedPieces] = useState<{
+    violations: PuzzlePiece[];
+    actions: PuzzlePiece[];
+  }>({
     violations: [],
     actions: [],
   });
@@ -233,7 +116,8 @@ export const JigsawBoard: React.FC = () => {
 
   useEffect(() => {
     const totalCorrect = correctViolations.length + correctActions.length;
-    const placedCorrect = placedPieces.violations.length + placedPieces.actions.length;
+    const placedCorrect =
+      placedPieces.violations.length + placedPieces.actions.length;
     if (placedCorrect === totalCorrect && totalCorrect > 0) {
       setIsComplete(true);
       setScore((prev) => prev + 1000 + combo * 100);
@@ -248,39 +132,42 @@ export const JigsawBoard: React.FC = () => {
   }, [feedback]);
 
   // --- Handlers ---
-  const handleDrop = useCallback((containerType: "violations" | "actions", piece: PuzzlePiece) => {
-    const isCorrectCategory =
-      (containerType === "violations" && piece.category === "violation") ||
-      (containerType === "actions" && piece.category === "action");
-    if (!isCorrectCategory) {
-      setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
-      setHealth((prev) => Math.max(0, prev - 10));
-      setCombo(0);
-      return { success: false };
-    }
-    const isAlreadyPlaced =
-      placedPieces.violations.some((p) => p.id === piece.id) ||
-      placedPieces.actions.some((p) => p.id === piece.id);
-    if (isAlreadyPlaced) {
-      setFeedback("⚠️ Already placed! Try another piece!");
-      return { success: false };
-    }
-    if (piece.isCorrect) {
-      setPlacedPieces((prev) => ({
-        ...prev,
-        [containerType]: [...prev[containerType], piece],
-      }));
-      setFeedback("🎯 CRITICAL HIT! Perfect placement!");
-      setScore((prev) => prev + 100 + combo * 10);
-      setCombo((prev) => prev + 1);
-      return { success: true };
-    } else {
-      setFeedback("💥 MISS! Analyze the scenario more carefully!");
-      setHealth((prev) => Math.max(0, prev - 15));
-      setCombo(0);
-      return { success: false };
-    }
-  }, [placedPieces, combo]);
+  const handleDrop = useCallback(
+    (containerType: "violations" | "actions", piece: PuzzlePiece) => {
+      const isCorrectCategory =
+        (containerType === "violations" && piece.category === "violation") ||
+        (containerType === "actions" && piece.category === "action");
+      if (!isCorrectCategory) {
+        setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
+        setHealth((prev) => Math.max(0, prev - 10));
+        setCombo(0);
+        return { success: false };
+      }
+      const isAlreadyPlaced =
+        placedPieces.violations.some((p) => p.id === piece.id) ||
+        placedPieces.actions.some((p) => p.id === piece.id);
+      if (isAlreadyPlaced) {
+        setFeedback("⚠️ Already placed! Try another piece!");
+        return { success: false };
+      }
+      if (piece.isCorrect) {
+        setPlacedPieces((prev) => ({
+          ...prev,
+          [containerType]: [...prev[containerType], piece],
+        }));
+        setFeedback("🎯 CRITICAL HIT! Perfect placement!");
+        setScore((prev) => prev + 100 + combo * 10);
+        setCombo((prev) => prev + 1);
+        return { success: true };
+      } else {
+        setFeedback("💥 MISS! Analyze the scenario more carefully!");
+        setHealth((prev) => Math.max(0, prev - 15));
+        setCombo(0);
+        return { success: false };
+      }
+    },
+    [placedPieces, combo]
+  );
 
   const handleVictoryClose = useCallback(() => {
     if (scenarioIndex < scenarios.length - 1) {
@@ -296,31 +183,22 @@ export const JigsawBoard: React.FC = () => {
     }
   }, [scenarioIndex]);
 
-  // --- DnD Backend ---
-  const isTouchDevice = useMemo(() =>
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window || (navigator && navigator.maxTouchPoints > 0)),
-    []
-  );
-  const dndBackend = useMemo(() => (isTouchDevice ? TouchBackend : HTML5Backend), [isTouchDevice]);
-  const dndOptions = useMemo(() =>
-    isTouchDevice ? {
-      enableMouseEvents: true,
-      enableTouchEvents: true,
-      delayTouchStart: 0,
-      delayMouseStart: 0,
-      touchSlop: 10,
-      pressDelay: 100,
-    } : undefined,
-    [isTouchDevice]
+  // --- DnD Kit State ---
+  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
+    null
   );
 
   // --- Derived ---
-  const availablePieces = useMemo(() => scenario.pieces.filter(
-    (piece) =>
-      !placedPieces.violations.some((p) => p.id === piece.id) &&
-      !placedPieces.actions.some((p) => p.id === piece.id)
-  ), [scenario, placedPieces]);
+  const availablePieces = useMemo(
+    () =>
+      scenario?.pieces.filter(
+        (piece: PuzzlePiece) =>
+          !placedPieces.violations.some(
+            (p: PuzzlePiece) => p.id === piece.id
+          ) && !placedPieces.actions.some((p: PuzzlePiece) => p.id === piece.id)
+      ) ?? [],
+    [scenario, placedPieces]
+  );
 
   // --- Display Name ---
   const displayName = user?.user_metadata?.full_name || user?.email || "Player";
@@ -343,23 +221,138 @@ export const JigsawBoard: React.FC = () => {
   }
 
   // --- Main Render ---
+  // --- DnD Kit Drop Handler ---
+  // If scenarios are not loaded yet, show loading
+  if (!scenario) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+        <div className="text-white text-xl font-bold">Loading scenario...</div>
+      </div>
+    );
+  }
+
   return (
-    <DndProvider backend={dndBackend} options={dndOptions}>
-      {/* Custom drag layer for better mobile feedback */}
-      <CustomDragLayer />
+    <DndContext
+      sensors={sensors}
+      onDragStart={(event) => {
+        const piece = availablePieces.find(
+          (p: PuzzlePiece) => p.id === event.active.id
+        );
+        setActiveDragPiece(piece || null);
+      }}
+      onDragEnd={(event) => {
+        setActiveDragPiece(null);
+        // event.over?.id is the droppable id ("violations" or "actions")
+        // event.active.id is the piece id
+        if (event.over && event.active) {
+          const containerType = event.over.id;
+          const piece = availablePieces.find(
+            (p: PuzzlePiece) => p.id === event.active.id
+          );
+          if (
+            (containerType === "violations" || containerType === "actions") &&
+            piece
+          ) {
+            handleDrop(containerType, piece);
+          }
+        }
+      }}
+      onDragCancel={() => setActiveDragPiece(null)}
+    >
+      {/* DragOverlay for custom drag preview with same size as DraggablePiece */}
+      <DragOverlay
+        zIndex={9999}
+        adjustScale={false}
+        style={{ pointerEvents: "none", touchAction: "none" }}
+      >
+        {activeDragPiece ? (
+          <div
+            className={`pointer-events-none z-[9999] opacity-95 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 text-white p-4 font-bold text-center shadow-2xl border-2 border-cyan-400 game-font flex items-center justify-center select-none overflow-hidden${
+              isMobile ? " arsenal-piece-mobile-horizontal" : ""
+            }`}
+            style={{
+              minHeight: isMobile ? "58px" : "80px",
+              height: isMobile ? "58px" : undefined,
+              maxWidth: isMobile ? "220px" : "260px",
+              filter:
+                "brightness(0.95) drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
+              clipPath:
+                "polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)",
+              borderRadius: "8px",
+              fontSize: isMobile ? "0.95rem" : "1rem",
+              paddingTop: isMobile ? "0.25rem" : "1rem",
+              paddingBottom: isMobile ? "0.25rem" : "1rem",
+              touchAction: "none",
+            }}
+          >
+            {/* Animated Background Effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/20 to-white/10 animate-pulse opacity-50" />
+            {/* Category Icon */}
+            <div className="absolute top-2 left-2 opacity-20">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center bg-cyan-600/80 border border-white/30">
+                {/* You can use a static icon or match DraggablePiece */}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-3 h-3"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="6" />
+                  <circle cx="12" cy="12" r="2" />
+                </svg>
+              </div>
+            </div>
+            {/* Sparkle Effect */}
+            <div className="absolute top-2 right-2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fde68a"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4 animate-pulse"
+              >
+                <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.07-7.07l-1.41 1.41M6.34 17.66l-1.41 1.41m12.02 0l-1.41-1.41M6.34 6.34L4.93 4.93" />
+              </svg>
+            </div>
+            {/* Main Content */}
+            <div className="relative z-10 pointer-events-none h-full flex items-center justify-center">
+              <div className="text-sm leading-tight">
+                {activeDragPiece.text}
+              </div>
+            </div>
+            {/* Jigsaw Piece Connectors (Visual Enhancement) */}
+            <div className="absolute top-0 left-1/4 w-2 h-1 bg-white/30 rounded-b-full" />
+            <div className="absolute top-0 right-1/4 w-2 h-1 bg-white/30 rounded-b-full" />
+            <div className="absolute bottom-0 left-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
+            <div className="absolute bottom-0 right-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
+          </div>
+        ) : null}
+      </DragOverlay>
       <div
         className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
         style={{
-          backgroundImage: "url('/backgrounds/m1l3.webp')",
+          backgroundImage: `url('${BACKGROUND_IMAGE_URL}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          ...(isMobile && isHorizontal ? {
-            width: "100vw",
-            height: "100vh",
-            minHeight: "100vh",
-            zIndex: 1000,
-          } : {}),
+          ...(isMobile && isHorizontal
+            ? {
+                width: "100vw",
+                height: "100vh",
+                minHeight: "100vh",
+                zIndex: 1000,
+              }
+            : {}),
         }}
       >
         <AnimatePresence>
@@ -442,22 +435,22 @@ export const JigsawBoard: React.FC = () => {
                     onMouseDown={() => setIsMenuOpen(false)}
                   />
                   <div
-                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto w-64${
+                    className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto${
                       isMobile && isHorizontal
                         ? " compact-dropdown-mobile-horizontal"
-                        : ""
+                        : " w-72"
                     }`}
-                    style={
-                      isMobile && isHorizontal
-                        ? {
-                            minWidth: "10rem",
-                            maxWidth: "13rem",
-                            height: "min-content",
-                            maxHeight: "70vh",
-                            padding: "0.5rem 0.5rem",
-                          }
-                        : {}
-                    }
+                    style={{
+                      minWidth: isMobile && isHorizontal ? "12rem" : "18rem",
+                      maxWidth: isMobile && isHorizontal ? "90vw" : "22rem",
+                      width: isMobile && isHorizontal ? "90vw" : "22rem",
+                      height: "min-content",
+                      maxHeight: isMobile && isHorizontal ? "70vh" : "80vh",
+                      padding: isMobile && isHorizontal ? "0.5rem 0.5rem" : "1rem 1.2rem",
+                      boxSizing: "border-box",
+                      overflowX: "hidden",
+                      overflowY: "auto",
+                    }}
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     {/* Menu Header */}
@@ -653,9 +646,9 @@ export const JigsawBoard: React.FC = () => {
               {/* Violations Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
+                  {/* <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
                     VIOLATIONS DETECTED
-                  </h2>
+                  </h2> */}
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
@@ -744,7 +737,7 @@ export const JigsawBoard: React.FC = () => {
                       isMobile && isHorizontal ? " text-xs px-1 py-1" : ""
                     }`}
                   >
-                    {availablePieces.map((piece) => (
+                    {availablePieces.map((piece: PuzzlePiece) => (
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
                   </div>
@@ -759,9 +752,9 @@ export const JigsawBoard: React.FC = () => {
               {/* Actions Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
+                  {/* <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
                     DEPLOY COUNTERMEASURES
-                  </h2>
+                  </h2> */}
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
@@ -954,67 +947,6 @@ export const JigsawBoard: React.FC = () => {
           />
         </div>
       </div>
-    </DndProvider>
-  );
-};
-
-// --- Custom Drag Layer (unchanged, but consider extracting for clarity) ---
-const CustomDragLayer = () => {
-  const { item, isDragging, clientOffset } = useDragLayer((monitor: any) => ({
-    item: monitor.getItem(),
-    isDragging: monitor.isDragging(),
-    clientOffset: monitor.getClientOffset(),
-  }));
-
-  // Dynamically size the preview to match the dragged piece's DOM size
-  const [pieceSize, setPieceSize] = React.useState<{ width: number; height: number } | null>(null);
-  React.useEffect(() => {
-    if (!item || !item.id) {
-      setPieceSize(null);
-      return;
-    }
-    // Try to find the DOM node of the dragged piece
-    const el = document.querySelector(`[data-piece-id='${item.id}']`);
-    if (el) {
-      const rect = (el as HTMLElement).getBoundingClientRect();
-      setPieceSize({ width: rect.width, height: rect.height });
-    }
-  }, [item]);
-
-  const offset =
-    clientOffset ||
-    (typeof window !== "undefined"
-      ? { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-      : null);
-  if (!isDragging || !item || !offset) return null;
-
-  const width = pieceSize?.width || 128;
-  const height = pieceSize?.height || 60;
-  const categoryGradient = "from-blue-500 via-cyan-500 to-teal-500";
-  const categoryBorder = "border-cyan-400";
-  // Center the preview under the finger/cursor
-  const transform = `translate(${offset.x - width / 2}px, ${offset.y - height / 2}px)`;
-
-  return (
-    <div
-      className={`pointer-events-none fixed z-[9999] left-0 top-0 opacity-95 transition-transform duration-75 bg-gradient-to-r ${categoryGradient} text-white rounded-lg font-bold text-center shadow-2xl border-2 ${categoryBorder} game-font`}
-      style={{
-        width: `${width}px`,
-        height: `${height}px`,
-        transform,
-        clipPath:
-          "polygon(0% 20%, 10% 20%, 15% 0%, 25% 0%, 30% 20%, 70% 20%, 75% 0%, 85% 0%, 90% 20%, 100% 20%, 100% 80%, 90% 80%, 85% 100%, 75% 100%, 70% 80%, 30% 80%, 25% 100%, 15% 100%, 10% 80%, 0% 80%)",
-        filter: "drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
-        pointerEvents: "none",
-        padding: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div className="relative z-10 flex items-center justify-center h-full w-full text-xs md:text-sm px-1">
-        {item.text}
-      </div>
-    </div>
+    </DndContext>
   );
 };

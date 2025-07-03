@@ -6,10 +6,9 @@ import LoaderScreen from './screens/LoaderScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ModuleMapScreen } from './screens/ModuleMap';
 import { LevelList } from './screens/LevelList';
-import { LevelScene } from './screens/LevelScene';
 import AuthPage from './screens/AuthPage';
 import { AuthProvider } from './contexts/AuthContext';
-import ErrorBoundary from './components/ErrorBoundary';
+// import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
 import {
   createBrowserRouter,
@@ -26,6 +25,7 @@ import InstructionsPage from './screens/InstructionsPage';
 import { GameBoard2D } from './components/Level4/GameBoard2D';
 import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
+import Score from './components/Scores/Score';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -86,9 +86,9 @@ function App() {
         { path: '/modules/:moduleId/levels/3', element: <Level3 />, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4', element: <Level4 />, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4/gameboard2d', element: <GameBoard2D />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/:levelId', element: <LevelScene />, errorElement: <RouteErrorBoundary /> },
         { path: '/auth', element: <AuthPage />, errorElement: <RouteErrorBoundary /> },
         { path: '/instructions', element: <InstructionsPage />, errorElement: <RouteErrorBoundary /> },
+        { path: '/scores', element: <Score />, errorElement: <RouteErrorBoundary /> },
         { path: '*', element: <Navigate to="/" replace />, errorElement: <RouteErrorBoundary /> },
       ],
     },

@@ -258,11 +258,29 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
       {/* Main content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+        <div
+        className="mt-5"
+        style={{
+          textAlign: 'center',
+          width: '100%',
+          marginBottom: '30px',
+        }}>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: 700,
+            color: '#fff',
+            textShadow: '0 2px 8px #0008',
+            marginBottom: '0.5rem',
+            textAlign: 'center',
+          }}>
             GMP Training Modules
           </h1>
-          <p className="text-cyan-300 text-base drop-shadow">
+          <p style={{
+            fontSize: '1rem',
+            color: '#67e8f9',
+            textShadow: '0 1px 4px #0006',
+            textAlign: 'center',
+          }}>
             Navigate through the cosmic training journey
           </p>
         </div>

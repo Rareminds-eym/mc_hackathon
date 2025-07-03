@@ -14,6 +14,7 @@ const bingoPersistConfig = {
 };
 
 const persistedBingoReducer = persistReducer(bingoPersistConfig, bingoReducer);
+import level3Reducer from './slices/level3Slice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,8 @@ export const store = configureStore({
     ui: uiReducer,
     progress: progressReducer,
     bingo: persistedBingoReducer, // use persisted reducer
+    bingo: bingoReducer,
+    level3: level3Reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import HomePage from '../../components/Level2/HomePage';
 import GameInterface from '../../components/Level2/GameInterface';
 import { gameModes } from '../../data/Level2/gameModes';
@@ -9,6 +9,7 @@ import '../../components/Level2/index.css';
 const Level2: React.FC = () => {
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode | null>(null);
   const navigate = useNavigate();
+  const { moduleId } = useParams<{ moduleId: string }>();
 
   const handleGameModeSelect = (modeId: string) => {
     const gameMode = gameModes.find(mode => mode.id === modeId);
@@ -25,11 +26,17 @@ const Level2: React.FC = () => {
     navigate('/modules/1');
   };
 
+  const handleNextLevel = () => {
+    // Navigate to Level 3
+    navigate(`/modules/${moduleId}/levels/3`);
+  };
+
   if (selectedGameMode) {
     return (
       <GameInterface
         gameMode={selectedGameMode}
         onBack={handleBackToHome}
+        onNextLevel={handleNextLevel}
       />
     );
   }

@@ -57,8 +57,8 @@ export const Product2D: React.FC<Product2DProps> = ({
               className="w-[60%] h-auto object-cover rounded-lg"
             />
           </div>
-          <h3 className="text-xs font-semibold text-gray-800">{productName}</h3>
-          <p className="text-[9px] text-gray-600">Batch: {batchNumber}</p>
+          <h3 className="text-xs font-semibold text-cyan-200">{productName}</h3>
+          <p className="text-[9px] text-cyan-200">Batch: {batchNumber}</p>
           <div className="mt-1">
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs md:text-sm lg:text-base font-medium bg-red-100 text-red-800 animate-pulse whitespace-nowrap">
               <AlertTriangle className="w-4 h-4 mr-1" />Deviation Detected
