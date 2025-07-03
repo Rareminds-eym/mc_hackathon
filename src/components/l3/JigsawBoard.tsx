@@ -85,6 +85,7 @@ export const JigsawBoard: React.FC = () => {
     violations: [],
     actions: [],
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   // ===== DERIVED STATE =====
   const moduleId = getModuleIdFromPath();
@@ -122,6 +123,90 @@ export const JigsawBoard: React.FC = () => {
 
 
   // ===== GAME LOGIC HANDLERS =====
+  
+  /**
+   * Load game progress from database
+   */
+  const loadGameProgress = useCallback(async () => {
+    if (!user?.id || !moduleId) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("level3_progress")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("module_id", moduleId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("Error loading progress:", error);
+        setIsLoading(false);
+        return;
+      }
+
+      // If we have saved progress, restore it
+      if (data && data.length > 0) {
+        const savedProgress = data[0] as GameProgress;
+        
+        // Only restore if not completed or if it's a different scenario
+        if (!savedProgress.completed) {
+          setScenarioIndex(savedProgress.scenario_index);
+          setScore(savedProgress.score);
+          setHealth(savedProgress.health);
+          setCombo(savedProgress.combo);
+          setPlacedPieces(savedProgress.placed_pieces);
+          setInitialized(true);
+          
+          // Don't show scenario dialog if user was in the middle of a scenario
+          if (savedProgress.placed_pieces.violations.length > 0 || 
+              savedProgress.placed_pieces.actions.length > 0) {
+            setShowScenario(false);
+            
+            // Show welcome back message using the feedback console
+            setTimeout(() => {
+              setFeedback("🔄 Welcome back! Your progress has been restored.");
+            }, 1000);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Unexpected error loading progress:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id, moduleId]);
+  
+  /**
+   * Reset game progress
+   */
+  const resetProgress = useCallback(async () => {
+    setScenarioIndex(0);
+    setScore(0);
+    setHealth(100);
+    setCombo(0);
+    setPlacedPieces({ violations: [], actions: [] });
+    setShowScenario(true);
+    setIsComplete(false);
+    
+    // Show feedback message
+    setFeedback("🔄 Progress reset! Starting fresh.");
+    
+    // Reset database record if user is logged in
+    if (user?.id && moduleId) {
+      try {
+        await supabase
+          .from("level3_progress")
+          .delete()
+          .match({ user_id: user.id, module_id: moduleId });
+      } catch (error) {
+        console.error("Error resetting progress:", error);
+      }
+    }
+  }, [user?.id, moduleId]);
   
   /**
    * Handle piece drop on containers
@@ -234,13 +319,18 @@ export const JigsawBoard: React.FC = () => {
     placedPieces,
     isComplete,
   ]);
-  
+
   // ===== EFFECTS =====
 
   // Preload background image on mount
   useEffect(() => {
     preloadImage(BACKGROUND_IMAGE_URL);
   }, []);
+  
+  // Load saved game progress on mount
+  useEffect(() => {
+    loadGameProgress();
+  }, [loadGameProgress]);
   
   // Save game progress when game state changes
   useEffect(() => {
@@ -249,6 +339,13 @@ export const JigsawBoard: React.FC = () => {
     initialized,
     saveGameProgress,
   ]);
+
+  // Load game progress on user and moduleId change
+  useEffect(() => {
+    if (user && moduleId) {
+      loadGameProgress();
+    }
+  }, [user, moduleId, loadGameProgress]);
 
   // Reset arsenal scroll position when scenario changes
   useEffect(() => {
@@ -282,9 +379,9 @@ export const JigsawBoard: React.FC = () => {
     return <DeviceRotationPrompt />;
   }
 
-  // Show loading screen if scenarios aren't loaded yet
-  if (!scenario) {
-    return <LoadingState />;
+  // Show loading screen if scenarios aren't loaded yet or we're loading saved progress
+  if (isLoading || !scenario) {
+    return <LoadingState loadingProgress={isLoading && scenario !== undefined} />;
   }
 
   // ===== MAIN RENDER =====
@@ -375,6 +472,7 @@ export const JigsawBoard: React.FC = () => {
             health={health}
             combo={combo}
             setShowScenario={setShowScenario}
+            onResetProgress={resetProgress}
             isMobile={isMobile}
             isHorizontal={isHorizontal}
           />

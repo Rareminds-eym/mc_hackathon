@@ -1,5 +1,5 @@
-import React from "react";
-import { User, Trophy, Heart, Zap, FileText } from "lucide-react";
+import React, { useState } from "react";
+import { User, Trophy, Heart, Zap, FileText, RefreshCw } from "lucide-react";
 
 interface GameMenuProps {
   isMenuOpen: boolean;
@@ -9,6 +9,7 @@ interface GameMenuProps {
   health: number;
   combo: number;
   setShowScenario: (show: boolean) => void;
+  onResetProgress?: () => void;
   isMobile: boolean;
   isHorizontal: boolean;
 }
@@ -21,9 +22,12 @@ export const GameMenu: React.FC<GameMenuProps> = ({
   health,
   combo,
   setShowScenario,
+  onResetProgress,
   isMobile,
   isHorizontal
 }) => {
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  
   if (!isMenuOpen) return null;
 
   console.log("GameMenu rendered, isMenuOpen:", isMenuOpen);
@@ -243,6 +247,51 @@ export const GameMenu: React.FC<GameMenuProps> = ({
             />
             MISSION BRIEF
           </button>
+
+          {/* Reset Progress Button (conditionally shown) */}
+          {onResetProgress && (
+            <>
+              {!showResetConfirm ? (
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className={`w-full rounded-lg font-bold flex items-center justify-center gap-2 transition-all border border-red-300/50 bg-gradient-to-r from-red-500/70 to-orange-500/70 text-white hover:from-red-500 hover:to-orange-500${
+                    isMobile && isHorizontal
+                      ? " px-2 py-2 text-xs mt-2"
+                      : " px-4 py-2 mt-3"
+                  }`}
+                >
+                  <RefreshCw
+                    className={`w-4 h-4${
+                      isMobile && isHorizontal ? " w-3 h-3" : ""
+                    }`}
+                  />
+                  RESET PROGRESS
+                </button>
+              ) : (
+                <div className={`rounded-lg border border-red-300/50 bg-red-900/30 p-3 mt-3`}>
+                  <p className="text-white text-xs mb-2">Are you sure you want to reset your progress? This cannot be undone.</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        onResetProgress();
+                        setShowResetConfirm(false);
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded py-1 text-xs font-bold"
+                    >
+                      Yes, Reset
+                    </button>
+                    <button
+                      onClick={() => setShowResetConfirm(false)}
+                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded py-1 text-xs font-bold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </>

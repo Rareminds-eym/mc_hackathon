@@ -19,6 +19,7 @@ interface GameHeaderProps {
   health: number;
   combo: number;
   setShowScenario: (show: boolean) => void;
+  onResetProgress?: () => void;
   isMobile: boolean;
   isHorizontal: boolean;
 }
@@ -35,6 +36,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   health,
   combo,
   setShowScenario,
+  onResetProgress,
   isMobile,
   isHorizontal
 }) => {
@@ -106,6 +108,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           isMenuOpen={isMenuOpen}
           setShowScenario={setShowScenario}
           setIsMenuOpen={setIsMenuOpen}
+          onResetProgress={onResetProgress}
         />
       </div>
     </header>
