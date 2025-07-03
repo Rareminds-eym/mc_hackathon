@@ -1,3 +1,4 @@
+// External Library Imports
 import React, {
   useState,
   useEffect,
@@ -5,7 +6,6 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { supabase } from "../../lib/supabase";
 import {
   DndContext,
   DragOverlay,
@@ -14,11 +14,9 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { JigsawContainer } from "./JigsawContainer";
-import { DraggablePiece } from "./DraggablePiece";
-import { ScenarioDialog } from "./ScenarioDialog";
 import { useSelector } from "react-redux";
-import { RootState } from "../../store/types";
+import { motion, AnimatePresence } from "framer-motion";
+import { Icon } from "@iconify/react";
 import {
   RotateCcw,
   Zap,
@@ -30,23 +28,35 @@ import {
   FileText,
   X,
 } from "lucide-react";
+
+// Internal Components and Hooks
+import { supabase } from "../../lib/supabase";
+import { JigsawContainer } from "./JigsawContainer";
+import { DraggablePiece } from "./DraggablePiece";
+import { ScenarioDialog } from "./ScenarioDialog";
 import { VictoryPopup } from "../ui/Popup";
-import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
-import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
+import { RootState } from "../../store/types";
+
+// Types
 import type { PuzzlePiece } from "../../data/level3Scenarios";
 
+// Constants
 const BACKGROUND_IMAGE_URL = "/backgrounds/m1l3.webp";
+
+// Utility Functions
 const preloadImage = (url: string) => {
   const img = new window.Image();
   img.src = url;
 };
+
 const getModuleIdFromPath = () => {
   const match = window.location.pathname.match(/modules\/(\w+)/);
   return match ? match[1] : "";
 };
 
+// TypeScript Interfaces
 interface GameProgress {
   user_id: string;
   module_id: string;
@@ -62,32 +72,22 @@ interface GameProgress {
   created_at: string;
 }
 
+/**
+ * JigsawBoard Component
+ *
+ * A gamified drag-and-drop puzzle interface where users identify violations
+ * and place appropriate actions to fix them.
+ */
 export const JigsawBoard: React.FC = () => {
-  // Preload background image on mount (must be inside the component, not at the top level)
-  React.useEffect(() => {
-    preloadImage(BACKGROUND_IMAGE_URL);
-  }, []);
-  // --- Redux: Get scenarios from store ---
-  const scenarios = useSelector((state: RootState) => state.level3.scenarios);
-  // --- State ---
-  const [scenarioIndex, setScenarioIndex] = useState(0);
-  const scenario = scenarios[scenarioIndex];
-  const correctViolations = useMemo(
-    () =>
-      scenario?.pieces.filter(
-        (p: PuzzlePiece) => p.category === "violation" && p.isCorrect
-      ) ?? [],
-    [scenario]
-  );
-  const correctActions = useMemo(
-    () =>
-      scenario?.pieces.filter(
-        (p: PuzzlePiece) => p.category === "action" && p.isCorrect
-      ) ?? [],
-    [scenario]
-  );
+  // ===== HOOKS & CONTEXT =====
+  const { user } = useAuth();
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const arsenalRef = useRef<HTMLDivElement>(null);
 
-  // --- DnD Kit Sensors for mobile support ---
+  // Redux state
+  const scenarios = useSelector((state: RootState) => state.level3.scenarios);
+
+  // ===== DND KIT SETUP =====
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(TouchSensor, {
@@ -98,6 +98,24 @@ export const JigsawBoard: React.FC = () => {
     })
   );
 
+  // ===== LOCAL STATE =====
+  // Game state
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [health, setHealth] = useState(100);
+  const [combo, setCombo] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // UI state
+  const [showScenario, setShowScenario] = useState(true);
+  const [feedback, setFeedback] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
+    null
+  );
+
+  // Game pieces state
   const [placedPieces, setPlacedPieces] = useState<{
     violations: PuzzlePiece[];
     actions: PuzzlePiece[];
@@ -105,20 +123,110 @@ export const JigsawBoard: React.FC = () => {
     violations: [],
     actions: [],
   });
-  const [showScenario, setShowScenario] = useState(true);
-  const [feedback, setFeedback] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-  const [score, setScore] = useState(0);
-  const [health, setHealth] = useState(100);
-  const [combo, setCombo] = useState(0);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isMobile, isHorizontal } = useDeviceLayout();
-  const { user } = useAuth();
-  const arsenalRef = useRef<HTMLDivElement>(null);
-  const moduleId = getModuleIdFromPath();
 
-  // Function to save game progress with optimized upsert operation
+  // ===== DERIVED STATE =====
+  const scenario = scenarios[scenarioIndex];
+  const moduleId = getModuleIdFromPath();
+  const displayName = user?.user_metadata?.full_name || user?.email || "Player";
+
+  const correctViolations = useMemo(
+    () =>
+      scenario?.pieces.filter(
+        (p: PuzzlePiece) => p.category === "violation" && p.isCorrect
+      ) ?? [],
+    [scenario]
+  );
+
+  const correctActions = useMemo(
+    () =>
+      scenario?.pieces.filter(
+        (p: PuzzlePiece) => p.category === "action" && p.isCorrect
+      ) ?? [],
+    [scenario]
+  );
+
+  const availablePieces = useMemo(
+    () =>
+      scenario?.pieces.filter(
+        (piece: PuzzlePiece) =>
+          !placedPieces.violations.some((p) => p.id === piece.id) &&
+          !placedPieces.actions.some((p) => p.id === piece.id)
+      ) ?? [],
+    [scenario, placedPieces]
+  );
+
+  // ===== GAME LOGIC HANDLERS =====
+
+  /**
+   * Handle piece drop on containers
+   */
+  const handleDrop = useCallback(
+    (containerType: "violations" | "actions", piece: PuzzlePiece) => {
+      setInitialized(true);
+
+      // Validate if the piece is being dropped in the right container type
+      const isCorrectCategory =
+        (containerType === "violations" && piece.category === "violation") ||
+        (containerType === "actions" && piece.category === "action");
+
+      if (!isCorrectCategory) {
+        setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
+        setHealth((prev) => Math.max(0, prev - 10));
+        setCombo(0);
+        return { success: false };
+      }
+
+      // Check if the piece is already placed somewhere
+      const isAlreadyPlaced =
+        placedPieces.violations.some((p) => p.id === piece.id) ||
+        placedPieces.actions.some((p) => p.id === piece.id);
+
+      if (isAlreadyPlaced) {
+        setFeedback("⚠️ Already placed! Try another piece!");
+        return { success: false };
+      }
+
+      // Update state based on whether the piece is correct
+      if (piece.isCorrect) {
+        setPlacedPieces((prev) => ({
+          ...prev,
+          [containerType]: [...prev[containerType], piece],
+        }));
+        setFeedback("🎯 CRITICAL HIT! Perfect placement!");
+        setScore((prev) => prev + 100 + combo * 10);
+        setCombo((prev) => prev + 1);
+        return { success: true };
+      } else {
+        setFeedback("💥 MISS! Analyze the scenario more carefully!");
+        setHealth((prev) => Math.max(0, prev - 15));
+        setCombo(0);
+        return { success: false };
+      }
+    },
+    [placedPieces, combo]
+  );
+
+  /**
+   * Handle victory popup close and scenario transition
+   */
+  const handleVictoryClose = useCallback(() => {
+    if (scenarioIndex < scenarios.length - 1) {
+      setScenarioIndex((idx) => idx + 1);
+      setPlacedPieces({ violations: [], actions: [] });
+      setIsComplete(false);
+      setCombo(0);
+      setHealth(100);
+      setShowScenario(true);
+    } else {
+      setIsComplete(false);
+    }
+  }, [scenarioIndex, scenarios.length]);
+
+  // ===== DATA PERSISTENCE =====
+
+  /**
+   * Save game progress to database
+   */
   const saveGameProgress = useCallback(async () => {
     if (!user?.id) return;
 
@@ -143,6 +251,7 @@ export const JigsawBoard: React.FC = () => {
           onConflict: "user_id,scenario_index",
           ignoreDuplicates: false,
         });
+
       // Log any errors but don't disrupt gameplay
       if (error) {
         console.error("Error saving progress:", error);
@@ -162,9 +271,19 @@ export const JigsawBoard: React.FC = () => {
     isComplete,
   ]);
 
+  // ===== EFFECTS =====
+
+  // Preload background image on mount
+  useEffect(() => {
+    preloadImage(BACKGROUND_IMAGE_URL);
+  }, []);
+
+  // Save game progress when game state changes
   useEffect(() => {
     if (initialized) saveGameProgress();
   }, [
+    initialized,
+    saveGameProgress,
     user?.id,
     moduleId,
     scenarioIndex,
@@ -175,15 +294,17 @@ export const JigsawBoard: React.FC = () => {
     isComplete,
   ]);
 
-  // --- Effects ---
+  // Reset arsenal scroll position when scenario changes
   useEffect(() => {
     if (arsenalRef.current) arsenalRef.current.scrollTop = 0;
   }, [scenarioIndex]);
 
+  // Check for game completion
   useEffect(() => {
     const totalCorrect = correctViolations.length + correctActions.length;
     const placedCorrect =
       placedPieces.violations.length + placedPieces.actions.length;
+
     if (placedCorrect === totalCorrect && totalCorrect > 0) {
       setIsComplete(true);
       setScore((prev) => prev + 1000 + combo * 100);
@@ -191,90 +312,16 @@ export const JigsawBoard: React.FC = () => {
     }
   }, [placedPieces, combo, correctViolations.length, correctActions.length]);
 
+  // Auto-dismiss feedback after timeout
   useEffect(() => {
     if (!feedback) return;
     const timeout = setTimeout(() => setFeedback(""), 2500);
     return () => clearTimeout(timeout);
   }, [feedback]);
 
-  // --- Handlers ---
-  const handleDrop = useCallback(
-    (containerType: "violations" | "actions", piece: PuzzlePiece) => {
-      setInitialized(true)
-      const isCorrectCategory =
-        (containerType === "violations" && piece.category === "violation") ||
-        (containerType === "actions" && piece.category === "action");
-      if (!isCorrectCategory) {
-        setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
-        setHealth((prev) => {
-          const newHealth = Math.max(0, prev - 10);
-          return newHealth;
-        });
-        setCombo(0);
-        return { success: false };
-      }
+  // ===== CONDITIONAL RENDERING =====
 
-      const isAlreadyPlaced =
-        placedPieces.violations.some((p) => p.id === piece.id) ||
-        placedPieces.actions.some((p) => p.id === piece.id);
-      if (isAlreadyPlaced) {
-        setFeedback("⚠️ Already placed! Try another piece!");
-        return { success: false };
-      }
-
-      if (piece.isCorrect) {
-        setPlacedPieces((prev) => ({
-          ...prev,
-          [containerType]: [...prev[containerType], piece],
-        }));
-        setFeedback("🎯 CRITICAL HIT! Perfect placement!");
-        setScore((prev) => prev + 100 + combo * 10);
-        setCombo((prev) => prev + 1);
-        return { success: true };
-      } else {
-        setFeedback("💥 MISS! Analyze the scenario more carefully!");
-        setHealth((prev) => Math.max(0, prev - 15));
-        setCombo(0);
-        return { success: false };
-      }
-    },
-    [placedPieces, combo]
-  );
-
-  const handleVictoryClose = useCallback(() => {
-    if (scenarioIndex < scenarios.length - 1) {
-      setScenarioIndex((idx) => idx + 1);
-      setPlacedPieces({ violations: [], actions: [] });
-      setIsComplete(false);
-      setCombo(0);
-      setHealth(100);
-      setShowScenario(true);
-    } else {
-      setIsComplete(false);
-    }
-  }, [scenarioIndex, scenarios.length]);
-
-  // --- DnD Kit State ---
-  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
-    null
-  );
-
-  // --- Derived ---
-  const availablePieces = useMemo(
-    () =>
-      scenario?.pieces.filter(
-        (piece: PuzzlePiece) =>
-          !placedPieces.violations.some(
-            (p: PuzzlePiece) => p.id === piece.id
-          ) && !placedPieces.actions.some((p: PuzzlePiece) => p.id === piece.id)
-      ) ?? [],
-    [scenario, placedPieces]
-  );
-
-  // --- Display Name ---
-  const displayName = user?.user_metadata?.full_name || user?.email || "Player";
-
-  // --- Layout: Force landscape ---
+  // Force landscape mode
   if (!isHorizontal) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
@@ -291,9 +338,7 @@ export const JigsawBoard: React.FC = () => {
     );
   }
 
-  // --- Main Render ---
-  // --- DnD Kit Drop Handler ---
-  // If scenarios are not loaded yet, show loading
+  // Show loading screen if scenarios aren't loaded yet
   if (!scenario) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -302,24 +347,21 @@ export const JigsawBoard: React.FC = () => {
     );
   }
 
+  // ===== MAIN RENDER =====
   return (
     <DndContext
       sensors={sensors}
       onDragStart={(event) => {
-        const piece = availablePieces.find(
-          (p: PuzzlePiece) => p.id === event.active.id
-        );
+        const piece = availablePieces.find((p) => p.id === event.active.id);
         setActiveDragPiece(piece || null);
       }}
       onDragEnd={(event) => {
         setActiveDragPiece(null);
-        // event.over?.id is the droppable id ("violations" or "actions")
-        // event.active.id is the piece id
+
         if (event.over && event.active) {
           const containerType = event.over.id;
-          const piece = availablePieces.find(
-            (p: PuzzlePiece) => p.id === event.active.id
-          );
+          const piece = availablePieces.find((p) => p.id === event.active.id);
+
           if (
             (containerType === "violations" || containerType === "actions") &&
             piece
@@ -330,7 +372,7 @@ export const JigsawBoard: React.FC = () => {
       }}
       onDragCancel={() => setActiveDragPiece(null)}
     >
-      {/* DragOverlay for custom drag preview with same size as DraggablePiece */}
+      {/* DragOverlay for custom drag preview */}
       <DragOverlay
         zIndex={9999}
         adjustScale={false}
@@ -358,10 +400,10 @@ export const JigsawBoard: React.FC = () => {
           >
             {/* Animated Background Effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/20 to-white/10 animate-pulse opacity-50" />
+
             {/* Category Icon */}
             <div className="absolute top-2 left-2 opacity-20">
               <div className="w-6 h-6 rounded-full flex items-center justify-center bg-cyan-600/80 border border-white/30">
-                {/* You can use a static icon or match DraggablePiece */}
                 <svg
                   width="12"
                   height="12"
@@ -379,6 +421,7 @@ export const JigsawBoard: React.FC = () => {
                 </svg>
               </div>
             </div>
+
             {/* Sparkle Effect */}
             <div className="absolute top-2 right-2">
               <svg
@@ -395,13 +438,13 @@ export const JigsawBoard: React.FC = () => {
                 <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.07-7.07l-1.41 1.41M6.34 17.66l-1.41 1.41m12.02 0l-1.41-1.41M6.34 6.34L4.93 4.93" />
               </svg>
             </div>
+
             {/* Main Content */}
             <div className="relative z-10 pointer-events-none h-full flex items-center justify-center">
-              <div className="text-sm leading-tight">
-                {activeDragPiece.text}
-              </div>
+              <div className="text-sm leading-tight">{activeDragPiece.text}</div>
             </div>
-            {/* Jigsaw Piece Connectors (Visual Enhancement) */}
+
+            {/* Jigsaw Piece Connectors */}
             <div className="absolute top-0 left-1/4 w-2 h-1 bg-white/30 rounded-b-full" />
             <div className="absolute top-0 right-1/4 w-2 h-1 bg-white/30 rounded-b-full" />
             <div className="absolute bottom-0 left-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
@@ -409,6 +452,8 @@ export const JigsawBoard: React.FC = () => {
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* Main Game Container */}
       <div
         className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
         style={{
@@ -426,6 +471,7 @@ export const JigsawBoard: React.FC = () => {
             : {}),
         }}
       >
+        {/* Scenario Dialog */}
         <AnimatePresence>
           {showScenario && (
             <motion.div
@@ -445,9 +491,9 @@ export const JigsawBoard: React.FC = () => {
         </AnimatePresence>
 
         <div className="w-full p-1 relative z-10 flex flex-col gap-1 h-full">
-          {/* Ultra Compact Header with Menu */}
+          {/* Header with Menu */}
           <header className="relative w-full flex flex-row items-center justify-between px-4 py-2 bg-gradient-to-r from-gray-900/90 to-blue-900/90 rounded-xl border border-cyan-500/50 shadow-lg backdrop-blur-sm z-50">
-            {/* Left Section - Back Button */}
+            {/* Left: Back Button */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => window.history.back()}
@@ -458,13 +504,13 @@ export const JigsawBoard: React.FC = () => {
               </button>
             </div>
 
-            {/* Center Section - Mission Title & Progress */}
+            {/* Center: Mission Title & Progress */}
             <div className="flex flex-col items-center flex-1 px-4">
               <h1 className="text-xl font-extrabold text-white game-font tracking-wide mb-1 flex items-center gap-2">
                 <span className="text-white">LEVEL 3: FIX THE VIOLATION</span>
               </h1>
 
-              {/* Compact Progress Bar */}
+              {/* Progress Bar */}
               <div className="w-full max-w-xs h-1.5 bg-gray-800 rounded-full overflow-hidden border border-cyan-400/50">
                 <div
                   className="h-full bg-gradient-to-r from-green-400 to-cyan-400 transition-all duration-500"
@@ -484,7 +530,7 @@ export const JigsawBoard: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Section - Menu Button */}
+            {/* Right: Menu Button */}
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -498,13 +544,16 @@ export const JigsawBoard: React.FC = () => {
                 )}
               </button>
 
-              {/* Overlay to close menu when clicking outside - Higher z-index to be above arsenal but lower than dropdown */}
+              {/* Menu Dropdown */}
               {isMenuOpen && (
                 <>
+                  {/* Overlay to close menu when clicking outside */}
                   <div
                     className="fixed inset-0 bg-transparent z-[40]"
                     onMouseDown={() => setIsMenuOpen(false)}
                   />
+
+                  {/* Menu Content */}
                   <div
                     className={`absolute right-0 top-full mt-2 bg-gradient-to-br from-gray-900/98 to-blue-900/98 rounded-xl border border-cyan-500/50 shadow-2xl backdrop-blur-md z-[50] overflow-auto pointer-events-auto${
                       isMobile && isHorizontal
@@ -553,6 +602,7 @@ export const JigsawBoard: React.FC = () => {
                         isMobile && isHorizontal ? " p-2" : " p-4 space-y-3"
                       }`}
                     >
+                      {/* Agent Identity */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span
@@ -591,6 +641,7 @@ export const JigsawBoard: React.FC = () => {
                           isMobile && isHorizontal ? "" : " gap-3"
                         }`}
                       >
+                        {/* Score Box */}
                         <div
                           className={`bg-black/30 rounded-lg border border-green-400/50${
                             isMobile && isHorizontal ? " p-2" : " p-3"
@@ -619,6 +670,8 @@ export const JigsawBoard: React.FC = () => {
                             XP Points
                           </div>
                         </div>
+
+                        {/* Health Box */}
                         <div
                           className={`bg-black/30 rounded-lg border border-red-400/50${
                             isMobile && isHorizontal ? " p-2" : " p-3"
@@ -656,7 +709,7 @@ export const JigsawBoard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Combo Counter */}
+                      {/* Combo Counter (conditionally shown) */}
                       {combo > 0 && (
                         <div
                           className={`bg-black/30 rounded-lg border border-yellow-400/50${
@@ -714,15 +767,12 @@ export const JigsawBoard: React.FC = () => {
             </div>
           </header>
 
+          {/* Main Game Area */}
           <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-hidden">
-            {/* Mission Zones with Arsenal in the middle */}
             <div className="flex flex-row gap-4 flex-1 min-h-0 h-full justify-center items-stretch w-full max-w-6xl mx-auto">
               {/* Violations Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  {/* <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
-                    VIOLATIONS DETECTED
-                  </h2> */}
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
@@ -745,7 +795,7 @@ export const JigsawBoard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Arsenal - Now in the middle */}
+              {/* Arsenal (Middle) */}
               <div
                 className={`flex flex-col my-auto items-center justify-center w-max relative z-20${
                   isMobile && isHorizontal ? " arsenal-mobile-horizontal" : ""
@@ -773,7 +823,7 @@ export const JigsawBoard: React.FC = () => {
                       isMobile && isHorizontal ? "0.5rem" : "0.5rem 1rem",
                   }}
                 >
-                  {/* Watermark Icon */}
+                  {/* Watermark */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-10 z-0">
                     <Zap
                       className={`w-24 h-24 text-cyan-300 animate-pulse-slow${
@@ -781,6 +831,7 @@ export const JigsawBoard: React.FC = () => {
                       }`}
                     />
                   </div>
+
                   {/* Arsenal Title */}
                   <div
                     className={`flex flex-row items-center justify-center gap-2 mb-2 relative z-10 w-full whitespace-nowrap${
@@ -804,6 +855,7 @@ export const JigsawBoard: React.FC = () => {
                       ARSENAL
                     </h3>
                   </div>
+
                   {/* Pieces List */}
                   <div
                     ref={arsenalRef}
@@ -815,6 +867,7 @@ export const JigsawBoard: React.FC = () => {
                       <DraggablePiece key={piece.id} piece={piece} />
                     ))}
                   </div>
+
                   {/* Animated Glow Border */}
                   <div
                     className="absolute inset-0 rounded-2xl pointer-events-none border-4 border-cyan-400/60 animate-glow-border"
@@ -826,9 +879,6 @@ export const JigsawBoard: React.FC = () => {
               {/* Actions Container */}
               <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
                 <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  {/* <h2 className="text-base md:text-lg font-bold text-white game-font text-center mb-1">
-                    DEPLOY COUNTERMEASURES
-                  </h2> */}
                   <div
                     className="w-full flex flex-col items-center justify-center"
                     style={{
@@ -853,29 +903,26 @@ export const JigsawBoard: React.FC = () => {
             </div>
           </div>
 
-          {/* Feedback Console */}
+          {/* Feedback Console (conditionally rendered) */}
           {feedback && (
             <div
               className={`fixed bottom-5 right-5 z-[9999] flex justify-end w-auto pointer-events-none ${
                 isMobile && isHorizontal ? "mobile-feedback" : ""
               }`}
-              style={{}}
             >
               <div
                 className={`flex items-center gap-4 px-6 py-4 rounded-3xl shadow-2xl border-2 max-w-xl w-full sm:w-auto
-            text-base md:text-lg font-extrabold game-font tracking-wide
-            pointer-events-auto
-            backdrop-blur-lg bg-opacity-90
-            ${
-              feedback.includes("🎯") || feedback.includes("🎉")
-                ? "bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80"
-                : "bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake"
-            }
-          ${isMobile && isHorizontal ? " text-xs px-2 py-2 max-w-xs" : ""}`}
+                  text-base md:text-lg font-extrabold game-font tracking-wide
+                  pointer-events-auto backdrop-blur-lg bg-opacity-90
+                  ${
+                    feedback.includes("🎯") || feedback.includes("🎉")
+                      ? "bg-gradient-to-br from-green-700 via-emerald-600 to-cyan-700 text-green-100 border-green-300/80"
+                      : "bg-gradient-to-br from-red-700 via-pink-700 to-yellow-700 text-yellow-100 border-yellow-300/80 shake"
+                  }
+                  ${isMobile && isHorizontal ? " text-xs px-2 py-2 max-w-xs" : ""}`}
                 style={{
                   letterSpacing: "0.04em",
-                  boxShadow:
-                    "0 8px 40px 0 rgba(0, 255, 255, 0.15), 0 2px 12px 0 rgba(0, 0, 0, 0.18)",
+                  boxShadow: "0 8px 40px 0 rgba(0, 255, 255, 0.15), 0 2px 12px 0 rgba(0, 0, 0, 0.18)",
                   ...(isMobile && isHorizontal
                     ? {
                         fontSize: "0.85rem",
@@ -888,19 +935,17 @@ export const JigsawBoard: React.FC = () => {
                 aria-live="polite"
               >
                 <div className="relative flex items-center gap-4 w-full">
-                  {/* Gamified Icon with animated glow and sparkles */}
+                  {/* Icon with animated effects */}
                   <span
                     className={`text-4xl relative flex items-center justify-center${
                       isMobile && isHorizontal ? " text-2xl" : ""
                     }`}
                   >
-                    {/* Main Icon with shine and pop */}
                     <span className="relative z-10 flex items-center justify-center">
                       <span
                         className="absolute left-0 top-0 w-full h-full animate-shine pointer-events-none"
                         style={{
-                          background:
-                            "linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 100%)",
+                          background: "linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 100%)",
                           borderRadius: "9999px",
                         }}
                       ></span>
@@ -912,8 +957,7 @@ export const JigsawBoard: React.FC = () => {
                               isMobile && isHorizontal ? " text-2xl" : ""
                             }`}
                             style={{
-                              filter:
-                                "drop-shadow(0 0 8px #34d399) drop-shadow(0 0 16px #22d3ee)",
+                              filter: "drop-shadow(0 0 8px #34d399) drop-shadow(0 0 16px #22d3ee)",
                             }}
                           />
                         ) : feedback.includes("🎉") ? (
@@ -923,8 +967,7 @@ export const JigsawBoard: React.FC = () => {
                               isMobile && isHorizontal ? " text-2xl" : ""
                             }`}
                             style={{
-                              filter:
-                                "drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 16px #06b6d4)",
+                              filter: "drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 16px #06b6d4)",
                             }}
                           />
                         ) : feedback.includes("⚠️") ? (
@@ -934,8 +977,7 @@ export const JigsawBoard: React.FC = () => {
                               isMobile && isHorizontal ? " text-2xl" : ""
                             }`}
                             style={{
-                              filter:
-                                "drop-shadow(0 0 8px #facc15) drop-shadow(0 0 16px #f472b6)",
+                              filter: "drop-shadow(0 0 8px #facc15) drop-shadow(0 0 16px #f472b6)",
                             }}
                           />
                         ) : (
@@ -945,14 +987,14 @@ export const JigsawBoard: React.FC = () => {
                               isMobile && isHorizontal ? " text-2xl" : ""
                             }`}
                             style={{
-                              filter:
-                                "drop-shadow(0 0 8px #f87171) drop-shadow(0 0 16px #06b6d4)",
+                              filter: "drop-shadow(0 0 8px #f87171) drop-shadow(0 0 16px #06b6d4)",
                             }}
                           />
                         )}
                       </span>
                     </span>
-                    {/* Sparkles and confetti */}
+
+                    {/* Decorative sparkles */}
                     <span
                       className={`absolute left-1 top-1 animate-bounce text-yellow-200 text-xs select-none pointer-events-none${
                         isMobile && isHorizontal ? " text-[0.7rem]" : ""
@@ -982,7 +1024,8 @@ export const JigsawBoard: React.FC = () => {
                       ✪
                     </span>
                   </span>
-                  {/* Gamified Text with animated gradient and shadow */}
+
+                  {/* Feedback message text */}
                   <span
                     className={`flex-1 text-center px-2 leading-tight select-text font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-white to-cyan-100 drop-shadow-glow animate-gradient-move${
                       isMobile && isHorizontal ? " text-xs" : ""
@@ -990,7 +1033,8 @@ export const JigsawBoard: React.FC = () => {
                   >
                     {feedback.replace(/^[^\w\d]+\s*/, "")}
                   </span>
-                  {/* Gamified Dismiss Button */}
+
+                  {/* Dismiss button */}
                   <button
                     className={`ml-2 p-2 rounded-full bg-gradient-to-br from-cyan-700 via-blue-700 to-teal-600 hover:from-cyan-500 hover:to-teal-400 transition-colors border-2 border-cyan-300/60 text-white focus:outline-none shadow-lg active:scale-95 animate-pop${
                       isMobile && isHorizontal ? " p-1" : ""
