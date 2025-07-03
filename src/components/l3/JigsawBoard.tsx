@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
+import { supabase } from "../../lib/supabase";
 import {
   DndContext,
   DragOverlay,
@@ -39,6 +46,21 @@ const getModuleIdFromPath = () => {
   const match = window.location.pathname.match(/modules\/(\w+)/);
   return match ? match[1] : "";
 };
+
+interface GameProgress {
+  user_id: string;
+  module_id: string;
+  scenario_index: number;
+  score: number;
+  health: number;
+  combo: number;
+  placed_pieces: {
+    violations: PuzzlePiece[];
+    actions: PuzzlePiece[];
+  };
+  completed: boolean;
+  created_at: string;
+}
 
 export const JigsawBoard: React.FC = () => {
   // Preload background image on mount (must be inside the component, not at the top level)
@@ -86,6 +108,7 @@ export const JigsawBoard: React.FC = () => {
   const [showScenario, setShowScenario] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [isComplete, setIsComplete] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [score, setScore] = useState(0);
   const [health, setHealth] = useState(100);
   const [combo, setCombo] = useState(0);
@@ -94,6 +117,63 @@ export const JigsawBoard: React.FC = () => {
   const { user } = useAuth();
   const arsenalRef = useRef<HTMLDivElement>(null);
   const moduleId = getModuleIdFromPath();
+
+  // Function to save game progress with optimized upsert operation
+  const saveGameProgress = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      // Construct the progress object
+      const progress: GameProgress = {
+        user_id: user.id,
+        module_id: moduleId,
+        scenario_index: scenarioIndex,
+        score,
+        health,
+        combo,
+        placed_pieces: placedPieces,
+        completed: isComplete,
+        created_at: new Date().toISOString(),
+      };
+
+      // Use upsert operation (conflict only on user_id and scenario_index)
+      const { error } = await supabase
+        .from("level3_progress")
+        .upsert(progress, {
+          onConflict: "user_id,scenario_index",
+          ignoreDuplicates: false,
+        });
+      // Log any errors but don't disrupt gameplay
+      if (error) {
+        console.error("Error saving progress:", error);
+      }
+    } catch (error) {
+      // Capture and log any unexpected errors
+      console.error("Unexpected error saving progress:", error);
+    }
+  }, [
+    user?.id,
+    moduleId,
+    scenarioIndex,
+    score,
+    health,
+    combo,
+    placedPieces,
+    isComplete,
+  ]);
+
+  useEffect(() => {
+    if (initialized) saveGameProgress();
+  }, [
+    user?.id,
+    moduleId,
+    scenarioIndex,
+    score,
+    health,
+    combo,
+    placedPieces,
+    isComplete,
+  ]);
 
   // --- Effects ---
   useEffect(() => {
@@ -120,15 +200,20 @@ export const JigsawBoard: React.FC = () => {
   // --- Handlers ---
   const handleDrop = useCallback(
     (containerType: "violations" | "actions", piece: PuzzlePiece) => {
+      setInitialized(true)
       const isCorrectCategory =
         (containerType === "violations" && piece.category === "violation") ||
         (containerType === "actions" && piece.category === "action");
       if (!isCorrectCategory) {
         setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
-        setHealth((prev) => Math.max(0, prev - 10));
+        setHealth((prev) => {
+          const newHealth = Math.max(0, prev - 10);
+          return newHealth;
+        });
         setCombo(0);
         return { success: false };
       }
+
       const isAlreadyPlaced =
         placedPieces.violations.some((p) => p.id === piece.id) ||
         placedPieces.actions.some((p) => p.id === piece.id);
@@ -136,6 +221,7 @@ export const JigsawBoard: React.FC = () => {
         setFeedback("⚠️ Already placed! Try another piece!");
         return { success: false };
       }
+
       if (piece.isCorrect) {
         setPlacedPieces((prev) => ({
           ...prev,
@@ -164,10 +250,9 @@ export const JigsawBoard: React.FC = () => {
       setHealth(100);
       setShowScenario(true);
     } else {
-      // Optionally: navigate to module/levels or show a final message
       setIsComplete(false);
     }
-  }, [scenarioIndex]);
+  }, [scenarioIndex, scenarios.length]);
 
   // --- DnD Kit State ---
   const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
@@ -432,7 +517,10 @@ export const JigsawBoard: React.FC = () => {
                       width: isMobile && isHorizontal ? "90vw" : "22rem",
                       height: "min-content",
                       maxHeight: isMobile && isHorizontal ? "70vh" : "80vh",
-                      padding: isMobile && isHorizontal ? "0.5rem 0.5rem" : "1rem 1.2rem",
+                      padding:
+                        isMobile && isHorizontal
+                          ? "0.5rem 0.5rem"
+                          : "1rem 1.2rem",
                       boxSizing: "border-box",
                       overflowX: "hidden",
                       overflowY: "auto",
