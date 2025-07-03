@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Menu, Home, Clock, Trophy, Target, User, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Menu, Home, Clock, Trophy, Target, User, HelpCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
 import { useDeviceLayout } from '../../hooks/useOrientation'; // Import orientation hook
 
@@ -10,9 +10,10 @@ interface NavbarProps {
   onHomeClick: () => void;
   onResetTutorial: () => void;
   timer: number; // <-- Accept timer as a prop
+  onPlayAgain?: () => void; // <-- Add this prop
 }
 
-const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeClick, onResetTutorial, timer }) => {
+const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeClick, onResetTutorial, timer, onPlayAgain }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
@@ -137,6 +138,26 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
                 <Home className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white`} />
               </div>
               <span className="font-medium">Homepage</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (onPlayAgain) onPlayAgain();
+                setIsMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-2 text-gray-700 bg-none border-none cursor-pointer font-medium ${isMobileLandscape ? 'text-sm' : 'text-base'} transition-all duration-200 outline-none`}
+              style={{
+                background: hoveredBtn === 'restart' ? 'linear-gradient(to right, #fef9c3, #fde68a)' : 'transparent',
+                color: hoveredBtn === 'restart' ? '#f59e42' : '#b45309',
+                transform: hoveredBtn === 'restart' ? 'translateX(8px)' : 'none'
+              }}
+              onMouseOver={() => setHoveredBtn('restart')}
+              onMouseOut={() => setHoveredBtn(null)}
+            >
+              <div className={`flex items-center justify-center rounded-full ${isMobileLandscape ? 'w-7 h-7' : 'w-10 h-10'} bg-gradient-to-r from-yellow-400 to-yellow-500`}>
+                <RotateCcw className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white`} />
+              </div>
+              <span className="font-medium">Restart Game</span>
             </button>
 
             <button

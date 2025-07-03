@@ -211,6 +211,7 @@ const BingoGame: React.FC = () => {
         onHomeClick={handleHomeClick}
         onResetTutorial={resetTutorial}
         timer={timer}
+        onPlayAgain={resetGame}
       />
       <motion.div
         style={mainStyle}
