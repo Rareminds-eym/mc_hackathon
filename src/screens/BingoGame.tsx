@@ -11,6 +11,7 @@ import TutorialToast from '../components/Level1/TutorialToast';
 import { Clock } from 'lucide-react';
 import LoaderScreen from './LoaderScreen';
 import { motion, AnimatePresence } from 'framer-motion';
+import CompletedLineModal from '../components/Level1/CompletedLineModal';
 
 const BingoGame: React.FC = () => {
   const {
@@ -27,6 +28,8 @@ const BingoGame: React.FC = () => {
     isInCompletedLine,
     timer,
     setTimer,
+    completedLineModal,
+    closeCompletedLineModal,
   } = useBingoGame();
 
   const {
@@ -537,6 +540,13 @@ const BingoGame: React.FC = () => {
       </motion.div>
       {/* Background music audio element */}
       <audio ref={audioRef} src={currentTrack} loop />
+      <CompletedLineModal
+        isVisible={completedLineModal}
+        onClose={closeCompletedLineModal}
+        timer={timer}
+        rowsSolved={rowsSolved}
+        score={score}
+      />
     </motion.div>
   );
 };

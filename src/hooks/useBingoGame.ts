@@ -59,6 +59,7 @@ export const useBingoGame = () => {
   });
   const [gameComplete, setGameComplete] = useState(false);
   const [timer, setTimerState] = useState(0);
+  const [completedLineModal, setCompletedLineModal] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const dispatch = useDispatch();
   const bingoRedux = useSelector((state: any) => state.bingo);
@@ -203,7 +204,7 @@ export const useBingoGame = () => {
     ];
 
     const newCompletedLines: number[][] = [];
-    
+    let newLineTriggered = false;
     for (const pattern of patterns) {
       const isComplete = pattern.every(index => currentCells[index].selected);
       if (isComplete) {
@@ -211,10 +212,10 @@ export const useBingoGame = () => {
         const isAlreadyCompleted = completedLines.some(line => 
           line.length === pattern.length && line.every(id => pattern.includes(id))
         );
-        
         if (!isAlreadyCompleted) {
           newCompletedLines.push(pattern);
           triggerLineCompleteConfetti();
+          newLineTriggered = true;
         }
       }
     }
@@ -223,8 +224,11 @@ export const useBingoGame = () => {
       setCompletedLines(prev => [...prev, ...newCompletedLines]);
       setRowsSolved(prev => prev + newCompletedLines.length);
       setScoreState(prev => prev + newCompletedLines.length * 10);
+      if (newLineTriggered) setCompletedLineModal(true);
     }
   };
+
+  const closeCompletedLineModal = () => setCompletedLineModal(false);
 
   const triggerLineCompleteConfetti = () => {
     confetti({
@@ -315,9 +319,11 @@ export const useBingoGame = () => {
     selectedDefinition,
     answerFeedback,
     gameComplete,
+    completedLineModal,
     toggleCell,
     resetGame,
     closeAnswerModal,
+    closeCompletedLineModal,
     isInCompletedLine,
     saveGameState,
     timer,

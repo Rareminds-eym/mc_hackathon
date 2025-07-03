@@ -66,10 +66,10 @@ const BingoGrid: React.FC<BingoGridProps> = ({
       );
     } else {
       classes.push(
-        'aspect-[1.4/1.2]',
-        'min-w-[100px]',
+        'aspect-[1.6/1.2]',
+        'min-w-[20px]',
         'text-base', 
-        'text-[0.8rem]',
+        'text-[0.6rem]',
       );
     }
 
@@ -106,7 +106,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
       if (isMobile && isHorizontal) {
         classes.push('text-[0.65rem]');
       } else {
-        classes.push('text-[0.8rem]');
+        classes.push('text-[0.6rem]');
       }
     }
 
