@@ -1,4 +1,4 @@
-// DragPieceOverlay removed in favor of the official DragOverlay component
+export * from './DragPieceOverlay';
 export * from './GameHeader';
 export * from './GameMenu';
 export * from './Arsenal';

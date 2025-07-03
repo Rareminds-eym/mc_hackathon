@@ -1,4 +1,5 @@
 import React from "react";
+import { DragOverlay } from "@dnd-kit/core";
 import type { PuzzlePiece } from "../../../data/level3Scenarios";
 
 interface DragPieceOverlayProps {
@@ -13,14 +14,23 @@ export const DragPieceOverlay: React.FC<DragPieceOverlayProps> = ({
   if (!activeDragPiece) return null;
   
   return (
-    <div
-      className={`pointer-events-none z-[9999] opacity-95 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 text-white p-4 font-bold text-center shadow-2xl border-2 border-cyan-400 game-font flex items-center justify-center select-none overflow-hidden${
-        isMobile ? " arsenal-piece-mobile-horizontal" : ""
-      }`}
+    <DragOverlay 
+      adjustScale={false}
+      zIndex={9999} 
+      dropAnimation={{
+        duration: 300,
+        easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+      }}
+    >
+      <div
+        className={`pointer-events-none opacity-95 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 text-white p-4 font-bold text-center shadow-2xl border-2 border-cyan-400 game-font flex items-center justify-center select-none overflow-hidden${
+          isMobile ? " arsenal-piece-mobile-horizontal" : ""
+        }`}
       style={{
         minHeight: isMobile ? "58px" : "80px",
         height: isMobile ? "58px" : undefined,
         maxWidth: isMobile ? "220px" : "260px",
+        width: isMobile ? "max-content" : "max-content",
         filter:
           "brightness(0.95) drop-shadow(0 0 10px rgba(0, 255, 255, 0.3))",
         clipPath:
@@ -84,5 +94,6 @@ export const DragPieceOverlay: React.FC<DragPieceOverlayProps> = ({
       <div className="absolute bottom-0 left-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
       <div className="absolute bottom-0 right-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
     </div>
+    </DragOverlay>
   );
 };
