@@ -3,6 +3,7 @@ import gameReducer from './slices/gameSlice';
 import audioReducer from './slices/audioSlice';
 import uiReducer from './slices/uiSlice';
 import progressReducer from './slices/progressSlice';
+import bingoReducer from './slices/bingoSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     audio: audioReducer,
     ui: uiReducer,
     progress: progressReducer,
+    bingo: bingoReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

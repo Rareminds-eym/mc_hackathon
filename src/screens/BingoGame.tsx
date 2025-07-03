@@ -25,6 +25,8 @@ const BingoGame: React.FC = () => {
     resetGame,
     closeAnswerModal,
     isInCompletedLine,
+    timer,
+    setTimer,
   } = useBingoGame();
 
   const {
@@ -38,15 +40,38 @@ const BingoGame: React.FC = () => {
   } = useTutorial();
 
   // Timer state for this component
-  const [timer, setTimer] = React.useState(0);
+  const [timerActive, setTimerActive] = React.useState(false);
+  const [tutorialDone, setTutorialDone] = React.useState(false);
 
+  // Auto-skip tutorial if game is restored
   React.useEffect(() => {
-    if (gameComplete) return; // Stop timer when game is complete
+    if ((cells && cells.some(cell => cell.selected)) || (selectedDefinition && selectedDefinition.length > 0)) {
+      setTutorialDone(true);
+    }
+  }, [cells, selectedDefinition]);
+
+  // Start timer only after tutorial/instructions are finished/skipped
+  React.useEffect(() => {
+    if (gameComplete || !timerActive) return;
     const interval = setInterval(() => {
-      setTimer((prev) => prev + 1);
+      setTimer((prev: number) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [gameComplete]);
+  }, [gameComplete, timerActive, setTimer]);
+
+  // When tutorial/instructions are finished/skipped, start timer
+  React.useEffect(() => {
+    if (tutorialDone && !waitingForInteraction) {
+      setTimerActive(true);
+    } else {
+      setTimerActive(false);
+    }
+  }, [tutorialDone, waitingForInteraction]);
+
+  // Callback for when tutorial ends
+  const handleTutorialEnd = () => {
+    setTutorialDone(true);
+  };
 
   const handleBackClick = () => {
     console.log('Back button clicked');
@@ -176,12 +201,13 @@ const BingoGame: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <Navbar 
+      <Navbar
         score={score}
         rowsSolved={rowsSolved}
         onBackClick={handleBackClick}
         onHomeClick={handleHomeClick}
         onResetTutorial={resetTutorial}
+        timer={timer}
       />
       <motion.div
         style={mainStyle}
@@ -234,7 +260,7 @@ const BingoGame: React.FC = () => {
                     transition={{ duration: 0.5, delay: 0.18 }}
                   />
                 )}
-                <GameInstructions selectedDefinition={selectedDefinition} />
+                <GameInstructions selectedDefinition={selectedDefinition} onTutorialEnd={handleTutorialEnd} startAtDefinition={tutorialDone} />
               </motion.div>
             </motion.div>
             <motion.div
@@ -256,6 +282,7 @@ const BingoGame: React.FC = () => {
                   gameComplete={gameComplete}
                   onCellClick={handleCellClick}
                   isInCompletedLine={isInCompletedLine}
+                  disabled={!tutorialDone || waitingForInteraction}
                 />
               </motion.div>
             </motion.div>
@@ -402,7 +429,7 @@ const BingoGame: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.35 }}
             >
               <motion.div style={colInnerStyle}>
-                <GameInstructions selectedDefinition={selectedDefinition} />
+                <GameInstructions selectedDefinition={selectedDefinition} onTutorialEnd={handleTutorialEnd} startAtDefinition={tutorialDone} />
               </motion.div>
             </motion.div>
             {/* Bottom - Bingo Grid with intern character on the right */}
@@ -426,6 +453,7 @@ const BingoGame: React.FC = () => {
                   gameComplete={gameComplete}
                   onCellClick={handleCellClick}
                   isInCompletedLine={isInCompletedLine}
+                  disabled={!tutorialDone || waitingForInteraction}
                 />
               </motion.div>
               {/* Intern character image on the right */}
