@@ -10,6 +10,8 @@ const INTERN_IMG = typeof window !== "undefined"
 
 interface GameInstructionsProps {
   selectedDefinition: string;
+  onTutorialEnd?: () => void;
+  startAtDefinition?: boolean; // <-- Add this prop
 }
 
 // Updated conversation with interactive instructions and new icons
@@ -61,8 +63,8 @@ const conversation = [
   },
 ];
 
-const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition }) => {
-  const [step, setStep] = useState(0);
+const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition, onTutorialEnd, startAtDefinition }) => {
+  const [step, setStep] = useState(startAtDefinition ? conversation.length : 0);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const { isHorizontal, isMobile } = useDeviceLayout();
@@ -93,6 +95,21 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition 
     }, 30);
     return () => clearInterval(typingInterval);
   }, [step, selectedDefinition]);
+
+  // Call onTutorialEnd when tutorial is finished
+  useEffect(() => {
+    if (step === conversation.length && onTutorialEnd) {
+      onTutorialEnd();
+    }
+  }, [step, onTutorialEnd]);
+
+  // Update step if startAtDefinition changes
+  useEffect(() => {
+    if (startAtDefinition) {
+      setStep(conversation.length);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startAtDefinition]);
 
   // Tailwind classes for pointer tail
   const tailBase = "absolute z-10 transition-all";

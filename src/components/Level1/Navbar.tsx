@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Menu, Home, Clock, Trophy, Target, User, HelpCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
 import { useDeviceLayout } from '../../hooks/useOrientation'; // Import orientation hook
@@ -9,25 +9,17 @@ interface NavbarProps {
   onBackClick: () => void;
   onHomeClick: () => void;
   onResetTutorial: () => void;
+  timer: number; // <-- Accept timer as a prop
 }
 
-const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeClick, onResetTutorial }) => {
+const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeClick, onResetTutorial, timer }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [timer, setTimer] = useState(0);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
   const { isHorizontal, isMobile } = useDeviceLayout(); // Get orientation
 
   // Get avatar from localStorage, fallback to Intern1
   const avatar = localStorage.getItem("selectedAvatar") || "/characters/Intern1.png";
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimer(prev => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
