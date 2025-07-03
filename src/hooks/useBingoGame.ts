@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import { useDispatch, useSelector } from 'react-redux';
+import { setTimer, setScore, setCompletedLines, setBoardState, setSelectedCells, setSelectedDefinition, saveState, restoreState } from '../store/slices/bingoSlice';
 
 interface BingoCell {
   id: number;
@@ -46,9 +48,9 @@ const BINGO_DATA = [
 export const useBingoGame = () => {
   const [cells, setCells] = useState<BingoCell[]>([]);
   const [completedLines, setCompletedLines] = useState<number[][]>([]);
-  const [score, setScore] = useState(0);
+  const [score, setScoreState] = useState(0);
   const [rowsSolved, setRowsSolved] = useState(0);
-  const [selectedDefinition, setSelectedDefinition] = useState<string>('');
+  const [selectedDefinition, setSelectedDefinitionState] = useState<string>('');
   const [answerFeedback, setAnswerFeedback] = useState<AnswerFeedback>({
     isVisible: false,
     isCorrect: false,
@@ -56,10 +58,69 @@ export const useBingoGame = () => {
     correctDefinition: ''
   });
   const [gameComplete, setGameComplete] = useState(false);
+  const [timer, setTimerState] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const dispatch = useDispatch();
+  const bingoRedux = useSelector((state: any) => state.bingo);
 
+  // Restore state from Redux on mount
   useEffect(() => {
-    initializeGame();
+    if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
+      // Restore from Redux
+      const restoredCells = BINGO_DATA.map((item, index) => ({
+        id: index,
+        term: item.term,
+        definition: item.definition,
+        selected: bingoRedux.selectedCells.includes(index)
+      }));
+      setCells(restoredCells);
+      setCompletedLines([]); // Optionally restore completedLines if you store patterns
+      setRowsSolved(0); // Optionally restore
+      setScoreState(bingoRedux.score || 0);
+      setGameComplete(false); // Optionally restore
+      setSelectedDefinitionState(bingoRedux.selectedDefinition || '');
+      setTimerState(bingoRedux.timer || 0);
+    } else {
+      initializeGame();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Timer logic (start/stop externally, but always save to Redux)
+  useEffect(() => {
+    dispatch(setTimer(timer));
+  }, [timer, dispatch]);
+
+  // Save the current game state to Redux whenever relevant state changes
+  useEffect(() => {
+    dispatch(saveState({
+      timer,
+      score,
+      completedLines: completedLines.length,
+      completedLinesState: completedLines, // Save the actual completed lines
+      rowsSolved, // Save rowsSolved
+      boardState: [
+        cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+        cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+        cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+        cells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+        cells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+      ],
+      selectedCells: cells.filter(cell => cell.selected).map(cell => cell.id),
+      selectedDefinition,
+    }));
+  }, [timer, score, completedLines, cells, selectedDefinition, rowsSolved, dispatch]);
+
+  // Restore completedLines and rowsSolved from Redux
+  useEffect(() => {
+    if (bingoRedux && bingoRedux.completedLinesState && Array.isArray(bingoRedux.completedLinesState)) {
+      setCompletedLines(bingoRedux.completedLinesState);
+    }
+    if (bingoRedux && typeof bingoRedux.rowsSolved === 'number') {
+      setRowsSolved(bingoRedux.rowsSolved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bingoRedux]);
 
   const initializeGame = () => {
     const newCells = BINGO_DATA.map((item, index) => ({
@@ -71,8 +132,9 @@ export const useBingoGame = () => {
     setCells(newCells);
     setCompletedLines([]);
     setRowsSolved(0);
-    setScore(0);
+    setScoreState(0);
     setGameComplete(false);
+    setTimerState(0);
     selectRandomDefinition(newCells);
   };
 
@@ -80,7 +142,8 @@ export const useBingoGame = () => {
     const unselectedCells = currentCells.filter(cell => !cell.selected);
     if (unselectedCells.length > 0) {
       const randomCell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
-      setSelectedDefinition(randomCell.definition);
+      setSelectedDefinitionState(randomCell.definition);
+      dispatch(setSelectedDefinition(randomCell.definition));
     } else {
       // All cells are selected, game is complete
       setGameComplete(true);
@@ -109,6 +172,7 @@ export const useBingoGame = () => {
         cell.id === id ? { ...cell, selected: true } : cell
       );
       setCells(newCells);
+      dispatch(setSelectedCells(newCells.filter(cell => cell.selected).map(cell => cell.id)));
       
       // Check for new lines after a short delay
       setTimeout(() => {
@@ -158,7 +222,7 @@ export const useBingoGame = () => {
     if (newCompletedLines.length > 0) {
       setCompletedLines(prev => [...prev, ...newCompletedLines]);
       setRowsSolved(prev => prev + newCompletedLines.length);
-      setScore(prev => prev + newCompletedLines.length * 10);
+      setScoreState(prev => prev + newCompletedLines.length * 10);
     }
   };
 
@@ -199,6 +263,25 @@ export const useBingoGame = () => {
     frame();
   };
 
+  const saveGameState = () => {
+    dispatch(saveState({
+      timer,
+      score,
+      completedLines: completedLines.length,
+      completedLinesState: completedLines,
+      rowsSolved,
+      boardState: [
+        cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+        cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+        cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+        cells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+        cells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+      ],
+      selectedCells: cells.filter(cell => cell.selected).map(cell => cell.id),
+      selectedDefinition,
+    }));
+  };
+
   const resetGame = () => {
     setAnswerFeedback({
       isVisible: false,
@@ -207,6 +290,17 @@ export const useBingoGame = () => {
       correctDefinition: ''
     });
     initializeGame();
+    // Optionally reset Redux state as well
+    dispatch(saveState({
+      timer: 0,
+      score: 0,
+      completedLines: 0,
+      completedLinesState: [], // Reset completed lines
+      rowsSolved: 0, // Reset rowsSolved
+      boardState: [],
+      selectedCells: [],
+      selectedDefinition: '',
+    }));
   };
 
   const isInCompletedLine = (cellId: number): boolean => {
@@ -224,6 +318,9 @@ export const useBingoGame = () => {
     toggleCell,
     resetGame,
     closeAnswerModal,
-    isInCompletedLine
+    isInCompletedLine,
+    saveGameState,
+    timer,
+    setTimer: setTimerState,
   };
 };

@@ -14,6 +14,7 @@ interface BingoGridProps {
   gameComplete: boolean;
   onCellClick: (id: number) => void;
   isInCompletedLine: (cellId: number) => boolean;
+  disabled?: boolean; // <-- Add disabled prop
 }
 
 const BingoGrid: React.FC<BingoGridProps> = ({ 
@@ -21,7 +22,8 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   completedLines,
   gameComplete, 
   onCellClick, 
-  isInCompletedLine 
+  isInCompletedLine,
+  disabled = false // <-- Default to false
 }) => {
   const { isHorizontal, isMobile } = useDeviceLayout();
   const prevCompletedLinesRef = useRef<number>(0);
@@ -160,7 +162,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
             key={cell.id}
             className={`${getCellClasses(cell)} ${hoverClasses(cell)}`}
             onClick={() => onCellClick(cell.id)}
-            disabled={gameComplete || cell.selected}
+            disabled={gameComplete || cell.selected || disabled} // <-- Disable if prop is true
             title={cell.definition}
           >
             <span className="text-center leading-tight w-full break-words">
