@@ -1,17 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
-// --- Preload Background Image ---
-const BACKGROUND_IMAGE_URL = "/backgrounds/m1l3.webp";
-
-function preloadImage(url: string) {
-  const img = new window.Image();
-  img.src = url;
-}
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -41,14 +28,13 @@ import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
-
-// --- Types ---
 import type { PuzzlePiece } from "../../data/level3Scenarios";
 
-// --- Scenario Data from Redux ---
-// scenarios will be selected from Redux store
-
-// --- Utility: Get moduleId from URL ---
+const BACKGROUND_IMAGE_URL = "/backgrounds/m1l3.webp";
+const preloadImage = (url: string) => {
+  const img = new window.Image();
+  img.src = url;
+};
 const getModuleIdFromPath = () => {
   const match = window.location.pathname.match(/modules\/(\w+)/);
   return match ? match[1] : "";
