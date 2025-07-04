@@ -30,9 +30,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({
   
   if (!isMenuOpen) return null;
 
-  console.log("GameMenu rendered, isMenuOpen:", isMenuOpen);
-  
-  return (
+    return (
     <>
       {/* Overlay to close menu when clicking outside */}
       <div
