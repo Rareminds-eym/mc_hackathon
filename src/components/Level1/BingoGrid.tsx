@@ -15,6 +15,7 @@ interface BingoGridProps {
   onCellClick: (id: number) => void;
   isInCompletedLine: (cellId: number) => boolean;
   disabled?: boolean; // <-- Add disabled prop
+  tutorialStep?: number;
 }
 
 const BingoGrid: React.FC<BingoGridProps> = ({ 
@@ -23,7 +24,8 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   gameComplete, 
   onCellClick, 
   isInCompletedLine,
-  disabled = false // <-- Default to false
+  disabled = false, // <-- Default to false
+  tutorialStep
 }) => {
   const { isHorizontal, isMobile } = useDeviceLayout();
   const prevCompletedLinesRef = useRef<number>(0);
@@ -147,7 +149,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   // Container classes based on orientation
   const containerClasses = `rounded-[8rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)] p-2 transition-[box-shadow,transform] duration-300 ${
     isHorizontal ? 'p-1 rounded-[3rem]' : ''
-  }`;
+  } ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`;
 
   // Grid classes based on orientation
   const gridClasses = `bingo-grid-grid grid grid-cols-5 gap-px border border-black bg-black rounded-lg shadow-[0_0_32px_8px_rgba(255,255,255,0.5),0_0_32px_16px_rgba(255,255,255,0.25)] ${
@@ -155,7 +157,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   }`;
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} data-tutorial-highlight="bingogrid">
       <div className={gridClasses}>
         {cells.map((cell) => (
           <button
