@@ -9,16 +9,36 @@ import { useDeviceLayout } from "../hooks/useOrientation";
 // Avatar options for modal
 const AVATAR_OPTIONS = [
   {
-    label: "Intern 1",
+    label: "Arjun",
     src: "/characters/Intern1.png",
   },
   {
-    label: "Intern 2",
+    label: "Bharat",
     src: "/characters/Intern2.png",
   },
   {
-    label: "Intern 3",
+    label: "Hari",
     src: "/characters/Intern3.png",
+  },
+  {
+    label: "Pranav",
+    src: "/characters/Intern4.png",
+  },
+  {
+    label: "Lakshya",
+    src: "/characters/Intern5.png",
+  },
+  {
+    label: "Faisal",
+    src: "/characters/Intern6.png",
+  },
+  {
+    label: "Lalit",
+    src: "/characters/Intern7.png",
+  },
+  {
+    label: "Tejas",
+    src: "/characters/Intern8.png",
   },
 ];
 
@@ -79,15 +99,22 @@ const HomeScreen: React.FC = () => {
       {/* Avatar Modal */}
       {showAvatarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-10 max-w-lg w-full flex flex-col items-center relative backdrop-blur-md">
-            <h2 className="text-2xl font-bold mb-6 text-white drop-shadow">
+          <div
+            className={`bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full flex flex-col items-center relative backdrop-blur-md transition-all duration-300
+              ${layout.isMobile && layout.isHorizontal ? 'max-w-md min-w-[340px] p-2' : 'max-w-3xl'}`}
+          >
+            <h2 className={`font-bold mb-6 text-white drop-shadow ${layout.isMobile && layout.isHorizontal ? 'text-lg' : 'text-2xl'}`}>
               Choose Your Avatar
             </h2>
-            <div className="grid grid-cols-3 gap-8 w-full mb-2">
+            <div className={`grid grid-cols-4 w-full mb-2 ${layout.isMobile && layout.isHorizontal ? 'gap-4' : 'gap-12'}`}>
               {AVATAR_OPTIONS.map((option) => (
                 <button
                   key={option.label}
-                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all bg-white/80 hover:bg-white ${
+                  className={`flex flex-col items-center justify-center rounded-2xl border-2 transition-all bg-white/80 hover:bg-white ${
+                    layout.isMobile && layout.isHorizontal
+                      ? 'p-2 min-w-[60px] min-h-[60px]'
+                      : 'p-4'
+                  } ${
                     avatar === option.src
                       ? "border-blue-500 ring-2 ring-blue-300"
                       : "border-transparent"
@@ -101,9 +128,9 @@ const HomeScreen: React.FC = () => {
                   <img
                     src={option.src}
                     alt={option.label}
-                    className="w-24 h-24 rounded-full object-cover border border-gray-200 mb-2"
+                    className={`${layout.isMobile && layout.isHorizontal ? 'w-14 h-14' : 'w-24 h-24'} rounded-full object-cover border border-gray-200 mb-2`}
                   />
-                  <span className="font-semibold text-base text-blue-900">
+                  <span className={`font-semibold text-blue-900 ${layout.isMobile && layout.isHorizontal ? 'text-xs' : 'text-base'}`}>
                     {option.label}
                   </span>
                 </button>
