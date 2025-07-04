@@ -261,19 +261,39 @@ const BingoGame: React.FC = () => {
               <motion.div style={{ width: '100%' }}>
                 {/* Show Bingo logo above instructions in landscape mode */}
                 {isHorizontal && (
-                  <motion.img
-                    src="/logos/Bingo.png"
-                    alt="Bingo Logo"
-                    style={{
-                      display: 'block',
-                      height: '140px',
-                      padding: '0.6rem 0 1rem 0',
-                      marginLeft: '3rem', // move image more to the right
-                    }}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.18 }}
-                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{
+                      background: '#fff',
+                      border: '2px solid #2563eb',
+                      borderRadius: '1.2rem',
+                      padding: '0.15rem 0.7rem',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      fontWeight: 700,
+                      fontSize: '1.05rem',
+                      color: '#2563eb',
+                      marginBottom: '0.2rem',
+                      marginLeft: '2rem',
+                    }}>
+                      <Clock style={{ width: 22, height: 22, color: '#2563eb' }} />
+                      <span>{formatTime(timer)}</span>
+                    </div>
+                    <motion.img
+                      src="/logos/Bingo.png"
+                      alt="Bingo Logo"
+                      style={{
+                        display: 'block',
+                        height: '140px',
+                        padding: '0.6rem 0 1rem 0',
+                        marginLeft: '2rem', // move image more to the right
+                      }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5, delay: 0.18 }}
+                    />
+                  </div>
                 )}
                 <GameInstructions selectedDefinition={selectedDefinition} onTutorialEnd={handleTutorialEnd} startAtDefinition={tutorialDone} tutorialStep={currentStep?.id} />
               </motion.div>
