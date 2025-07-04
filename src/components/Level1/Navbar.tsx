@@ -11,9 +11,10 @@ interface NavbarProps {
   onResetTutorial: () => void;
   timer: number; // <-- Accept timer as a prop
   onPlayAgain?: () => void; // <-- Add this prop
+  tutorialStep?: number;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeClick, onResetTutorial, timer, onPlayAgain }) => {
+const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeClick, onResetTutorial, timer, onPlayAgain, tutorialStep }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const { user } = useAuth(); // Get user from AuthContext
@@ -45,6 +46,12 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
 
   // Determine if we are in mobile landscape mode
   const isMobileLandscape = isMobile && isHorizontal;
+
+  // Open menu automatically on tutorial step 4
+  React.useEffect(() => {
+    if (tutorialStep === 4) setIsMenuOpen(true);
+    if (tutorialStep === 5) setIsMenuOpen(false); // Close menu when user presses Start Playing
+  }, [tutorialStep]);
 
   return (
     <nav
@@ -177,7 +184,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
               <span className="font-medium">Show Tutorial</span>
             </button>
 
-            <div className={`flex items-center gap-3 px-4 py-2 text-gray-700 border-t border-gray-100 transition-colors duration-200`}>
+            <div className={`flex items-center gap-3 px-4 py-2 text-gray-700 border-t border-gray-100 transition-colors duration-200 ${tutorialStep === 4 ? 'tutorial-highlight' : ''}`}> {/* Timer highlight */}
               <div className={`flex items-center justify-center rounded-full ${isMobileLandscape ? 'w-7 h-7' : 'w-10 h-10'} bg-gradient-to-r from-blue-400 to-cyan-500`}>
                 <Clock className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white`} />
               </div>
@@ -187,7 +194,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
               </div>
             </div>
 
-            <div className={`flex items-center gap-3 px-4 py-2 text-gray-700 border-t border-gray-100 transition-colors duration-200`}>
+            <div className={`flex items-center gap-3 px-4 py-2 text-gray-700 border-t border-gray-100 transition-colors duration-200 ${tutorialStep === 4 ? 'tutorial-highlight' : ''}`}> {/* Rows highlight */}
               <div className={`flex items-center justify-center rounded-full ${isMobileLandscape ? 'w-7 h-7' : 'w-10 h-10'} bg-gradient-to-r from-green-400 to-emerald-500`}>
                 <Target className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white`} />
               </div>
@@ -197,7 +204,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
               </div>
             </div>
 
-            <div className={`flex items-center gap-3 px-4 py-2 text-gray-700 border-t border-gray-100 transition-colors duration-200`}>
+            <div className={`flex items-center gap-3 px-4 py-2 text-gray-700 border-t border-gray-100 transition-colors duration-200 ${tutorialStep === 4 ? 'tutorial-highlight' : ''}`}> {/* Score highlight */}
               <div className={`flex items-center justify-center rounded-full ${isMobileLandscape ? 'w-7 h-7' : 'w-10 h-10'} bg-gradient-to-r from-amber-200 to-amber-500`}>
                 <Trophy className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'} text-white`} />
               </div>
