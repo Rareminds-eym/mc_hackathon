@@ -152,8 +152,34 @@ export const JigsawBoard: React.FC = () => {
       if (data && data.length > 0) {
         const savedProgress = data[0] as GameProgress;
         
-        // Only restore if not completed or if it's a different scenario
-        if (!savedProgress.completed) {
+        if (savedProgress.completed) {
+          // If the saved scenario is completed, advance to the next scenario
+          if (savedProgress.scenario_index < scenarios?.length - 1) {
+            // Move to the next scenario
+            setScenarioIndex(savedProgress.scenario_index + 1);
+            setScore(savedProgress.score); // Preserve the score
+            setHealth(100); // Reset health for the new scenario
+            setCombo(0); // Reset combo for the new scenario
+            setPlacedPieces({ violations: [], actions: [] }); // Clear placed pieces
+            setInitialized(true);
+            setShowScenario(true); // Show scenario dialog for new scenario
+            
+            // Show message about advancing to next scenario
+            setTimeout(() => {
+              setFeedback("🎮 Welcome back! Advancing to the next scenario.");
+            }, 1000);
+          } else {
+            // If all scenarios are completed, just restore the state
+            setScenarioIndex(savedProgress.scenario_index);
+            setScore(savedProgress.score);
+            setHealth(savedProgress.health);
+            setCombo(savedProgress.combo);
+            setPlacedPieces(savedProgress.placed_pieces);
+            setInitialized(true);
+            setShowScenario(false);
+          }
+        } else {
+          // Restore in-progress scenario
           setScenarioIndex(savedProgress.scenario_index);
           setScore(savedProgress.score);
           setHealth(savedProgress.health);
@@ -260,7 +286,36 @@ export const JigsawBoard: React.FC = () => {
   /**
    * Handle victory popup close and scenario transition
    */
-  const handleVictoryClose = useCallback(() => {
+  const handleVictoryClose = useCallback(async () => {
+    // First mark current scenario as completed and save it
+    if (isComplete && user?.id) {
+      // Construct the completed progress object for current scenario
+      const completedProgress: GameProgress = {
+        user_id: user.id,
+        module_id: moduleId,
+        scenario_index: scenarioIndex,
+        score,
+        health,
+        combo,
+        placed_pieces: placedPieces,
+        completed: true,
+        created_at: new Date().toISOString(),
+      };
+
+      try {
+        // Save the completed state
+        await supabase
+          .from("level3_progress")
+          .upsert(completedProgress, {
+            onConflict: "user_id,scenario_index",
+            ignoreDuplicates: false,
+          });
+      } catch (error) {
+        console.error("Error saving completed state:", error);
+      }
+    }
+
+    // Then proceed to next scenario or clear completion state
     if (scenarioIndex < scenarios?.length - 1) {
       setScenarioIndex((idx) => idx + 1);
       setPlacedPieces({ violations: [], actions: [] });
@@ -271,7 +326,7 @@ export const JigsawBoard: React.FC = () => {
     } else {
       setIsComplete(false);
     }
-  }, [scenarioIndex, scenarios?.length]);
+  }, [scenarioIndex, scenarios?.length, isComplete, user?.id, moduleId, score, health, combo, placedPieces]);
 
   /**
    * Save game progress to database
@@ -338,6 +393,9 @@ export const JigsawBoard: React.FC = () => {
   }, [
     initialized,
     saveGameProgress,
+    isComplete, // Make sure we save when completion status changes
+    placedPieces, // Save when pieces are placed
+    score, // Save when score changes
   ]);
 
   // Load game progress on user and moduleId change

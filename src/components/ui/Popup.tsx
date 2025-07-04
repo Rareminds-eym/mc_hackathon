@@ -71,7 +71,7 @@ export const Popup: React.FC<PopupProps> = ({
                 mixBlendMode: "lighten",
               }}
             />
-            {showNext && (
+            {true && (
               <button
                 onClick={onClose}
                 className={`absolute ${
@@ -273,54 +273,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             damping: 18,
           }}
         >
-          {/* <svg
-            width="100%"
-            height={isMobileHorizontal ? 110 : 150}
-            viewBox="0 0 300 110"
-            style={{ display: "block", margin: "0 auto" }}
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="Well Done!"
-          >
-            <defs>
-              <linearGradient id="wellDoneGradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="30%" stopColor="#fbbf24" />
-                <stop offset="70%" stopColor="#f472b6" />
-              </linearGradient>
-              <filter id="wellDoneShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.25" />
-              </filter>
-            </defs>
-            <path
-              id="arcPath"
-              d="M 40 70 Q 150 -40 260 70"
-              fill="transparent"
-            />
-            <text
-              fontFamily="inherit"
-              fontWeight="500"
-              fontSize={isMobileHorizontal ? 13 : 18}
-              fill="url(#wellDoneGradient)"
-              stroke="#fff"
-              strokeWidth="1"
-              filter="url(#wellDoneShadow)"
-              letterSpacing="0.04em"
-            >
-              <textPath
-                href="#arcPath"
-                startOffset="50%"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                dominantBaseline="middle"
-              >
-                Well Done!
-              </textPath>
-            </text>
-            <path
-              id="arcPath"
-              d="M 40 50 Q 150 10 260 50"
-              fill="transparent"
-            />
-          </svg> */}
           <svg
             style={{
               maxHeight: isMobileHorizontal ? "60px" : "110px",
