@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 
 // Use placeholder image for Trainer and use selected avatar for Intern
-const TRAINER_IMG = "https://via.placeholder.com/40x40?text=T";
+const TRAINER_IMG = "/characters/Trainer2.png";
 // Get avatar from localStorage, fallback to Intern1
 const INTERN_IMG = typeof window !== "undefined"
   ? (localStorage.getItem("selectedAvatar") || "/characters/Intern1.png")
@@ -187,22 +187,14 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
         <div className={`flex items-start ${isMobileLandscape ? "gap-2" : "gap-4"}`}>
           <div
             className={`flex-shrink-0 rounded-full flex items-center justify-center ${
-              current.speaker === "Trainer" ? "bg-blue-500" : ""
-            } ${isMobileLandscape ? "w-8 h-8" : "w-16 h-16"}`}
+              current.speaker === "Trainer" ? "bg-yellow-500" : ""
+            } ${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"}`}
           >
-            {current.speaker === "Intern" ? (
-              <img
-                src={current.icon}
-                alt={current.speaker}
-                className={`${isMobileLandscape ? "w-8 h-8" : "w-16 h-16"} rounded-full object-cover border-2 border-green-400 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]`}
-              />
-            ) : (
-              <img
-                src={current.icon}
-                alt={current.speaker}
-                className={`${isMobileLandscape ? "w-4 h-4" : "w-8 h-8"} rounded-full object-cover`}
-              />
-            )}
+            <img
+              src={current.icon}
+              alt={current.speaker}
+              className={`${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"} rounded-full object-cover `}
+            />
           </div>
           <div className="flex-1">
             <div>
