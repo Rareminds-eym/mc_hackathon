@@ -46,7 +46,7 @@ const ModuleStone: React.FC<ModuleStoneProps> = ({ module, position, onClick }) 
   };
 
   const isClickable: boolean = status !== 'locked';
-  const hoverScale = isHovered && isClickable ? 1.15 : 1;
+  const hoverScale = isHovered && isClickable ? 1.02 : 1;
 
   return (
     <g
