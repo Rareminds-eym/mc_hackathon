@@ -63,7 +63,7 @@ const conversation = [
   },
 ];
 
-const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition, onTutorialEnd, startAtDefinition }) => {
+const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number }> = ({ selectedDefinition, onTutorialEnd, startAtDefinition, tutorialStep }) => {
   const [step, setStep] = useState(startAtDefinition ? conversation.length : 0);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -156,27 +156,24 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition,
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block w-full">
       <style>
         {`
-          @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+          .tutorial-highlight {
+            position: relative;
+            z-index: 100;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+            border-radius: 18px;
+            animation: pulse-highlight 1.5s infinite;
           }
-          @keyframes fairyGlow {
-            0% {
-              box-shadow: 0 0 0 8px rgba(59,130,246,0.10), 0 2px 8px rgba(0,0,0,0.08);
-            }
-            50% {
-              box-shadow: 0 0 16px 12px rgba(59,130,246,0.28), 0 2px 8px rgba(0,0,0,0.08);
-            }
-            100% {
-              box-shadow: 0 0 0 8px rgba(59,130,246,0.10), 0 2px 8px rgba(0,0,0,0.08);
-            }
+          @keyframes pulse-highlight {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3); }
+            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3), 0 0 30px rgba(59, 130, 246, 0.5); }
           }
         `}
       </style>
       <div
+        data-tutorial-highlight="instructions"
         className={`relative bg-white ${
           inConversation
             ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
@@ -185,7 +182,7 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ selectedDefinition,
           isMobileLandscape
             ? "p-2 text-xs min-h-[40px]"
             : "p-4 text-base min-h-[72px]"
-        } min-w-full`}
+        } min-w-full ${tutorialStep === 2 ? 'tutorial-highlight' : ''}`}
       >
         <div className={`flex items-start ${isMobileLandscape ? "gap-2" : "gap-4"}`}>
           <div

@@ -14,8 +14,8 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
   {
     id: 1,
-    title: 'Welcome to Quality Bingo!',
-    message: 'Learn quality control terms while having fun! This interactive tutorial will guide you through your first game.',
+    title: 'Welcome to GMP Bingo!',
+    message: 'Learn Good Manufacturing Practice terms while having fun! This interactive tutorial will guide you through your first game.',
     icon: React.createElement(Sparkles, { className: "h-5 w-5 text-white" }),
     position: 'center',
     trigger: 'auto'
@@ -23,19 +23,19 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: 2,
     title: 'How to Play',
-    message: 'Read the definition shown in the instructions panel, then click the matching term on the Bingo grid. Complete a line to win!',
+    message: 'Read the definition shown in the instructions panel, then click the matching term on the Bingo grid. Complete all grids to win!',
     icon: React.createElement(Lightbulb, { className: "h-5 w-5 text-white" }),
     position: 'top',
-    highlight: 'Look for the definition in the left panel',
+    highlight: 'Look for the definition in this container',
     trigger: 'auto'
   },
   {
     id: 3,
-    title: 'Your First Move',
-    message: 'Now try clicking on a term that matches the current definition. Don\'t worry if you get it wrong - you\'ll learn from the feedback!',
+    title: 'The Bingo Panel',
+    message: 'Select the correct term that matches the definition best. ',
     icon: React.createElement(Target, { className: "h-5 w-5 text-white" }),
     position: 'top',
-    highlight: 'Click any term on the grid to make your first move',
+    highlight: 'Click any term on the Bingo Panel and see how it highlights',
     trigger: 'interaction'
   },
   {
@@ -158,11 +158,7 @@ export const useTutorial = () => {
         ...prev,
         waitingForInteraction: false
       }));
-      
-      // Auto-advance after user interaction
-      setTimeout(() => {
-        nextStep();
-      }, 1500);
+      // Do NOT auto-advance after user interaction; wait for user to press Next
     }
   };
 
