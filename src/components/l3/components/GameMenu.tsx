@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { User, Trophy, Heart, Zap, FileText, RefreshCw } from "lucide-react";
+import { User, Trophy, Heart, Zap, RefreshCw } from "lucide-react";
 
 interface GameMenuProps {
   isMenuOpen: boolean;
@@ -8,7 +8,6 @@ interface GameMenuProps {
   score: number;
   health: number;
   combo: number;
-  setShowScenario: (show: boolean) => void;
   onResetProgress?: () => void;
   isMobile: boolean;
   isHorizontal: boolean;
@@ -21,7 +20,6 @@ export const GameMenu: React.FC<GameMenuProps> = ({
   score,
   health,
   combo,
-  setShowScenario,
   onResetProgress,
   isMobile,
   isHorizontal
@@ -226,25 +224,7 @@ export const GameMenu: React.FC<GameMenuProps> = ({
             </div>
           )}
 
-          {/* Mission Brief Button */}
-          <button
-            onClick={() => {
-              setShowScenario(true);
-              setIsMenuOpen(false);
-            }}
-            className={`w-full rounded-lg font-bold flex items-center justify-center gap-2 transition-all border border-cyan-300/50 shadow bg-gradient-to-r from-cyan-500 to-blue-500${
-              isMobile && isHorizontal
-                ? " px-2 py-2 text-xs"
-                : " px-4 py-3"
-            }`}
-          >
-            <FileText
-              className={`w-4 h-4${
-                isMobile && isHorizontal ? " w-3 h-3" : ""
-              }`}
-            />
-            MISSION BRIEF
-          </button>
+          {/* Mission Brief moved to header */}
 
           {/* Reset Progress Button (conditionally shown) */}
           {onResetProgress && (

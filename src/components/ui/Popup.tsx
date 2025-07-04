@@ -8,6 +8,7 @@ interface PopupProps {
   open: boolean;
   onClose: () => void;
   showNext?: boolean;
+  hideClose?: boolean;
   children: React.ReactNode;
 }
 
@@ -15,6 +16,7 @@ export const Popup: React.FC<PopupProps> = ({
   open,
   onClose,
   showNext,
+  hideClose = false,
   children,
 }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
@@ -71,7 +73,8 @@ export const Popup: React.FC<PopupProps> = ({
                 mixBlendMode: "lighten",
               }}
             />
-            {true && (
+            {/* Hide close button if hideClose is true */}
+            {!hideClose && (
               <button
                 onClick={onClose}
                 className={`absolute ${
@@ -125,6 +128,8 @@ interface VictoryPopupProps {
   health: number;
   showNext?: boolean;
   showGoToModules?: boolean;
+  showReset?: boolean;
+  onReset?: () => void;
   moduleId?: string;
 }
 
@@ -133,6 +138,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   onClose,
   showNext = false,
   showGoToModules = true,
+  showReset = false,
+  onReset,
   moduleId,
 }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
@@ -157,9 +164,14 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const handleNext = useCallback(() => {
     onClose(); // Parent handles scenario change
   }, [onClose]);
+  
+  // Handler for Reset
+  const handleReset = useCallback(() => {
+    if (onReset) onReset();
+  }, [onReset]);
 
   return (
-    <Popup open={open} onClose={onClose} showNext={showNext}>
+    <Popup open={open} onClose={onClose} showNext={showNext} hideClose={showReset}>
       <motion.div
         className={`flex flex-col items-center mx-auto justify-center text-center text-gray-900${
           isMobileHorizontal ? " scale-90 max-w-[320px] px-1" : ""
@@ -366,10 +378,10 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             }}
           />
         </motion.div>
-        {/* 🔘 Buttons */}
+        {/* 🔘 Gamified Buttons */}
         <motion.div
-          className={`flex justify-center gap-3 w-full mt-1${
-            isMobileHorizontal ? " gap-1 mt-0 justify-center" : ""
+          className={`flex justify-center gap-4 w-full mt-2${
+            isMobileHorizontal ? " gap-2 mt-1 justify-center" : ""
           }`}
           style={isMobileHorizontal ? { justifyContent: "center" } : {}}
           initial={{ y: 30, opacity: 0 }}
@@ -382,46 +394,182 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
           }}
         >
           {showGoToModules && (
-            <button
-              className={`bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center gap-1 border border-green-200/60 px-2 py-1 text-sm min-h-0 min-w-0${
-                isMobileHorizontal ? " px-1 py-0.5 text-xs" : ""
-              }`}
-              style={{
-                boxShadow: "0 2px 8px 0 rgba(34,197,94,0.10)",
-                background: undefined,
-                lineHeight: 1.1,
-              }}
-              onClick={handleGoToLevels}
-              aria-label="Back to Levels"
-              type="button"
+            <motion.div
+              className="relative"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Icon
-                icon="mdi:home-map-marker"
-                className={`w-5 h-5${isMobileHorizontal ? " w-4 h-4" : ""}`}
+              {/* Button shadow/glow effect */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur-[6px] opacity-80 -z-10 scale-105${
+                  isMobileHorizontal ? " blur-[4px]" : ""
+                }`} 
+                style={{
+                  transform: "translateY(2px)",
+                  animation: "pulse-subtle 2s infinite ease-in-out",
+                }}
               />
-              <span className="whitespace-nowrap">Back to Levels</span>
-            </button>
+              
+              {/* Main button */}
+              <button
+                className={`group relative bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 text-white font-bold rounded-lg 
+                  flex items-center gap-1 px-3 py-2 overflow-hidden transition-all duration-200 active:translate-y-[2px] 
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,100,0,0.5),0_0_12px_rgba(34,197,94,0.2)]
+                  active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_0_rgba(0,0,0,0.3),0_0px_0_rgba(0,100,0,0.5)] ${
+                  isMobileHorizontal ? " px-2 py-1.5 text-xs" : " text-sm"
+                }`}
+                onClick={handleGoToLevels}
+                aria-label="Back to Levels"
+                type="button"
+              >
+                {/* Shimmering overlay */}
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,white,transparent_70%)] group-hover:opacity-30"></div>
+                
+                {/* Button content */}
+                <div className="relative flex items-center gap-1 z-10">
+                  {/* Icon with animated glow */}
+                  <div className="relative">
+                    <div className={`absolute inset-0 rounded-full bg-white/30 blur-[3px] scale-125 animate-pulse-slow opacity-0 group-hover:opacity-80`}></div>
+                    <Icon
+                      icon="mdi:home-map-marker"
+                      className={`w-5 h-5 drop-shadow-glow${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                    />
+                  </div>
+                  <span className="whitespace-nowrap">Back to Levels</span>
+                </div>
+                
+                {/* Particle effects - only shown on hover */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={`particle-${i}`}
+                      className="absolute w-1 h-1 rounded-full bg-white opacity-0 group-hover:animate-particle-float"
+                      style={{ 
+                        left: `${Math.random() * 100}%`, 
+                        top: "100%",
+                        animationDelay: `${Math.random() * 1.5}s`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              </button>
+            </motion.div>
           )}
+          
           {showNext && (
-            <button
-              className={`bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center gap-1 border border-blue-200/60 px-2 py-1 text-sm min-h-0 min-w-0${
-                isMobileHorizontal ? " px-1 py-0.5 text-xs" : ""
-              }`}
-              style={{
-                boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
-                background: undefined,
-                lineHeight: 1.1,
-              }}
-              onClick={handleNext}
-              aria-label="Next"
-              type="button"
+            <motion.div
+              className="relative"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Icon
-                icon="mdi:arrow-right-bold"
-                className={`w-5 h-5${isMobileHorizontal ? " w-4 h-4" : ""}`}
+              {/* Button shadow/glow effect */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl blur-[6px] opacity-80 -z-10 scale-105${
+                  isMobileHorizontal ? " blur-[4px]" : ""
+                }`} 
+                style={{
+                  transform: "translateY(2px)",
+                  animation: "pulse-subtle 2s infinite ease-in-out alternate-reverse",
+                }}
               />
-              <span className="whitespace-nowrap">Next</span>
-            </button>
+              
+              {/* Main button */}
+              <button
+                className={`group relative bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-400 text-white font-bold rounded-lg 
+                  flex items-center gap-1 px-3 py-2 overflow-hidden transition-all duration-200 active:translate-y-[2px] 
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,42,100,0.5),0_0_12px_rgba(59,130,246,0.2)]
+                  active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_0_rgba(0,0,0,0.3),0_0px_0_rgba(0,42,100,0.5)] ${
+                  isMobileHorizontal ? " px-2 py-1.5 text-xs" : " text-sm"
+                }`}
+                onClick={handleNext}
+                aria-label="Next"
+                type="button"
+              >
+                {/* Shimmering overlay */}
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,white,transparent_70%)] group-hover:opacity-30"></div>
+                
+                {/* Button content */}
+                <div className="relative flex items-center gap-1 z-10">
+                  <span className="whitespace-nowrap">Next</span>
+                  {/* Icon with animated glow */}
+                  <div className="relative">
+                    <div className={`absolute inset-0 rounded-full bg-white/30 blur-[3px] scale-125 animate-pulse-slow opacity-0 group-hover:opacity-80`}></div>
+                    <Icon
+                      icon="mdi:arrow-right-bold"
+                      className={`w-5 h-5 drop-shadow-glow${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                    />
+                  </div>
+                </div>
+                
+                {/* Arrow trail effect - only shown on hover */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={`arrow-${i}`}
+                      className="absolute h-2 w-4 right-0 bg-white opacity-0 group-hover:animate-arrow-trail"
+                      style={{ 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        animationDelay: `${i * 0.15}s`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              </button>
+            </motion.div>
+          )}
+          
+          {showReset && onReset && (
+            <motion.div
+              className="relative"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {/* Button shadow/glow effect */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl blur-[6px] opacity-80 -z-10 scale-105${
+                  isMobileHorizontal ? " blur-[4px]" : ""
+                }`} 
+                style={{
+                  transform: "translateY(2px)",
+                  animation: "pulse-subtle 2.5s infinite ease-in-out",
+                }}
+              />
+              
+              {/* Main button */}
+              <button
+                className={`group relative bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-400 text-white font-bold rounded-lg 
+                  flex items-center gap-1 px-3 py-2 overflow-hidden transition-all duration-200 active:translate-y-[2px] 
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(100,45,0,0.5),0_0_12px_rgba(245,158,11,0.2)]
+                  active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_0_rgba(0,0,0,0.3),0_0px_0_rgba(100,45,0,0.5)] ${
+                  isMobileHorizontal ? " px-2 py-1.5 text-xs" : " text-sm"
+                }`}
+                onClick={handleReset}
+                aria-label="Reset Level"
+                type="button"
+              >
+                {/* Shimmering overlay */}
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,white,transparent_70%)] group-hover:opacity-30"></div>
+                
+                {/* Button content */}
+                <div className="relative flex items-center gap-1 z-10">
+                  {/* Icon with animated glow */}
+                  <div className="relative">
+                    <div className={`absolute inset-0 rounded-full bg-white/30 blur-[3px] scale-125 animate-pulse-slow opacity-0 group-hover:opacity-80`}></div>
+                    <Icon
+                      icon="mdi:refresh"
+                      className={`w-5 h-5 drop-shadow-glow group-hover:animate-spin-slow${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                    />
+                  </div>
+                  <span className="whitespace-nowrap">Reset Level</span>
+                </div>
+                
+                {/* Circular reset animation - only shown on hover */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-0 rounded-full border-2 border-white/0 group-hover:border-white/20 group-hover:animate-circle-expand opacity-0 group-hover:opacity-100"></div>
+                </div>
+              </button>
+            </motion.div>
           )}
         </motion.div>
       </motion.div>

@@ -655,6 +655,8 @@ export const JigsawBoard: React.FC = () => {
             combo={combo}
             health={health}
             showNext={scenarioIndex < scenarios.length - 1}
+            showReset={scenarioIndex >= scenarios.length - 1} // Only show reset on last scenario
+            onReset={resetProgress} // Pass the reset function
             moduleId={moduleId}
           />
         </div>
