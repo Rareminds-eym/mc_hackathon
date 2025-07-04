@@ -73,6 +73,7 @@ export const JigsawBoard: React.FC = () => {
   // ===== GAME STATE =====
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [score, setScore] = useState(0);
+  const [currentScenarioPoints, setCurrentScenarioPoints] = useState(0);
   const [health, setHealth] = useState(100);
   const [combo, setCombo] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -158,6 +159,7 @@ export const JigsawBoard: React.FC = () => {
             // Move to the next scenario
             setScenarioIndex(savedProgress.scenario_index + 1);
             setScore(savedProgress.score); // Preserve the score
+            setCurrentScenarioPoints(0); // Reset points for the new scenario
             setHealth(100); // Reset health for the new scenario
             setCombo(0); // Reset combo for the new scenario
             setPlacedPieces({ violations: [], actions: [] }); // Clear placed pieces
@@ -172,16 +174,24 @@ export const JigsawBoard: React.FC = () => {
             // If all scenarios are completed, just restore the state
             setScenarioIndex(savedProgress.scenario_index);
             setScore(savedProgress.score);
+            // For completed scenarios, use the saved score directly
+            setCurrentScenarioPoints(100); // Completed scenarios always have full points
             setHealth(savedProgress.health);
             setCombo(savedProgress.combo);
             setPlacedPieces(savedProgress.placed_pieces);
             setInitialized(true);
+            setIsComplete(true); // Set completion flag to prevent re-triggering completion logic
             setShowScenario(false);
           }
         } else {
           // Restore in-progress scenario
           setScenarioIndex(savedProgress.scenario_index);
           setScore(savedProgress.score);
+          // Calculate current scenario points based on placed pieces
+          const totalCorrectPieces = correctViolations.length + correctActions.length;
+          const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
+          const calculatedPoints = Math.min(100, (savedProgress.placed_pieces.violations.length + savedProgress.placed_pieces.actions.length) * pointsPerPiece);
+          setCurrentScenarioPoints(calculatedPoints);
           setHealth(savedProgress.health);
           setCombo(savedProgress.combo);
           setPlacedPieces(savedProgress.placed_pieces);
@@ -212,6 +222,7 @@ export const JigsawBoard: React.FC = () => {
   const resetProgress = useCallback(async () => {
     setScenarioIndex(0);
     setScore(0);
+    setCurrentScenarioPoints(0);
     setHealth(100);
     setCombo(0);
     setPlacedPieces({ violations: [], actions: [] });
@@ -270,7 +281,19 @@ export const JigsawBoard: React.FC = () => {
           [containerType]: [...prev[containerType], piece],
         }));
         setFeedback("🎯 CRITICAL HIT! Perfect placement!");
-        setScore((prev) => prev + 100 + combo * 10);
+        
+        // Calculate points per correct piece based on total correct pieces
+        const totalCorrectPieces = correctViolations.length + correctActions.length;
+        const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
+        
+        // Update current scenario points and total score
+        setCurrentScenarioPoints((prev) => {
+          const newPoints = Math.min(100, prev + pointsPerPiece);
+          // Update total score with just the incremental points
+          setScore((prevScore) => prevScore + (newPoints - prev));
+          return newPoints;
+        });
+        
         setCombo((prev) => prev + 1);
         return { success: true };
       } else {
@@ -280,7 +303,7 @@ export const JigsawBoard: React.FC = () => {
         return { success: false };
       }
     },
-    [placedPieces, combo]
+    [placedPieces, combo, correctViolations.length, correctActions.length]
   );
   
   /**
@@ -322,6 +345,7 @@ export const JigsawBoard: React.FC = () => {
       setIsComplete(false);
       setCombo(0);
       setHealth(100);
+      setCurrentScenarioPoints(0); // Reset points for new scenario
       setShowScenario(true);
     } else {
       setIsComplete(false);
@@ -412,16 +436,29 @@ export const JigsawBoard: React.FC = () => {
 
   // Check for game completion
   useEffect(() => {
+    // Skip if already marked as complete to prevent re-adding points
+    if (isComplete) return;
+    
     const totalCorrect = correctViolations.length + correctActions.length;
     const placedCorrect =
       placedPieces.violations.length + placedPieces.actions.length;
 
     if (placedCorrect === totalCorrect && totalCorrect > 0) {
       setIsComplete(true);
-      setScore((prev) => prev + 1000 + combo * 100);
+      
+      // Make sure we give exactly 100 points total for the scenario
+      setCurrentScenarioPoints((prev) => {
+        const remainingPoints = 100 - prev;
+        if (remainingPoints > 0) {
+          setScore((prevScore) => prevScore + remainingPoints);
+          return 100;
+        }
+        return prev;
+      });
+      
       setFeedback("");
     }
-  }, [placedPieces, combo, correctViolations.length, correctActions.length]);
+  }, [placedPieces, isComplete, correctViolations.length, correctActions.length]);
 
   // Auto-dismiss feedback after timeout
   useEffect(() => {
@@ -618,6 +655,8 @@ export const JigsawBoard: React.FC = () => {
             combo={combo}
             health={health}
             showNext={scenarioIndex < scenarios.length - 1}
+            showReset={scenarioIndex >= scenarios.length - 1} // Only show reset on last scenario
+            onReset={resetProgress} // Pass the reset function
             moduleId={moduleId}
           />
         </div>
