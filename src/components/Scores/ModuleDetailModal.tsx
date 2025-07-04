@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Star, Trophy, Target } from 'lucide-react';
+import { X, Trophy, Target } from 'lucide-react';
 import { ModuleDetailModalProps, Level } from './types/GameData';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 
@@ -9,17 +9,10 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
 
   if (!isOpen || !module) return null;
 
-  const getScoreColor = (score: number): string => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 70) return 'text-yellow-600';
-    if (score > 0) return 'text-orange-600';
-    return 'text-gray-400';
-  };
-
   const getScoreIcon = (score: number): JSX.Element => {
     if (score >= 90) return <Trophy size={16} className="text-green-600" />;
     if (score >= 70) return <Target size={16} className="text-yellow-600" />;
-    if (score > 0) return <Star size={16} className="text-orange-600" />;
+    if (score > 0) return <Target size={16} className="text-orange-600" />;
     return <div className="w-4 h-4 rounded-full bg-gray-300"></div>;
   };
 
@@ -56,22 +49,7 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
               }`}>
                 Module {module.id}
               </h2>
-              <div className="flex items-center space-x-1 mt-1">
-                {[...Array(3)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={isMobileLandscape ? 10 : isMobile ? 12 : 14}
-                    fill={i < module.stars ? '#F59E0B' : 'none'}
-                    stroke={i < module.stars ? '#F59E0B' : '#D1D5DB'}
-                    strokeWidth="2"
-                  />
-                ))}
-                <span className={`text-gray-600 ml-2 ${
-                  isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
-                }`}>
-                  {module.stars}/3 stars
-                </span>
-              </div>
+
             </div>
           </div>
           <button
@@ -122,24 +100,11 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
                 </div>
 
                 <div className="text-right">
-                  <div className={`font-bold ${getScoreColor(level.score)} ${
+                  <div className={`font-bold text-gray-600 ${
                     isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-lg'
                   }`}>
-                    {level.score > 0 ? `${level.score}%` : 'Not started'}
+                    {level.score > 0 ? 'Completed' : 'Not started'}
                   </div>
-                  {level.score > 0 && (
-                    <div className={`bg-gray-200 rounded-full mt-1 ${
-                      isMobileLandscape ? 'w-10 h-1' : isMobile ? 'w-12 h-1.5' : 'w-16 h-2'
-                    }`}>
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          level.score >= 90 ? 'bg-green-500' :
-                          level.score >= 70 ? 'bg-yellow-500' : 'bg-orange-500'
-                        }`}
-                        style={{ width: `${level.score}%` }}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
