@@ -174,15 +174,13 @@ export const JigsawBoard: React.FC = () => {
             // If all scenarios are completed, just restore the state
             setScenarioIndex(savedProgress.scenario_index);
             setScore(savedProgress.score);
-            // Calculate current scenario points from placed pieces
-            const totalCorrectPieces = correctViolations.length + correctActions.length;
-            const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
-            const calculatedPoints = Math.min(100, (savedProgress.placed_pieces.violations.length + savedProgress.placed_pieces.actions.length) * pointsPerPiece);
-            setCurrentScenarioPoints(calculatedPoints);
+            // For completed scenarios, use the saved score directly
+            setCurrentScenarioPoints(100); // Completed scenarios always have full points
             setHealth(savedProgress.health);
             setCombo(savedProgress.combo);
             setPlacedPieces(savedProgress.placed_pieces);
             setInitialized(true);
+            setIsComplete(true); // Set completion flag to prevent re-triggering completion logic
             setShowScenario(false);
           }
         } else {
@@ -438,6 +436,9 @@ export const JigsawBoard: React.FC = () => {
 
   // Check for game completion
   useEffect(() => {
+    // Skip if already marked as complete to prevent re-adding points
+    if (isComplete) return;
+    
     const totalCorrect = correctViolations.length + correctActions.length;
     const placedCorrect =
       placedPieces.violations.length + placedPieces.actions.length;
@@ -457,7 +458,7 @@ export const JigsawBoard: React.FC = () => {
       
       setFeedback("");
     }
-  }, [placedPieces, combo, correctViolations.length, correctActions.length]);
+  }, [placedPieces, isComplete, correctViolations.length, correctActions.length]);
 
   // Auto-dismiss feedback after timeout
   useEffect(() => {
