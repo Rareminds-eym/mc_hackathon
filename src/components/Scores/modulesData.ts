@@ -1,10 +1,15 @@
 import { Module } from './types/GameData';
 
+// Helper function to calculate module score based on levels
+export const getModuleScore = (module: Module): number => {
+  const totalScore = module.levels.reduce((sum, level) => sum + level.score, 0);
+  return Math.round(totalScore / module.levels.length);
+};
+
 export const modules: Module[] = [
   {
     id: 1,
     status: 'completed',
-    stars: 3,
     levels: [
       { id: 1, name: 'Desert Dawn', score: 95 },
       { id: 2, name: 'Sandy Steps', score: 88 },
@@ -15,7 +20,6 @@ export const modules: Module[] = [
   {
     id: 2,
     status: 'completed',
-    stars: 2,
     levels: [
       { id: 1, name: 'Mirage Mystery', score: 78 },
       { id: 2, name: 'Dune Drift', score: 85 },
@@ -26,7 +30,6 @@ export const modules: Module[] = [
   {
     id: 3,
     status: 'completed',
-    stars: 1,
     levels: [
       { id: 1, name: 'Scorpion Trail', score: 65 },
       { id: 2, name: 'Heat Wave', score: 0 },
@@ -37,7 +40,6 @@ export const modules: Module[] = [
   {
     id: 4,
     status: 'completed',
-    stars: 0,
     levels: [
       { id: 1, name: 'Lizard Leap', score: 0 },
       { id: 2, name: 'Crystal Cave', score: 0 },
@@ -48,7 +50,6 @@ export const modules: Module[] = [
   {
     id: 5,
     status: 'unlocked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Pyramid Path', score: 0 },
       { id: 2, name: 'Sphinx Riddle', score: 0 },
@@ -59,7 +60,6 @@ export const modules: Module[] = [
   {
     id: 6,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Treasure Hunt A', score: 0 },
       { id: 2, name: 'Treasure Hunt B', score: 0 },
@@ -70,7 +70,6 @@ export const modules: Module[] = [
   {
     id: 7,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Nomad Journey', score: 0 },
       { id: 2, name: 'Camel Caravan', score: 0 },
@@ -81,7 +80,6 @@ export const modules: Module[] = [
   {
     id: 8,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Star Navigation', score: 0 },
       { id: 2, name: 'Moon Valley', score: 0 },
@@ -92,7 +90,6 @@ export const modules: Module[] = [
   {
     id: 9,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Phoenix Fire', score: 0 },
       { id: 2, name: 'Dragon Scales', score: 0 },
@@ -103,7 +100,6 @@ export const modules: Module[] = [
   {
     id: 10,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Sandstorm Survival', score: 0 },
       { id: 2, name: 'Mirage Master', score: 0 },
@@ -114,7 +110,6 @@ export const modules: Module[] = [
   {
     id: 11,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Final Trial A', score: 0 },
       { id: 2, name: 'Final Trial B', score: 0 },
@@ -125,7 +120,6 @@ export const modules: Module[] = [
   {
     id: 12,
     status: 'locked',
-    stars: 0,
     levels: [
       { id: 1, name: 'Ultimate Challenge', score: 0 },
       { id: 2, name: 'Master Quest', score: 0 },

@@ -13,6 +13,14 @@ const AVATAR_OPTIONS = [
     label: "Intern 3",
     src: "/characters/Intern3.png",
   },
+  {
+    label: "Intern4",
+    src: "/characters/Intern4.png",
+  },
+  {
+    label: "Intern5",
+    src: "/characters/Intern5.png",
+  },
 ];
 
 interface AvatarSelectorProps {

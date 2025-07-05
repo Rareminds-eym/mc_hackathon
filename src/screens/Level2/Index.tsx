@@ -35,6 +35,7 @@ const Level2: React.FC = () => {
     return (
       <GameInterface
         gameMode={selectedGameMode}
+        moduleId={moduleId || '1'}
         onBack={handleBackToHome}
         onNextLevel={handleNextLevel}
       />

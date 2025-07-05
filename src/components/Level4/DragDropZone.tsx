@@ -49,7 +49,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
           {currentCase.questions.rootCause.options.map((option, idx) => (
             <div
               key={idx}
-              className={`flex items-center p-0.5 sm:p-1 lg:px-4 lg:py-2 xl:px-6 xl:py-3 rounded-lg border cursor-move bg-white/50 shadow-sm text-[7px] sm:text-[10px] lg:text-base xl:text-lg  ${selectedAnswer === idx ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex items-center p-0.5 sm:p-1 lg:px-4 lg:py-2 xl:px-6 xl:py-3 rounded-lg border cursor-move bg-white/30 shadow-sm text-[7px] sm:text-[10px] lg:text-base xl:text-lg  ${selectedAnswer === idx ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ minWidth: 0, width: '100%' }}
               draggable={!disabled}
               onDragStart={() => onDragStart(idx)}

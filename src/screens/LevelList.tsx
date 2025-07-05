@@ -1,668 +1,484 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { GMP_MODULES } from '../data/gmpModules';
-import type { Level } from '../types';
+import { useGameRedux } from '../store/useGameRedux';
+import { Button, DifficultyBadge } from '../components/ui';
+import { useDeviceLayout } from '../hooks/useOrientation';
+import type { Level, Module } from '../types';
 
-function LevelList() {
-  const navigate = useNavigate();
+const LevelList: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isLevelCompleted, getLevelScore } = useGameRedux();
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const isMobileLandscape = isMobile && isHorizontal;
 
-  // Get the current module data
-  const currentModule = GMP_MODULES.find(module => module.id === parseInt(moduleId || '1'));
-  const levels = currentModule?.levels || [];
+  // Get module from location state or find by ID
+  const module: Module = location.state?.module ||
+    GMP_MODULES.find(m => m.id === parseInt(moduleId || '0'));
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [currentTranslateX, setCurrentTranslateX] = useState(0);
-  const [baseTranslateX, setBaseTranslateX] = useState(0);
-  const [velocity, setVelocity] = useState(0);
-  const [lastMoveTime, setLastMoveTime] = useState(0);
-  const [lastMoveX, setLastMoveX] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
+  if (!module) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'var(--cosmic-bg-gradient)',
+        padding: '20px',
+        color: 'var(--cosmic-text-main)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <h1 style={{ fontSize: '2rem', marginBottom: '20px' }}>Module not found</h1>
+        <Button onClick={() => navigate('/modules')}>
+          Back to Modules
+        </Button>
+      </div>
+    );
+  }
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
-  const touchStartTimeRef = useRef<number>(0);
-  const velocityHistoryRef = useRef<Array<{velocity: number, time: number}>>([]);
-
-  // Responsive card dimensions - updated for new design
-  const getCardDimensions = () => {
-    const isLandscape = window.innerHeight < window.innerWidth && window.innerWidth < 1024;
-    const isMobile = window.innerWidth < 768;
-
-    if (isLandscape && isMobile) {
-      return { width: 160, gap: 12 }; // Mobile landscape - much smaller cards
-    } else if (isMobile) {
-      return { width: 280, gap: 20 }; // Mobile portrait
-    }
-    return { width: 350, gap: 28 }; // Desktop - wider cards for new design
+  const selectLevel = (level: Level) => {
+    navigate(`/modules/${module.id}/levels/${level.id}`, {
+      state: { module, level }
+    });
   };
 
-  const { width: cardWidth, gap: cardGap } = getCardDimensions();
-  const totalWidth = cardWidth + cardGap;
-
-  // Helper function to get level styling based on difficulty - updated to match new design
-  const getLevelStyling = (level: Level, index: number) => {
-    const styles = [
-      { 
-        bg: "bg-pink-500", 
-        color: "text-white", 
-        levelColor: "bg-green-500",
-        number: "1",
-        label: "Recall",
-        difficulty: "Beginner",
-        minutes: "15 min",
-        name: "Introduction to GMP"
-      },
-      { 
-        bg: "bg-amber-500", 
-        color: "text-white", 
-        levelColor: "bg-amber-500",
-        number: "2", 
-        label: "Classify",
-        difficulty: "Intermediate",
-        minutes: "20 min",
-        name: "Regulatory Bodies"
-      },
-      { 
-        bg: "bg-emerald-500", 
-        color: "text-white", 
-        levelColor: "bg-red-500",
-        number: "3",
-        label: "Apply",
-        difficulty: "Advanced",
-        minutes: "25 min",
-        name: "GMP Guidelines"
-      },
-      { 
-        bg: "bg-violet-500", 
-        color: "text-white", 
-        levelColor: "bg-violet-500",
-        number: "4",
-        label: "Analyze",
-        difficulty: "Expert",
-        minutes: "30 min",
-        name: "GMP Analysis"
-      }
-    ];
-    return styles[index % styles.length];
-  };
-
-  // Handle card click to navigate to specific level
-  const handleCardClick = (level: Level) => {
-    navigate(`/modules/${moduleId}/levels/${level.id}`);
-  };
-
-  // Handle back button click
-  const handleBackClick = () => {
-    navigate('/modules');
-  };
-
-  const getPositionX = (event: TouchEvent | MouseEvent): number => {
-    return 'touches' in event ? event.touches[0].clientX : event.clientX;
-  };
-
-  const updateTransform = (translateX: number) => {
-    if (containerRef.current) {
-      containerRef.current.style.transform = `translateX(${translateX}px)`;
-    }
-    if (progressRef.current) {
-      progressRef.current.style.transform = `translateX(${translateX}px)`;
-    }
-  };
-
-  const applyBoundaries = (translateX: number) => {
-    const maxTranslate = 100;
-    const minTranslate = -(levels.length * totalWidth) - 100;
-    return Math.max(minTranslate, Math.min(maxTranslate, translateX));
-  };
-
-  const calculateAverageVelocity = () => {
-    const history = velocityHistoryRef.current;
-    if (history.length === 0) return 0;
-    
-    // Use recent velocity samples for more accurate momentum
-    const recentHistory = history.slice(-5);
-    const totalVelocity = recentHistory.reduce((sum, item) => sum + item.velocity, 0);
-    return totalVelocity / recentHistory.length;
-  };
-
-  const startMomentumAnimation = (initialVelocity: number) => {
-    // Use average velocity for smoother momentum
-    const avgVelocity = calculateAverageVelocity();
-    let currentVelocity = Math.abs(avgVelocity) > Math.abs(initialVelocity) ? avgVelocity : initialVelocity;
-    
-    // Minimum velocity threshold for momentum
-    if (Math.abs(currentVelocity) < 0.5) return;
-
-    const animate = () => {
-      // Enhanced friction curve for more natural feel
-      const friction = 0.92;
-      currentVelocity *= friction;
-      
-      const newTranslateX = applyBoundaries(currentTranslateX + currentVelocity);
-      
-      setCurrentTranslateX(newTranslateX);
-      setBaseTranslateX(newTranslateX);
-      updateTransform(newTranslateX);
-
-      // Continue animation if velocity is significant
-      if (Math.abs(currentVelocity) > 0.1) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        setIsScrolling(false);
-      }
-    };
-
-    setIsScrolling(true);
-    animationRef.current = requestAnimationFrame(animate);
-  };
-
-  const handleDragStart = (event: React.TouchEvent | React.MouseEvent) => {
-    // Cancel any ongoing momentum animation
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-
-    setIsDragging(true);
-    setIsScrolling(false);
-    const clientX = getPositionX(event.nativeEvent);
-    const currentTime = Date.now();
-    
-    setStartX(clientX);
-    setLastMoveX(clientX);
-    setLastMoveTime(currentTime);
-    setVelocity(0);
-    touchStartTimeRef.current = currentTime;
-    velocityHistoryRef.current = [];
-    
-    // Remove transitions for immediate response
-    if (containerRef.current) {
-      containerRef.current.style.transition = 'none';
-    }
-    if (progressRef.current) {
-      progressRef.current.style.transition = 'none';
-    }
-
-    // Prevent default touch behaviors
-    if ('touches' in event.nativeEvent) {
-      event.preventDefault();
-    }
-  };
-
-  const handleDragMove = (event: TouchEvent | MouseEvent) => {
-    if (!isDragging) return;
-
-    event.preventDefault();
-
-    const clientX = getPositionX(event);
-    const currentTime = Date.now();
-    const deltaX = clientX - startX;
-    const newTranslateX = baseTranslateX + deltaX;
-
-    // Calculate velocity
-    const timeDelta = currentTime - lastMoveTime;
-    if (timeDelta > 0) {
-      const moveDelta = clientX - lastMoveX;
-      const instantVelocity = moveDelta / timeDelta * 16;
-
-      velocityHistoryRef.current.push({
-        velocity: instantVelocity,
-        time: currentTime
-      });
-
-      velocityHistoryRef.current = velocityHistoryRef.current.filter(
-        item => currentTime - item.time < 100
-      );
-
-      setVelocity(instantVelocity);
-    }
-
-    setLastMoveX(clientX);
-    setLastMoveTime(currentTime);
-
-    // Apply boundaries
-    let boundedTranslate = newTranslateX;
-    const maxTranslate = 100;
-    const minTranslate = -(levels.length * totalWidth) - 100;
-
-    if (newTranslateX > maxTranslate) {
-      const overscroll = newTranslateX - maxTranslate;
-      boundedTranslate = maxTranslate + overscroll * 0.25;
-    } else if (newTranslateX < minTranslate) {
-      const overscroll = newTranslateX - minTranslate;
-      boundedTranslate = minTranslate + overscroll * 0.25;
-    }
-
-    setCurrentTranslateX(boundedTranslate);
-    updateTransform(boundedTranslate);
-  };
-
-
-
-  const navigateLeft = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-
-    const newTranslateX = Math.min(baseTranslateX + totalWidth, 0);
-    setBaseTranslateX(newTranslateX);
-    setCurrentTranslateX(newTranslateX);
-    
-    if (containerRef.current) {
-      containerRef.current.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    }
-    if (progressRef.current) {
-      progressRef.current.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    }
-    updateTransform(newTranslateX);
-    
-    // Clear transition after animation
-    setTimeout(() => {
-      if (containerRef.current) {
-        containerRef.current.style.transition = 'none';
-      }
-      if (progressRef.current) {
-        progressRef.current.style.transition = 'none';
-      }
-    }, 400);
-  };
-
-  const navigateRight = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-
-    const maxTranslate = -(levels.length - 1) * totalWidth;
-    const newTranslateX = Math.max(baseTranslateX - totalWidth, maxTranslate);
-    setBaseTranslateX(newTranslateX);
-    setCurrentTranslateX(newTranslateX);
-    
-    if (containerRef.current) {
-      containerRef.current.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    }
-    if (progressRef.current) {
-      progressRef.current.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    }
-    updateTransform(newTranslateX);
-    
-    // Clear transition after animation
-    setTimeout(() => {
-      if (containerRef.current) {
-        containerRef.current.style.transition = 'none';
-      }
-      if (progressRef.current) {
-        progressRef.current.style.transition = 'none';
-      }
-    }, 400);
-  };
-
-  useEffect(() => {
-    
-    const handleDragEnd = () => {
-      if (!isDragging) return;
-      
-      setIsDragging(false);
-      
-      // Calculate final velocity from recent movement
-      const history = velocityHistoryRef.current;
-      let finalVelocity = 0;
-      
-      if (history.length > 0) {
-        const recentHistory = history.slice(-5);
-        const totalVelocity = recentHistory.reduce((sum, item) => sum + item.velocity, 0);
-        finalVelocity = totalVelocity / recentHistory.length;
-      }
-      
-      // Apply boundaries
-      const maxTranslate = 100;
-      const minTranslate = -(levels.length * totalWidth) - 100;
-      const boundedTranslateX = Math.max(minTranslate, Math.min(maxTranslate, currentTranslateX));
-      
-      if (boundedTranslateX !== currentTranslateX) {
-        // Smooth spring-back animation to boundaries
-        setCurrentTranslateX(boundedTranslateX);
-        setBaseTranslateX(boundedTranslateX);
-        
-        if (containerRef.current) {
-          containerRef.current.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        }
-        if (progressRef.current) {
-          progressRef.current.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        }
-        
-        if (containerRef.current) {
-          containerRef.current.style.transform = `translateX(${boundedTranslateX}px)`;
-        }
-        if (progressRef.current) {
-          progressRef.current.style.transform = `translateX(${boundedTranslateX}px)`;
-        }
-        
-        // Clear transition after animation
-        setTimeout(() => {
-          if (containerRef.current) {
-            containerRef.current.style.transition = 'none';
-          }
-          if (progressRef.current) {
-            progressRef.current.style.transition = 'none';
-          }
-        }, 500);
-      } else {
-        // Start momentum animation
-        setBaseTranslateX(currentTranslateX);
-        
-        // Use average velocity for smoother momentum
-        let currentVelocity = finalVelocity;
-        
-        // Minimum velocity threshold for momentum
-        if (Math.abs(currentVelocity) < 0.5) return;
-    
-        const animate = () => {
-          // Enhanced friction curve for more natural feel
-          const friction = 0.92;
-          currentVelocity *= friction;
-          
-          const newTranslateX = Math.max(minTranslate, Math.min(maxTranslate, currentTranslateX + currentVelocity));
-          
-          setCurrentTranslateX(newTranslateX);
-          setBaseTranslateX(newTranslateX);
-          
-          if (containerRef.current) {
-            containerRef.current.style.transform = `translateX(${newTranslateX}px)`;
-          }
-          if (progressRef.current) {
-            progressRef.current.style.transform = `translateX(${newTranslateX}px)`;
-          }
-    
-          // Continue animation if velocity is significant
-          if (Math.abs(currentVelocity) > 0.1) {
-            animationRef.current = requestAnimationFrame(animate);
-          } else {
-            setIsScrolling(false);
-          }
-        };
-    
-        setIsScrolling(true);
-        animationRef.current = requestAnimationFrame(animate);
-      }
-      
-      // Clear velocity history
-      velocityHistoryRef.current = [];
-    };
-
-    if (isDragging) {
-      // Use passive: false to allow preventDefault
-      document.addEventListener('mousemove', handleDragMove, { passive: false });
-      document.addEventListener('mouseup', handleDragEnd, { passive: false });
-      document.addEventListener('touchmove', handleDragMove, { passive: false });
-      document.addEventListener('touchend', handleDragEnd, { passive: false });
-
-      // Prevent context menu on long press
-      document.addEventListener('contextmenu', (e) => e.preventDefault(), { passive: false });
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleDragMove);
-      document.removeEventListener('mouseup', handleDragEnd);
-      document.removeEventListener('touchmove', handleDragMove);
-      document.removeEventListener('touchend', handleDragEnd);
-      document.removeEventListener('contextmenu', (e) => e.preventDefault());
-    };
-  }, [isDragging, startX, baseTranslateX, lastMoveTime, lastMoveX, currentTranslateX, levels.length, totalWidth, handleDragMove]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      updateTransform(currentTranslateX);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [currentTranslateX]);
-
-  // Cleanup animation on unmount
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
-  const isLandscape = window.innerHeight < window.innerWidth && window.innerWidth < 1024;
-  const isMobile = window.innerWidth < 768;
-  const isMobileLandscape = isLandscape && isMobile;
+  // Define gradient colors for each level position
+  const levelColors = [
+    { bg: 'linear-gradient(135deg, #ff6b9d 0%, #ff8a9b 50%, #ffa8a8 100%)', square: '#ff6b9d' }, // Pink
+    { bg: 'linear-gradient(135deg, #ffa726 0%, #ffb74d 50%, #ffcc80 100%)', square: '#ffa726' }, // Orange/Yellow
+    { bg: 'linear-gradient(135deg, #26a69a 0%, #4db6ac 50%, #80cbc4 100%)', square: '#26a69a' }, // Teal
+    { bg: 'linear-gradient(135deg, #7e57c2 0%, #9575cd 50%, #b39ddb 100%)', square: '#7e57c2' }, // Purple
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-      {/* Fixed Header */}
-      <div className={`fixed top-0 left-0 right-0 z-30 px-4 ${isMobileLandscape ? 'py-2' : 'py-6'} sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900`}>
-        <div className="flex items-center max-w-7xl mx-auto">
+    <div style={{
+      minHeight: '100vh',
+      height: isMobileLandscape ? '100vh' : 'auto',
+      width: '100vw',
+      position: 'relative',
+      overflow: 'hidden',
+      color: 'var(--cosmic-text-main)',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Simplified cosmic background */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        }}
+      >
+        {/* Subtle star field */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                background: 'rgba(255, 255, 255, 0.6)',
+                borderRadius: '50%',
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: `${Math.random() * 2 + 1}px`,
+                height: `${Math.random() * 2 + 1}px`,
+                opacity: Math.random() * 0.8 + 0.2,
+                animation: 'pulse',
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${Math.random() * 3 + 2}s`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      {/* Main content wrapper */}
+      <div style={{
+        position: 'relative',
+        zIndex: 2,
+        padding: isMobileLandscape ? '8px 12px' : '20px',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        // Enable vertical scroll for mobile
+        overflowY: isMobile ? 'auto' : undefined,
+        maxHeight: isMobile ? '100vh' : undefined,
+        WebkitOverflowScrolling: isMobile ? 'touch' : undefined,
+        // Hide scrollbar
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none' // IE/Edge
+      }} className={isMobile ? 'hide-scrollbar' : ''}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: isMobileLandscape ? '15px' : '60px',
+          position: 'relative'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{
+              fontSize: isMobileLandscape ? '1.4rem' : '2.5rem',
+              fontWeight: 700,
+              color: '#fff',
+              textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              marginBottom: isMobileLandscape ? '0.25rem' : '0.5rem',
+              textAlign: 'center',
+              lineHeight: isMobileLandscape ? '1.2' : '1.1'
+            }}>
+              {module.title}
+            </h1>
+          </div>
+          {/* Back Button */}
           <button
-            onClick={handleBackClick}
-            className={`flex items-center gap-2 px-2 ${isMobileLandscape ? 'py-1' : 'py-2'} bg-slate-700/50 hover:bg-slate-700/70 rounded-xl backdrop-blur-sm transition-all duration-200 hover:scale-105`}
+            onClick={() => navigate("/modules")}
+            style={{
+              position: "absolute",
+              top: isMobileLandscape ? -5 : -10,
+              left: isMobileLandscape ? -5 : -10,
+              zIndex: 40,
+              background: "rgba(255, 255, 255, 0.1)",
+              color: "#fff",
+              border: "2px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: isMobileLandscape ? "8px" : "12px",
+              backdropFilter: "blur(10px)",
+              padding: isMobileLandscape ? "0.5rem 1rem" : "0.75rem 1.5rem",
+              fontWeight: 600,
+              fontSize: isMobileLandscape ? "0.8rem" : "1rem",
+              cursor: "pointer",
+              outline: "none",
+              transition: "all 0.3s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: isMobileLandscape ? "0.25rem" : "0.5rem"
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+            aria-label="Back to Modules"
           >
-            <ChevronLeft className={`${isMobileLandscape ? 'w-3 h-3' : 'w-5 h-5'}`} />
-            <span className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} font-medium`}>Back</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back
           </button>
-
-          <h1 className={`${isMobileLandscape ? 'text-base' : 'text-xl sm:text-2xl lg:text-3xl'} font-bold text-center flex-1`}>
-            GMP & Regulations
-          </h1>
         </div>
-      </div>
 
-      {/* Progress Indicators that Move with Cards */}
-      <div className={`fixed ${isMobileLandscape ? 'top-12' : 'top-20 sm:top-24 lg:top-28'} left-0 right-0 z-20 px-4 sm:px-6 lg:px-8 pointer-events-none overflow-hidden`}>
-        <div className="max-w-7xl mx-auto">
-          
-        </div>
-      </div>
+        {/* Horizontal Timeline */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: isMobileLandscape ? '60px' : '120px',
+          width: isMobileLandscape ? '80%' : '100%',
+          flex: 1
+        }}>
+          {/* Timeline Bar */}
+          <div style={{
+            position: 'relative',
+            width: isMobileLandscape ? '95%' : '85%',
+            maxWidth: isMobileLandscape ? '100%' : '900px',
+            height: isMobileLandscape ? '6px' : '10px',
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: isMobileLandscape ? '3px' : '5px',
+            margin: isMobileLandscape ? '10px 0' : '20px 0',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+          }}>
+            {/* Progress line */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              height: '100%',
+              background: 'linear-gradient(90deg, #ff6b9d 0%, #ffa726 33%, #26a69a 66%, #7e57c2 100%)',
+              borderRadius: isMobileLandscape ? '3px' : '5px',
+              width: '100%',
+              boxShadow: isMobileLandscape ? '0 0 8px rgba(255, 107, 157, 0.2)' : '0 0 15px rgba(255, 107, 157, 0.3)'
+            }} />
 
-      {/* Cards Container with Navigation */}
-      <div className={`relative ${isMobileLandscape ? 'pt-20 pb-2' : 'pt-36 sm:pt-40 lg:pt-44 pb-8'} px-4 sm:px-6 lg:px-8`}>
-        <div className="max-w-7xl mx-auto">
-          {/* Navigation Buttons */}
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none z-20">
-            <button
-              onClick={navigateLeft}
-              className={`${isMobileLandscape ? 'w-6 h-6 ml-1' : 'w-12 h-12 ml-4'} bg-slate-800/80 hover:bg-slate-700/90 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-200 hover:scale-110 pointer-events-auto shadow-lg border border-slate-600/50`}
-            >
-              <ChevronLeft className={`${isMobileLandscape ? 'w-3 h-3' : 'w-6 h-6'} text-white`} />
-            </button>
-            
-            <button
-              onClick={navigateRight}
-              className={`${isMobileLandscape ? 'w-6 h-6 mr-1' : 'w-12 h-12 mr-4'} bg-slate-800/80 hover:bg-slate-700/90 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-200 hover:scale-110 pointer-events-auto shadow-lg border border-slate-600/50`}
-            >
-              <ChevronRight className={`${isMobileLandscape ? 'w-3 h-3' : 'w-6 h-6'} text-white`} />
-            </button>
+            {/* Level indicators on timeline */}
+            {module.levels.map((level: Level, index: number) => {
+              const isCompleted = isLevelCompleted(module.id, level.id);
+              const colorIndex = index % levelColors.length;
+              const position = (index / (module.levels.length - 1)) * 100;
+
+              return (
+                <div key={level.id}>
+                  {/* Timeline square */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: isMobileLandscape ? '-8px' : '-12px',
+                      left: `${position}%`,
+                      transform: 'translateX(-50%)',
+                      width: isMobileLandscape ? '20px' : '32px',
+                      height: isMobileLandscape ? '20px' : '32px',
+                      background: levelColors[colorIndex].square,
+                      borderRadius: isMobileLandscape ? '5px' : '8px',
+                      border: isMobileLandscape ? '2px solid #fff' : '3px solid #fff',
+                      boxShadow: isMobileLandscape ? '0 2px 6px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      zIndex: 10
+                    }}
+                    onClick={() => selectLevel(level)}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateX(-50%) scale(1.2)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                    }}
+                  >
+                    {isCompleted ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 6L9 17l-5-5" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    ) : (
+                      <span style={{
+                        color: '#fff',
+                        fontSize: isMobileLandscape ? '9px' : '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        {level.id}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Connecting line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: isMobileLandscape ? '12px' : '20px',
+                      left: `${position}%`,
+                      transform: 'translateX(-50%)',
+                      width: isMobileLandscape ? '2px' : '3px',
+                      height: isMobileLandscape ? '40px' : '80px',
+                      background: 'transparent',
+                      zIndex: 5
+                    }}
+                  >
+                    {/* Dashed line */}
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        background: `repeating-linear-gradient(
+                          to bottom,
+                          ${levelColors[colorIndex].square} 0px,
+                          ${levelColors[colorIndex].square} ${isMobileLandscape ? '4px' : '6px'},
+                          transparent ${isMobileLandscape ? '4px' : '6px'},
+                          transparent ${isMobileLandscape ? '8px' : '12px'}
+                        )`,
+                        opacity: 0.8,
+                        borderRadius: isMobileLandscape ? '1px' : '2px'
+                      }}
+                    />
+                  </div>
+
+                  {/* Small square indicator below the line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: isMobileLandscape ? '55px' : '105px',
+                      left: `${position}%`,
+                      transform: 'translateX(-50%)',
+                      width: isMobileLandscape ? '12px' : '20px',
+                      height: isMobileLandscape ? '12px' : '20px',
+                      background: levelColors[colorIndex].square,
+                      borderRadius: isMobileLandscape ? '3px' : '6px',
+                      border: isMobileLandscape ? '2px solid #fff' : '3px solid #fff',
+                      boxShadow: isMobileLandscape ? '0 2px 6px rgba(0,0,0,0.3)' : '0 3px 10px rgba(0,0,0,0.4)',
+                      zIndex: 8,
+                      opacity: 0.9
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
 
-          <div className="overflow-hidden">
+          {/* Level Cards */}
           <div
-            ref={progressRef}
-            className="relative flex items-center will-change-transform"
             style={{
-              transform: `translateX(${currentTranslateX}px)`,
-              width: `${levels.length * totalWidth}px`,
-              gap: `${cardGap}px`
+              ...(isMobile
+                ? {
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
+                    overflowX: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    width: '100%',
+                    maxWidth: '100%',
+                    gap: '15px',
+                    paddingLeft: '15px',
+                    paddingRight: '15px',
+                    // Hide scrollbar
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none' // IE/Edge
+                  }
+                : {
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${Math.min(module.levels.length, 4)}, 1fr)`,
+                    gap: isMobileLandscape ? '15px' : '30px',
+                    width: '100%',
+                    maxWidth: isMobileLandscape ? '100%' : '1200px',
+                  }),
             }}
+            className={isMobile ? 'hide-scrollbar' : ''}
           >
-            {/* Progress Line that spans across all cards */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-800/50 rounded-full transform -translate-y-1/2">
-              <div className="h-full bg-gradient-to-r from-pink-500 via-amber-500 via-emerald-500 to-purple-500 rounded-full" />
-            </div>
+            {module.levels.map((level: Level, index: number) => {
+              const levelScore = getLevelScore(module.id, level.id);
+              const isCompleted = isLevelCompleted(module.id, level.id);
+              const colorIndex = index % levelColors.length;
 
-            {/* Step Indicators that move with cards */}
-            {levels.map((level, index) => {
-              const styling = getLevelStyling(level, index);
               return (
                 <div
                   key={level.id}
-                  className="flex-none relative z-10"
+                  onClick={() => selectLevel(level)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      selectLevel(level);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Select ${level.name} - ${level.difficulty} level`}
+                  aria-describedby={`level-${level.id}-description`}
                   style={{
-                    width: `${cardWidth}px`,
-                    marginRight: index < levels.length - 1 ? `${cardGap}px` : '0',
-                    display: 'flex',
-                    justifyContent: 'center'
+                    background: levelColors[colorIndex].bg,
+                    padding: isMobileLandscape ? '10px 8px' : (isMobile ? '12px 10px' : '30px 25px'),
+                    borderRadius: isMobileLandscape ? '12px' : '20px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: isMobileLandscape
+                      ? '0 5px 15px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.1)'
+                      : '0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)',
+                    position: 'relative',
+                    minHeight: isMobileLandscape ? '160px' : (isMobile ? '200px' : '320px'),
+                    width: isMobile ? '200px' : 'auto',
+                    minWidth: isMobile ? '200px' : 'auto',
+                    flexShrink: isMobile ? 0 : undefined,
+                    color: '#fff',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.2)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.2)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)';
                   }}
                 >
-                  {/* Add horizontal connecting lines using SVG with gradients */}
-                  {index < levels.length - 1 && (
-                    <div className="absolute top-1/2 transform -translate-y-1/2 left-1/2 z-0">
-                      <svg 
-                        width={cardGap} 
-                        height="4" 
-                        style={{
-                          overflow: 'visible',
-                        }}
-                      >
-                        <defs>
-                          <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor={index === 0 ? '#ec4899' : index === 1 ? '#f59e0b' : index === 2 ? '#10b981' : '#8b5cf6'} />
-                            <stop offset="100%" stopColor={index === 0 ? '#f59e0b' : index === 1 ? '#10b981' : index === 2 ? '#8b5cf6' : '#8b5cf6'} />
-                          </linearGradient>
-                        </defs>
-                        <line 
-                          x1="0" 
-                          y1="0" 
-                          x2={cardGap} 
-                          y2="0" 
-                          stroke={`url(#gradient-${index})`}
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                  <div 
-                    className={`${isMobileLandscape ? 'w-6 h-6 text-xs' : 'w-8 h-8 sm:w-10 sm:h-10 text-sm'} 
-                    rounded-sm flex items-center justify-center font-bold ${styling.bg} text-white shadow-lg`}
+                  {/* Level number badge */}
+                  <div
                     style={{
-                      boxShadow: `0 0 8px 0 ${index === 0 ? 'rgba(236, 72, 153, 0.7)' : 
-                                              index === 1 ? 'rgba(245, 158, 11, 0.7)' : 
-                                              index === 2 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(139, 92, 246, 0.7)'}`,
+                      position: 'absolute',
+                      top: isMobileLandscape ? '-8px' : (isMobile ? '-10px' : '-15px'),
+                      left: isMobileLandscape ? '8px' : (isMobile ? '10px' : '25px'),
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      color: levelColors[colorIndex].square,
+                      padding: isMobileLandscape ? '3px 6px' : (isMobile ? '4px 8px' : '8px 16px'),
+                      borderRadius: isMobileLandscape ? '10px' : (isMobile ? '12px' : '20px'),
+                      fontSize: isMobileLandscape ? '0.6rem' : (isMobile ? '0.65rem' : '0.9rem'),
+                      fontWeight: 'bold',
+                      boxShadow: isMobileLandscape ? '0 2px 6px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.2)',
+                      border: '2px solid rgba(255,255,255,0.3)'
                     }}
                   >
-                    {styling.number}
+                    {index + 1}. {level.taxonomy}
                   </div>
-                  
-                  {/* Add vertical dotted line using SVG */}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 z-0">
-                    <svg 
-                      width="4" 
-                      height="30" 
-                      style={{
-                        overflow: 'visible'
-                      }}
-                    >
-                      <line 
-                        x1="1" 
-                        y1="0" 
-                        x2="1" 
-                        y2="30" 
-                        stroke={index === 0 ? '#ec4899' : index === 1 ? '#f59e0b' : index === 2 ? '#10b981' : '#8b5cf6'} 
-                        strokeWidth="2" 
-                        strokeDasharray="1 3"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                  
-                  <div className={`absolute -bottom-8 text-xs font-medium text-white/80`}>
-                    {styling.number} {styling.label}
+
+                  {/* Completion badge */}
+                  {isCompleted && (
+                    <div style={{
+                      position: 'absolute',
+                      top: isMobileLandscape ? '-8px' : (isMobile ? '-10px' : '-15px'),
+                      right: isMobileLandscape ? '8px' : (isMobile ? '10px' : '25px'),
+                      backgroundColor: 'rgba(16, 185, 129, 0.9)',
+                      color: 'white',
+                      padding: isMobileLandscape ? '3px 6px' : (isMobile ? '4px 6px' : '8px 12px'),
+                      borderRadius: isMobileLandscape ? '10px' : (isMobile ? '12px' : '20px'),
+                      fontSize: isMobileLandscape ? '0.55rem' : (isMobile ? '0.6rem' : '0.8rem'),
+                      fontWeight: 'bold',
+                      boxShadow: isMobileLandscape ? '0 2px 6px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.2)',
+                      border: '2px solid rgba(255,255,255,0.3)'
+                    }}>
+                      ✓ Completed
+                    </div>
+                  )}
+
+                  {/* Level content */}
+                  <div style={{ marginTop: isMobileLandscape ? '8px' : (isMobile ? '10px' : '20px') }}>
+                    <h3 style={{
+                      fontSize: isMobileLandscape ? '0.7rem' : (isMobile ? '0.8rem' : '1.5rem'),
+                      marginBottom: isMobileLandscape ? '4px' : (isMobile ? '6px' : '12px'),
+                      fontWeight: 'bold',
+                      textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      lineHeight: isMobileLandscape ? '1.1' : (isMobile ? '1.2' : '1.3')
+                    }}>
+                      {level.name}
+                    </h3>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'flex-start',
+                      alignItems: 'center',
+                      marginBottom: isMobileLandscape ? '6px' : (isMobile ? '8px' : '20px'),
+                      gap: isMobileLandscape ? '6px' : (isMobile ? '8px' : '12px')
+                    }}>
+                      <DifficultyBadge difficulty={level.difficulty} />
+                    </div>
+
+                    {/* Bottom info */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: isMobileLandscape ? '8px' : (isMobile ? '10px' : '20px'),
+                      left: isMobileLandscape ? '8px' : (isMobile ? '10px' : '25px'),
+                      right: isMobileLandscape ? '8px' : (isMobile ? '10px' : '25px'),
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                      padding: isMobileLandscape ? '4px' : (isMobile ? '6px' : '12px'),
+                      borderRadius: isMobileLandscape ? '6px' : (isMobile ? '8px' : '12px'),
+                      fontSize: isMobileLandscape ? '0.6rem' : (isMobile ? '0.65rem' : '0.9rem'),
+                      textAlign: 'center',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      <span style={{ fontWeight: '600' }}>Bloom's: {level.taxonomy}</span>
+                      <span style={{ fontWeight: '600' }}>{level.time} min</span>
+                      {levelScore && (
+                        <span style={{ color: '#10b981', fontWeight: '600' }}>
+                          Score: {levelScore.score}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
-            <div
-              ref={containerRef}
-              className={`flex will-change-transform touch-pan-x select-none ${
-                isDragging ? 'cursor-grabbing' : 'cursor-grab'
-              } ${isScrolling ? 'pointer-events-none' : ''}`}
-              style={{
-                gap: `${cardGap}px`,
-                width: `${levels.length * totalWidth}px`,
-                transform: `translateX(${currentTranslateX}px)`,
-                touchAction: 'pan-x',
-                WebkitUserSelect: 'none',
-                userSelect: 'none'
-              }}
-              onMouseDown={handleDragStart}
-              onTouchStart={handleDragStart}
-            >
-              {levels.map((level, index) => {
-                const styling = getLevelStyling(level, index);
-                return (
-                  <div
-                    key={level.id}
-                    onClick={() => handleCardClick(level)}
-                    className={`flex-none rounded-2xl ${styling.bg} shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 select-none cursor-pointer overflow-hidden`}
-                    style={{
-                      width: `${cardWidth}px`,
-                      height: isMobileLandscape ? '180px' : isMobile ? '300px' : '350px',
-                      userSelect: 'none',
-                      WebkitUserSelect: 'none',
-                      WebkitTouchCallout: 'none'
-                    }}
-                  >
-                    {/* Label at top */}
-                    <div className={`bg-white/10 ${isMobileLandscape ? 'py-1 px-1.5' : 'py-1.5 px-3'} flex justify-between items-center`}>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`${isMobileLandscape ? 'w-4 h-4 text-xs' : 'w-6 h-6 text-sm'} rounded-sm flex items-center justify-center text-white font-bold ${styling.bg}`}>
-                          {styling.number}
-                        </div>
-                        <span className={`text-white font-medium ${isMobileLandscape ? 'text-xs' : ''}`}>{styling.label}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {[...Array(3)].map((_, i) => (
-                          <div key={i} className={`${isMobileLandscape ? 'w-2 h-2' : 'w-3 h-3'} bg-yellow-400 rounded-full`} />
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Main content */}
-                    <div className={`${isMobileLandscape ? 'p-2' : 'p-5'} flex flex-col h-[calc(100%-4rem)]`}>
-                      {/* Title */}
-                      <h2 className={`${isMobileLandscape ? 'text-base' : 'text-2xl'} font-bold text-white leading-tight ${isMobileLandscape ? 'mb-1' : 'mb-4'}`}>
-                        {styling.name}
-                      </h2>
-
-                      {/* Level Badge */}
-                      <div className={`${isMobileLandscape ? 'mb-1' : 'mb-4'}`}>
-                        <span className={`${isMobileLandscape ? 'px-1.5 py-0.5 text-xs' : 'px-3 py-1 text-sm'} ${styling.levelColor} rounded-md text-white font-medium`}>
-                          {styling.difficulty}
-                        </span>
-                      </div>
-
-                      {/* Spacer */}
-                      <div className="flex-1"></div>
-
-                      {/* Bottom Info */}
-                      <div className={`bg-black/20 backdrop-blur-sm rounded-lg ${isMobileLandscape ? 'p-1' : 'p-3'} mt-auto`}>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-white/90 ${isMobileLandscape ? 'text-2xs' : 'text-sm'}`}>
-                            Bloom's: {styling.label}
-                          </span>
-                          <span className={`text-white font-semibold ${isMobileLandscape ? 'text-2xs' : 'text-sm'}`}>
-                            {styling.minutes}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export {LevelList};
