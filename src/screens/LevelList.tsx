@@ -108,8 +108,11 @@ const LevelList: React.FC = () => {
         // Enable vertical scroll for mobile
         overflowY: isMobile ? 'auto' : undefined,
         maxHeight: isMobile ? '100vh' : undefined,
-        WebkitOverflowScrolling: isMobile ? 'touch' : undefined
-      }}>
+        WebkitOverflowScrolling: isMobile ? 'touch' : undefined,
+        // Hide scrollbar
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none' // IE/Edge
+      }} className={isMobile ? 'hide-scrollbar' : ''}>
         {/* Header */}
         <div style={{
           display: 'flex',
@@ -177,7 +180,7 @@ const LevelList: React.FC = () => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: isMobileLandscape ? '60px' : '120px',
-          width: '100%',
+          width: isMobileLandscape ? '80%' : '100%',
           flex: 1
         }}>
           {/* Timeline Bar */}
@@ -322,6 +325,9 @@ const LevelList: React.FC = () => {
                     gap: '15px',
                     paddingLeft: '15px',
                     paddingRight: '15px',
+                    // Hide scrollbar
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none' // IE/Edge
                   }
                 : {
                     display: 'grid',
@@ -331,6 +337,7 @@ const LevelList: React.FC = () => {
                     maxWidth: isMobileLandscape ? '100%' : '1200px',
                   }),
             }}
+            className={isMobile ? 'hide-scrollbar' : ''}
           >
             {module.levels.map((level: Level, index: number) => {
               const levelScore = getLevelScore(module.id, level.id);
