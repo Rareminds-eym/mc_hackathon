@@ -243,38 +243,44 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
             <button
               onClick={() => setStep(Math.max(0, step - 1))}
               disabled={step === 0}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg font-bold transition-all transform ${
+              className={`flex items-center gap-1 ${isMobileHorizontal ? 'px-4 py-2 text-xs min-w-[64px]' : 'px-3 py-2'} rounded-lg font-bold transition-all transform ${
                 step === 0
                   ? "bg-gray-700/40 text-gray-400 cursor-not-allowed opacity-60"
                   : "bg-gradient-to-r from-purple-700 to-indigo-900 text-cyan-200 hover:from-purple-600 hover:to-indigo-700 hover:text-white hover:scale-105 active:scale-95 shadow-lg border border-cyan-400/30"
               }`}
               style={{
                 boxShadow: step === 0 ? 'none' : '0 0 8px rgba(6, 182, 212, 0.4)',
+                minWidth: isMobileHorizontal ? 64 : undefined,
               }}
             >
-              <ChevronLeft className={`w-4 h-4 ${step !== 0 ? "animate-pulse" : ""}`} /> Prev
+              <ChevronLeft className="w-4 h-4" />
+              <span className={isMobileHorizontal ? 'hidden sm:inline' : ''}>Prev</span>
             </button>
             {step < totalSteps - 1 ? (
               <button
                 onClick={() => setStep(step + 1)}
-                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-lg hover:from-cyan-400 hover:to-blue-400 transition-all game-font transform hover:scale-105 active:scale-95 border border-cyan-300/50"
+                className={`flex items-center gap-1 ${isMobileHorizontal ? 'px-4 py-2 text-xs min-w-[64px]' : 'px-4 py-2'} rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-lg hover:from-cyan-400 hover:to-blue-400 transition-all game-font transform hover:scale-105 active:scale-95 border border-cyan-300/50`}
                 style={{
                   boxShadow: '0 0 15px rgba(6, 182, 212, 0.6)',
-                  textShadow: '0 0 5px rgba(255, 255, 255, 0.5)'
+                  textShadow: '0 0 5px rgba(255, 255, 255, 0.5)',
+                  minWidth: isMobileHorizontal ? 64 : undefined,
                 }}
               >
-                Next <ChevronRight className="w-4 h-4 animate-bounce" />
+                <span className={isMobileHorizontal ? 'hidden sm:inline' : ''}>Next</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={onClose}
-                className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-to-r from-green-400 to-cyan-500 text-white font-bold shadow-lg hover:from-green-300 hover:to-cyan-400 transition-all game-font transform hover:scale-105 active:scale-95 border border-green-300/50"
+                className={`flex items-center gap-1 ${isMobileHorizontal ? 'px-4 py-2 text-xs min-w-[64px]' : 'px-4 py-2'} rounded-lg bg-gradient-to-r from-green-400 to-cyan-500 text-white font-bold shadow-lg hover:from-green-300 hover:to-cyan-400 transition-all game-font transform hover:scale-105 active:scale-95 border border-green-300/50`}
                 style={{
                   boxShadow: '0 0 15px rgba(52, 211, 153, 0.7)',
-                  textShadow: '0 0 5px rgba(255, 255, 255, 0.7)'
+                  textShadow: '0 0 5px rgba(255, 255, 255, 0.7)',
+                  minWidth: isMobileHorizontal ? 64 : undefined,
                 }}
               >
-                BEGIN MISSION <Star className="w-4 h-4 animate-pulse" />
+                <span className={isMobileHorizontal ? 'hidden sm:inline' : ''}>BEGIN MISSION</span>
+                <Star className="w-4 h-4 animate-pulse" />
               </button>
             )}
           </div>

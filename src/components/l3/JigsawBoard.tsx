@@ -1,5 +1,11 @@
 // External Library Imports
-import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   DndContext,
   PointerSensor,
@@ -28,12 +34,15 @@ import {
   FeedbackConsole,
   DeviceRotationPrompt,
   LoadingState,
-  DragPieceOverlay
+  DragPieceOverlay,
 } from "./components";
 
 // Utilities and Hooks
-import { BACKGROUND_IMAGE_URL, preloadImage, getModuleIdFromPath } from "./utils/gameUtils";
-
+import {
+  BACKGROUND_IMAGE_URL,
+  preloadImage,
+  getModuleIdFromPath,
+} from "./utils/gameUtils";
 
 // Types
 import type { PuzzlePiece } from "../../data/level3Scenarios";
@@ -68,7 +77,9 @@ export const JigsawBoard: React.FC = () => {
   // ===== UI STATE =====
   const [showScenario, setShowScenario] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(null);
+  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
+    null
+  );
 
   // ===== GAME STATE =====
   const [scenarioIndex, setScenarioIndex] = useState(0);
@@ -119,12 +130,8 @@ export const JigsawBoard: React.FC = () => {
     [scenario, placedPieces]
   );
 
-
-
-
-
   // ===== GAME LOGIC HANDLERS =====
-  
+
   /**
    * Load game progress from database
    */
@@ -152,7 +159,7 @@ export const JigsawBoard: React.FC = () => {
       // If we have saved progress, restore it
       if (data && data.length > 0) {
         const savedProgress = data[0] as GameProgress;
-        
+
         if (savedProgress.completed) {
           // If the saved scenario is completed, advance to the next scenario
           if (savedProgress.scenario_index < scenarios?.length - 1) {
@@ -165,7 +172,7 @@ export const JigsawBoard: React.FC = () => {
             setPlacedPieces({ violations: [], actions: [] }); // Clear placed pieces
             setInitialized(true);
             setShowScenario(true); // Show scenario dialog for new scenario
-            
+
             // Show message about advancing to next scenario
             setTimeout(() => {
               setFeedback("🎮 Welcome back! Advancing to the next scenario.");
@@ -188,20 +195,28 @@ export const JigsawBoard: React.FC = () => {
           setScenarioIndex(savedProgress.scenario_index);
           setScore(savedProgress.score);
           // Calculate current scenario points based on placed pieces
-          const totalCorrectPieces = correctViolations.length + correctActions.length;
+          const totalCorrectPieces =
+            correctViolations.length + correctActions.length;
           const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
-          const calculatedPoints = Math.min(100, (savedProgress.placed_pieces.violations.length + savedProgress.placed_pieces.actions.length) * pointsPerPiece);
+          const calculatedPoints = Math.min(
+            100,
+            (savedProgress.placed_pieces.violations.length +
+              savedProgress.placed_pieces.actions.length) *
+              pointsPerPiece
+          );
           setCurrentScenarioPoints(calculatedPoints);
           setHealth(savedProgress.health);
           setCombo(savedProgress.combo);
           setPlacedPieces(savedProgress.placed_pieces);
           setInitialized(true);
-          
+
           // Don't show scenario dialog if user was in the middle of a scenario
-          if (savedProgress.placed_pieces.violations.length > 0 || 
-              savedProgress.placed_pieces.actions.length > 0) {
+          if (
+            savedProgress.placed_pieces.violations.length > 0 ||
+            savedProgress.placed_pieces.actions.length > 0
+          ) {
             setShowScenario(false);
-            
+
             // Show welcome back message using the feedback console
             setTimeout(() => {
               setFeedback("🔄 Welcome back! Your progress has been restored.");
@@ -215,7 +230,7 @@ export const JigsawBoard: React.FC = () => {
       setIsLoading(false);
     }
   }, [user?.id, moduleId]);
-  
+
   /**
    * Reset game progress
    */
@@ -228,10 +243,10 @@ export const JigsawBoard: React.FC = () => {
     setPlacedPieces({ violations: [], actions: [] });
     setShowScenario(true);
     setIsComplete(false);
-    
+
     // Show feedback message
     setFeedback("🔄 Progress reset! Starting fresh.");
-    
+
     // Reset database record if user is logged in
     if (user?.id && moduleId) {
       try {
@@ -244,7 +259,7 @@ export const JigsawBoard: React.FC = () => {
       }
     }
   }, [user?.id, moduleId]);
-  
+
   /**
    * Handle piece drop on containers
    */
@@ -281,11 +296,12 @@ export const JigsawBoard: React.FC = () => {
           [containerType]: [...prev[containerType], piece],
         }));
         setFeedback("🎯 CRITICAL HIT! Perfect placement!");
-        
+
         // Calculate points per correct piece based on total correct pieces
-        const totalCorrectPieces = correctViolations.length + correctActions.length;
+        const totalCorrectPieces =
+          correctViolations.length + correctActions.length;
         const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
-        
+
         // Update current scenario points and total score
         setCurrentScenarioPoints((prev) => {
           const newPoints = Math.min(100, prev + pointsPerPiece);
@@ -293,7 +309,7 @@ export const JigsawBoard: React.FC = () => {
           setScore((prevScore) => prevScore + (newPoints - prev));
           return newPoints;
         });
-        
+
         setCombo((prev) => prev + 1);
         return { success: true };
       } else {
@@ -305,7 +321,7 @@ export const JigsawBoard: React.FC = () => {
     },
     [placedPieces, combo, correctViolations.length, correctActions.length]
   );
-  
+
   /**
    * Handle victory popup close and scenario transition
    */
@@ -327,12 +343,10 @@ export const JigsawBoard: React.FC = () => {
 
       try {
         // Save the completed state
-        await supabase
-          .from("level3_progress")
-          .upsert(completedProgress, {
-            onConflict: "user_id,scenario_index",
-            ignoreDuplicates: false,
-          });
+        await supabase.from("level3_progress").upsert(completedProgress, {
+          onConflict: "user_id,scenario_index",
+          ignoreDuplicates: false,
+        });
       } catch (error) {
         console.error("Error saving completed state:", error);
       }
@@ -350,7 +364,17 @@ export const JigsawBoard: React.FC = () => {
     } else {
       setIsComplete(false);
     }
-  }, [scenarioIndex, scenarios?.length, isComplete, user?.id, moduleId, score, health, combo, placedPieces]);
+  }, [
+    scenarioIndex,
+    scenarios?.length,
+    isComplete,
+    user?.id,
+    moduleId,
+    score,
+    health,
+    combo,
+    placedPieces,
+  ]);
 
   /**
    * Save game progress to database
@@ -405,12 +429,12 @@ export const JigsawBoard: React.FC = () => {
   useEffect(() => {
     preloadImage(BACKGROUND_IMAGE_URL);
   }, []);
-  
+
   // Load saved game progress on mount
   useEffect(() => {
     loadGameProgress();
   }, [loadGameProgress]);
-  
+
   // Save game progress when game state changes
   useEffect(() => {
     if (initialized) saveGameProgress();
@@ -438,14 +462,14 @@ export const JigsawBoard: React.FC = () => {
   useEffect(() => {
     // Skip if already marked as complete to prevent re-adding points
     if (isComplete) return;
-    
+
     const totalCorrect = correctViolations.length + correctActions.length;
     const placedCorrect =
       placedPieces.violations.length + placedPieces.actions.length;
 
     if (placedCorrect === totalCorrect && totalCorrect > 0) {
       setIsComplete(true);
-      
+
       // Make sure we give exactly 100 points total for the scenario
       setCurrentScenarioPoints((prev) => {
         const remainingPoints = 100 - prev;
@@ -455,10 +479,15 @@ export const JigsawBoard: React.FC = () => {
         }
         return prev;
       });
-      
+
       setFeedback("");
     }
-  }, [placedPieces, isComplete, correctViolations.length, correctActions.length]);
+  }, [
+    placedPieces,
+    isComplete,
+    correctViolations.length,
+    correctActions.length,
+  ]);
 
   // Auto-dismiss feedback after timeout
   useEffect(() => {
@@ -476,7 +505,9 @@ export const JigsawBoard: React.FC = () => {
 
   // Show loading screen if scenarios aren't loaded yet or we're loading saved progress
   if (isLoading || !scenario) {
-    return <LoadingState loadingProgress={isLoading && scenario !== undefined} />;
+    return (
+      <LoadingState loadingProgress={isLoading && scenario !== undefined} />
+    );
   }
 
   // ===== MAIN RENDER =====
@@ -511,10 +542,7 @@ export const JigsawBoard: React.FC = () => {
       }}
     >
       {/* DragPieceOverlay component */}
-      <DragPieceOverlay
-        activeDragPiece={activeDragPiece}
-        isMobile={isMobile}
-      />
+      <DragPieceOverlay activeDragPiece={activeDragPiece} isMobile={isMobile} />
 
       {/* Main Game Container */}
       <div
@@ -555,7 +583,7 @@ export const JigsawBoard: React.FC = () => {
 
         <div className="w-full p-1 relative z-10 flex flex-col gap-1 h-full">
           {/* Header with Menu */}
-          <GameHeader 
+          <GameHeader
             isComplete={isComplete}
             placedPieces={placedPieces}
             correctViolations={correctViolations}
@@ -571,7 +599,7 @@ export const JigsawBoard: React.FC = () => {
             isMobile={isMobile}
             isHorizontal={isHorizontal}
           />
-          
+
           {/* Game Menu - Render this inside the GameHeader for proper dropdown positioning */}
 
           {/* Main Game Area */}
@@ -603,7 +631,7 @@ export const JigsawBoard: React.FC = () => {
               </div>
 
               {/* Arsenal (Middle) */}
-              <Arsenal 
+              <Arsenal
                 availablePieces={availablePieces}
                 isMobile={isMobile}
                 isHorizontal={isHorizontal}
@@ -639,7 +667,7 @@ export const JigsawBoard: React.FC = () => {
 
           {/* Feedback Console */}
           {feedback && (
-            <FeedbackConsole 
+            <FeedbackConsole
               feedback={feedback}
               isMobile={isMobile}
               isHorizontal={isHorizontal}
@@ -654,7 +682,7 @@ export const JigsawBoard: React.FC = () => {
             score={score}
             combo={combo}
             health={health}
-            showNext={scenarioIndex < scenarios.length - 1}
+            isLevelCompleted={scenarioIndex >= scenarios.length - 1}
             showReset={scenarioIndex >= scenarios.length - 1} // Only show reset on last scenario
             onReset={resetProgress} // Pass the reset function
             moduleId={moduleId}
