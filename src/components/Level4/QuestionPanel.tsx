@@ -1,5 +1,5 @@
 import React from 'react';
-import { Case } from '../types';
+import { Case } from './types';
 import { CheckCircle, Circle, Target, AlertCircle, Zap, TrendingDown } from 'lucide-react';
 import { DragDropZone } from './DragDropZone';
 
@@ -23,6 +23,16 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   showFeedback
 }) => {
   const question = currentCase.questions[currentQuestion];
+  
+  // Get animation class based on current question type
+  const getAnimationClass = (questionType: string) => {
+    switch (questionType) {
+      case 'violation': return 'animate-slide-in-left';
+      case 'rootCause': return 'animate-slide-in-option';
+      case 'impact': return 'animate-slide-in-right';
+      default: return 'animate-slide-in-up';
+    }
+  };
   
   const getQuestionConfig = (type: string) => {
     switch (type) {
@@ -65,7 +75,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   const isCorrect = (index: number) => question.correct === index;
 
   return (
-    <div className="bg-black/60 rounded-2xl shadow-xl p-[4vw] pt-6 pb-28 flex flex-col w-[90vw] max-w-[370px] mx-auto mt-8 sm:mt-24 sm:mb-24 overflow-visible landscape:p-2 landscape:text-[9px] sm:text-xs lg:w-[520px] lg:max-w-[520px] xl:w-[600px] xl:max-w-[600px] lg:p-8 xl:p-12 transition-all duration-300 transform hover:scale-[1.01]">
+    <div className="bg-black/40 rounded-2xl shadow-xl p-[4vw] pt-6 pb-28 flex flex-col w-[90vw] max-w-[370px] mx-auto mt-8 sm:mt-24 sm:mb-24 overflow-visible landscape:p-2 landscape:text-[9px] sm:text-xs lg:w-[520px] lg:max-w-[520px] xl:w-[600px] xl:max-w-[600px] lg:p-8 xl:p-12 transition-all duration-300 transform hover:scale-[1.01]">
       {/* QuestionPannelHeader */}
       <div className={`bg-gradient-to-r ${config.gradient} px-2 py-1 border-b-2 ${config.borderColor} landscape:px-2 landscape:py-2 sm:landscape:px-3 sm:landscape:py-2`}>
         <div className="flex items-center space-x-3">
@@ -78,7 +88,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
             <h3 className="text-xs font-bold text-white lg:text-lg xl:text-xl">
               {config.title}
             </h3>
-            <p className="text-white/80 text-xs font-medium landscape:text-[9px] sm:landscape:text-xs lg:text-base xl:text-lg">
+            <p className={`text-white/80 text-xs font-medium landscape:text-[9px] sm:landscape:text-xs lg:text-base xl:text-lg animate-pulse-text`}>
               Select the most appropriate answer
             </p>
           </div>
@@ -121,15 +131,17 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
           </div>
         ) : (
           <div className="space-y-2 overflow-y-auto flex-1 sm:max-h-[80vh]">
-            {question.options.map((option, index) => {
+            {question.options.map((option: string, index: number) => {
               const isSelected = selectedAnswers[currentQuestion] === index;
               const optionLetter = String.fromCharCode(97 + index).toUpperCase();
+              const animationClass = getAnimationClass(currentQuestion);
               
               return (
                 <div
                   key={index}
                   className={`
                     group relative flex items-center rounded-lg border-2  lg:px-4 lg:py-2 xl:px-6 xl:py-3 min-w-0 w-full
+                    ${animationClass}
                     ${isSelected 
                       ? showFeedback
                         ? isCorrect(index)
@@ -138,11 +150,14 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                         : 'border-blue-400 bg-white/50 shadow-lg shadow-blue-200/50'
                       : showFeedback && isCorrect(index)
                         ? 'border-green-400 bg-white/50 shadow-lg shadow-green-200/50'
-                        : 'border-gray-200 bg-white/50 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/50'
+                        : 'border-gray-200 bg-white/20 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/50'
                     }
                   `}
                   onClick={() => !showFeedback && onAnswerSelect(currentQuestion, index)}
-                  style={{ minWidth: 0 }}
+                  style={{ 
+                    minWidth: 0,
+                    animationDelay: `${index * 0.1}s`
+                  }}
                 >
                   {/* Option Letter Badge */}
                   <div className={`
