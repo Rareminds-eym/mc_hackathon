@@ -543,13 +543,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   >
                     Level Up!
                   </span>
-                  <span
-                    className={`block mt-1 text-yellow-100/90 font-semibold ${
-                      isMobileHorizontal ? "text-xs" : "text-sm"
-                    }`}
-                  >
-                    You completed this level!
-                  </span>
+                  
                 </motion.div>
               )}
               <div
