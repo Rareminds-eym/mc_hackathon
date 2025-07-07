@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { Term } from '../../../types/Level2/types';
 
 interface ResultsModalProps {
@@ -11,6 +11,7 @@ interface ResultsModalProps {
   isMobile: boolean;
   onNextLevel: () => void;
   onReset: () => void;
+  onClose: () => void;
 }
 
 const ResultsModal: React.FC<ResultsModalProps> = ({
@@ -22,6 +23,7 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
   isMobile,
   onNextLevel,
   onReset,
+  onClose,
 }) => {
   const getScoreRank = (score: number) => {
     if (score >= 95) return { rank: "S+", color: "text-yellow-300", bg: "bg-yellow-600" };
@@ -50,6 +52,15 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
           ? 'w-11/12 h-4/5 max-w-md p-3'
           : 'p-6 max-w-md w-full'
       }`}>
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 z-20 w-8 h-8 pixel-border bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
         <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
