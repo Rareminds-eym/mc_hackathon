@@ -7,6 +7,7 @@ interface Product2DProps {
   hasDeviation: boolean;
   deviationType?: 'cleaning' | 'calibration' | 'environmental';
   isCompleted?: boolean;
+  imageSrc?: string; // Add imageSrc prop
 }
 
 export const Product2D: React.FC<Product2DProps> = ({
@@ -14,7 +15,8 @@ export const Product2D: React.FC<Product2DProps> = ({
   batchNumber,
   hasDeviation,
   deviationType,
-  isCompleted = false
+  isCompleted = false,
+  imageSrc = "/Level4/product1.webp" // Default image if not provided
 }) => {
   const getDeviationIcon = () => {
     switch (deviationType) {
@@ -52,7 +54,7 @@ export const Product2D: React.FC<Product2DProps> = ({
         <div className="text-center mt-1 w-full flex flex-col items-center animate-product-info">
         <div className="relative w-full flex items-center justify-center h-[48px] animate-fade-in-scale" style={{ animationDelay: '2.2s' }}>
             <img
-              src="/background.png"
+              src={imageSrc}
               alt={productName}
               className="w-[60%] h-auto object-cover rounded-lg"
             />
