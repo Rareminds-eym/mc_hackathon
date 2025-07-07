@@ -27,9 +27,10 @@ const BingoGame: React.FC = () => {
     closeAnswerModal,
     isInCompletedLine,
     timer,
-    setTimer,
     completedLineModal,
     closeCompletedLineModal,
+    startTimer,
+    stopTimer,
   } = useBingoGame();
 
   const {
@@ -43,7 +44,6 @@ const BingoGame: React.FC = () => {
   } = useTutorial();
 
   // Timer state for this component
-  const [timerActive, setTimerActive] = React.useState(false);
   const [tutorialDone, setTutorialDone] = React.useState(false);
 
   // Auto-skip tutorial if game is restored
@@ -53,25 +53,19 @@ const BingoGame: React.FC = () => {
     }
   }, [cells, selectedDefinition]);
 
-  // Start timer only after tutorial/instructions are finished/skipped
-  React.useEffect(() => {
-    if (gameComplete || !timerActive) return;
-    const interval = setInterval(() => {
-      setTimer((prev: number) => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [gameComplete, timerActive, setTimer]);
-
+  // Timer is now managed entirely by the useBingoGame hook
+  // Remove external timer management to avoid conflicts
+  
   // When tutorial/instructions are finished/skipped, start timer
   React.useEffect(() => {
     if (tutorialActive) {
-      setTimerActive(false);
+      stopTimer();
     } else if (tutorialDone && !waitingForInteraction) {
-      setTimerActive(true);
+      startTimer();
     } else {
-      setTimerActive(false);
+      stopTimer();
     }
-  }, [tutorialActive, tutorialDone, waitingForInteraction]);
+  }, [tutorialActive, tutorialDone, waitingForInteraction, startTimer, stopTimer]);
 
   // Callback for when tutorial ends
   const handleTutorialEnd = () => {
@@ -83,7 +77,7 @@ const BingoGame: React.FC = () => {
     skipTutorial();
     setTutorialDone(true);
     onUserInteraction(); // Ensure waitingForInteraction is false so timer resumes
-    setTimerActive(true); // Force timer to resume immediately
+    startTimer(); // Force timer to resume immediately
   };
 
   const handleBackClick = () => {
