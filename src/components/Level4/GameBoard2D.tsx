@@ -9,7 +9,7 @@ import { FeedbackPanel } from './FeedbackPanel';
 import { GameHeader } from './GameHeader';
 import BoyBook from './boybook';
 import Animation_manufacture from './animated_manufacture'
-import { useSupabaseSync } from './hooks/useSupabaseSync'; // Import the Supabase hook
+import { useSupabaseSync } from './hooks/useSupabaseSync';
 import { 
   ChevronRight, 
   AlertTriangle, 
@@ -186,12 +186,19 @@ export const GameBoard2D: React.FC = () => {
   };
 
   const handleContinue = async () => {
+    // Show loading only when transitioning between major phases
+    if (currentPhase === 'login' || currentPhase === 'feedback') {
+      // Remove loading logic
+    }
+    
     switch (currentPhase) {
       case 'login':
         setCurrentPhase('reportView');
         setCanContinue(true);
         // Log when starting a new case
         console.log(`[Game] Starting case ${gameState.currentCase + 1} with accumulated score ${gameState.score}`);
+        // Hide loading after a short delay to show the transition
+        setTimeout(() => setLoading(false), 800);
         break;
       case 'reportView':
         setCurrentPhase('step1');
@@ -290,6 +297,7 @@ export const GameBoard2D: React.FC = () => {
         }
         break;
     }
+    // Remove loading logic
   };
 
   const handleBack = () => {
@@ -434,17 +442,16 @@ export const GameBoard2D: React.FC = () => {
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
               minHeight: '160px',
-              // boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
             }}
           >
             <div className=" flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible w-auto h-auto max-w-full max-h-full">
               <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-cyan-400 text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0 animate-typing overflow-hidden border-r-2 border-cyan-400">Product Under Investigation</h2>
               <div className="w-full h-full flex flex-col items-center justify-center lg:overflow-visible">
                 <Product2D
-                  productName="Pharmaceutical Tablet"
-                  batchNumber={`A2024-${String(gameState.currentCase + 1).padStart(3, '0')}`}
+                  productName={currentCase.productName}
+                  batchNumber={currentCase.batchNumber}
                   hasDeviation={true}
-                  deviationType={gameState.currentCase === 0 ? 'cleaning' : 'calibration'}
+                  imageSrc={currentCase.imageSrc}
                 />
               </div>
             </div>
@@ -1040,6 +1047,7 @@ export const GameBoard2D: React.FC = () => {
               onClose={() => setPopupOpen(false)}
               onNext={handleContinue}
               onBackToLevels={() => window.location.assign('/modules')}
+              onPlayAgain={handlePlayAgain}
               score={gameState.score}
               time={formatTimer(timer)}
             />
@@ -1047,6 +1055,50 @@ export const GameBoard2D: React.FC = () => {
         </div>
       </div>
     );
+  };
+
+  // Handler to reset game to login phase with proper Supabase integration
+  const handlePlayAgain = () => {
+    // Clear localStorage to ensure a fresh start
+    localStorage.removeItem('level4_gameState');
+    localStorage.removeItem('level4_timer');
+    
+    console.log('[PlayAgain] Resetting game for a new attempt');
+    
+    // Reset game state completely
+    setGameState({
+      currentCase: 0,
+      answers: {
+        violation: null,
+        rootCause: null,
+        impact: null
+      },
+      score: 0, // Start with zero score for this attempt
+      totalQuestions: 0,
+      showFeedback: false,
+      gameComplete: false
+    });
+    
+    // Reset all other related state
+    setCurrentPhase('login');
+    setTimer(0);
+    setScoredQuestions({}); // Reset scored questions tracking
+    setCanContinue(true);   // Ensure continue button is enabled
+    setTimerActive(false);  // Ensure timer is stopped
+    setPopupOpen(false);    // Close any open popups
+    
+    // Force reset the animation
+    setAnimationKey(prev => prev + 1);
+
+    // This is key: Trigger a Supabase sync after reset
+    // This will ensure the database state is updated with a clean slate
+    // while preserving the high score
+    const resetSync = setTimeout(() => {
+      // This is just to trigger the useEffect sync
+      setGameState(state => ({ ...state }));
+    }, 500);
+    
+    return () => clearTimeout(resetSync);
   };
 
   // Format timer as MM:SS

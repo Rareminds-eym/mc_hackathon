@@ -550,8 +550,7 @@ export function useSupabaseSync() {
   const { user } = useAuth();
   const [progressId, setProgressId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastSyncTime, setLastSyncTime] = useState(0);
-
+  
   // Initialize - Load or create progress record
   useEffect(() => {
     const initializeProgress = async () => {
@@ -707,123 +706,77 @@ export function useSupabaseSync() {
     timer: number,
     isCompleted: boolean = false
   ) => {
-    // Don't sync too frequently (minimum 3 seconds between syncs)
-    // This helps prevent duplicate records caused by rapid updates
-    const now = Date.now();
-    if (now - lastSyncTime < 3000) {
-      logDebug(`[SYNC] Skipping sync due to throttling (${Math.round((now - lastSyncTime)/1000)}s)`);
-      return;
-    }
-    setLastSyncTime(now);
-
-    // IMPORTANT: Log the accumulated score we're syncing for debugging
-    logDebug(`[SYNC] Syncing with accumulated score: ${gameState.score}`);
-
     if (!user || !progressId) {
-      logDebug('[SYNC] Cannot sync: missing user or progressId');
-      return;
-    }
-    
-    // CRITICAL FIX: Check if this is a valid sync
-    // Only sync if we have an actual score or answers
-    if (
-      gameState.score === 0 &&
-      gameState.answers.violation === null &&
-      gameState.answers.rootCause === null &&
-      gameState.answers.impact === null &&
-      !isCompleted
-    ) {
-      logDebug('[SYNC] Skipping sync - no meaningful data to sync');
       return;
     }
 
     try {
-      const syncId = Math.floor(Math.random() * 1000); // For tracking this sync operation in logs
+      // Generate a unique ID for this sync operation for better logging
+      const syncId = Math.floor(Math.random() * 1000);
+      
       logDebug(`[SYNC-${syncId}] Starting sync, timer: ${timer}, score: ${gameState.score}, completed: ${isCompleted}`);
       
-      // Run a cleanup first to ensure we don't have duplicate records
-      // This is especially important for syncs that happen during initialization
-      // or after a page refresh where we might have orphaned records
-      if (isCompleted) {
-        logDebug(`[SYNC-${syncId}] This is a completion sync - performing cleanup first`);
-        const keptRecordId = await keepHighestScoreOnly(user.id);
-        
-        // If cleanup returned a record ID and it's different from our current progressId
-        // update our progressId to match
-        if (keptRecordId && keptRecordId !== progressId) {
-          logDebug(`[SYNC-${syncId}] Updating progressId from ${progressId} to ${keptRecordId} after cleanup`);
-          setProgressId(keptRecordId);
-          // Continue with the new ID by recursively calling with the updated state
-          return syncGameState(gameState, timer, isCompleted);
-        }
+      // IMPORTANT: Always use the absolute score value, not a difference
+      // This ensures we're always working with the total accumulated score
+      const absoluteScore = gameState.score;
+      logDebug(`[SYNC-${syncId}] Using absolute score value: ${absoluteScore}`);
+      
+      // Skip unnecessary syncs for empty initial state
+      if (
+        gameState.score === 0 &&
+        !gameState.answers.violation && 
+        !gameState.answers.rootCause && 
+        !gameState.answers.impact &&
+        !isCompleted
+      ) {
+        logDebug(`[SYNC-${syncId}] Skipping sync for empty initial state`);
+        return;
       }
       
-      // Verify our record still exists before updating
-      const { data: recordCheck, error: checkError } = await supabase
-        .from('level_4')
-        .select('id, score, is_completed')
-        .eq('id', progressId)
-        .single();
+      // First check if the record exists
+      if (!progressId) {
+        logDebug(`[SYNC-${syncId}] No progress ID, creating new record`);
         
-      if (checkError || !recordCheck) {
-        logDebug(`[SYNC-${syncId}] Record ${progressId} no longer exists, reinitializing...`);
+        // Create a new record if we don't have one
+        const newData = {
+          module: 1,
+          level: 4,
+          score: absoluteScore, // Use absolute score
+          time: timer,
+          cases: {
+            currentCase: gameState.currentCase + 1, // Convert 0-based to 1-based
+            caseProgress: [{
+              id: gameState.currentCase + 1,
+              answers: {
+                violation: gameState.answers.violation,
+                rootCause: gameState.answers.rootCause,
+                impact: gameState.answers.impact
+              },
+              isCorrect: isGameStateCorrect(gameState),
+              attempts: 1,
+              timeSpent: timer
+            }],
+            scoredQuestions: {}
+          },
+          is_completed: isCompleted
+        };
         
-        // Record might have been deleted in a cleanup, run cleanup to be sure
-        const newRecordId = await keepHighestScoreOnly(user.id);
-        
-        if (newRecordId) {
-          // We found an existing record after cleanup
-          setProgressId(newRecordId);
-          logDebug(`[SYNC-${syncId}] Updated progressId to existing record ${newRecordId}`);
+        const { data: newRecord, error: createError } = await supabase
+          .from('level_4')
+          .insert([{ ...newData, user_id: user.id }])
+          .select()
+          .single();
           
-          // Continue with the updated ID - recursive call but with proper ID
-          return syncGameState(gameState, timer, isCompleted);
-        } else {
-          // No records exist after cleanup, need to create a new one
-          logDebug(`[SYNC-${syncId}] No records found after cleanup, creating new record`);
-          
-          // Create a new record with the current game state
-          const newData = {
-            user_id: user.id,
-            module: 1,
-            level: 4,
-            score: gameState.score,
-            time: timer,
-            cases: {
-              currentCase: gameState.currentCase + 1,
-              caseProgress: [{
-                id: gameState.currentCase + 1,
-                answers: {
-                  violation: gameState.answers.violation,
-                  rootCause: gameState.answers.rootCause,
-                  impact: gameState.answers.impact
-                },
-                isCorrect: isGameStateCorrect(gameState),
-                attempts: 1,
-                timeSpent: timer
-              }],
-              scoredQuestions: {}
-            },
-            is_completed: isCompleted
-          };
-          
-          const { data: newRecord, error: createError } = await supabase
-            .from('level_4')
-            .insert([newData])
-            .select()
-            .single();
-            
-          if (createError) {
-            console.error(`[SYNC-${syncId}] Error creating new record:`, createError);
-            return;
-          }
-          
-          logDebug(`[SYNC-${syncId}] Created new record with ID: ${newRecord.id}`);
-          setProgressId(newRecord.id);
-          
-          // No need to continue, we've already created a record with all the current data
+        if (createError) {
+          console.error(`[SYNC-${syncId}] Error creating new record:`, createError);
           return;
         }
+        
+        logDebug(`[SYNC-${syncId}] Created new record with ID: ${newRecord.id}`);
+        setProgressId(newRecord.id);
+        
+        // No need to continue, we've already created a record with all the current data
+        return;
       }
       
       const currentCaseId = gameState.currentCase + 1; // Convert 0-based to 1-based for DB
@@ -886,29 +839,41 @@ export function useSupabaseSync() {
         ];
       }
 
-      // IMPORTANT: Always update the score with the latest accumulated score
-      // This is because the score in the gameState is the accumulated total across all cases
-      logDebug(`[SYNC-${syncId}] Current DB score: ${currentProgress.score}, New accumulated score: ${gameState.score}, Time: ${timer}`);
+      // CRITICAL CHANGE: Only update the score if this score is higher than the existing score
+      logDebug(`[SYNC-${syncId}] Current DB score: ${currentProgress.score}, New accumulated score: ${absoluteScore}, Time: ${timer}`);
+      
+      const updateData: any = {
+        cases: {
+          ...currentCases,
+          currentCase: currentCaseId
+        },
+        is_completed: isCompleted
+      };
+      
+      // Only update score if it's higher than the current score
+      if (absoluteScore > currentProgress.score) {
+        updateData.score = absoluteScore;
+        updateData.time = timer; // Update time along with the better score
+        logDebug(`[SYNC-${syncId}] New score ${absoluteScore} is higher, updating score and time`);
+      } else {
+        logDebug(`[SYNC-${syncId}] Current score ${currentProgress.score} is higher, not updating score`);
+      }
 
-      // Update progress with the latest accumulated score
+      // Update progress with the latest accumulated score only if higher
       const { error: updateError } = await supabase
         .from('level_4')
-        .update({
-          // Always update with the latest accumulated score from all cases
-          score: gameState.score,
-          time: timer,
-          cases: {
-            ...currentCases,
-            currentCase: currentCaseId
-          },
-          is_completed: isCompleted
-        })
+        .update(updateData)
         .eq('id', progressId);
         
       if (updateError) {
         console.error(`[SYNC-${syncId}] Error updating progress:`, updateError);
       } else {
-        logDebug(`[SYNC-${syncId}] Progress updated successfully. Score updated to ${gameState.score}.`);
+        logDebug(`[SYNC-${syncId}] Progress updated successfully.`);
+        if (updateData.score) {
+          logDebug(`[SYNC-${syncId}] Score updated to ${updateData.score}.`);
+        } else {
+          logDebug(`[SYNC-${syncId}] Score not updated, keeping ${currentProgress.score}.`);
+        }
       }
 
       // Run a final cleanup if the game is completed
@@ -936,7 +901,7 @@ export function useSupabaseSync() {
     } catch (err) {
       console.error('Error syncing game state:', err);
     }
-  }, [user, progressId, lastSyncTime, isGameStateCorrect]);
+  }, [user, progressId, isGameStateCorrect]);
 
   // Helper function to determine if all answers are correct
   function isGameStateCorrect(gameState: GameState): boolean {
@@ -1017,36 +982,41 @@ export function useSupabaseSync() {
             // We have a valid record to update
             logDebug(`[COMPLETE-${completeId}] Current record score: ${existingRecord.score}, new score: ${gameState.score}`);
             
-            // Update the record with the new score and completion status
-            const { error: updateError } = await supabase
-              .from('level_4')
-              .update({
-                score: gameState.score, // Always use the accumulated score from the game state
-                time: timer,
-                is_completed: true,
-                cases: {
-                  currentCase: gameState.currentCase + 1,
-                  caseProgress: [{
-                    id: gameState.currentCase + 1,
-                    answers: {
-                      violation: gameState.answers.violation,
-                      rootCause: gameState.answers.rootCause,
-                      impact: gameState.answers.impact
-                    },
-                    isCorrect: isGameStateCorrect(gameState),
-                    attempts: 1,
-                    timeSpent: timer
-                  }],
-                  scoredQuestions: gameState.showFeedback ? 
-                    { [gameState.currentCase]: ['violation', 'rootCause', 'impact'] } : {}
-                }
-              })
-              .eq('id', keptRecordId);
+            // Only update the score if the new score is higher than the existing score
+            // This ensures we keep the user's best score
+            let updateError;
+            
+            if (gameState.score > existingRecord.score) {
+              logDebug(`[COMPLETE-${completeId}] New score ${gameState.score} is higher than previous ${existingRecord.score}, updating record`);
+              
+              const result = await supabase
+                .from('level_4')
+                .update({
+                  score: gameState.score, // Update with the higher score
+                  time: timer, // Update time along with the better score
+                  is_completed: true
+                })
+                .eq('id', keptRecordId);
+                
+              updateError = result.error;
+            } else {
+              logDebug(`[COMPLETE-${completeId}] New score ${gameState.score} is NOT higher than previous ${existingRecord.score}, keeping existing record`);
+              
+              // Only update completion status, but keep the higher score and its associated time
+              const result = await supabase
+                .from('level_4')
+                .update({
+                  is_completed: true
+                })
+                .eq('id', keptRecordId);
+                
+              updateError = result.error;
+            }
               
             if (updateError) {
               console.error(`[COMPLETE-${completeId}] Error updating record:`, updateError);
             } else {
-              logDebug(`[COMPLETE-${completeId}] Updated record ${keptRecordId} with score: ${gameState.score}`);
+              logDebug(`[COMPLETE-${completeId}] Updated record ${keptRecordId} with score: ${gameState.score > existingRecord.score ? gameState.score : existingRecord.score}`);
               
               // Update our progressId to match
               if (progressId !== keptRecordId) {
@@ -1062,89 +1032,57 @@ export function useSupabaseSync() {
               logDebug(`[COMPLETE-${completeId}] New high score achieved: ${gameState.score}`);
             }
             
-            // We successfully updated the record - no need to create a new one
+            // We're done, no need to continue
             return;
           }
         }
         
-        // STEP 4: If no record was found or the update failed, create a new one
-        logDebug(`[COMPLETE-${completeId}] No valid record found after cleanup, creating new completed record`);
+        // If we reach here, we need to create a new record
+        // This happens if:
+        // 1. No record was kept after cleanup
+        // 2. The kept record couldn't be found
+        logDebug(`[COMPLETE-${completeId}] No valid record found after cleanup, creating new one`);
         
-        const newData = {
-          user_id: user.id,
-          module: 1,
-          level: 4,
-          score: gameState.score,
-          time: timer,
-          cases: {
-            currentCase: gameState.currentCase + 1,
-            caseProgress: [{
-              id: gameState.currentCase + 1,
-              answers: {
-                violation: gameState.answers.violation,
-                rootCause: gameState.answers.rootCause, 
-                impact: gameState.answers.impact
-              },
-              isCorrect: isGameStateCorrect(gameState),
-              attempts: 1,
-              timeSpent: timer
-            }],
-            scoredQuestions: {}
-          },
-          is_completed: true
-        };
-        
-        // Add scored questions if there was feedback
-        if (gameState.showFeedback) {
-          (newData.cases.scoredQuestions as Record<string, string[]>)[gameState.currentCase.toString()] = 
-            ['violation', 'rootCause', 'impact'];
-        }
-        
-        // Create the new record
+        // Create a fresh record with the accumulated total
         const { data: newRecord, error: createError } = await supabase
           .from('level_4')
-          .insert([newData])
+          .insert([{
+            user_id: user.id,
+            module: 1,
+            level: 4,
+            score: gameState.score, // Use absolute score value
+            time: timer,
+            cases: {
+              currentCase: gameState.currentCase + 1,
+              caseProgress: [{
+                id: gameState.currentCase + 1,
+                answers: {
+                  violation: gameState.answers.violation,
+                  rootCause: gameState.answers.rootCause,
+                  impact: gameState.answers.impact
+                },
+                isCorrect: isGameStateCorrect(gameState),
+                attempts: 1,
+                timeSpent: timer
+              }],
+              scoredQuestions: {}
+            },
+            is_completed: true
+          }])
           .select()
           .single();
           
         if (createError) {
-          console.error(`[COMPLETE-${completeId}] Error creating completed record:`, createError);
-          return;
-        }
-        
-        logDebug(`[COMPLETE-${completeId}] Created new completed record with ID: ${newRecord.id}, Score: ${gameState.score}`);
-        setProgressId(newRecord.id);
-        
-        // This is automatically a high score since it's the only record
-        logDebug(`[COMPLETE-${completeId}] New record with score ${gameState.score} is automatically a high score!`);
-      } catch (txErr) {
-        console.error(`[COMPLETE-${completeId}] Transaction error:`, txErr);
-      }
-      
-      // STEP 5: FINAL VERIFICATION - Make absolutely sure we have only one record
-      logDebug(`[COMPLETE-${completeId}] Running final verification`);
-      await keepHighestScoreOnly(user.id);
-      
-      const { data: finalState } = await supabase
-        .from('level_4')
-        .select('id, score, time, is_completed')
-        .eq('user_id', user.id)
-        .eq('module', 1)
-        .eq('level', 4);
-        
-      if (finalState) {
-        if (finalState.length === 0) {
-          console.error(`[COMPLETE-${completeId}] ERROR: No records exist after completion!`);
-        } else if (finalState.length > 1) {
-          console.error(`[COMPLETE-${completeId}] ERROR: Multiple records (${finalState.length}) still exist after completion!`);
+          console.error(`[COMPLETE-${completeId}] Error creating new record:`, createError);
         } else {
-          logDebug(`[COMPLETE-${completeId}] Verification successful: Single record ID=${finalState[0].id}, Score=${finalState[0].score}`);
+          logDebug(`[COMPLETE-${completeId}] Created new completed record with ID: ${newRecord.id}, Score: ${gameState.score}`);
+          setProgressId(newRecord.id);
           
-          // Make sure our progressId matches the final record
-          if (progressId !== finalState[0].id) {
-            setProgressId(finalState[0].id);
-          }
+          // First record is automatically a high score
+          logDebug(`[COMPLETE-${completeId}] New record with score ${gameState.score} is automatically a high score!`);
         }
+      } catch (txError) {
+        console.error(`[COMPLETE-${completeId}] Error in complete game transaction:`, txError);
       }
     } catch (err) {
       console.error('Error completing game:', err);
