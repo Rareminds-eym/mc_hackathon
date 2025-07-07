@@ -278,6 +278,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             isMobile={isMobile}
             onNextLevel={handleNextLevel}
             onReset={resetGame}
+            onClose={() => setShowResults(false)}
           />
         </div>
       </div>
