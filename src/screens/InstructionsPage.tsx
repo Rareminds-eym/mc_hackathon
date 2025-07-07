@@ -6,10 +6,12 @@ import { useDeviceLayout } from '../hooks/useOrientation';
 
 // Mock images for levels
 const levelImages = [
-  "/levels/level1.png",
+  "/backgrounds/Bingo.png",
   "/levels/level2.png",
   "/levels/level3.png",
   "/levels/level4.png",
+  "/levels/level5.png",
+  "/levels/level6.png",
 ];
 
 const levels = [
@@ -49,6 +51,24 @@ const levels = [
     description: "Put on your detective hat! Examine scenarios closely to identify what's missing or incorrect. Your sharp eyes will uncover hidden issues.",
     icon: "🔍"
   },
+  {
+    title: "Level 5: Design Challenge",
+    objective: "Create quality solutions",
+    bloom: "Evaluating",
+    format: "Process Design",
+    interface: "Interactive Builder",
+    description: "Design and evaluate quality systems from scratch. Build comprehensive solutions that meet regulatory standards and optimize manufacturing processes.",
+    icon: "⚙️"
+  },
+  {
+    title: "Level 6: Innovation Lab",
+    objective: "Develop new methodologies",
+    bloom: "Creating",
+    format: "Research & Development",
+    interface: "Simulation Platform",
+    description: "Push the boundaries of quality management! Create innovative approaches, develop new methodologies, and pioneer the future of manufacturing excellence.",
+    icon: "🚀"
+  },
 ];
 
 // Color arrays for level backgrounds and borders
@@ -75,8 +95,8 @@ const InstructionsPage: React.FC = () => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   // Detect mobile (simple check, can be improved)
   // Determine which levels to show
-  const visibleLevels = showAdvanced ? levels.slice(3) : levels.slice(0, 3);
-  const visibleLevelImages = showAdvanced ? levelImages.slice(3) : levelImages.slice(0, 3);
+  const visibleLevels = showAdvanced ? levels.slice(3, 6) : levels.slice(0, 3);
+  const visibleLevelImages = showAdvanced ? levelImages.slice(3, 6) : levelImages.slice(0, 3);
   // Map selected index to correct level in visibleLevels
   const selectedIdx = showAdvanced ? selected - 3 : selected;
   // Only allow selection of visible levels
@@ -88,7 +108,7 @@ const InstructionsPage: React.FC = () => {
   // Landscape mode for mobile: stack images horizontally, instructions below
   if (isMobile && isHorizontal) {
     return (
-      <div className="relative min-h-screen w-full text-white overflow-hidden ">
+      <div className="relative min-h-screen w-full text-white overflow-hidden p-4">
         {/* Cosmic Planets & Stars Background from ModuleMap */}
         <div className="absolute inset-0 z-0">
           {/* Dark base gradient for space */}
@@ -147,7 +167,7 @@ const InstructionsPage: React.FC = () => {
               {visibleLevels.map((_, i) => (
                 <button
                   key={i}
-                  className={`font-bold text-base rounded-full px-1 py-1 transition-all duration-200 flex items-center justify-center ${selectedIdx === i ? 'text-slate-900 shadow-lg scale-110 bg-white/80' : 'text-slate-100 hover:bg-slate-700/40'}`}
+                  className={`font-bold text-base rounded-full px-1 py-1 transition-all duration-200 flex items-center justify-center transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${selectedIdx === i ? 'text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 shadow-lg scale-110' : 'text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 opacity-70 hover:opacity-100'}`}
                   onClick={() => handleSelect(i)}
                   aria-label={`Show Level 0${showAdvanced ? i + 4 : i + 1}`}
                   style={{ writingMode: 'vertical-lr', textOrientation: 'mixed', transform: 'rotate(0deg)', letterSpacing: '0.2em', minHeight: '60px', minWidth: '24px' }}
@@ -157,7 +177,7 @@ const InstructionsPage: React.FC = () => {
               ))}
             </div>
             <button
-              className="mt-4 bg-yellow-300/80 text-slate-900 p-1 rounded-full hover:bg-yellow-400/80 transition"
+              className="mt-4 text-white bg-gradient-to-r from-cyan-600 to-emerald-200 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-[1.02] transition-all duration-200 p-1 rounded-full"
               onClick={() => setShowAdvanced((v) => !v)}
             >
               {showAdvanced ? "▲" : "▼"}
@@ -199,7 +219,7 @@ const InstructionsPage: React.FC = () => {
                 {visibleLevels.map((level, i) => (
                   <div
                     key={level.title}
-                    className={`w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer \
+                    className={`${selectedIdx === i ? 'w-44 h-32' : 'w-32 h-24'} flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer \
                       ${levelBorderColors[showAdvanced ? i + 3 : i]} \
                       ${levelColors[showAdvanced ? i + 3 : i]} \
                       ${selectedIdx === i ? 'ring-4 scale-105 z-10 bg-white/10' : 'opacity-50 blur-[2px]'}
@@ -247,6 +267,16 @@ const InstructionsPage: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Footer */}
+        <div className="relative text-center">
+          <p className="text-sm text-slate-300 opacity-75">
+            <span className="block text-xs sm:text-sm">
+              © 2025 Rareminds. All rights reserved.
+            </span>
+          </p>
+        </div>
+        
         <style>{`
           @keyframes float {
             from { transform: translateY(100vh) rotate(0deg); }
@@ -260,7 +290,7 @@ const InstructionsPage: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-full text-white overflow-hidden">
+    <div className="relative min-h-screen w-full text-white overflow-hidden p-16">
       {/* Cosmic Planets & Stars Background from ModuleMap */}
       <div className="absolute inset-0 z-0">
         {/* Dark base gradient for space */}
@@ -312,15 +342,15 @@ const InstructionsPage: React.FC = () => {
         </div>
       </div>
       {/* Main Content (above background) */}
-      <div className="relative z-10 flex flex-1 w-full">
+      <div className="relative z-10 flex flex-1 w-full pl-4">
         {/* Left Vertical Bar - sticky from the very top */}
-        <div className="flex flex-col justify-between items-center bg-slate-800/60 w-20 py-8 min-h-screen fixed left-0 top-0 z-20 backdrop-blur-sm" style={{height: '100vh'}}>
+        <div className="flex flex-col justify-between items-center bg-slate-800/60 w-20 py-8 min-h-screen fixed left-0 top-0 z-20 backdrop-blur-sm " style={{height: '100vh' }}>
           <img src={logo} alt="Logo" className="w-10 h-10 mb-8" />
           <div className="flex flex-col gap-6 flex-1">
             {visibleLevels.map((_, i) => (
               <button
                 key={i}
-                className={`font-bold text-lg rounded-full px-2 py-1 transition-all duration-200 flex items-center justify-center ${selectedIdx === i ? 'text-slate-900 shadow-lg scale-110 bg-white/80' : 'text-slate-100 hover:bg-slate-700/40'}`}
+                className={`font-bold text-lg rounded-full px-2 py-1 transition-all duration-200 flex items-center justify-center transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${selectedIdx === i ? 'text-white bg-gradient-to-r from-green-400 to-emerald-600 shadow-lg scale-110' : 'text-white bg-gradient-to-r from-green-400 to-emerald-600 hover:from-blue-700 hover:to-purple-700 opacity-70 hover:opacity-100'}`}
                 onClick={() => handleSelect(i)}
                 aria-label={`Show Level 0${showAdvanced ? i + 4 : i + 1}`}
                 style={!isMobile ? { writingMode: 'vertical-lr', textOrientation: 'mixed', transform: 'rotate(0deg)', letterSpacing: '0.2em', minHeight: '90px', minWidth: '32px' } : {}}
@@ -330,7 +360,7 @@ const InstructionsPage: React.FC = () => {
             ))}
           </div>
           <button
-            className="mt-6 bg-yellow-300/80 text-slate-900 p-2 rounded-full hover:bg-yellow-400/80 transition"
+            className="mt-6 text-white bg-gradient-to-r from-green-400 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-[1.02] transition-all duration-200 p-2 rounded-full"
             onClick={() => setShowAdvanced((v) => !v)}
           >
             {showAdvanced ? "▲" : "▼"}
@@ -357,7 +387,7 @@ const InstructionsPage: React.FC = () => {
                 filter: 'drop-shadow(0 2px 4px #34d399)'
               }}
             >
-              GMP QUEST
+              Instructions
             </span>
             <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2" style={{ animationDelay: '0.2s' }}>
               <Icon icon="mdi:clipboard-check-outline" width={38} height={38} />
@@ -367,13 +397,13 @@ const InstructionsPage: React.FC = () => {
             </span>
           </motion.h1>
           {/* Main Content: Vertical Images + Instructions */}
-          <div className="flex flex-row justify-center items-start gap-12 w-full">
+          <div className="flex flex-row justify-start items-start gap-16 w-full pl-8">
             {/* Vertical Images Column */}
-            <div className="flex flex-col gap-8 items-center mt-4">
+            <div className="flex flex-col gap-8 items-center mt-0">
               {visibleLevels.map((level, i) => (
                 <div
                   key={level.title}
-                  className={`w-48 h-28 flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer 
+                  className={`${selectedIdx === i ? 'w-88 h-52' : 'w-64 h-40'} flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer 
                     ${levelBorderColors[showAdvanced ? i + 3 : i]} 
                     ${levelColors[showAdvanced ? i + 3 : i]} 
                     ${selectedIdx === i ? 'ring-4 scale-105 z-10 bg-white/10' : 'opacity-50 blur-[2px]'}
@@ -389,7 +419,7 @@ const InstructionsPage: React.FC = () => {
               ))}
             </div>
             {/* Single Instructions Container */}
-            <div className="max-w-2xl w-full bg-white/5 rounded-lg p-6 border-l-4 border-yellow-200/40 shadow-lg backdrop-blur-md mt-4">
+            <div className="max-w-3xl w-full bg-white/5 rounded-lg p-6 border-l-4 border-yellow-200/40 shadow-lg backdrop-blur-md mt-4 min-h-[500px]">
               <h2 className="text-xl font-bold text-yellow-100 mb-1">{levels[selected].title}</h2>
               <p className="text-sm text-slate-100 mb-1">
                 <span className="font-semibold">Bloom:</span> {levels[selected].bloom}
@@ -421,6 +451,16 @@ const InstructionsPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Footer */}
+      <div className="relative z-10 text-center mt-8 pb-6">
+        <p className="text-sm text-slate-300 opacity-75">
+          <span className="block text-xs sm:text-sm">
+            © 2025 Rareminds. All rights reserved.
+          </span>
+        </p>
+      </div>
+      
       <style>{`
         @keyframes float {
           from { transform: translateY(100vh) rotate(0deg); }

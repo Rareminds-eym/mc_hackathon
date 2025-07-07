@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useDispatch, useSelector } from 'react-redux';
-import { setTimer, setScore, setCompletedLines, setBoardState, setSelectedCells, setSelectedDefinition, saveState, restoreState } from '../store/slices/bingoSlice';
+import { setTimer, setSelectedCells, setSelectedDefinition, saveState } from '../store/slices/bingoSlice';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface BingoCell {
   id: number;
@@ -15,6 +17,34 @@ interface AnswerFeedback {
   isCorrect: boolean;
   selectedTerm: string;
   correctDefinition: string;
+}
+
+interface Level1GameData {
+  user_id: string;
+  username?: string;
+  game_start_time: string;
+  game_end_time?: string;
+  total_time_seconds: number;
+  score: number;
+  rows_solved: number;
+  cells_selected: number[];
+  completed_lines: number[][];
+  board_state: number[][];
+  is_completed: boolean;
+  current_definition?: string;
+  session_id?: string;
+  is_restarted?: boolean;
+}
+
+interface BingoState {
+  timer: number;
+  score: number;
+  completedLines: number;
+  boardState: number[][];
+  selectedCells: number[];
+  selectedDefinition: string;
+  completedLinesState: number[][];
+  rowsSolved: number;
 }
 
 const BINGO_DATA = [
@@ -46,6 +76,7 @@ const BINGO_DATA = [
 ];
 
 export const useBingoGame = () => {
+  const { user } = useAuth();
   const [cells, setCells] = useState<BingoCell[]>([]);
   const [completedLines, setCompletedLines] = useState<number[][]>([]);
   const [score, setScoreState] = useState(0);
@@ -60,32 +91,288 @@ export const useBingoGame = () => {
   const [gameComplete, setGameComplete] = useState(false);
   const [timer, setTimerState] = useState(0);
   const [completedLineModal, setCompletedLineModal] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [gameStartTime, setGameStartTime] = useState<string>('');
+  const [sessionId, setSessionId] = useState<string>('');
+  const [timerActive, setTimerActive] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const dispatch = useDispatch();
-  const bingoRedux = useSelector((state: any) => state.bingo);
+  const bingoRedux = useSelector((state: { bingo: BingoState }) => state.bingo);
 
-  // Restore state from Redux on mount
-  useEffect(() => {
-    if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
-      // Restore from Redux
-      const restoredCells = BINGO_DATA.map((item, index) => ({
-        id: index,
-        term: item.term,
-        definition: item.definition,
-        selected: bingoRedux.selectedCells.includes(index)
-      }));
-      setCells(restoredCells);
-      setCompletedLines([]); // Optionally restore completedLines if you store patterns
-      setRowsSolved(0); // Optionally restore
-      setScoreState(bingoRedux.score || 0);
-      setGameComplete(false); // Optionally restore
-      setSelectedDefinitionState(bingoRedux.selectedDefinition || '');
-      setTimerState(bingoRedux.timer || 0);
-    } else {
-      initializeGame();
+  // Generate unique session ID based on user ID
+  const generateSessionId = () => {
+    return user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  // Save game progress to Supabase
+  const saveGameToDatabase = useCallback(async (gameData: Partial<Level1GameData>) => {
+    if (!user) return;
+
+    try {
+      const dataToSave = {
+        user_id: user.id,
+        username: user.user_metadata?.full_name || user.email || 'Unknown User',
+        session_id: sessionId,
+        total_time_seconds: timer,
+        score,
+        rows_solved: rowsSolved,
+        cells_selected: cells.filter(cell => cell.selected).map(cell => cell.id),
+        completed_lines: completedLines,
+        board_state: [
+          cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+          cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+          cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+          cells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+          cells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+        ],
+        is_completed: gameComplete,
+        current_definition: selectedDefinition,
+        game_start_time: gameStartTime,
+        ...gameData
+      };
+
+      // First try to update existing record for this user
+      const { data: updateData, error: updateError } = await supabase
+        .from('level_1')
+        .update(dataToSave)
+        .eq('user_id', user.id)
+        .select();
+
+      let data, error;
+      
+      if (updateError || !updateData || updateData.length === 0) {
+        // No existing record found, insert new one
+        const { data: insertData, error: insertError } = await supabase
+          .from('level_1')
+          .insert(dataToSave)
+          .select();
+        
+        data = insertData;
+        error = insertError;
+      } else {
+        data = updateData;
+        error = updateError;
+      }
+
+      if (error) {
+        console.warn('Database save failed (table might not exist):', error.message);
+        // Don't throw error, just log it - game should continue working
+      } else {
+        console.log('Game saved successfully:', data);
+      }
+    } catch (error) {
+      console.warn('Error in saveGameToDatabase (continuing without database):', error);
+      // Game continues to work without database
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, sessionId, timer, score, rowsSolved, cells, completedLines, gameComplete, selectedDefinition, gameStartTime]);
+
+  // Load game progress from Supabase
+  const loadGameFromDatabase = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('level_1')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .order('game_start_time', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.warn('Database load failed (table might not exist):', error.message);
+        return null; // Return null so game uses Redux fallback
+      }
+
+      // Only return saved game if it exists and is not a restarted game
+      return data && data.length > 0 ? data[0] : null;
+    } catch (error) {
+      console.warn('Error in loadGameFromDatabase (using Redux fallback):', error);
+      return null; // Return null so game uses Redux fallback
+    }
+  }, [user]);
+
+  const triggerGameCompleteConfetti = useCallback(() => {
+    // Multiple confetti bursts for game completion
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+      });
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
   }, []);
+
+  // Mark game as completed in database
+  const markGameCompleted = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('level_1')
+        .update({
+          is_completed: true,
+          game_end_time: new Date().toISOString(),
+          total_time_seconds: timer,
+          score,
+          rows_solved: rowsSolved,
+          username: user.user_metadata?.full_name || user.email || 'Unknown User'
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.warn('Database update failed (table might not exist):', error.message);
+        // Don't throw error, just log it
+      }
+    } catch (error) {
+      console.warn('Error in markGameCompleted (continuing without database):', error);
+      // Game continues to work without database
+    }
+  }, [user, timer, score, rowsSolved]);
+
+  const selectRandomDefinition = useCallback((currentCells: BingoCell[]) => {
+    const unselectedCells = currentCells.filter(cell => !cell.selected);
+    if (unselectedCells.length > 0) {
+      const randomCell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
+      setSelectedDefinitionState(randomCell.definition);
+      dispatch(setSelectedDefinition(randomCell.definition));
+    } else {
+      // All cells are selected, game is complete
+      setGameComplete(true);
+      triggerGameCompleteConfetti();
+      markGameCompleted();
+    }
+  }, [dispatch, triggerGameCompleteConfetti, markGameCompleted]);
+
+  const initializeGame = useCallback(() => {
+    const newSessionId = user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const newCells = BINGO_DATA.map((item, index) => ({
+      id: index,
+      term: item.term,
+      definition: item.definition,
+      selected: index === 24 // Free Space is pre-selected
+    }));
+    setCells(newCells);
+    setCompletedLines([]);
+    setRowsSolved(0);
+    setScoreState(0);
+    setGameComplete(false);
+    setTimerState(0); // Always start timer at 0 for new games
+    setGameStartTime(new Date().toISOString());
+    setSessionId(newSessionId);
+    // Use setTimeout to ensure cells are set before selecting definition
+    setTimeout(() => {
+      selectRandomDefinition(newCells);
+    }, 0);
+  }, [selectRandomDefinition, user]);
+
+  // Restore state from Redux or Database on mount (only once)
+  useEffect(() => {
+    if (isInitialized) return; // Prevent re-initialization
+    
+    const initializeGameState = async () => {
+      if (user) {
+        // Try to load from database first
+        const savedGame = await loadGameFromDatabase();
+        if (savedGame) {
+          // Restore from database
+          const restoredCells = BINGO_DATA.map((item, index) => ({
+            id: index,
+            term: item.term,
+            definition: item.definition,
+            selected: savedGame.cells_selected.includes(index)
+          }));
+          setCells(restoredCells);
+          setCompletedLines(savedGame.completed_lines || []);
+          setRowsSolved(savedGame.rows_solved || 0);
+          setScoreState(savedGame.score || 0);
+          setTimerState(savedGame.total_time_seconds || 0);
+          setGameStartTime(savedGame.game_start_time);
+          setSessionId(savedGame.session_id || (user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`));
+          setGameComplete(savedGame.is_completed || false);
+          
+          // Set the current definition or select a new one if none exists
+          if (savedGame.current_definition) {
+            setSelectedDefinitionState(savedGame.current_definition);
+          } else {
+            setTimeout(() => {
+              selectRandomDefinition(restoredCells);
+            }, 0);
+          }
+          
+          console.log('Game restored from database');
+        } else if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
+          // Restore from Redux
+          const restoredCells = BINGO_DATA.map((item, index) => ({
+            id: index,
+            term: item.term,
+            definition: item.definition,
+            selected: bingoRedux.selectedCells.includes(index)
+          }));
+          setCells(restoredCells);
+          setCompletedLines([]); 
+          setRowsSolved(0); 
+          setScoreState(bingoRedux.score || 0);
+          setGameComplete(false);
+          setTimerState(bingoRedux.timer || 0);
+          setGameStartTime(new Date().toISOString());
+          setSessionId(generateSessionId());
+          
+          // Set the current definition or select a new one if none exists
+          if (bingoRedux.selectedDefinition) {
+            setSelectedDefinitionState(bingoRedux.selectedDefinition);
+          } else {
+            setTimeout(() => {
+              selectRandomDefinition(restoredCells);
+            }, 0);
+          }
+          
+          console.log('Game restored from Redux');
+        } else {
+          initializeGame();
+          console.log('New game initialized');
+        }
+      } else {
+        initializeGame();
+        console.log('New game initialized (no user)');
+      }
+      
+      setIsInitialized(true);
+    };
+
+    initializeGameState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only depend on user, not on the other values that change
+
+  // Timer logic (controlled internally)
+  useEffect(() => {
+    if (gameComplete || !timerActive) return;
+    const interval = setInterval(() => {
+      setTimerState((prev: number) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameComplete, timerActive]);
+
+  // Timer control functions
+  const startTimer = useCallback(() => setTimerActive(true), []);
+  const stopTimer = useCallback(() => setTimerActive(false), []);
 
   // Timer logic (start/stop externally, but always save to Redux)
   useEffect(() => {
@@ -94,6 +381,8 @@ export const useBingoGame = () => {
 
   // Save the current game state to Redux whenever relevant state changes
   useEffect(() => {
+    if (!isInitialized) return; // Don't save until initialized
+    
     dispatch(saveState({
       timer,
       score,
@@ -110,7 +399,18 @@ export const useBingoGame = () => {
       selectedCells: cells.filter(cell => cell.selected).map(cell => cell.id),
       selectedDefinition,
     }));
-  }, [timer, score, completedLines, cells, selectedDefinition, rowsSolved, dispatch]);
+  }, [timer, score, completedLines, cells, selectedDefinition, rowsSolved, dispatch, isInitialized]);
+
+  // Separate effect for periodic database saves (every 30 seconds)
+  useEffect(() => {
+    if (!isInitialized || !user || !sessionId || gameComplete) return;
+    
+    const saveInterval = setInterval(() => {
+      saveGameToDatabase({});
+    }, 30000);
+
+    return () => clearInterval(saveInterval);
+  }, [user, sessionId, gameComplete, saveGameToDatabase, isInitialized]);
 
   // Restore completedLines and rowsSolved from Redux
   useEffect(() => {
@@ -120,37 +420,7 @@ export const useBingoGame = () => {
     if (bingoRedux && typeof bingoRedux.rowsSolved === 'number') {
       setRowsSolved(bingoRedux.rowsSolved);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bingoRedux]);
-
-  const initializeGame = () => {
-    const newCells = BINGO_DATA.map((item, index) => ({
-      id: index,
-      term: item.term,
-      definition: item.definition,
-      selected: index === 24 // Free Space is pre-selected
-    }));
-    setCells(newCells);
-    setCompletedLines([]);
-    setRowsSolved(0);
-    setScoreState(0);
-    setGameComplete(false);
-    setTimerState(0);
-    selectRandomDefinition(newCells);
-  };
-
-  const selectRandomDefinition = (currentCells: BingoCell[]) => {
-    const unselectedCells = currentCells.filter(cell => !cell.selected);
-    if (unselectedCells.length > 0) {
-      const randomCell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
-      setSelectedDefinitionState(randomCell.definition);
-      dispatch(setSelectedDefinition(randomCell.definition));
-    } else {
-      // All cells are selected, game is complete
-      setGameComplete(true);
-      triggerGameCompleteConfetti();
-    }
-  };
 
   const toggleCell = (id: number) => {
     if (gameComplete || answerFeedback.isVisible) return;
@@ -158,8 +428,23 @@ export const useBingoGame = () => {
     const clickedCell = cells.find(cell => cell.id === id);
     if (!clickedCell || clickedCell.selected) return;
 
+    // Debug logging to help identify the issue
+    console.log('Clicked cell:', clickedCell.term, '- Definition:', clickedCell.definition);
+    console.log('Current definition shown:', selectedDefinition);
+    console.log('Definition lengths:', clickedCell.definition.length, 'vs', selectedDefinition.length);
+    
+    // More robust comparison that handles potential whitespace/encoding issues
+    const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
+    const cellDefNormalized = normalizeString(clickedCell.definition);
+    const selectedDefNormalized = normalizeString(selectedDefinition);
+    
+    console.log('Normalized cell definition:', cellDefNormalized);
+    console.log('Normalized selected definition:', selectedDefNormalized);
+    
     // Show feedback modal
-    const isCorrect = clickedCell.definition === selectedDefinition;
+    const isCorrect = cellDefNormalized === selectedDefNormalized;
+    console.log('Is correct match:', isCorrect);
+    
     setAnswerFeedback({
       isVisible: true,
       isCorrect,
@@ -174,6 +459,9 @@ export const useBingoGame = () => {
       );
       setCells(newCells);
       dispatch(setSelectedCells(newCells.filter(cell => cell.selected).map(cell => cell.id)));
+      
+      // Save game progress to database
+      saveGameToDatabase({});
       
       // Check for new lines after a short delay
       setTimeout(() => {
@@ -225,6 +513,9 @@ export const useBingoGame = () => {
       setRowsSolved(prev => prev + newCompletedLines.length);
       setScoreState(prev => prev + newCompletedLines.length * 10);
       if (newLineTriggered) setCompletedLineModal(true);
+      
+      // Save game progress to database
+      saveGameToDatabase({});
     }
   };
 
@@ -237,34 +528,6 @@ export const useBingoGame = () => {
       origin: { y: 0.6 },
       colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
     });
-  };
-
-  const triggerGameCompleteConfetti = () => {
-    // Multiple confetti bursts for game completion
-    const duration = 3000;
-    const end = Date.now() + duration;
-
-    const frame = () => {
-      confetti({
-        particleCount: 2,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
-      });
-      confetti({
-        particleCount: 2,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    };
-    frame();
   };
 
   const saveGameState = () => {
@@ -286,15 +549,38 @@ export const useBingoGame = () => {
     }));
   };
 
-  const resetGame = () => {
+  const resetGame = async () => {
     setAnswerFeedback({
       isVisible: false,
       isCorrect: false,
       selectedTerm: '',
       correctDefinition: ''
     });
+    
+    // Mark current game as completed with a special flag for restart
+    if (user && sessionId && !gameComplete) {
+      try {
+        await supabase
+          .from('level_1')
+          .update({
+            is_completed: true,
+            game_end_time: new Date().toISOString(),
+            total_time_seconds: timer,
+            score,
+            rows_solved: rowsSolved,
+            username: user.user_metadata?.full_name || user.email || 'Unknown User',
+            is_restarted: true // Add a flag to indicate this was a restart, not natural completion
+          })
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.warn('Error marking game as restarted:', error);
+      }
+    }
+    
+    // Initialize a completely new game
     initializeGame();
-    // Optionally reset Redux state as well
+    
+    // Reset Redux state as well
     dispatch(saveState({
       timer: 0,
       score: 0,
@@ -328,5 +614,8 @@ export const useBingoGame = () => {
     saveGameState,
     timer,
     setTimer: setTimerState,
+    startTimer,
+    stopTimer,
+    timerActive,
   };
 };

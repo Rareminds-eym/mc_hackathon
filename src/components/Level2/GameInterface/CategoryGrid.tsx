@@ -40,7 +40,7 @@ const CategoryGrid: React.FC<CategoryGridProps> = ({
       {categories.map((category, index) => (
         <div
           key={category.id}
-          className="animate-slideIn category-box flex-1"
+          className="animate-slideIn category-box flex-1 md:h-[40em]"
           style={{ animationDelay: `${index * 150}ms` }}
         >
           <CategoryBox

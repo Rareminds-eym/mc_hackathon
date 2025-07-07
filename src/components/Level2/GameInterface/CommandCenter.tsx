@@ -81,7 +81,7 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
   }
 
   return (
-    <div className="w-80 flex-shrink-0">
+    <div className="w-80 flex-shrink-0 md:h-[40em]">
       <div className="pixel-border-thick bg-gray-800 p-4 h-full overflow-hidden flex flex-col">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
@@ -116,7 +116,7 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
               {unassignedTerms.map((term, index) => (
                 <div
                   key={term.id}
-                  className="animate-slideIn"
+                  className="animate-slideIn "
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <DraggableTerm
