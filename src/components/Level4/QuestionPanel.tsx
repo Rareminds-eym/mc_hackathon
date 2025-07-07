@@ -88,7 +88,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
             <h3 className="text-xs font-bold text-white lg:text-lg xl:text-xl">
               {config.title}
             </h3>
-            <p className={`text-white/80 text-xs font-medium landscape:text-[9px] sm:landscape:text-xs lg:text-base xl:text-lg animate-pulse-text`}>
+            <p className={`text-white/80 text-xs font-medium landscape:text-[9px] sm:landscape:text-xs lg:text-base xl:text-lg `}>
               Select the most appropriate answer
             </p>
           </div>
@@ -140,7 +140,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                 <div
                   key={index}
                   className={`
-                    group relative flex items-center rounded-lg border-2  lg:px-4 lg:py-2 xl:px-6 xl:py-3 min-w-0 w-full
+                    group relative flex items-center rounded-lg border-2  lg:px-4 lg:py-2 xl:px-6 xl:py-3 min-w-0 w-full 
                     ${animationClass}
                     ${isSelected 
                       ? showFeedback
@@ -150,7 +150,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                         : 'border-blue-400 bg-white/50 shadow-lg shadow-blue-200/50'
                       : showFeedback && isCorrect(index)
                         ? 'border-green-400 bg-white/50 shadow-lg shadow-green-200/50'
-                        : 'border-gray-200 bg-white/20 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/50'
+                        : 'border-gray-200 bg-white/60 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/50'
                     }
                   `}
                   onClick={() => !showFeedback && onAnswerSelect(currentQuestion, index)}
@@ -192,7 +192,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
                   </div>
 
                   {/* Option Text */}
-                  <span className={`flex-1 text-sm font-medium lg:text-lg xl:text-xl break-words whitespace-normal min-w-0 ${
+                  <span className={`flex-1 text-sm  lg:text-lg xl:text-xl break-words whitespace-normal font-normal min-w-0 ${
                     isSelected
                       ? showFeedback
                         ? isCorrect(index) ? 'text-green-900' : 'text-red-900'

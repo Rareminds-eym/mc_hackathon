@@ -317,6 +317,8 @@ interface VictoryPopupProps {
   score: number;
   combo: number;
   health: number;
+  highScore?: number; // Add high score property
+  showNext?: boolean;
   isLevelCompleted?: boolean;
   showGoToModules?: boolean;
   showReset?: boolean;
@@ -330,6 +332,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   score,
   combo,
   health,
+  highScore, // Add high score parameter
+  showNext = false,
   isLevelCompleted = false,
   showGoToModules = true,
   showReset = false,
@@ -573,6 +577,82 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   isMobileHorizontal ? "text-sm" : "text-base"
                 }`}
               >
+                Well Done!
+              </textPath>
+            </text>
+            <path fill="transparent" d="M 40 50 Q 150 10 260 50" id="arcPath" />
+          </svg>
+        </motion.h2>
+        
+        {/* Score, Combo, and Health Display */}
+        <motion.div 
+          className={`flex justify-center ${isMobileHorizontal ? "gap-2 mb-1" : "gap-6 mb-3"}`}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{
+            delay: 0.55,
+            type: "spring",
+            stiffness: 200,
+            damping: 18,
+          }}
+        >
+          <div className="flex flex-col items-center">
+            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Score</span>
+            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-green-600`}>
+              {score} / 30
+            </span>
+            {/* Show high score if it's different from current score */}
+            {highScore > 0 && highScore !== score && (
+              <span className={`${isMobileHorizontal ? "text-xs" : "text-sm"} text-amber-600 font-bold mt-0.5`}>
+                Best: {highScore}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col items-center">
+            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Combo</span>
+            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-yellow-600`}>
+              {combo}
+            </span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Health</span>
+            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-pink-600`}>
+              {health}
+            </span>
+          </div>
+        </motion.div>
+        
+        {/* 🧑‍🔬 Character */}
+        <motion.div
+          className={`relative w-full flex justify-center items-center mb-2 py-3${
+            isMobileHorizontal ? " py-1 mb-0 justify-center" : ""
+          }`}
+          style={isMobileHorizontal ? { justifyContent: "center" } : {}}
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{
+            delay: 0.6,
+            type: "spring",
+            stiffness: 180,
+            damping: 18,
+          }}
+        >
+          <motion.img
+            src="/characters/worker.webp"
+            alt="Worker Character"
+            className={`object-contain${
+              isMobileHorizontal ? " w-[180px]" : " w-[200px]"
+            }`}
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{
+              delay: 0.7,
+              type: "spring",
+              stiffness: 200,
+              damping: 18,
+            }}
+          />
+        </motion.div>
                 <span className="inline-flex items-center gap-1">
                   <Icon icon="mdi:heart" className={`text-red-400 ${isMobileHorizontal ? "w-4 h-4" : "w-5 h-5"}`} />
                   <span>Health:</span>
@@ -643,7 +723,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                       }`}
                     />
                   </div>
-                  <span className="whitespace-nowrap">Back to Levels</span>
+                  <span className="whitespace-nowrap"></span>
                 </div>
 
                 {/* Particle effects - only shown on hover */}
