@@ -360,6 +360,7 @@ export const JigsawBoard: React.FC = () => {
       setCombo(0);
       setHealth(100);
       setCurrentScenarioPoints(0); // Reset points for new scenario
+      setScore(0); // Reset score for each scenario
       setShowScenario(true);
     } else {
       setIsComplete(false);
