@@ -219,7 +219,7 @@ const InstructionsPage: React.FC = () => {
                 {visibleLevels.map((level, i) => (
                   <div
                     key={level.title}
-                    className={`${i === 0 ? 'w-36 h-28' : 'w-32 h-24'} flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer \
+                    className={`${selectedIdx === i ? 'w-44 h-32' : 'w-32 h-24'} flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer \
                       ${levelBorderColors[showAdvanced ? i + 3 : i]} \
                       ${levelColors[showAdvanced ? i + 3 : i]} \
                       ${selectedIdx === i ? 'ring-4 scale-105 z-10 bg-white/10' : 'opacity-50 blur-[2px]'}
@@ -403,7 +403,7 @@ const InstructionsPage: React.FC = () => {
               {visibleLevels.map((level, i) => (
                 <div
                   key={level.title}
-                  className={`${selectedIdx === i ? 'w-72 h-48' : (i === 0 ? 'w-72 h-48' : 'w-64 h-40')} flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer 
+                  className={`${selectedIdx === i ? 'w-88 h-52' : 'w-64 h-40'} flex-shrink-0 rounded-lg overflow-hidden shadow-lg border-2 transition-all duration-300 cursor-pointer 
                     ${levelBorderColors[showAdvanced ? i + 3 : i]} 
                     ${levelColors[showAdvanced ? i + 3 : i]} 
                     ${selectedIdx === i ? 'ring-4 scale-105 z-10 bg-white/10' : 'opacity-50 blur-[2px]'}

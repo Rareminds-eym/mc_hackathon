@@ -21,6 +21,7 @@ interface AnswerFeedback {
 
 interface Level1GameData {
   user_id: string;
+  username?: string;
   game_start_time: string;
   game_end_time?: string;
   total_time_seconds: number;
@@ -32,6 +33,7 @@ interface Level1GameData {
   is_completed: boolean;
   current_definition?: string;
   session_id?: string;
+  is_restarted?: boolean;
 }
 
 interface BingoState {
@@ -96,9 +98,9 @@ export const useBingoGame = () => {
   const dispatch = useDispatch();
   const bingoRedux = useSelector((state: { bingo: BingoState }) => state.bingo);
 
-  // Generate unique session ID
+  // Generate unique session ID based on user ID
   const generateSessionId = () => {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
   // Save game progress to Supabase
@@ -108,6 +110,7 @@ export const useBingoGame = () => {
     try {
       const dataToSave = {
         user_id: user.id,
+        username: user.user_metadata?.full_name || user.email || 'Unknown User',
         session_id: sessionId,
         total_time_seconds: timer,
         score,
@@ -127,13 +130,28 @@ export const useBingoGame = () => {
         ...gameData
       };
 
-      const { data, error } = await supabase
+      // First try to update existing record for this user
+      const { data: updateData, error: updateError } = await supabase
         .from('level_1')
-        .upsert(dataToSave, { 
-          onConflict: 'user_id,session_id',
-          ignoreDuplicates: false 
-        })
+        .update(dataToSave)
+        .eq('user_id', user.id)
         .select();
+
+      let data, error;
+      
+      if (updateError || !updateData || updateData.length === 0) {
+        // No existing record found, insert new one
+        const { data: insertData, error: insertError } = await supabase
+          .from('level_1')
+          .insert(dataToSave)
+          .select();
+        
+        data = insertData;
+        error = insertError;
+      } else {
+        data = updateData;
+        error = updateError;
+      }
 
       if (error) {
         console.warn('Database save failed (table might not exist):', error.message);
@@ -165,6 +183,7 @@ export const useBingoGame = () => {
         return null; // Return null so game uses Redux fallback
       }
 
+      // Only return saved game if it exists and is not a restarted game
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
       console.warn('Error in loadGameFromDatabase (using Redux fallback):', error);
@@ -202,7 +221,7 @@ export const useBingoGame = () => {
 
   // Mark game as completed in database
   const markGameCompleted = useCallback(async () => {
-    if (!user || !sessionId) return;
+    if (!user) return;
 
     try {
       const { error } = await supabase
@@ -212,10 +231,10 @@ export const useBingoGame = () => {
           game_end_time: new Date().toISOString(),
           total_time_seconds: timer,
           score,
-          rows_solved: rowsSolved
+          rows_solved: rowsSolved,
+          username: user.user_metadata?.full_name || user.email || 'Unknown User'
         })
-        .eq('user_id', user.id)
-        .eq('session_id', sessionId);
+        .eq('user_id', user.id);
 
       if (error) {
         console.warn('Database update failed (table might not exist):', error.message);
@@ -225,7 +244,7 @@ export const useBingoGame = () => {
       console.warn('Error in markGameCompleted (continuing without database):', error);
       // Game continues to work without database
     }
-  }, [user, sessionId, timer, score, rowsSolved]);
+  }, [user, timer, score, rowsSolved]);
 
   const selectRandomDefinition = useCallback((currentCells: BingoCell[]) => {
     const unselectedCells = currentCells.filter(cell => !cell.selected);
@@ -242,6 +261,8 @@ export const useBingoGame = () => {
   }, [dispatch, triggerGameCompleteConfetti, markGameCompleted]);
 
   const initializeGame = useCallback(() => {
+    const newSessionId = user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const newCells = BINGO_DATA.map((item, index) => ({
       id: index,
       term: item.term,
@@ -255,12 +276,12 @@ export const useBingoGame = () => {
     setGameComplete(false);
     setTimerState(0); // Always start timer at 0 for new games
     setGameStartTime(new Date().toISOString());
-    setSessionId(generateSessionId());
+    setSessionId(newSessionId);
     // Use setTimeout to ensure cells are set before selecting definition
     setTimeout(() => {
       selectRandomDefinition(newCells);
     }, 0);
-  }, [selectRandomDefinition]);
+  }, [selectRandomDefinition, user]);
 
   // Restore state from Redux or Database on mount (only once)
   useEffect(() => {
@@ -284,7 +305,7 @@ export const useBingoGame = () => {
           setScoreState(savedGame.score || 0);
           setTimerState(savedGame.total_time_seconds || 0);
           setGameStartTime(savedGame.game_start_time);
-          setSessionId(savedGame.session_id || generateSessionId());
+          setSessionId(savedGame.session_id || (user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`));
           setGameComplete(savedGame.is_completed || false);
           
           // Set the current definition or select a new one if none exists
@@ -407,8 +428,23 @@ export const useBingoGame = () => {
     const clickedCell = cells.find(cell => cell.id === id);
     if (!clickedCell || clickedCell.selected) return;
 
+    // Debug logging to help identify the issue
+    console.log('Clicked cell:', clickedCell.term, '- Definition:', clickedCell.definition);
+    console.log('Current definition shown:', selectedDefinition);
+    console.log('Definition lengths:', clickedCell.definition.length, 'vs', selectedDefinition.length);
+    
+    // More robust comparison that handles potential whitespace/encoding issues
+    const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
+    const cellDefNormalized = normalizeString(clickedCell.definition);
+    const selectedDefNormalized = normalizeString(selectedDefinition);
+    
+    console.log('Normalized cell definition:', cellDefNormalized);
+    console.log('Normalized selected definition:', selectedDefNormalized);
+    
     // Show feedback modal
-    const isCorrect = clickedCell.definition === selectedDefinition;
+    const isCorrect = cellDefNormalized === selectedDefNormalized;
+    console.log('Is correct match:', isCorrect);
+    
     setAnswerFeedback({
       isVisible: true,
       isCorrect,
@@ -521,13 +557,30 @@ export const useBingoGame = () => {
       correctDefinition: ''
     });
     
-    // Mark current game as completed if there was one
+    // Mark current game as completed with a special flag for restart
     if (user && sessionId && !gameComplete) {
-      await markGameCompleted();
+      try {
+        await supabase
+          .from('level_1')
+          .update({
+            is_completed: true,
+            game_end_time: new Date().toISOString(),
+            total_time_seconds: timer,
+            score,
+            rows_solved: rowsSolved,
+            username: user.user_metadata?.full_name || user.email || 'Unknown User',
+            is_restarted: true // Add a flag to indicate this was a restart, not natural completion
+          })
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.warn('Error marking game as restarted:', error);
+      }
     }
     
+    // Initialize a completely new game
     initializeGame();
-    // Optionally reset Redux state as well
+    
+    // Reset Redux state as well
     dispatch(saveState({
       timer: 0,
       score: 0,

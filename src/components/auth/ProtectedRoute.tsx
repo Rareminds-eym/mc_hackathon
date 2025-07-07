@@ -1,7 +1,7 @@
 import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import LoadingSpinner from '../ui/LoadingSpinner'
+import LoaderScreen from '../../screens/LoaderScreen'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -11,7 +11,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <LoadingSpinner />
+    return <LoaderScreen />;
   }
 
   if (!user) {
