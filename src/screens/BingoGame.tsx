@@ -45,6 +45,10 @@ const BingoGame: React.FC = () => {
 
   // Timer state for this component
   const [tutorialDone, setTutorialDone] = React.useState(false);
+  const [instructionsStep, setInstructionsStep] = React.useState<number | undefined>(undefined); // For skipping to definitions
+
+  // Add a resetCount state to force re-mounting GameInstructions
+  const [resetCount, setResetCount] = React.useState(0);
 
   // Auto-skip tutorial if game is restored
   React.useEffect(() => {
@@ -53,31 +57,12 @@ const BingoGame: React.FC = () => {
     }
   }, [cells, selectedDefinition]);
 
-  // Timer is now managed entirely by the useBingoGame hook
-  // Remove external timer management to avoid conflicts
-  
-  // When tutorial/instructions are finished/skipped, start timer
-  React.useEffect(() => {
-    if (tutorialActive) {
-      stopTimer();
-    } else if (tutorialDone && !waitingForInteraction) {
-      startTimer();
-    } else {
-      stopTimer();
-    }
-  }, [tutorialActive, tutorialDone, waitingForInteraction, startTimer, stopTimer]);
-
-  // Callback for when tutorial ends
-  const handleTutorialEnd = () => {
-    setTutorialDone(true);
-  };
-
   // Ensure timer resumes if tutorial is skipped
   const handleSkipTutorial = () => {
     skipTutorial();
     setTutorialDone(true);
-    onUserInteraction(); // Ensure waitingForInteraction is false so timer resumes
-    startTimer(); // Force timer to resume immediately
+    onUserInteraction();
+    setInstructionsStep('definitions'); // Use a string to indicate jump to definitions
   };
 
   const handleBackClick = () => {
@@ -197,318 +182,384 @@ const BingoGame: React.FC = () => {
     return () => clearTimeout(timeout);
   }, []);
 
+  // Pause timer whenever tutorial is active (TutorialToast or intro modal is visible)
+  React.useEffect(() => {
+    if (tutorialActive) {
+      stopTimer();
+    }
+  }, [tutorialActive, stopTimer]);
+
+  // Prevent timer from starting if either tutorialActive is true OR instructions are not at definitions
+  const handleDefinitionsStart = () => {
+    setTutorialDone(true);
+    // Only start timer if tutorial is NOT active
+    if (!tutorialActive) {
+      startTimer();
+    }
+    setInstructionsStep(undefined); // Reset for next time
+  };
+
+  // Handle step changes from GameInstructions to control the timer
+  const handleInstructionsStepChange = (step: number | string, atDefinitions: boolean) => {
+    if (atDefinitions && !tutorialActive) {
+      startTimer();
+    } else {
+      stopTimer();
+    }
+  };
+
+  // Custom play again handler to reset game and instructions
+  const handlePlayAgain = () => {
+    resetGame();
+    setInstructionsStep(undefined); // Start from the beginning of instructions
+    setTutorialDone(false); // Show instructions/conversation again
+    setResetCount(c => c + 1); // Force re-mount GameInstructions
+  };
+
   if (loading) {
     return <LoaderScreen />;
   }
 
   return (
-    <motion.div
-      style={rootStyle}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Navbar
-        score={score}
-        rowsSolved={rowsSolved}
-        onBackClick={handleBackClick}
-        onHomeClick={handleHomeClick}
-        onResetTutorial={resetTutorial}
-        timer={timer}
-        onPlayAgain={resetGame}
-        tutorialStep={currentStep?.id} // Pass tutorial step to Navbar
-      />
+    <>
       <motion.div
-        style={mainStyle}
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        style={rootStyle}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
       >
-        {/* Mobile: instructions left, grid right, no images/timer */}
-        {isMobile ? (
-          <motion.div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              width: '100%',
-              maxWidth: '100vw',
-              gap: '2rem',
-              minHeight: isHorizontal ? '28dvh' : '18dvh',
-            }}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+        <Navbar
+          score={score}
+          rowsSolved={rowsSolved}
+          onBackClick={handleBackClick}
+          onHomeClick={handleHomeClick}
+          onResetTutorial={resetTutorial}
+          timer={timer}
+          onPlayAgain={handlePlayAgain} // Use custom handler
+          tutorialStep={currentStep?.id} // Pass tutorial step to Navbar
+        />
+        <motion.div
+          style={mainStyle}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          {/* Mobile: instructions left, grid right, no images/timer */}
+          {isMobile ? (
             <motion.div
               style={{
-                flex: 1,
-                minWidth: 0,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                paddingRight: '0.25rem',
+                flexDirection: 'row',
+                width: '100%',
+                maxWidth: '100vw',
+                gap: '2rem',
+                minHeight: isHorizontal ? '28dvh' : '18dvh',
               }}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <motion.div style={{ width: '100%' }}>
-                {/* Show Bingo logo above instructions in landscape mode */}
-                {isHorizontal && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <div style={{
+              <motion.div
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  paddingRight: '0.25rem',
+                }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+              >
+                <motion.div style={{ width: '100%' }}>
+                  {/* Show Bingo logo above instructions in landscape mode */}
+                  {isHorizontal && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <div style={{
+                        background: '#fff',
+                        border: '2px solid #2563eb',
+                        borderRadius: '1.2rem',
+                        padding: '0.15rem 0.7rem',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        fontWeight: 700,
+                        fontSize: '1.05rem',
+                        color: '#2563eb',
+                        marginBottom: '0.2rem',
+                        marginLeft: '2rem',
+                      }}>
+                        <Clock style={{ width: 22, height: 22, color: '#2563eb' }} />
+                        <span>{formatTime(timer)}</span>
+                      </div>
+                      <motion.img
+                        src="/logos/Bingo.png"
+                        alt="Bingo Logo"
+                        style={{
+                          display: 'block',
+                          height: '140px',
+                          padding: '0.6rem 0 1rem 0',
+                          marginLeft: '2rem', // move image more to the right
+                        }}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.18 }}
+                      />
+                    </div>
+                  )}
+                  <GameInstructions 
+                    key={resetCount} // Force re-mount on reset
+                    selectedDefinition={selectedDefinition} 
+                    onDefinitionsStart={handleDefinitionsStart}
+                    tutorialStep={currentStep?.id} 
+                    forceStep={instructionsStep}
+                    onStepChange={handleInstructionsStepChange}
+                  />
+                </motion.div>
+              </motion.div>
+              <motion.div
+                style={{
+                  flex: 2,
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.25 }}
+              >
+                <motion.div style={{ width: '100%' }}>
+                  <BingoGrid
+                    cells={cells}
+                    completedLines={completedLines}
+                    gameComplete={gameComplete}
+                    onCellClick={handleCellClick}
+                    isInCompletedLine={isInCompletedLine}
+                    disabled={!tutorialDone || waitingForInteraction}
+                    tutorialStep={currentStep?.id}
+                  />
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              style={gridStyle}
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              {/* Trainer character image on the left */}
+              {!isMobile && (
+                <>
+                  <motion.img
+                    src="/characters/trainer.png"
+                    alt="Trainer Character"
+                    style={{
+                      height: '320px',
+                      position: 'absolute',
+                      left: '-360px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 2,
+                      pointerEvents: 'none',
+                    }}
+                    initial={{ opacity: 0, x: -40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  />
+                  <motion.img
+                    src="/logos/Bingo.png"
+                    alt="Bingo Logo"
+                    style={{
+                      height: '180px',
+                      position: 'absolute',
+                      left: '-340px',
+                      top: '10%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 2,
+                      pointerEvents: 'none',
+                    }}
+                    initial={{ opacity: 0, y: -30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.25 }}
+                  />
+                </>
+              )}
+              {/* Timer clock above intern character */}
+              {!isMobile && (
+                <motion.div
+                  style={{
+                    position: 'absolute',
+                    right: '-280px',
+                    top: '10%',
+                    transform: 'translateY(-100%)',
+                    zIndex: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    pointerEvents: 'none',
+                  }}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
+                  <div
+                    style={{
                       background: '#fff',
                       border: '2px solid #2563eb',
-                      borderRadius: '1.2rem',
-                      padding: '0.15rem 0.7rem',
+                      borderRadius: '1.5rem',
+                      padding: '0.5rem 1.25rem',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
+                      gap: '0.5rem',
                       fontWeight: 700,
-                      fontSize: '1.05rem',
+                      fontSize: '1.3rem',
                       color: '#2563eb',
-                      marginBottom: '0.2rem',
-                      marginLeft: '2rem',
-                    }}>
-                      <Clock style={{ width: 22, height: 22, color: '#2563eb' }} />
-                      <span>{formatTime(timer)}</span>
-                    </div>
-                    <motion.img
-                      src="/logos/Bingo.png"
-                      alt="Bingo Logo"
-                      style={{
-                        display: 'block',
-                        height: '140px',
-                        padding: '0.6rem 0 1rem 0',
-                        marginLeft: '2rem', // move image more to the right
-                      }}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 0.18 }}
-                    />
+                    }}
+                  >
+                    <Clock style={{ width: 32, height: 32, color: '#2563eb' }} />
+                    <span>{formatTime(timer)}</span>
                   </div>
-                )}
-                <GameInstructions selectedDefinition={selectedDefinition} onTutorialEnd={handleTutorialEnd} startAtDefinition={tutorialDone} tutorialStep={currentStep?.id} />
-              </motion.div>
-            </motion.div>
-            <motion.div
-              style={{
-                flex: 2,
-                minWidth: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.25 }}
-            >
-              <motion.div style={{ width: '100%' }}>
-                <BingoGrid
-                  cells={cells}
-                  completedLines={completedLines}
-                  gameComplete={gameComplete}
-                  onCellClick={handleCellClick}
-                  isInCompletedLine={isInCompletedLine}
-                  disabled={!tutorialDone || waitingForInteraction}
-                  tutorialStep={currentStep?.id}
-                />
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        ) : (
-          <motion.div
-            style={gridStyle}
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            {/* Trainer character image on the left */}
-            {!isMobile && (
-              <>
-                <motion.img
-                  src="/characters/trainer.png"
-                  alt="Trainer Character"
-                  style={{
-                    height: '320px',
-                    position: 'absolute',
-                    left: '-360px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 2,
-                    pointerEvents: 'none',
-                  }}
-                  initial={{ opacity: 0, x: -40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                />
-                <motion.img
-                  src="/logos/Bingo.png"
-                  alt="Bingo Logo"
-                  style={{
-                    height: '180px',
-                    position: 'absolute',
-                    left: '-340px',
-                    top: '10%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 2,
-                    pointerEvents: 'none',
-                  }}
-                  initial={{ opacity: 0, y: -30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.25 }}
-                />
-              </>
-            )}
-            {/* Timer clock above intern character */}
-            {!isMobile && (
-              <motion.div
-                style={{
-                  position: 'absolute',
-                  right: '-280px',
-                  top: '10%',
-                  transform: 'translateY(-100%)',
-                  zIndex: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  pointerEvents: 'none',
-                }}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-              >
-                <div
-                  style={{
-                    background: '#fff',
-                    border: '2px solid #2563eb',
-                    borderRadius: '1.5rem',
-                    padding: '0.5rem 1.25rem',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontWeight: 700,
-                    fontSize: '1.3rem',
-                    color: '#2563eb',
-                  }}
-                >
-                  <Clock style={{ width: 32, height: 32, color: '#2563eb' }} />
-                  <span>{formatTime(timer)}</span>
-                </div>
-              </motion.div>
-            )}
-            {/* Mobile: show timer and logo above grid */}
-            {isMobile && (
-              <motion.div
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  flexDirection: isHorizontal ? 'row' : 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: isHorizontal ? '1rem' : '0.5rem',
-                  marginBottom: isHorizontal ? '0.5rem' : '0.5rem',
-                  marginTop: isHorizontal ? '0.5rem' : '0.5rem',
-                }}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 }}
-              >
-                <motion.img
-                  src="/logos/Bingo.png"
-                  alt="Bingo Logo"
-                  style={{
-                    height: isHorizontal ? '90px' : '60px',
-                    marginRight: isHorizontal ? '1rem' : 0,
-                    marginBottom: isHorizontal ? 0 : '0.25rem',
-                  }}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.18 }}
-                />
+                </motion.div>
+              )}
+              {/* Mobile: show timer and logo above grid */}
+              {isMobile && (
                 <motion.div
                   style={{
-                    background: '#fff',
-                    border: '2px solid #2563eb',
-                    borderRadius: '1.5rem',
-                    padding: isHorizontal ? '0.25rem 0.8rem' : '0.25rem 0.8rem',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    width: '100%',
                     display: 'flex',
+                    flexDirection: isHorizontal ? 'row' : 'column',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    fontWeight: 700,
-                    fontSize: isHorizontal ? '1.2rem' : '1.1rem',
-                    color: '#2563eb',
+                    justifyContent: 'center',
+                    gap: isHorizontal ? '1rem' : '0.5rem',
+                    marginBottom: isHorizontal ? '0.5rem' : '0.5rem',
+                    marginTop: isHorizontal ? '0.5rem' : '0.5rem',
                   }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 }}
                 >
-                  <Clock style={{ width: 28, height: 28, color: '#2563eb' }} />
-                  <span>{formatTime(timer)}</span>
+                  <motion.img
+                    src="/logos/Bingo.png"
+                    alt="Bingo Logo"
+                    style={{
+                      height: isHorizontal ? '90px' : '60px',
+                      marginRight: isHorizontal ? '1rem' : 0,
+                      marginBottom: isHorizontal ? 0 : '0.25rem',
+                    }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.18 }}
+                  />
+                  <motion.div
+                    style={{
+                      background: '#fff',
+                      border: '2px solid #2563eb',
+                      borderRadius: '1.5rem',
+                      padding: isHorizontal ? '0.25rem 0.8rem' : '0.25rem 0.8rem',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontWeight: 700,
+                      fontSize: isHorizontal ? '1.2rem' : '1.1rem',
+                      color: '#2563eb',
+                    }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                  >
+                    <Clock style={{ width: 28, height: 28, color: '#2563eb' }} />
+                    <span>{formatTime(timer)}</span>
+                  </motion.div>
+                </motion.div>
+              )}
+              {/* Top - Instructions */}
+              <motion.div
+                style={colStyle}
+                initial={{ opacity: 0, y: -15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.35 }}
+              >
+                <motion.div style={colInnerStyle}>
+                  <GameInstructions 
+                    selectedDefinition={selectedDefinition} 
+                    onDefinitionsStart={handleDefinitionsStart}
+                    tutorialStep={currentStep?.id} 
+                    forceStep={instructionsStep}
+                    onStepChange={handleInstructionsStepChange}
+                  />
                 </motion.div>
               </motion.div>
-            )}
-            {/* Top - Instructions */}
-            <motion.div
-              style={colStyle}
-              initial={{ opacity: 0, y: -15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.35 }}
-            >
-              <motion.div style={colInnerStyle}>
-                <GameInstructions selectedDefinition={selectedDefinition} onTutorialEnd={handleTutorialEnd} startAtDefinition={tutorialDone} tutorialStep={currentStep?.id} />
+              {/* Bottom - Bingo Grid with intern character on the right */}
+              <motion.div
+                style={{
+                  ...colStyle,
+                  position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: isMobile ? (isHorizontal ? '28dvh' : '18dvh') : '24rem',
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <motion.div style={colInnerStyle}>
+                  <BingoGrid
+                    cells={cells}
+                    completedLines={completedLines}
+                    gameComplete={gameComplete}
+                    onCellClick={handleCellClick}
+                    isInCompletedLine={isInCompletedLine}
+                    disabled={!tutorialDone || waitingForInteraction}
+                    tutorialStep={currentStep?.id}
+                  />
+                </motion.div>
+                {/* Intern character image on the right */}
+                {!isMobile && (
+                  <motion.img
+                    src="/characters/intern.png"
+                    alt="Intern Character"
+                    style={{
+                      height: '320px',
+                      position: 'absolute',
+                      right: '-360px',
+                      top: '36%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 2,
+                      pointerEvents: 'none',
+                    }}
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.45 }}
+                  />
+                )}
               </motion.div>
             </motion.div>
-            {/* Bottom - Bingo Grid with intern character on the right */}
-            <motion.div
-              style={{
-                ...colStyle,
-                position: 'relative',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: isMobile ? (isHorizontal ? '28dvh' : '18dvh') : '24rem',
-              }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <motion.div style={colInnerStyle}>
-                <BingoGrid
-                  cells={cells}
-                  completedLines={completedLines}
-                  gameComplete={gameComplete}
-                  onCellClick={handleCellClick}
-                  isInCompletedLine={isInCompletedLine}
-                  disabled={!tutorialDone || waitingForInteraction}
-                  tutorialStep={currentStep?.id}
-                />
-              </motion.div>
-              {/* Intern character image on the right */}
-              {!isMobile && (
-                <motion.img
-                  src="/characters/intern.png"
-                  alt="Intern Character"
-                  style={{
-                    height: '320px',
-                    position: 'absolute',
-                    right: '-360px',
-                    top: '36%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 2,
-                    pointerEvents: 'none',
-                  }}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.45 }}
-                />
-              )}
-            </motion.div>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
+        <motion.div
+          style={footerStyle}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          Copyright © 2025 Rareminds.
+        </motion.div>
+        {/* Background music audio element */}
+        <audio ref={audioRef} src={currentTrack} loop />
+        <CompletedLineModal
+          isVisible={completedLineModal}
+          onClose={closeCompletedLineModal}
+          timer={timer}
+          rowsSolved={rowsSolved}
+          score={score}
+        />
       </motion.div>
       <AnimatePresence>
         {gameComplete && (
@@ -518,13 +569,8 @@ const BingoGame: React.FC = () => {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
-            <GameCompleteModal
-              isVisible={gameComplete}
-              onPlayAgain={resetGame}
-              score={score}
-              moduleId={1}
-              levelId={1}
-            />
+
+            <GameCompleteModal isVisible={gameComplete} onPlayAgain={handlePlayAgain} score={score} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -564,24 +610,7 @@ const BingoGame: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      <motion.div
-        style={footerStyle}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-      >
-        Copyright © 2025 Rareminds.
-      </motion.div>
-      {/* Background music audio element */}
-      <audio ref={audioRef} src={currentTrack} loop />
-      <CompletedLineModal
-        isVisible={completedLineModal}
-        onClose={closeCompletedLineModal}
-        timer={timer}
-        rowsSolved={rowsSolved}
-        score={score}
-      />
-    </motion.div>
+    </>
   );
 };
 

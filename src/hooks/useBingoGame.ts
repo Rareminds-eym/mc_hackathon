@@ -115,9 +115,9 @@ export const useBingoGame = () => {
         total_time_seconds: timer,
         score,
         rows_solved: rowsSolved,
-        cells_selected: cells.filter(cell => cell.selected).map(cell => cell.id),
-        completed_lines: completedLines,
-        board_state: [
+        cells_selected: gameData.cells_selected || cells.filter(cell => cell.selected).map(cell => cell.id),
+        completed_lines: gameData.completed_lines || completedLines,
+        board_state: gameData.board_state || [
           cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
           cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
           cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
@@ -252,13 +252,20 @@ export const useBingoGame = () => {
       const randomCell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
       setSelectedDefinitionState(randomCell.definition);
       dispatch(setSelectedDefinition(randomCell.definition));
+      
+      // Save the new definition to database
+      if (user && sessionId) {
+        saveGameToDatabase({
+          current_definition: randomCell.definition
+        });
+      }
     } else {
       // All cells are selected, game is complete
       setGameComplete(true);
       triggerGameCompleteConfetti();
       markGameCompleted();
     }
-  }, [dispatch, triggerGameCompleteConfetti, markGameCompleted]);
+  }, [dispatch, triggerGameCompleteConfetti, markGameCompleted, user, sessionId, saveGameToDatabase]);
 
   const initializeGame = useCallback(() => {
     const newSessionId = user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -327,8 +334,8 @@ export const useBingoGame = () => {
             selected: bingoRedux.selectedCells.includes(index)
           }));
           setCells(restoredCells);
-          setCompletedLines([]); 
-          setRowsSolved(0); 
+          setCompletedLines(bingoRedux.completedLinesState || []); 
+          setRowsSolved(bingoRedux.rowsSolved || 0); 
           setScoreState(bingoRedux.score || 0);
           setGameComplete(false);
           setTimerState(bingoRedux.timer || 0);
@@ -412,16 +419,6 @@ export const useBingoGame = () => {
     return () => clearInterval(saveInterval);
   }, [user, sessionId, gameComplete, saveGameToDatabase, isInitialized]);
 
-  // Restore completedLines and rowsSolved from Redux
-  useEffect(() => {
-    if (bingoRedux && bingoRedux.completedLinesState && Array.isArray(bingoRedux.completedLinesState)) {
-      setCompletedLines(bingoRedux.completedLinesState);
-    }
-    if (bingoRedux && typeof bingoRedux.rowsSolved === 'number') {
-      setRowsSolved(bingoRedux.rowsSolved);
-    }
-  }, [bingoRedux]);
-
   const toggleCell = (id: number) => {
     if (gameComplete || answerFeedback.isVisible) return;
     
@@ -460,8 +457,17 @@ export const useBingoGame = () => {
       setCells(newCells);
       dispatch(setSelectedCells(newCells.filter(cell => cell.selected).map(cell => cell.id)));
       
-      // Save game progress to database
-      saveGameToDatabase({});
+      // Save game progress to database with updated cell data
+      saveGameToDatabase({
+        cells_selected: newCells.filter(cell => cell.selected).map(cell => cell.id),
+        board_state: [
+          newCells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+          newCells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+          newCells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+          newCells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+          newCells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+        ]
+      });
       
       // Check for new lines after a short delay
       setTimeout(() => {
@@ -476,7 +482,11 @@ export const useBingoGame = () => {
     // If the answer was correct, select next definition after modal closes
     if (answerFeedback.isCorrect) {
       setTimeout(() => {
-        selectRandomDefinition(cells);
+        // Get the current updated cells state and select next definition
+        setCells(currentCells => {
+          selectRandomDefinition(currentCells);
+          return currentCells; // Return the same state, we just needed the current value
+        });
       }, 300);
     }
   };
@@ -509,13 +519,29 @@ export const useBingoGame = () => {
     }
 
     if (newCompletedLines.length > 0) {
-      setCompletedLines(prev => [...prev, ...newCompletedLines]);
-      setRowsSolved(prev => prev + newCompletedLines.length);
-      setScoreState(prev => prev + newCompletedLines.length * 10);
+      const newCompletedLinesState = [...completedLines, ...newCompletedLines];
+      const newRowsSolved = rowsSolved + newCompletedLines.length;
+      const newScore = score + newCompletedLines.length * 10;
+      
+      setCompletedLines(newCompletedLinesState);
+      setRowsSolved(newRowsSolved);
+      setScoreState(newScore);
       if (newLineTriggered) setCompletedLineModal(true);
       
-      // Save game progress to database
-      saveGameToDatabase({});
+      // Save game progress to database with updated values
+      saveGameToDatabase({
+        completed_lines: newCompletedLinesState,
+        rows_solved: newRowsSolved,
+        score: newScore,
+        cells_selected: currentCells.filter(cell => cell.selected).map(cell => cell.id),
+        board_state: [
+          currentCells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+          currentCells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+          currentCells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+          currentCells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+          currentCells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+        ]
+      });
     }
   };
 

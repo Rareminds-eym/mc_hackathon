@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Menu, Home, Clock, Trophy, Target, User, HelpCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Menu, Home, Clock, Trophy, Target, HelpCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
 import { useDeviceLayout } from '../../hooks/useOrientation'; // Import orientation hook
 
