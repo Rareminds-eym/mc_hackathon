@@ -7,6 +7,7 @@ interface Product2DProps {
   hasDeviation: boolean;
   deviationType?: 'cleaning' | 'calibration' | 'environmental';
   isCompleted?: boolean;
+  imageSrc?: string; // Add imageSrc prop
 }
 
 export const Product2D: React.FC<Product2DProps> = ({
@@ -14,7 +15,8 @@ export const Product2D: React.FC<Product2DProps> = ({
   batchNumber,
   hasDeviation,
   deviationType,
-  isCompleted = false
+  isCompleted = false,
+  imageSrc = "/Level4/product1.webp" // Default image if not provided
 }) => {
   const getDeviationIcon = () => {
     switch (deviationType) {
@@ -49,17 +51,17 @@ export const Product2D: React.FC<Product2DProps> = ({
       <div className="w-full flex flex-col items-center justify-center h-full overflow-visible flex-shrink-0 flex-grow-0">
       
         {/* Product Information */}
-        <div className="text-center mt-1 w-full flex flex-col items-center">
-        <div className="relative w-full flex items-center justify-center h-[48px]">
+        <div className="text-center mt-1 w-full flex flex-col items-center animate-product-info">
+        <div className="relative w-full flex items-center justify-center h-[48px] animate-fade-in-scale" style={{ animationDelay: '2.2s' }}>
             <img
-              src="/background.png"
+              src={imageSrc}
               alt={productName}
               className="w-[60%] h-auto object-cover rounded-lg"
             />
           </div>
-          <h3 className="text-xs font-semibold text-cyan-200">{productName}</h3>
-          <p className="text-[9px] text-cyan-200">Batch: {batchNumber}</p>
-          <div className="mt-1">
+          <h3 className="text-xs lg:text-lg font-semibold text-cyan-200 animate-slide-up" style={{ animationDelay: '2.6s' }}>{productName}</h3>
+          <p className="text-[9px] lg:text-lg text-cyan-200 animate-slide-up whitespace-nowrap" style={{ animationDelay: '3.0s' }}>Batch: {batchNumber}</p>
+          <div className="mt-1 animate-bounce-in" style={{ animationDelay: '3.4s' }}>
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs md:text-sm lg:text-base font-medium bg-red-100 text-red-800 animate-pulse whitespace-nowrap">
               <AlertTriangle className="w-4 h-4 mr-1" />Deviation Detected
             </span>

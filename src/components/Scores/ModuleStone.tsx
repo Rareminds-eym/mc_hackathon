@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Lock, Star } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { ModuleStoneProps } from './types/GameData';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import { getModuleScore } from './modulesData';
 
 const ModuleStone: React.FC<ModuleStoneProps> = ({ module, position, onClick }) => {
-  const { id, status, stars } = module;
+  const { id, status } = module;
   const { x, y } = position;
   const [isHovered, setIsHovered] = useState(false);
   const { isMobile } = useDeviceLayout();
+
+  // Calculate module score
+  const moduleScore = getModuleScore(module);
 
   // Responsive sizing for desktop/laptop, keep original size for mobile
   const sizeMultiplier = isMobile ? 1.1 : 0.8;
@@ -46,7 +50,7 @@ const ModuleStone: React.FC<ModuleStoneProps> = ({ module, position, onClick }) 
   };
 
   const isClickable: boolean = status !== 'locked';
-  const hoverScale = isHovered && isClickable ? 1.15 : 1;
+  const hoverScale = isHovered && isClickable ? 1.02 : 1;
 
   return (
     <g
@@ -149,31 +153,29 @@ const ModuleStone: React.FC<ModuleStoneProps> = ({ module, position, onClick }) 
         </text>
       )}
 
-      {/* Enhanced stars for completed modules */}
-      {status === 'completed' && stars > 0 && (
-        <g transform={`translate(${-28 * sizeMultiplier}, ${-50 * sizeMultiplier})`}>
-          {[...Array(3)].map((_, i) => (
-            <g key={i} transform={`translate(${i * 18 * sizeMultiplier}, 0)`}>
-              <Star
-                size={14 * sizeMultiplier}
-                fill={i < stars ? '#FCD34D' : 'none'}
-                stroke={i < stars ? '#F59E0B' : '#9CA3AF'}
-                strokeWidth={2 * sizeMultiplier}
-                className="transition-all duration-300 drop-shadow-sm"
-              />
-              {/* Star glow for earned stars */}
-              {i < stars && (
-                <Star
-                  size={16 * sizeMultiplier}
-                  fill="none"
-                  stroke="#FCD34D"
-                  strokeWidth={1 * sizeMultiplier}
-                  opacity="0.4"
-                  className="animate-pulse"
-                />
-              )}
-            </g>
-          ))}
+      {/* Score display for completed modules */}
+      {status === 'completed' && moduleScore > 0 && (
+        <g transform={`translate(0, ${-45 * sizeMultiplier})`}>
+          <rect
+            x={-20 * sizeMultiplier}
+            y={-8 * sizeMultiplier}
+            width={40 * sizeMultiplier}
+            height={16 * sizeMultiplier}
+            rx={8 * sizeMultiplier}
+            fill="rgba(0, 0, 0, 0.7)"
+            stroke="#FCD34D"
+            strokeWidth={1 * sizeMultiplier}
+          />
+          <text
+            textAnchor="middle"
+            dy={4 * sizeMultiplier}
+            fontSize={10 * sizeMultiplier}
+            fontWeight="bold"
+            fill="#FCD34D"
+            style={{ textShadow: `${1 * sizeMultiplier}px ${1 * sizeMultiplier}px ${2 * sizeMultiplier}px rgba(0,0,0,0.8)` }}
+          >
+            {moduleScore}
+          </text>
         </g>
       )}
 

@@ -9,6 +9,7 @@ import { FeedbackPanel } from './FeedbackPanel';
 import { GameHeader } from './GameHeader';
 import BoyBook from './boybook';
 import Animation_manufacture from './animated_manufacture'
+import { useSupabaseSync } from './hooks/useSupabaseSync';
 import { 
   ChevronRight, 
   AlertTriangle, 
@@ -21,12 +22,14 @@ import CharacterRotator from './CharacterRotator';
 import Characterboybook from './Characterboybook';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { FeedbackPopup } from './Popup';
+import HighScoreAlert from './HighScoreAlert';
 
 type GamePhase = 'login' | 'reportView' | 'step1' | 'step2' | 'step3' | 'feedback';
 
 export const GameBoard2D: React.FC = () => {
   const navigate = useNavigate();
 
+  // All state hooks need to be at the top level of the component
   const [gameState, setGameState] = useState<GameState>({
     currentCase: 0,
     answers: {
@@ -40,16 +43,106 @@ export const GameBoard2D: React.FC = () => {
     gameComplete: false
   });
 
+  // Track all component state at the top level
+  const [isHighScore, setIsHighScore] = useState(false); // Use original name for consistency
   const [currentPhase, setCurrentPhase] = useState<GamePhase>('login');
   const [canContinue, setCanContinue] = useState(true); // Login phase always allows continue
   const [timer, setTimer] = useState<number>(0); // Start from 0
   const [timerActive, setTimerActive] = useState<boolean>(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  // Track which questions have been scored for each case
   const [scoredQuestions, setScoredQuestions] = useState<Record<number, Set<'violation' | 'rootCause' | 'impact'>>>({});
   const [popupOpen, setPopupOpen] = useState(false);
+  const [showHighScorePopup, setShowHighScorePopup] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+  // allAnswersCorrectAtFeedback will be declared later
+  
+  // All refs need to be at the top level too
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track last synced state to prevent duplicate syncs
+  const lastSyncedRef = useRef({
+    score: -1,
+    violation: null as number | null,
+    rootCause: null as number | null,
+    impact: null as number | null,
+    showFeedback: false
+  });
 
+  // Derived state
   const currentCase = cases[gameState.currentCase];
+  
+  // Add Supabase integration
+  const { syncGameState, completeGame, checkHighScore } = useSupabaseSync();
+
+  // Save game state to localStorage for Supabase integration
+  useEffect(() => {
+    // Save the game state
+    localStorage.setItem('level4_gameState', JSON.stringify({
+      ...gameState,
+      correctAnswers: getCorrectAnswers() // Add correct answers count for the wrapper
+    }));
+    
+    // Trigger storage event for our wrapper
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'level4_gameState',
+      newValue: localStorage.getItem('level4_gameState')
+    }));
+  }, [gameState]);
+  
+  // Save timer to localStorage
+  useEffect(() => {
+    localStorage.setItem('level4_timer', timer.toString());
+  }, [timer]);
+
+  // Improved sync game state with Supabase only on meaningful changes
+  useEffect(() => {
+    // Sync on significant state changes only, not on every render
+    const shouldSync = 
+      // We have at least one answer
+      (gameState.answers.violation !== null || 
+       gameState.answers.rootCause !== null || 
+       gameState.answers.impact !== null) &&
+      // And we've actually made progress (not just initial state)
+      (gameState.score > 0 || gameState.totalQuestions > 0 || gameState.showFeedback) &&
+      // And something has changed since last sync
+      (gameState.score !== lastSyncedRef.current.score || 
+       gameState.answers.violation !== lastSyncedRef.current.violation ||
+       gameState.answers.rootCause !== lastSyncedRef.current.rootCause ||
+       gameState.answers.impact !== lastSyncedRef.current.impact ||
+       gameState.showFeedback !== lastSyncedRef.current.showFeedback);
+      
+    if (shouldSync) {
+      // Add a longer delay to batch rapid changes - this helps prevent duplicate records
+      const syncTimeout = setTimeout(() => {
+        console.log(`[GameBoard] Syncing state: score=${gameState.score}, answers=${Object.values(gameState.answers).filter(Boolean).length}/3`);
+        syncGameState(gameState, timer);
+        
+        // Update last synced state
+        lastSyncedRef.current = {
+          score: gameState.score,
+          violation: gameState.answers.violation,
+          rootCause: gameState.answers.rootCause,
+          impact: gameState.answers.impact,
+          showFeedback: gameState.showFeedback
+        };
+      }, 500);
+      return () => clearTimeout(syncTimeout);
+    }
+  }, [gameState.answers, gameState.score, gameState.showFeedback, gameState.totalQuestions, timer, syncGameState]);
+  
+  // Handle game completion separately
+  useEffect(() => {
+    // Only trigger on actual completion state change
+    if (gameState.gameComplete) {
+      completeGame(gameState, timer);
+    }
+  }, [gameState.gameComplete, gameState, timer, completeGame]);
+
+  // Force animation refresh when phase changes
+  useEffect(() => {
+    if (['reportView', 'step1', 'step2', 'step3'].includes(currentPhase)) {
+      setAnimationKey(prev => prev + 1);
+    }
+  }, [currentPhase]);
 
   // Start timer when entering investigation phases
   useEffect(() => {
@@ -84,17 +177,28 @@ export const GameBoard2D: React.FC = () => {
       ...prev,
       answers: {
         ...prev.answers,
-        [questionType]: answer
+        [questionType]: answer,
+        // Add a dummy value to force state update if needed
+        _lastSelected: Math.random()
       }
     }));
-    setCanContinue(true);
+    setCanContinue(true); // Always enable continue, even if already selected
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    // Show loading only when transitioning between major phases
+    if (currentPhase === 'login' || currentPhase === 'feedback') {
+      // Remove loading logic
+    }
+    
     switch (currentPhase) {
       case 'login':
         setCurrentPhase('reportView');
         setCanContinue(true);
+        // Log when starting a new case
+        console.log(`[Game] Starting case ${gameState.currentCase + 1} with accumulated score ${gameState.score}`);
+        // Hide loading after a short delay to show the transition
+        setTimeout(() => setLoading(false), 800);
         break;
       case 'reportView':
         setCurrentPhase('step1');
@@ -103,19 +207,23 @@ export const GameBoard2D: React.FC = () => {
       case 'step1':
         if (gameState.answers.violation !== null) {
           setCurrentPhase('step2');
-          setCanContinue(false);
+          setCanContinue(gameState.answers.rootCause !== null);
         }
         break;
       case 'step2':
         if (gameState.answers.rootCause !== null) {
           setCurrentPhase('step3');
-          setCanContinue(false);
+          setCanContinue(gameState.answers.impact !== null);
         }
         break;
       case 'step3':
         if (gameState.answers.impact !== null) {
-          setCurrentPhase('feedback');
-          calculateResults();
+          // Ensure state is updated before switching to feedback
+          // IMPROVED: Use requestAnimationFrame for better timing
+          requestAnimationFrame(() => {
+            setCurrentPhase('feedback');
+            calculateResults();
+          });
         }
         break;
       case 'feedback':
@@ -123,25 +231,73 @@ export const GameBoard2D: React.FC = () => {
         if (correctAnswers === 3) {
           // Only continue if all answers are correct
           if (gameState.currentCase < cases.length - 1) {
-            // Move to next case
-            setGameState(prev => ({
-              ...prev,
-              currentCase: prev.currentCase + 1,
+            // Move to next case - maintain the accumulated score
+            // Important: We do NOT reset the score here as we want to keep accumulating it across cases
+            const nextGameState = {
+              ...gameState,
+              currentCase: gameState.currentCase + 1,
               answers: { violation: null, rootCause: null, impact: null },
-              showFeedback: false
-            }));
+              showFeedback: false,
+              // score is maintained from previous case
+              // totalQuestions is maintained from previous case
+            };
+            
+            // Log transition to next case with accumulated score
+            console.log(`[Game] Moving to case ${nextGameState.currentCase + 1} with accumulated score ${nextGameState.score}`);
+            
+            // IMPROVED: First sync the state transition to Supabase, keeping the accumulated score
+            // Then update the UI state to prevent race conditions
+            await syncGameState(nextGameState, timer);
+            
+            // Now update the UI state
+            setGameState(nextGameState);
             setCurrentPhase('login');
             setCanContinue(true);
           } else {
-            // Game complete
-            setGameState(prev => ({ ...prev, gameComplete: true }));
+            // Game complete - mark as complete but keep the accumulated total score
+            const completedGameState = { ...gameState, gameComplete: true };
+            
+            // Log final combined score
+            console.log(`[Game] Game complete with final COMBINED score: ${completedGameState.score}`);
+            
+            // IMPROVED: First check if this is a high score
+            const isNewHighScore = await checkHighScore(gameState.score);
+            
+            // IMPROVED: First complete the game in Supabase with the accumulated total score
+            // This ensures the data is saved before we update the UI
+            await completeGame(completedGameState, timer);
+            
+            // Now update the UI state
+            setGameState(completedGameState);
+            setIsHighScore(isNewHighScore);
+            
+            // If it's a high score, show a popup
+            if (isNewHighScore) {
+              setShowHighScorePopup(true);
+              setTimeout(() => {
+                setShowHighScorePopup(false);
+              }, 5000); // Auto-hide after 5 seconds
+            }
           }
         } else {
-          // Show "Needs Improvement" and don't allow continue
-          setCanContinue(false);
+          // Allow retry: reset answers but keep accumulated score
+          const resetGameState = {
+            ...gameState,
+            answers: { violation: null, rootCause: null, impact: null },
+            showFeedback: false
+            // score is maintained
+            // totalQuestions is maintained
+          };
+          setGameState(resetGameState);
+          setCurrentPhase('step1');
+          setCanContinue(true);
+          
+          // Sync the retry to Supabase with current score
+          syncGameState(resetGameState, timer);
         }
         break;
     }
+    // Remove loading logic
   };
 
   const handleBack = () => {
@@ -173,46 +329,77 @@ export const GameBoard2D: React.FC = () => {
     }
   };
 
+  const [allAnswersCorrectAtFeedback, setAllAnswersCorrectAtFeedback] = useState(false);
+
   const calculateResults = () => {
     const caseIdx = gameState.currentCase;
     const currentScored = scoredQuestions[caseIdx] || new Set<'violation' | 'rootCause' | 'impact'>();
     let newScore = 0;
     let newQuestions = 0;
     const newScored = new Set(currentScored);
+    
     // Prepare question list with correct types
     const questionList: Array<['violation' | 'rootCause' | 'impact', number | null, number]> = [
       ['violation', gameState.answers.violation, currentCase.questions.violation.correct],
       ['rootCause', gameState.answers.rootCause, currentCase.questions.rootCause.correct],
       ['impact', gameState.answers.impact, currentCase.questions.impact.correct],
     ];
+    
     questionList.forEach(([type, userAns, correctAns]) => {
-      if (userAns !== null && userAns === correctAns && !currentScored.has(type)) {
-        newScore += 5; // 5 points per correct answer
+      if (!currentScored.has(type) && userAns !== null) {
         newQuestions++;
-        newScored.add(type);
-      } else if (userAns !== null && !currentScored.has(type)) {
-        newQuestions++;
+        if (userAns === correctAns) {
+          newScore += 5;
+        }
         newScored.add(type);
       }
     });
-    setGameState(prev => ({
-      ...prev,
-      score: prev.score + newScore,
-      totalQuestions: prev.totalQuestions + newQuestions,
+    
+    // Check if all answers are correct at feedback time
+    const allCorrect =
+      gameState.answers.violation === currentCase.questions.violation.correct &&
+      gameState.answers.rootCause === currentCase.questions.rootCause.correct &&
+      gameState.answers.impact === currentCase.questions.impact.correct;
+    
+    setAllAnswersCorrectAtFeedback(allCorrect);
+    
+    // ENHANCED LOGGING: Clearly show the accumulated score calculation
+    console.log(`[Game] Calculating results for case ${caseIdx + 1}:`);
+    console.log(`[Game] - Previous accumulated score: ${gameState.score}`);
+    console.log(`[Game] - New points from this case: +${newScore}`);
+    console.log(`[Game] - New accumulated total: ${gameState.score + newScore}`);
+    
+    // Update the game state with new scores - this updates the ACCUMULATED total
+    const updatedGameState = {
+      ...gameState,
+      score: gameState.score + newScore, // Add to the accumulated score
+      totalQuestions: gameState.totalQuestions + newQuestions,
       showFeedback: true
-    }));
+    };
+    
+    // Update local state
+    setGameState(updatedGameState);
     setScoredQuestions(prev => ({ ...prev, [caseIdx]: newScored }));
+    
+    // We don't need to force an immediate sync here
+    // The useEffect hook will detect the state change and sync automatically
+    // This prevents possible duplicate sync operations
+    
+    // Log for debugging
+    console.log(`[Game] Calculated results: +${newScore} points, ${newQuestions} new questions scored, all correct: ${allCorrect}`);
+    console.log(`[Game] ACCUMULATED TOTAL SCORE NOW: ${updatedGameState.score}`);
   };
 
   const getCorrectAnswers = () => {
-    if (!gameState.answers.violation && !gameState.answers.rootCause && !gameState.answers.impact) return 0;
-    
     let correct = 0;
-    if (gameState.answers.violation === currentCase.questions.violation.correct) correct++;
-    if (gameState.answers.rootCause === currentCase.questions.rootCause.correct) correct++;
-    if (gameState.answers.impact === currentCase.questions.impact.correct) correct++;
+    if (gameState.answers.violation !== null && gameState.answers.violation === currentCase.questions.violation.correct) correct++;
+    if (gameState.answers.rootCause !== null && gameState.answers.rootCause === currentCase.questions.rootCause.correct) correct++;
+    if (gameState.answers.impact !== null && gameState.answers.impact === currentCase.questions.impact.correct) correct++;
     return correct;
-  };  const renderCharacter = () => (
+  };
+
+  // Debug: Show current answers and correct answers in feedback for troubleshooting
+  const renderCharacter = () => (
     <div className="flex flex-col items-center ">
       <div className="w-full h-full flex items-center justify-center">
         {/* <img 
@@ -228,11 +415,11 @@ export const GameBoard2D: React.FC = () => {
   const renderLogin = () => (
     <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
       {/* Neon Animated SVG Background - only one layer */}
-      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
         <Animation_manufacture />
       </div>
       {/* Case label top left on login page */}
-      <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start bg-black/40 backdrop-blur-md border border-cyan-400/30">
+      <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start bg-black/30 backdrop-blur-md border border-cyan-400/30">
         <span className="text-cyan-300 font-bold text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
       </div>
       {/* Main content with gradient overlay */}
@@ -240,7 +427,7 @@ export const GameBoard2D: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col items-center justify-center w-full z-10 landscape:relative landscape:z-20 landscape:bg-transparent landscape:pt-2 ">
           <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-red-600  ">DEVIATION REPORT</h1>
-          <p className="text-xs md:text-base lg:text-2xl text-cyan-400 landscape:text-xs landscape:mb-1 lg:mb-2 glow-cyan-2">
+          <p className=" text-cyan-400 text-[10px] lg:text-2xl font-semibold landscape:mb-1 lg:mb-2 glow-cyan-2">
             Quality deviation detected - Investigation required
           </p>
         </div>
@@ -248,24 +435,23 @@ export const GameBoard2D: React.FC = () => {
         {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
         <div className="pt-2 items-center justify-center flex-1 w-full h-full lg:flex lg:items-center lg:justify-center">
           <div
-            className="rounded-2xl shadow-xl bg-black/60 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-100 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
+            className="rounded-2xl shadow-xl bg-black/40 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-100 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
             style={{
               backgroundImage: `url('/exam-pad-bg.png')`,
               backgroundSize: 'cover',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
               minHeight: '160px',
-              // boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
             }}
           >
             <div className=" flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible w-auto h-auto max-w-full max-h-full">
-              <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-cyan-400  text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0">Product Under Investigation</h2>
+              <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-cyan-400 text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0 animate-typing overflow-hidden border-r-2 border-cyan-400">Product Under Investigation</h2>
               <div className="w-full h-full flex flex-col items-center justify-center lg:overflow-visible">
                 <Product2D
-                  productName="Pharmaceutical Tablet"
-                  batchNumber={`A2024-${String(gameState.currentCase + 1).padStart(3, '0')}`}
+                  productName={currentCase.productName}
+                  batchNumber={currentCase.batchNumber}
                   hasDeviation={true}
-                  deviationType={gameState.currentCase === 0 ? 'cleaning' : 'calibration'}
+                  imageSrc={currentCase.imageSrc}
                 />
               </div>
             </div>
@@ -303,6 +489,166 @@ export const GameBoard2D: React.FC = () => {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @keyframes fade-slide-up {
+          0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-fade-slide-up {
+          animation: fade-slide-up 0.6s ease-out forwards;
+        }
+        @keyframes fade-in-down {
+          0% {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-down {
+          animation: fade-in-down 0.4s ease-out forwards;
+        }
+        @keyframes slide-in-option {
+          0% {
+            opacity: 0;
+            transform: translateX(-30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        .animate-slide-in-option {
+          animation: slide-in-option 0.5s ease-out forwards;
+        }
+        @keyframes pulse-text {
+          0%, 100% {
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+          }
+          50% {
+            color: rgba(59, 130, 246, 0.9);
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+          }
+        }
+        .animate-pulse-text {
+          animation: pulse-text 2s ease-in-out infinite;
+        }
+        @keyframes slide-in-option-left {
+          0% {
+            opacity: 0;
+            transform: translateX(-30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes slide-in-option-right {
+          0% {
+            opacity: 0;
+            transform: translateX(30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes slide-in-option-up {
+          0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-slide-in-left {
+          animation: slide-in-option-left 0.5s ease-out forwards;
+        }
+        .animate-slide-in-right {
+          animation: slide-in-option-right 0.5s ease-out forwards;
+        }
+        .animate-slide-in-up {
+          animation: slide-in-option-up 0.5s ease-out forwards;
+        }
+        @keyframes typing {
+          0% {
+            width: 0;
+          }
+          100% {
+            width: 100%;
+          }
+        }
+        @keyframes blink {
+          0%, 50% {
+            border-color: transparent;
+          }
+          51%, 100% {
+            border-color: #06b6d4;
+          }
+        }
+        .animate-typing {
+          width: 0;
+          animation: typing 2s steps(25, end) forwards, blink 0.75s step-end infinite;
+          white-space: nowrap;
+        }
+        @keyframes fade-in-scale {
+          0% {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes slide-up {
+          0% {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes bounce-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in-scale {
+          opacity: 0;
+          animation: fade-in-scale 0.6s ease-out forwards;
+        }
+        .animate-slide-up {
+          opacity: 0;
+          animation: slide-up 0.5s ease-out forwards;
+        }
+        .animate-bounce-in {
+          opacity: 0;
+          animation: bounce-in 0.8s ease-out forwards;
+        }
         .triangle-shape {
           clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
         }
@@ -312,28 +658,52 @@ export const GameBoard2D: React.FC = () => {
         .floating-shape {
           will-change: transform;
         }
+        @keyframes report-field-fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-report-field {
+          opacity: 0;
+          animation: report-field-fade-in 0.5s ease-out forwards;
+        }
+        .glow-cyan {
+          text-shadow: 0 0 8px #22d3ee, 0 0 16px #38bdf8, 0 0 24px #0ea5e9;
+        }
+        .glow-green {
+          text-shadow: 0 0 8px #4ade80, 0 0 16px #22c55e;
+        }
+        .glow-yellow {
+          text-shadow: 0 0 8px #fde68a, 0 0 16px #facc15;
+        }
       `}</style>
     </div>
   );
   // Phase 2: Report View
   const renderReportView = () => (
-    <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
-    
+    <div 
+      key={`reportView-${animationKey}`}
+      className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
     >
       {/* Animated background layer */}
-      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
         <Animation_manufacture />
       </div>
       <div className="w-[100%] h-[100%] flex-1 flex flex-col relative z-10">
         {/* Header */}
         <div className="text-center mb-[1vw] w-[100%]">
           <h1 className="text-xl md:text-2xl font-bold text-cyan-400  ">Deviation Investigation Game</h1>
-          <p className="text-base text-cyan-400  ">Case Report Review</p>
+          <p className="text-[10px] lg:text-2xl text-white  ">Case Report Review</p>
         </div>
         {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
         <div className="flex flex-col items-center justify-center flex-1 w-full h-full mb-4 md:mb-0 mt-2 lg:flex lg:items-center lg:justify-center">
           <div
-            className="rounded-2xl shadow-xl bg-black/60  lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-400 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
+            className="rounded-2xl shadow-xl bg-black/40  lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-400 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
             style={{
               backgroundImage: `url('/exam-pad-bg.png')`,
               backgroundSize: 'cover',
@@ -354,33 +724,33 @@ export const GameBoard2D: React.FC = () => {
                 <div className="w-full h-px bg-gray-300 mb-1"></div>
               </div>
               <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl text-cyan-400">
-                <div>
-                  <span className="font-bold">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
+                <div className="animate-report-field  text-white" style={{ animationDelay: '0.2s' }}>
+                  <span className="font-bold text-cyan-400">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
                 </div>
-                <div>
-                  <span className="font-bold">Date:</span> {new Date().toLocaleDateString()}
+                <div className="animate-report-field text-white" style={{ animationDelay: '0.4s' }}>
+                  <span className="font-bold text-cyan-400">Date:</span> {new Date().toLocaleDateString()}
                 </div>
-                <div>
-                  <span className="font-bold">Title:</span> <span className="break-words text-[10px] md:text-xs">{currentCase.title}</span>
+                <div className="animate-report-field text-white" style={{ animationDelay: '0.6s' }}>
+                  <span className="font-bold text-cyan-400">Title:</span> <span className="break-words text-[10px] lg:text-lg">{currentCase.title}</span>
                 </div>
-                <div>
-                  <span className="font-bold">Description:</span>
-                  <p className="mt-1 text-cyan-400 leading-relaxed text-[10px] md:text-xs break-words">{currentCase.scenario}</p>
+                <div className="animate-report-field text-white" style={{ animationDelay: '0.8s' }}>
+                  <span className="font-bold text-cyan-400">Description:</span>
+                  <p className="mt-1  leading-relaxed text-[10px] lg:text-lg break-words ">{currentCase.scenario}</p>
                 </div>
-                <div>
-                  <span className="font-bold">Product:</span> <span className="text-[10px] md:text-xs">Pharmaceutical Tablet</span>
+                <div className="animate-report-field text-white" style={{ animationDelay: '1.0s' }}>
+                  <span className="font-bold text-[10px] lg:text-lg text-cyan-400">Product:</span> <span className="text-[10px] lg:text-lg">Pharmaceutical Tablet</span>
                 </div>
-                <div>
-                  <span className="font-bold">Batch:</span> <span className="text-[10px] md:text-xs">A2024-{String(gameState.currentCase + 1).padStart(3, '0')}</span>
+                <div className="animate-report-field text-white" style={{ animationDelay: '1.2s' }}>
+                  <span className="font-bold text-[10px] lg:text-lg text-cyan-400">Batch:</span> <span className="text-[10px] lg:text-lg">A2024-{String(gameState.currentCase + 1).padStart(3, '0')}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-1 mt-1 w-full">
+                <div className="grid grid-cols-2 gap-1 mt-1 w-full animate-report-field" style={{ animationDelay: '1.4s' }}>
                   <div className="flex flex-col items-center justify-center bg-red-50 p-0.5 rounded border-l-4 border-red-500 min-w-0 w-full">
-                    <div className="font-bold text-red-800 text-[10px] leading-tight truncate">Priority</div>
-                    <div className="text-red-600 text-[10px] leading-tight truncate">HIGH</div>
+                    <div className="font-bold text-red-800 text-[10px] lg:text-lg leading-tight truncate">Priority</div>
+                    <div className="text-red-600 text-[10px] lg:text-lg leading-tight truncate">HIGH</div>
                   </div>
                   <div className="flex flex-col items-center justify-center bg-yellow-50 p-0.5 rounded border-l-4 border-yellow-500 min-w-0 w-full">
-                    <div className="font-bold text-yellow-800 text-[10px] leading-tight truncate">Status</div>
-                    <div className="text-yellow-600 text-[10px] leading-tight truncate">OPEN</div>
+                    <div className="font-bold text-yellow-800 text-[10px] lg:text-lg leading-tight truncate">Status</div>
+                    <div className="text-yellow-600 text-[10px] lg:text-lg leading-tight truncate">OPEN</div>
                   </div>
                 </div>
               </div>
@@ -424,28 +794,32 @@ export const GameBoard2D: React.FC = () => {
       'step3': TrendingUp
     };
 
-    const StepIcon = stepIcons[currentPhase as keyof typeof stepIcons];    return (
-      <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
-       aria-hidden="true"
+    const StepIcon = stepIcons[currentPhase as keyof typeof stepIcons];
+    return (
+      <div 
+        key={`step-${currentPhase}-${animationKey}`}
+        className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
+        aria-hidden="true"
       >
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
           <Animation_manufacture />
         </div>
         <div className="relative w-[100%] h-[100%] flex-1 flex flex-col z-10">
           {/* Header */}
-          <div className="text-center mb-[1vw] w-[100%]">
+          <div className="text-center mb-[1vw] w-[100%] animate-fade-in-down">
             {/* <div className="inline-flex items-center justify-center w-[3vw] h-[3vw] min-w-[24px] min-h-[24px] bg-blue-100 rounded-full mb-[0.5vw]">
               <StepIcon className="w-[1.5vw] h-[1.5vw] min-w-[12px] min-h-[12px] text-blue-600" />
             </div> */}
             <h1 className="text-lg md:text-xl font-bold text-cyan-400 mb-1 ">{stepTitles[currentPhase as keyof typeof stepTitles]}</h1>
-            <p className="text-base text-cyan-400">Deviation Investigation Game</p>
+            <p className="text-[10px] lg:text-lg text-cyan-400">Deviation Investigation Game</p>
           </div>
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[60px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0">
             {/* Centered: Question Panel */}
-            <div className=" rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto">
+            <div className="rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up">
               <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
                 <QuestionPanel
+                  key={`question-${currentPhase}-${animationKey}`}
                   case={currentCase}
                   currentQuestion={
                     currentPhase === 'step1'
@@ -492,9 +866,25 @@ export const GameBoard2D: React.FC = () => {
   // Phase 6: Feedback
   const renderFeedback = () => {
     const correctAnswers = getCorrectAnswers();
-    const isAllCorrect = correctAnswers === 3;
+    const isAllCorrect = allAnswersCorrectAtFeedback;
     const caseAccuracy = Math.round((correctAnswers / 3) * 100);
-    const performance = gameState.totalQuestions > 0 ? Math.round((gameState.score / gameState.totalQuestions) * 100) : 0;
+    // Calculate performance for this case only based on score (out of 15)
+    const caseIdx = gameState.currentCase;
+    // Calculate score for current case: check which questions were scored for this case
+    // Use a typed array for question types
+    const questionTypes: Array<'violation' | 'rootCause' | 'impact'> = ['violation', 'rootCause', 'impact'];
+    let caseScore = 0;
+    if (scoredQuestions[caseIdx]) {
+      questionTypes.forEach(type => {
+        if (
+          scoredQuestions[caseIdx].has(type) &&
+          gameState.answers[type] === currentCase.questions[type].correct
+        ) {
+          caseScore += 5;
+        }
+      });
+    }
+    const performance = Math.round((caseScore / 15) * 100);
 
     // Get correct and user answers for each question
     const violationCorrect = currentCase.questions.violation.options[currentCase.questions.violation.correct];
@@ -519,13 +909,11 @@ export const GameBoard2D: React.FC = () => {
       gameState.answers.rootCause === currentCase.questions.rootCause.correct &&
       gameState.answers.impact === currentCase.questions.impact.correct;
 
-    const allAnswersReviewed = Object.keys(scoredQuestions).length > 0 && Object.values(scoredQuestions).some(set => set.size === 3);
-
     return (
       <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm overflow-hidden"
       
       >
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
           <Animation_manufacture />
         </div>
         <div className="relative z-10 w-full h-full flex-1 flex flex-col overflow-hidden">
@@ -544,71 +932,74 @@ export const GameBoard2D: React.FC = () => {
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
-                // Responsive: larger on desktop
-                "bg-black/60 rounded-lg mb-4 shadow p-1 flex flex-col gap-0.5 items-stretch flex-1 min-w-0 min-h-0 w-full h-full text-[9px] md:text-xs lg:p-8 xl:p-12 lg:text-lg xl:text-xl overflow-y-auto lg:overflow-auto lg:max-h-[80vh] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto"
+                // Enhanced feedback panel with better visibility and readability
+                "bg-slate-800/95 backdrop-blur-sm rounded-xl mb-4 shadow-2xl border border-cyan-400/30 p-2 sm:p-3 lg:p-6 xl:p-8 flex flex-col gap-1 sm:gap-2 lg:gap-3 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg overflow-y-auto lg:overflow-auto lg:max-h-[80vh] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 hover:shadow-cyan-400/20 hover:shadow-xl"
               }
               style={{ minHeight: 0 }}
             >
               {/* Parent div for detailed feedback */}
-              <div className="flex flex-col w-full gap-0.5 lg:text-xs xl:text-sm lg:space-y-3 xl:space-y-4">
+              <div className="flex flex-col w-full gap-1  lg:gap-3 xl:gap-4">
                 {/* Header */}
-                <div className="flex flex-col items-start mb-0.5">
-                  <span className="text-yellow-700 font-bold text-[9px] md:text-xs leading-tight lg:text-base xl:text-lg">{isAllCorrect ? 'Excellent!' : 'Needs Improvement'}</span>
-                  <span className="text-cyan-400 text-[8px] md:text-xs font-semibold leading-tight lg:text-base xl:text-lg">Case analysis complete - Review your results</span>
+                <div className="flex flex-col items-start mb-1 sm:mb-2">
+                  <span className="text-yellow-400 font-bold text-sm  lg:text-xl xl:text-2xl leading-tight drop-shadow-sm">{isAllCorrect ? 'Excellent!' : 'Needs Improvement'}</span>
+                  <span className="text-cyan-300 text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold leading-tight mt-1">Case analysis complete - Review your results</span>
                 </div>
                 {/* Score summary */}
-                <div className="flex flex-row items-center gap-1 mt-0.5">
-                  <div className="flex flex-col items-center justify-center bg-white/40 rounded px-1 py-0.5">
-                    <span className="text-red-600 font-bold text-xs leading-tight lg:text-base xl:text-lg">{correctAnswers}/3 Correct</span>
-                    <span className="text-gray-700 text-[8px] leading-tight lg:text-base xl:text-lg">Case Accuracy: {caseAccuracy}%</span>
+                <div className="flex flex-row items-center gap-2 sm:gap-3 mt-1">
+                  <div className="flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1 sm:py-2 border border-white/20 shadow-lg">
+                    <span className="text-red-700 font-bold text-sm  lg:text-lg xl:text-xl leading-tight">{correctAnswers}/3 Correct</span>
+                    <span className="text-slate-600 text-xs  lg:text-base xl:text-lg leading-tight font-medium">Case Accuracy: {caseAccuracy}%</span>
                   </div>
-                  <div className="flex flex-col items-center justify-center bg-white/40 rounded px-1 py-0.5">
-                    <span className="text-cyan-400 font-bold text-xs leading-tight lg:text-base xl:text-lg">{performance}%</span>
-                    <span className="text-gray-700 text-[8px] leading-tight lg:text-base xl:text-lg">Performance</span>
+                  <div className="flex flex-col items-center justify-center bg-black/20  backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1 sm:py-2 border border-white/20 shadow-lg">
+                    <span className="text-cyan-600 font-bold text-sm  lg:text-lg xl:text-xl leading-tight">{Math.min(performance, 100)}%</span>
+                    <span className="text-slate-600 text-xs  lg:text-base xl:text-lg leading-tight font-medium">Performance</span>
                   </div>
                 </div>
                 {/* Detailed Analysis */}
-                <div className="mt-0.5">
-                  <span className="font-bold text-[9px] text-cyan-400 leading-tight lg:text-base xl:text-lg">Detailed Analysis</span>
-                  <div className="flex flex-col gap-0.5 mt-0.5">
-                    <div className="flex flex-col bg-white/20 border-l-4 border-yellow-400 rounded p-0.5">
-                      <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">🔍 GMP Violation Identification</span>
-                      <div className="flex flex-row justify-between items-center w-full text-[8px]">
-                        <span className="text-cyan-400 lg:text-base xl:text-lg">Correct: {violationCorrect}</span>
-                        <span className={violationIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {violationUser || '-'}</span>
+                <div className="mt-1 lg:mt-2 ">
+                  <span className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl text-cyan-300 leading-tight drop-shadow-sm">Detailed Analysis</span>
+                  <div className="flex flex-col gap-2 sm:gap-3 mt-2 sm:mt-3">
+                    <div className="flex flex-col bg-white/70 backdrop-blur-sm border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg border border-white/20">
+                      <span className="font-bold text-yellow-600 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">🔍 GMP Violation Identification</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg mt-2 gap-1 sm:gap-2">
+                        <span className="text-slate-700 lg:text-lg text-sm">Correct: <span className="text-green-700 font-semibold">{violationCorrect}</span></span>
+                        <span className={`font-semibold ${violationIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{violationUser || 'Not answered'}</span></span>
                       </div>
                     </div>
-                    <div className="flex flex-col bg-white/20 border-l-4 border-yellow-400 rounded p-0.5">
-                      <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">🎯 Root Cause Analysis</span>
-                      <div className="flex flex-row justify-between items-center w-full text-[8px]">
-                        <span className="text-cyan-400 lg:text-base xl:text-lg">Correct: {rootCauseCorrect}</span>
-                        <span className={rootCauseIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {rootCauseUser || '-'}</span>
+                    <div className="flex flex-col bg-white/70 backdrop-blur-sm border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg border border-white/20">
+                      <span className="font-bold text-yellow-600 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">🎯 Root Cause Analysis</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg mt-2 gap-1 sm:gap-2">
+                        <span className="text-slate-700 font-medium">Correct: <span className="text-green-700 font-semibold">{rootCauseCorrect}</span></span>
+                        <span className={`font-semibold ${rootCauseIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{rootCauseUser || 'Not answered'}</span></span>
                       </div>
                     </div>
-                    <div className="flex flex-col bg-white/20 border-l-4 border-yellow-400 rounded p-0.5">
-                      <span className="font-bold text-yellow-700 text-[9px] leading-tight lg:text-base xl:text-lg">⚡ Impact Assessment</span>
-                      <div className="flex flex-row justify-between items-center w-full text-[8px]">
-                        <span className="text-cyan-400 lg:text-base xl:text-lg">Correct: {impactCorrect}</span>
-                        <span className={impactIsCorrect ? 'text-green-600 font-bold lg:text-base xl:text-lg' : 'text-red-600 font-bold lg:text-base xl:text-lg'}>Your answer: {impactUser || '-'}</span>
+                    <div className="flex flex-col bg-white/70 backdrop-blur-sm border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg border border-white/20">
+                      <span className="font-bold text-yellow-600 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">⚡ Impact Assessment</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg mt-2 gap-1 sm:gap-2">
+                        <span className="text-slate-700 font-medium">Correct: <span className="text-green-700 font-semibold">{impactCorrect}</span></span>
+                        <span className={`font-semibold ${impactIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{impactUser || 'Not answered'}</span></span>
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* Learning Insight */}
-                <div className="mt-0.5 bg-white/30 border-l-4 border-blue-400 rounded p-0.5 flex flex-col">
-                  <span className="font-bold text-blue-700 text-[9px] leading-tight lg:text-base xl:text-lg">💡 Learning Insight</span>
-                  <span className="text-cyan-400 text-[8px] flex items-center mt-0.5 leading-tight lg:text-base xl:text-lg"><span className="mr-1" role="img" aria-label="book">📚</span>This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
+                <div className="mt-2 sm:mt-3 bg-blue-50/70 backdrop-blur-sm border-l-4 border-blue-400 rounded-lg p-2 sm:p-3 flex flex-col shadow-lg border border-blue-200/50">
+                  <span className="font-bold text-blue-700 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">💡 Learning Insight</span>
+                  <span className="text-slate-700 text-xs sm:text-sm lg:text-base xl:text-lg flex items-start mt-2 leading-relaxed">
+                    <span className="mr-2 text-base" role="img" aria-label="book">📚</span>
+                    <span className="font-medium">This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
+                  </span>
                 </div>
                 {/* Next Case button - only show if not last case */}
                 {gameState.currentCase < cases.length - 1 }
                 {/* Summary message at the bottom */}
-                <div className="flex flex-col items-start justify-center bg-white/20 border-l-4 border-yellow-500 p-0.5 w-full rounded mt-1">
-                  <div className="flex items-center min-h-[18px] py-0.5">
-                    <span className="text-yellow-700 font-medium text-[8px] md:text-xs mr-1 leading-tight lg:text-base xl:text-lg">Needs Improvement - You must get all answers correct to continue</span>
-                    <AlertTriangle className="w-3 h-3 min-w-2 min-h-2 text-yellow-500 mr-1" />
-                    <span className="ml-1 text-xs" role="img" aria-label="book">📚</span>
+                <div className="flex flex-col items-start justify-center bg-yellow-50/70 backdrop-blur-sm border-l-4 border-yellow-500 p-2 sm:p-3 w-full rounded-lg mt-2 sm:mt-3 shadow-lg border border-yellow-200/50">
+                  <div className="flex items-center min-h-[20px] py-1">
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 mr-2 flex-shrink-0" />
+                    <span className="text-yellow-700 font-semibold text-xs sm:text-sm lg:text-base xl:text-lg leading-tight">Needs Improvement - You must get all answers correct to continue</span>
+                    <span className="ml-2 text-sm sm:text-base" role="img" aria-label="book">📚</span>
                   </div>
-                  <div className="text-cyan-400 text-[8px] md:text-xs font-semibold text-start pl-[10%] w-full bg-transparent mt-0.5 leading-tight lg:text-base xl:text-lg">Case analysis complete - Review your results</div>
+                  <div className="text-slate-700 text-xs sm:text-sm lg:text-base xl:text-lg font-medium text-start mt-2 w-full bg-transparent leading-relaxed">Case analysis complete - Review your results and try again</div>
                 </div>
               </div>
             </div>
@@ -632,17 +1023,18 @@ export const GameBoard2D: React.FC = () => {
               {currentPhase === 'feedback' && gameState.currentCase === 1 && allAnswersProvided && allAnswersCorrect && (
                 <button
                   onClick={() => setPopupOpen(true)}
-                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-cyan-400 rounded-xl hover:from-cyan-300 hover:to-purple-700 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
+                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-white rounded-xl hover:from-cyan-500 hover:to-purple-700 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
                 >
                   <span>Submit</span>
+                  <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
                 </button>
               )}
-              {isAllCorrect && (
+              {isAllCorrect && gameState.currentCase !== 1 && (
                 <button
                   onClick={handleContinue}
-                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-green-400 via-cyan-500 to-blue-700 text-cyan-400 rounded-xl hover:from-green-500 hover:to-blue-800 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
+                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-white rounded-xl hover:from-cyan-500 hover:to-purple-700 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
                 >
-                  <span>{gameState.currentCase < cases.length - 1 ? 'Next Case' : 'Complete Game'}</span>
+                  <span>Next Case</span>
                   <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
                 </button>
               )}
@@ -655,6 +1047,7 @@ export const GameBoard2D: React.FC = () => {
               onClose={() => setPopupOpen(false)}
               onNext={handleContinue}
               onBackToLevels={() => window.location.assign('/modules')}
+              onPlayAgain={handlePlayAgain}
               score={gameState.score}
               time={formatTimer(timer)}
             />
@@ -662,6 +1055,50 @@ export const GameBoard2D: React.FC = () => {
         </div>
       </div>
     );
+  };
+
+  // Handler to reset game to login phase with proper Supabase integration
+  const handlePlayAgain = () => {
+    // Clear localStorage to ensure a fresh start
+    localStorage.removeItem('level4_gameState');
+    localStorage.removeItem('level4_timer');
+    
+    console.log('[PlayAgain] Resetting game for a new attempt');
+    
+    // Reset game state completely
+    setGameState({
+      currentCase: 0,
+      answers: {
+        violation: null,
+        rootCause: null,
+        impact: null
+      },
+      score: 0, // Start with zero score for this attempt
+      totalQuestions: 0,
+      showFeedback: false,
+      gameComplete: false
+    });
+    
+    // Reset all other related state
+    setCurrentPhase('login');
+    setTimer(0);
+    setScoredQuestions({}); // Reset scored questions tracking
+    setCanContinue(true);   // Ensure continue button is enabled
+    setTimerActive(false);  // Ensure timer is stopped
+    setPopupOpen(false);    // Close any open popups
+    
+    // Force reset the animation
+    setAnimationKey(prev => prev + 1);
+
+    // This is key: Trigger a Supabase sync after reset
+    // This will ensure the database state is updated with a clean slate
+    // while preserving the high score
+    const resetSync = setTimeout(() => {
+      // This is just to trigger the useEffect sync
+      setGameState(state => ({ ...state }));
+    }, 500);
+    
+    return () => clearTimeout(resetSync);
   };
 
   // Format timer as MM:SS
@@ -674,16 +1111,30 @@ export const GameBoard2D: React.FC = () => {
   // Show timer and score in all investigation and feedback phases (not just when timerActive is true)
   const showTimer = ["reportView", "step1", "step2", "step3", "feedback"].includes(currentPhase) && !gameState.gameComplete;
 
+  // Add this useEffect to ensure results are calculated when entering feedback phase
+  React.useEffect(() => {
+    if (currentPhase === 'feedback' && !gameState.showFeedback) {
+      calculateResults();
+    }
+  }, [currentPhase]);
+
   // Main render logic
   return (
     <div className="relative h-full w-full min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 overflow-hidden">
+      {/* High Score Alert */}
+      <HighScoreAlert 
+        score={gameState.score} 
+        isVisible={showHighScorePopup} 
+        onClose={() => setShowHighScorePopup(false)}
+      />
+      
       {/* Neon Animated SVG Background */}
       <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
        
       </div>
       {/* Case label and Timer/Score always top left */}
       {showTimer && (
-        <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 flex flex-col items-start bg-black/40 backdrop-blur-md border border-cyan-400/30">
+        <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 flex flex-col items-start bg-black/30 backdrop-blur-md border border-cyan-400/30">
           {/* Case label above timer */}
           <span className="text-cyan-300 font-bold text-[9px] sm:text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
           <span className="text-[9px] sm:text-xs md:text-base">Time : {formatTimer(timer)}</span>
@@ -721,6 +1172,166 @@ export const GameBoard2D: React.FC = () => {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @keyframes fade-slide-up {
+          0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-fade-slide-up {
+          animation: fade-slide-up 0.6s ease-out forwards;
+        }
+        @keyframes fade-in-down {
+          0% {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-down {
+          animation: fade-in-down 0.4s ease-out forwards;
+        }
+        @keyframes slide-in-option {
+          0% {
+            opacity: 0;
+            transform: translateX(-30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        .animate-slide-in-option {
+          animation: slide-in-option 0.5s ease-out forwards;
+        }
+        @keyframes pulse-text {
+          0%, 100% {
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+          }
+          50% {
+            color: rgba(59, 130, 246, 0.9);
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+          }
+        }
+        .animate-pulse-text {
+          animation: pulse-text 2s ease-in-out infinite;
+        }
+        @keyframes slide-in-option-left {
+          0% {
+            opacity: 0;
+            transform: translateX(-30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes slide-in-option-right {
+          0% {
+            opacity: 0;
+            transform: translateX(30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes slide-in-option-up {
+          0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-slide-in-left {
+          animation: slide-in-option-left 0.5s ease-out forwards;
+        }
+        .animate-slide-in-right {
+          animation: slide-in-option-right 0.5s ease-out forwards;
+        }
+        .animate-slide-in-up {
+          animation: slide-in-option-up 0.5s ease-out forwards;
+        }
+        @keyframes typing {
+          0% {
+            width: 0;
+          }
+          100% {
+            width: 100%;
+          }
+        }
+        @keyframes blink {
+          0%, 50% {
+            border-color: transparent;
+          }
+          51%, 100% {
+            border-color: #06b6d4;
+          }
+        }
+        .animate-typing {
+          width: 0;
+          animation: typing 2s steps(25, end) forwards, blink 0.75s step-end infinite;
+          white-space: nowrap;
+        }
+        @keyframes fade-in-scale {
+          0% {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes slide-up {
+          0% {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes bounce-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in-scale {
+          opacity: 0;
+          animation: fade-in-scale 0.6s ease-out forwards;
+        }
+        .animate-slide-up {
+          opacity: 0;
+          animation: slide-up 0.5s ease-out forwards;
+        }
+        .animate-bounce-in {
+          opacity: 0;
+          animation: bounce-in 0.8s ease-out forwards;
+        }
         .triangle-shape {
           clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
         }
@@ -729,6 +1340,29 @@ export const GameBoard2D: React.FC = () => {
         }
         .floating-shape {
           will-change: transform;
+        }
+        @keyframes report-field-fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-report-field {
+          opacity: 0;
+          animation: report-field-fade-in 0.5s ease-out forwards;
+        }
+        .glow-cyan {
+          text-shadow: 0 0 8px #22d3ee, 0 0 16px #38bdf8, 0 0 24px #0ea5e9;
+        }
+        .glow-green {
+          text-shadow: 0 0 8px #4ade80, 0 0 16px #22c55e;
+        }
+        .glow-yellow {
+          text-shadow: 0 0 8px #fde68a, 0 0 16px #facc15;
         }
       `}</style>
     </div>

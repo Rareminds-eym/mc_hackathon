@@ -27,6 +27,7 @@ import { GameBoard2D } from './components/Level4/GameBoard2D';
 import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
 import Score from './components/Scores/Score';
+import DebugPage from './pages/DebugPage';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -90,6 +91,7 @@ function App() {
         { path: '/auth', element: <AuthPage />, errorElement: <RouteErrorBoundary /> },
         { path: '/instructions', element: <ProtectedRoute><InstructionsPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/scores', element: <ProtectedRoute><Score /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/debug', element: <ProtectedRoute><DebugPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '*', element: <Navigate to="/" replace />, errorElement: <RouteErrorBoundary /> },
       ],
     },

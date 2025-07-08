@@ -10,7 +10,7 @@ export const CaseFilePanel: React.FC<CaseFilePanelProps> = ({ case: currentCase 
   return (
     <div className="relative h-full w-full min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 overflow-hidden">
       {/* Neon Animated SVG Background */}
-      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none ">
         <svg
           className="absolute inset-0 w-full h-full"
           viewBox="0 0 1920 1080"
