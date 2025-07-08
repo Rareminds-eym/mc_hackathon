@@ -91,7 +91,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
           'from-yellow-400',
           'to-yellow-500',
           'text-white',
-          'border-[0.5px]',
+          'border-2', // Decreased border thickness for completed lines
           'border-black',
           'shadow-[0_4px_16px_rgba(251,191,36,0.3)]',
         );
@@ -99,9 +99,9 @@ const BingoGrid: React.FC<BingoGridProps> = ({
         classes = classes.filter(c => !c.includes('bg-') && !c.includes('text-') && !c.includes('border-'));
         classes.push(
           'bg-white',
-          'text-green-800',
-          'border-2',
-          'border-emerald-300',
+          'text-green-600',
+          'border-3',
+          'border-[#77B254]',
           'shadow-[0_4px_16px_rgba(16,185,129,0.2)]'
         );
       }
@@ -114,7 +114,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
     }
 
     if (cell.id === 24) {
-      classes.push('border-2 border-emerald-400 shadow-[0_0_0_2px_#4ade80]');
+      classes.push('border-3 border-[#77B254] shadow-[0_0_0_2px_#4ade80]');
     }
 
     if (gameComplete || cell.selected) {

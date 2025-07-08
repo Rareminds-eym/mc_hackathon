@@ -50,7 +50,7 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: 5,
     title: 'Ready to Play!',
-    message: 'You\'re all set! Complete horizontal, vertical, or diagonal lines to win. Good luck learning quality control terms!',
+    message: 'You\'re all set! Complete horizontal, vertical, or diagonal lines to win. Good luck learning Good Manufacturing Practices terms!',
     icon: React.createElement(CheckCircle, { className: "h-5 w-5 text-white" }),
     position: 'center',
     trigger: 'auto'
