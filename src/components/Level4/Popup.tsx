@@ -1,8 +1,10 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { LevelProgressService } from "../../services/levelProgressService";
 
 interface PopupProps {
   open: boolean;
@@ -187,9 +189,54 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
   // Calculate stars based on score (0-5 stars)
   const maxScore = 30;
   const stars = Math.round((score / maxScore) * 5);
+
+  // Get module ID from URL path if not provided
+  const getModuleIdFromPath = () => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : "1";
+  };
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || isUpdatingProgress) return;
+
+      const currentModuleId = moduleId || getModuleIdFromPath();
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(currentModuleId),
+          4 // Level 4
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 4 of Module ${currentModuleId} marked as completed`);
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, moduleId, isUpdatingProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
 
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
@@ -457,12 +504,57 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
   time,
   // onNext is not used as we're handling navigation directly
 }) => {
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
   // Calculate stars: 0-5 based on score (max 30)
   const maxScore = 30;
   const stars = Math.round((score / maxScore) * 5);
   const isMobile = window.innerWidth <= 600;
   const popupHeight = isMobile ? 'auto' : 'auto';
   const popupMaxHeight = isMobile ? '80vh' : '90vh';
+
+  // Get module ID from URL path
+  const getModuleIdFromPath = () => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : "1";
+  };
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || isUpdatingProgress) return;
+
+      const moduleId = getModuleIdFromPath();
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(moduleId),
+          4 // Level 4
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 4 of Module ${moduleId} marked as completed`);
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, isUpdatingProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
   return (
     <AnimatePresence>
       {open && (

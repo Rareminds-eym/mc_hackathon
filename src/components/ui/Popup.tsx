@@ -1,8 +1,10 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { LevelProgressService } from "../../services/levelProgressService";
 
 interface PopupProps {
   open: boolean;
@@ -343,6 +345,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
@@ -367,6 +371,41 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const handleReset = useCallback(() => {
     if (onReset) onReset();
   }, [onReset]);
+
+  // Update level progress when modal becomes visible and level is completed
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || !isLevelCompleted || !moduleId || isUpdatingProgress) return;
+
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(moduleId),
+          3 // Level 3
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 3 of Module ${moduleId} marked as completed`);
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, isLevelCompleted, moduleId, isUpdatingProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
 
   return (
     <Popup open={open} onClose={onClose} hideClose={showReset}>

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
 import { Term } from '../../../types/Level2/types';
+import { useAuth } from '../../../contexts/AuthContext';
+import { LevelProgressService } from '../../../services/levelProgressService';
 
 interface ResultsModalProps {
   showResults: boolean;
@@ -12,6 +14,8 @@ interface ResultsModalProps {
   onNextLevel: () => void;
   onReset: () => void;
   onClose: () => void;
+  moduleId?: number;
+  levelId?: number;
 }
 
 const ResultsModal: React.FC<ResultsModalProps> = ({
@@ -24,7 +28,68 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
   onNextLevel,
   onReset,
   onClose,
+  moduleId = 1,
+  levelId = 2,
 }) => {
+  const { user } = useAuth();
+  const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
+
+  // Update level progress when modal becomes visible and game is completed
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      console.log('ResultsModal: useEffect triggered', {
+        showResults,
+        user: user?.id,
+        moduleId,
+        levelId,
+        score,
+        hasUpdatedProgress
+      });
+
+      if (!showResults || !user || hasUpdatedProgress) {
+        console.log('ResultsModal: Skipping update due to conditions:', {
+          showResults,
+          hasUser: !!user,
+          hasUpdatedProgress,
+          score
+        });
+        return;
+      }
+
+      console.log('ResultsModal: Starting level progress update...');
+      setHasUpdatedProgress(true);
+      try {
+        const { data, error } = await LevelProgressService.completeLevel(
+          user.id,
+          moduleId,
+          levelId
+        );
+
+        if (error) {
+          console.error('ResultsModal: Failed to update level progress:', error);
+        } else {
+          console.log('ResultsModal: Successfully updated level progress:', {
+            moduleId,
+            levelId,
+            userId: user.id,
+            data
+          });
+        }
+      } catch (error) {
+        console.error('ResultsModal: Error updating level progress:', error);
+      }
+    };
+
+    updateLevelProgress();
+  }, [showResults, user, moduleId, levelId, hasUpdatedProgress, score]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!showResults) {
+      setHasUpdatedProgress(false);
+    }
+  }, [showResults]);
+
   const getScoreRank = (score: number) => {
     if (score >= 95) return { rank: "S+", color: "text-yellow-300", bg: "bg-yellow-600" };
     if (score >= 90) return { rank: "S", color: "text-yellow-400", bg: "bg-yellow-700" };
