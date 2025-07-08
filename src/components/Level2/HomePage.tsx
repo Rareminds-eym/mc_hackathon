@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gameModes } from '../../data/Level2/gameModes';
 import { useDeviceLayout } from '../../hooks/useOrientation';
-import { useLevel2GameStats } from '../../hooks/Level2/useLevel2GameStats';
+import { useLevel2GameStats } from './hooks/useLevel2GameStats';
 import { Play, Filter, Zap, Crown, Gamepad2, ArrowLeft, Database, HardDrive } from 'lucide-react';
 import './index.css';
 

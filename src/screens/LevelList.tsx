@@ -6,6 +6,7 @@ import { useLevelProgress } from '../hooks/useLevelProgress';
 import { Button, DifficultyBadge } from '../components/ui';
 import { useDeviceLayout } from '../hooks/useOrientation';
 import type { Level, Module } from '../types';
+import LevelProgressDebug from '../components/Debug/LevelProgressDebug';
 
 const LevelList: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -611,6 +612,11 @@ const LevelList: React.FC = () => {
               );
             })}
           </div>
+        </div>
+
+        {/* Debug component - temporary */}
+        <div style={{ marginTop: '20px' }}>
+          <LevelProgressDebug moduleId={module.id} />
         </div>
       </div>
     </div>

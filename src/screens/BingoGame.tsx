@@ -518,7 +518,13 @@ const BingoGame: React.FC = () => {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
-            <GameCompleteModal isVisible={gameComplete} onPlayAgain={resetGame} score={score} />
+            <GameCompleteModal
+              isVisible={gameComplete}
+              onPlayAgain={resetGame}
+              score={score}
+              moduleId={1}
+              levelId={1}
+            />
           </motion.div>
         )}
       </AnimatePresence>

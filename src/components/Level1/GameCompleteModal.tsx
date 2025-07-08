@@ -1,16 +1,56 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Star, RotateCcw } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import { useAuth } from '../../contexts/AuthContext';
+import { LevelProgressService } from '../../services/levelProgressService';
 
 interface GameCompleteModalProps {
   isVisible: boolean;
   onPlayAgain: () => void;
   score: number;
+  moduleId?: number;
+  levelId?: number;
 }
 
-const GameCompleteModal: React.FC<GameCompleteModalProps> = ({ isVisible, onPlayAgain, score }) => {
+const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
+  isVisible,
+  onPlayAgain,
+  score,
+  moduleId = 1,
+  levelId = 1
+}) => {
   const { isHorizontal, isMobile } = useDeviceLayout();
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const isMobileLandscape = isMobile && isHorizontal;
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!isVisible || !user || isUpdatingProgress) return;
+
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          moduleId,
+          levelId
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level ${levelId} of Module ${moduleId} marked as completed`);
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [isVisible, user, moduleId, levelId, isUpdatingProgress]);
 
   if (!isVisible) return null;
 
@@ -56,7 +96,7 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({ isVisible, onPlay
           <p className={`${isMobileLandscape ? 'text-sm mb-4' : 'text-slate-600 mb-6'}`}>
             You've mastered all the quality control terms! Great job on your learning journey.
           </p>
-          <button
+          {/* <button
             onClick={onPlayAgain}
             className={`flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-semibold border-none cursor-pointer transition-all mx-auto scale-100 ${
               isMobileLandscape ? 'py-2 px-4 text-sm' : 'py-3 px-8 text-base'
@@ -64,7 +104,7 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({ isVisible, onPlay
           >
             <RotateCcw className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'}`} />
             <span>Play Again</span>
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

@@ -13,7 +13,6 @@ export interface LevelProgress {
 export interface ModuleProgress {
   level_id: number;
   is_completed: boolean;
-  is_unlocked: boolean;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -22,7 +21,6 @@ export interface UserProgressSummary {
   module_id: number;
   total_levels: number;
   completed_levels: number;
-  unlocked_levels: number;
   progress_percentage: number;
 }
 
@@ -222,6 +220,52 @@ export class LevelProgressService {
       return { data: data || [], error: null };
     } catch (error) {
       console.error('Error in getLevelProgress:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Reset user progress (for debugging/testing)
+   */
+  static async resetUserProgress(userId: string): Promise<{ data: any; error: any }> {
+    try {
+      const { data, error } = await supabase.rpc('reset_user_progress', {
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error resetting user progress:', error);
+        return { data: null, error };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in resetUserProgress:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Initialize user with only level 1 unlocked for a module
+   */
+  static async initializeUserProgress(
+    userId: string,
+    moduleId: number
+  ): Promise<{ data: any; error: any }> {
+    try {
+      const { data, error } = await supabase.rpc('initialize_user_progress', {
+        p_user_id: userId,
+        p_module_id: moduleId
+      });
+
+      if (error) {
+        console.error('Error initializing user progress:', error);
+        return { data: null, error };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in initializeUserProgress:', error);
       return { data: null, error };
     }
   }
