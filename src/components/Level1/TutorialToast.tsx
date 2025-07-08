@@ -114,14 +114,27 @@ const TutorialToast: React.FC<TutorialToastProps> = ({ step, onNext, onSkip, isV
           .tutorial-highlight {
             position: relative;
             z-index: 51;
-            box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.7), 0 0 28px rgba(37, 99, 235, 0.5);
+            box-shadow: 0 0 0 3px rgba(252, 242, 89, 0.7), 0 0 15px rgba(252, 242, 89, 0.5);
             border-radius: 4px;
             animation: pulse-highlight 2s infinite;
           }
           
+          .tutorial-highlight-large {
+            position: relative;
+            z-index: 51;
+            box-shadow: 0 0 0 6px rgba(252, 242, 89, 0.7), 0 0 28px rgba(252, 242, 89, 0.5);
+            border-radius: 4px;
+            animation: pulse-highlight-large 2s infinite;
+          }
+          
           @keyframes pulse-highlight {
-            0%, 100% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.6), 0 0 28px rgba(37, 99, 235, 0.5); }
-            50% { box-shadow: 0 0 0 9px rgba(37, 99, 235, 0.9), 0 0 40px rgba(37, 99, 235, 0.5); }
+            0%, 100% { box-shadow: 0 0 0 3px rgba(252, 242, 89, 0.6), 0 0 15px rgba(252, 242, 89, 0.5); }
+            50% { box-shadow: 0 0 0 6px rgba(252, 242, 89, 0.9), 0 0 20px rgba(252, 242, 89, 0.5); }
+          }
+          
+          @keyframes pulse-highlight-large {
+            0%, 100% { box-shadow: 0 0 0 6px rgba(252, 242, 89, 0.6), 0 0 28px rgba(252, 242, 89, 0.5); }
+            50% { box-shadow: 0 0 0 14px rgba(252, 242, 89, 0.9), 0 0 40px rgba(252, 242, 89, 0.5); }
           }
         `}</style>
       )}
