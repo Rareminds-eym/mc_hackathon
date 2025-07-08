@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect} from 'react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 
 // Use placeholder image for Trainer and use selected avatar for Intern
@@ -10,8 +10,8 @@ const INTERN_IMG = typeof window !== "undefined"
 
 interface GameInstructionsProps {
   selectedDefinition: string;
-  onTutorialEnd?: () => void;
-  startAtDefinition?: boolean; // <-- Add this prop
+  onDefinitionsStart?: () => void; // Renamed for clarity
+  resetKey?: number;
 }
 
 // Updated conversation with interactive instructions and new icons
@@ -19,97 +19,143 @@ const conversation = [
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Welcome to the game! I'm your Trainer. Ready to learn how to play?",
+    text: "Welcome onboard! I’m your Trainer — here to help you master Good Manufacturing Practices.",
     pointer: 'left',
   },
   {
     speaker: 'Intern',
     icon: INTERN_IMG,
-    text: "Hi Trainer! Yes, I'm ready. What should I do first?",
+    text: "Hi Trainer! I’m ready to give my best. What’s today’s challenge?",
     pointer: 'right',
   },
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "First, look at the definition that appears here. This is your clue!",
+    text: "Your mission: stay sharp, think fast, and keep every batch compliant.",
     pointer: 'left',
   },
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Now, try hovering over the words in the grid below. Notice how they highlight?",
-    pointer: 'down',
-    action: 'hover',
+    text: "Remember, in GMP, every detail counts — one mistake can stop the whole line.",
+    pointer: 'left',
   },
   {
     speaker: 'Intern',
     icon: INTERN_IMG,
-    text: "Yes, I see them highlight! Should I click one?",
+    text: "No pressure! Let’s make zero mistakes and ace this.",
     pointer: 'right',
   },
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Exactly! Click the word you think matches the definition. Give it a try now.",
-    pointer: 'down',
-    action: 'click',
+    text: "Good spirit! Ready to jump in?",
+    pointer: 'left',
   },
   {
     speaker: 'Intern',
     icon: INTERN_IMG,
-    text: "Great! Let's play!",
+    text: "I’m ready — let’s play!",
     isLetsPlay: true,
     pointer: 'right',
   },
+  // Countdown step (no speaker, just countdown text)
+  {
+    speaker: null,
+    icon: null,
+    text: '', // Will be set dynamically
+    isCountdown: true,
+    pointer: null,
+  },
 ];
 
-const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number }> = ({ selectedDefinition, onTutorialEnd, startAtDefinition, tutorialStep }) => {
-  const [step, setStep] = useState(startAtDefinition ? conversation.length : 0);
+
+const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number, forceStep?: number | string, onStepChange?: (step: number, atDefinitions?: boolean) => void }> = ({ selectedDefinition, onDefinitionsStart, tutorialStep, forceStep, onStepChange }) => {
+  const [step, setStep] = useState(0); // Always start at 0
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const { isHorizontal, isMobile } = useDeviceLayout();
   const isMobileLandscape = isMobile && isHorizontal;
 
-  // Determine if we're in conversation or showing the definition
-  const inConversation = step < conversation.length;
+  // Determine if we're in conversation, countdown, or showing the definition
+  const inConversation = step < conversation.length - 1;
+  const inCountdown = step === conversation.length - 1;
   const current = inConversation
     ? conversation[step]
-    : { speaker: 'Trainer', icon: TRAINER_IMG, text: selectedDefinition, pointer: 'left' };
+    : inCountdown
+      ? { speaker: null, icon: null, text: `Starting in ${countdown}...`, pointer: null }
+      : { speaker: 'Trainer', icon: TRAINER_IMG, text: selectedDefinition, pointer: 'left' };
 
   // Pointer direction for speech bubble
   const pointerDirection = current.pointer;
 
+  // Countdown effect: reset countdown when entering countdown step
   useEffect(() => {
-    setIsTyping(true);
-    setDisplayedText('');
-    let currentIndex = 0;
-    const text = current.text || '';
-    const typingInterval = setInterval(() => {
-      if (currentIndex < text.length) {
-        setDisplayedText(text.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        setIsTyping(false);
-        clearInterval(typingInterval);
-      }
-    }, 30);
-    return () => clearInterval(typingInterval);
-  }, [step, selectedDefinition]);
-
-  // Call onTutorialEnd when tutorial is finished
-  useEffect(() => {
-    if (step === conversation.length && onTutorialEnd) {
-      onTutorialEnd();
+    if (inCountdown) {
+      setCountdown(3);
     }
-  }, [step, onTutorialEnd]);
+  }, [inCountdown]);
 
-  // Update step if startAtDefinition changes
+  // Countdown interval effect
   useEffect(() => {
-    if (startAtDefinition) {
+    if (inCountdown && countdown > 0) {
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev > 1) {
+            return prev - 1;
+          } else {
+            clearInterval(interval);
+            setStep((s) => s + 1); // Move to definition
+            return 0;
+          }
+        });
+      }, 800);
+      return () => clearInterval(interval);
+    }
+  }, [inCountdown, countdown]);
+
+  useEffect(() => {
+    if (!inCountdown) {
+      setIsTyping(true);
+      setDisplayedText('');
+      let currentIndex = 0;
+      const text = current.text || '';
+      const typingInterval = setInterval(() => {
+        if (currentIndex < text.length) {
+          setDisplayedText(text.slice(0, currentIndex + 1));
+          currentIndex++;
+        } else {
+          setIsTyping(false);
+          clearInterval(typingInterval);
+        }
+      }, 30);
+      return () => clearInterval(typingInterval);
+    }
+  }, [step, selectedDefinition, current.text, inCountdown]);
+
+  // Call onDefinitionsStart when definitions are shown
+  useEffect(() => {
+    if (step === conversation.length && onDefinitionsStart) {
+      onDefinitionsStart();
+    }
+  }, [step, onDefinitionsStart]);
+
+  // Jump to definitions if forceStep === 'definitions'
+  useEffect(() => {
+    if (forceStep === 'definitions') {
       setStep(conversation.length);
+    } else if (forceStep === 0) {
+      setStep(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAtDefinition]);
+  }, [forceStep]);
+
+  // Notify parent of step changes
+  useEffect(() => {
+    if (onStepChange) {
+      onStepChange(step, step === conversation.length);
+    }
+  }, [step, onStepChange]);
 
   // Tailwind classes for pointer tail
   const tailBase = "absolute z-10 transition-all";
@@ -177,30 +223,36 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
         className={`relative bg-white ${
           inConversation
             ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
-            : "border-2 border-black"
+            : inCountdown
+              ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
+              : "border-2 border-black"
         } rounded-[2rem_2rem_2rem_0.5rem] shadow-lg transition-shadow ml-[0.1rem] ${
           isMobileLandscape
             ? "p-2 text-xs min-h-[40px]"
             : "p-4 text-base min-h-[72px]"
-        } min-w-full ${tutorialStep === 2 ? 'tutorial-highlight' : ''}`}
+        } min-w-full ${
+          (inConversation || inCountdown || (!inConversation && !inCountdown)) && tutorialStep === 2 ? 'tutorial-highlight' : ''
+        }`}
       >
         <div className={`flex items-start ${isMobileLandscape ? "gap-2" : "gap-4"}`}>
-          <div
-            className={`flex-shrink-0 rounded-full flex items-center justify-center ${
-              current.speaker === "Trainer" ? "bg-yellow-500" : ""
-            } ${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"}`}
-          >
-            <img
-              src={current.icon}
-              alt={current.speaker}
-              className={`${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"} rounded-full object-cover `}
-            />
-          </div>
+          {current.icon && (
+            <div
+              className={`flex-shrink-0 rounded-full flex items-center justify-center ${
+                current.speaker === "Trainer" ? "bg-yellow-500" : ""
+              } ${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"}`}
+            >
+              <img
+                src={current.icon}
+                alt={current.speaker || ''}
+                className={`${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"} rounded-full object-cover `}
+              />
+            </div>
+          )}
           <div className="flex-1">
             <div>
               <p className={`text-gray-800 leading-7 font-semibold ${isMobileLandscape ? "text-xs" : "text-base"}`}>
-                {displayedText}
-                {isTyping && (
+                {inCountdown ? `Starting in ${countdown}...` : displayedText}
+                {isTyping && !inCountdown && (
                   <span
                     style={{
                       marginLeft: 2,
@@ -221,17 +273,17 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
                     disabled={isTyping}
                     aria-label="Next"
                   >
-                    {current.isLetsPlay ? "Show Definition" : "Next"}
+                    {current && 'isLetsPlay' in current && current.isLetsPlay ? "Show Countdown" : "Next"}
                   </button>
                   <button
                     className={`mt-2 px-3 py-1.5 rounded-xl bg-gray-200 text-gray-800 font-semibold ${isMobileLandscape ? "text-xs" : "text-sm"} shadow transition-opacity outline-none ${
                       isTyping ? "opacity-60 cursor-not-allowed" : "hover:bg-gray-300"
                     }`}
-                    onClick={() => setStep(conversation.length)}
+                    onClick={() => setStep(conversation.length - 1)}
                     disabled={isTyping}
-                    aria-label="Skip Tutorial"
+                    aria-label="Skip Conversation"
                   >
-                    Skip Tutorial
+                    Skip Conversation
                   </button>
                 </div>
               )}
@@ -239,7 +291,7 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
           </div>
         </div>
         {/* Pointer Tail - hidden in landscape mode */}
-        {!isMobileLandscape && <div className={tailClass} style={tailStyle}></div>}
+        {!isMobileLandscape && pointerDirection && <div className={tailClass} style={tailStyle}></div>}
       </div>
     </div>
   );
