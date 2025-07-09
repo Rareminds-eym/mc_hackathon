@@ -91,7 +91,7 @@ const BingoGame: React.FC = () => {
   // Adjusted styles for mobile/landscape
   const rootStyle: React.CSSProperties = {
     minHeight: '100vh',
-    background: 'url("/backgrounds/BingoBg3.jpg") center center / cover no-repeat',
+    background: 'linear-gradient(rgba(0,0,0,0.69), rgba(0,0,0,0.55)), url("/backgrounds/BingoBg3.jpg") center center / cover no-repeat',
     display: 'flex',
     flexDirection: 'column',
     ...(isMobile && isHorizontal
@@ -103,7 +103,7 @@ const BingoGame: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: isMobile ? '2rem 3.5rem 1rem 3.5rem' : '1rem', // top/right/left: 3rem, bottom: 1rem for mobile
+    padding: isMobile ? '1rem 3.5rem 1rem 3.5rem' : '1rem', // top/right/left: 3rem, bottom: 1rem for mobile
   };
   const gridStyle: React.CSSProperties = {
     width: '100%',
@@ -275,39 +275,19 @@ const BingoGame: React.FC = () => {
                 <motion.div style={{ width: '100%' }}>
                   {/* Show Bingo logo above instructions in landscape mode */}
                   {isHorizontal && (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <div style={{
-                        background: '#fff',
-                        border: '2px solid #2563eb',
-                        borderRadius: '1.2rem',
-                        padding: '0.15rem 0.7rem',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        fontWeight: 700,
-                        fontSize: '1.05rem',
-                        color: '#2563eb',
-                        marginBottom: '0.2rem',
-                        marginLeft: '2rem',
-                      }}>
-                        <Clock style={{ width: 22, height: 22, color: '#2563eb' }} />
-                        <span>{formatTime(timer)}</span>
-                      </div>
-                      <motion.img
-                        src="/logos/Bingo.png"
-                        alt="Bingo Logo"
-                        style={{
-                          display: 'block',
-                          height: '140px',
-                          padding: '0.6rem 0 1rem 0',
-                          marginLeft: '2rem', // move image more to the right
-                        }}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: 0.18 }}
-                      />
-                    </div>
+                    <motion.img
+                      src="/logos/Bingo.png"
+                      alt="Bingo Logo"
+                      style={{
+                        display: 'block',
+                        height: '140px',
+                        padding: '0.6rem 0 1rem 0',
+                        marginLeft: '4rem',
+                      }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5, delay: 0.18 }}
+                    />
                   )}
                   <GameInstructions 
                     key={resetCount} // Force re-mount on reset
@@ -407,22 +387,17 @@ const BingoGame: React.FC = () => {
                   transition={{ duration: 0.6, delay: 0.3 }}
                 >
                   <div
+                    className="pixel-border bg-blue-900 px-4 py-2 flex flex-col items-center text-xs sm:text-sm shadow-lg"
                     style={{
-                      background: '#fff',
-                      border: '2px solid #2563eb',
-                      borderRadius: '1.5rem',
-                      padding: '0.5rem 1.25rem',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
                       fontWeight: 700,
-                      fontSize: '1.3rem',
-                      color: '#2563eb',
+                      color: '#38bdf8',
+                      minWidth: '90px',
                     }}
                   >
-                    <Clock style={{ width: 32, height: 32, color: '#2563eb' }} />
-                    <span>{formatTime(timer)}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock style={{ width: 28, height: 28, color: '#ffffff' }} />
+                      <span className="text-white font-black pixel-text text-lg">{formatTime(timer)}</span>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -456,25 +431,22 @@ const BingoGame: React.FC = () => {
                     transition={{ duration: 0.5, delay: 0.18 }}
                   />
                   <motion.div
+                    className="pixel-border bg-blue-900 px-4 py-2 flex flex-col items-center text-xs sm:text-sm shadow-lg"
                     style={{
-                      background: '#fff',
-                      border: '2px solid #2563eb',
                       borderRadius: '1.5rem',
-                      padding: isHorizontal ? '0.25rem 0.8rem' : '0.25rem 0.8rem',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
                       fontWeight: 700,
-                      fontSize: isHorizontal ? '1.2rem' : '1.1rem',
-                      color: '#2563eb',
+                      color: '#38bdf8',
+                      minWidth: '90px',
                     }}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                   >
-                    <Clock style={{ width: 28, height: 28, color: '#2563eb' }} />
-                    <span>{formatTime(timer)}</span>
+                    <span className="text-blue-300 font-bold pixel-text">TIME</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock style={{ width: 24, height: 24, color: '#ffffff' }} />
+                      <span className="text-white font-black pixel-text text-base">{formatTime(timer)}</span>
+                    </div>
                   </motion.div>
                 </motion.div>
               )}

@@ -220,21 +220,17 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
       </style>
       <div
         data-tutorial-highlight="instructions"
-        className={`relative bg-white ${
-          inConversation
-            ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
-            : inCountdown
-              ? "border-4 border-blue-400 animate-[fairyGlow_1.2s_infinite_alternate]"
-              : "border-2 border-black"
-        } rounded-[2rem_2rem_2rem_0.5rem] shadow-lg transition-shadow ml-[0.1rem] ${
-          isMobileLandscape
-            ? "p-2 text-xs min-h-[40px]"
-            : "p-4 text-base min-h-[72px]"
-        } min-w-full ${
+        className={`pixel-border-thick bg-gray-800 relative overflow-hidden w-full max-w-2xl mx-auto shadow-lg transition-shadow ml-[0.1rem] ${
+          isMobileLandscape ? "p-2 text-xs min-h-[40px]" : "p-6 sm:p-8 text-base min-h-[72px]"
+        } ${
           (inConversation || inCountdown || (!inConversation && !inCountdown)) && tutorialStep === 2 ? 'tutorial-highlight' : ''
         }`}
+        style={isMobileLandscape ? { maxWidth: '98vw', wordBreak: 'break-word', overflowWrap: 'break-word' } : {}}
       >
-        <div className={`flex items-start ${isMobileLandscape ? "gap-2" : "gap-4"}`}>
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-pixel-pattern opacity-10 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
+        <div className={`relative z-10 flex items-start ${isMobileLandscape ? "gap-2" : "gap-4"}`}>
           {current.icon && (
             <div
               className={`flex-shrink-0 rounded-full flex items-center justify-center ${
@@ -248,9 +244,11 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
               />
             </div>
           )}
-          <div className="flex-1">
+          <div className="flex-1" style={isMobileLandscape ? { minWidth: 0, overflow: 'hidden' } : {}}>
             <div>
-              <p className={`text-gray-800 leading-7 font-semibold ${isMobileLandscape ? "text-xs" : "text-base"}`}>
+              <p className={`text-gray-100 font-semibold ${isMobileLandscape ? "text-xs leading-5" : "text-base leading-7"} ${isMobileLandscape ? 'truncate whitespace-normal break-words' : ''}`}
+                style={isMobileLandscape ? { wordBreak: 'break-word', overflowWrap: 'break-word' } : {}}
+              >
                 {inCountdown ? `Starting in ${countdown}...` : displayedText}
                 {isTyping && !inCountdown && (
                   <span
@@ -263,12 +261,13 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
                   </span>
                 )}
               </p>
-              {inConversation && (
-                <div className={`flex gap-2 mt-2`}>
+              {/* Only show buttons inside container if not mobile landscape */}
+              {!isMobileLandscape && inConversation && (
+                <div className={`flex gap-2 mt-4`}>
                   <button
-                    className={`mt-2 px-3 py-1.5 rounded-xl bg-blue-500 text-white font-bold ${isMobileLandscape ? "text-xs" : "text-sm"} shadow transition-opacity outline-none mr-2 ${
-                      isTyping ? "opacity-60 cursor-not-allowed" : "hover:bg-blue-600"
-                    }`}
+                    className={`px-2 py-1 rounded-sm pixel-border font-black pixel-text bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow transition-all duration-200 outline-none mr-2 ${
+                      isTyping ? "opacity-60 cursor-not-allowed" : "hover:from-blue-600 hover:to-blue-800 hover:scale-105 animate-pulse-button"
+                    } text-sm px-4 py-2 min-w-[90px]`}
                     onClick={() => setStep((s) => s + 1)}
                     disabled={isTyping}
                     aria-label="Next"
@@ -276,9 +275,9 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
                     {current && 'isLetsPlay' in current && current.isLetsPlay ? "Show Countdown" : "Next"}
                   </button>
                   <button
-                    className={`mt-2 px-3 py-1.5 rounded-xl bg-gray-200 text-gray-800 font-semibold ${isMobileLandscape ? "text-xs" : "text-sm"} shadow transition-opacity outline-none ${
-                      isTyping ? "opacity-60 cursor-not-allowed" : "hover:bg-gray-300"
-                    }`}
+                    className={`px-2 py-1 rounded-sm pixel-border font-black pixel-text bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow transition-all duration-200 outline-none ${
+                      isTyping ? "opacity-60 cursor-not-allowed" : "hover:from-gray-500 hover:to-gray-700 hover:scale-105 animate-pulse-button"
+                    } text-sm px-4 py-2 min-w-[90px]`}
                     onClick={() => setStep(conversation.length - 1)}
                     disabled={isTyping}
                     aria-label="Skip Conversation"
@@ -293,6 +292,31 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
         {/* Pointer Tail - hidden in landscape mode */}
         {!isMobileLandscape && pointerDirection && <div className={tailClass} style={tailStyle}></div>}
       </div>
+      {/* In mobile landscape, show buttons outside the container at the bottom */}
+      {isMobileLandscape && inConversation && (
+        <div className="flex gap-2 mt-2 justify-end w-full max-w-2xl mx-auto">
+          <button
+            className={`px-2 py-1 rounded-sm pixel-border font-black pixel-text bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow transition-all duration-200 outline-none mr-2 text-xs px-2 py-1 min-w-[60px] ${
+              isTyping ? "opacity-60 cursor-not-allowed" : "hover:from-blue-600 hover:to-blue-800 hover:scale-105 animate-pulse-button"
+            }`}
+            onClick={() => setStep((s) => s + 1)}
+            disabled={isTyping}
+            aria-label="Next"
+          >
+            {current && 'isLetsPlay' in current && current.isLetsPlay ? "Show Countdown" : "Next"}
+          </button>
+          <button
+            className={`px-2 py-1 rounded-sm pixel-border font-black pixel-text bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow transition-all duration-200 outline-none text-xs px-2 py-1 min-w-[60px] ${
+              isTyping ? "opacity-60 cursor-not-allowed" : "hover:from-gray-500 hover:to-gray-700 hover:scale-105 animate-pulse-button"
+            }`}
+            onClick={() => setStep(conversation.length - 1)}
+            disabled={isTyping}
+            aria-label="Skip Conversation"
+          >
+            Skip Conversation
+          </button>
+        </div>
+      )}
     </div>
   );
 };
