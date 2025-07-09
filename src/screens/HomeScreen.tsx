@@ -9,15 +9,15 @@ import { useDeviceLayout } from "../hooks/useOrientation";
 // Avatar options for modal
 const AVATAR_OPTIONS = [
   {
-    label: "Arjun",
+    label: "Aman",
     src: "/characters/Intern1.png",
   },
   {
-    label: "Bharat",
+    label: "Mike",
     src: "/characters/Intern2.png",
   },
   {
-    label: "Hari",
+    label: "Joel",
     src: "/characters/Intern3.png",
   },
   {
@@ -40,6 +40,10 @@ const AVATAR_OPTIONS = [
     label: "Tejas",
     src: "/characters/Intern8.png",
   },
+  {
+    label: "Niharika",
+    src: "/characters/Intern9.png",
+  }
 ];
 
 const HomeScreen: React.FC = () => {
@@ -96,6 +100,47 @@ const HomeScreen: React.FC = () => {
       }`}
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.webp')` }}
     >
+      {/* Social Media Vertical Bar */}
+      <div className="fixed top-1/2 left-0 z-40 -translate-y-1/2 flex flex-col gap-3 p-2 bg-white/10 rounded-r-2xl shadow-lg backdrop-blur-md border-l-4 border-green-400">
+        {[
+          {
+            label: 'Instagram',
+            icon: <Icon icon="mdi:instagram" width={28} height={28} />, // color handled below
+            url: 'https://www.instagram.com/rareminds.uni?igsh=MTV6NTNwa3N6cmcycw==',
+            color: 'hover:bg-gradient-to-tr hover:from-pink-500 hover:to-yellow-400',
+          },
+          {
+            label: 'Facebook',
+            icon: <Icon icon="mdi:facebook" width={28} height={28} />,
+            url: 'https://www.facebook.com/profile.php?id=61576552526095',
+            color: 'hover:bg-blue-700',
+          },
+          {
+            label: 'LinkedIn',
+            icon: <Icon icon="mdi:linkedin" width={28} height={28} />,
+            url: 'https://www.linkedin.com/company/rareminds/',
+            color: 'hover:bg-blue-800',
+          },
+        ].map((item, idx) => (
+          <motion.a
+            key={item.label}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 bg-white/80 border-2 border-green-300 shadow-md mb-1 hover:scale-110 ${item.color}`}
+            title={item.label}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 + idx * 0.08, type: 'spring' }}
+            whileHover={{ scale: 1.18, rotate: 6 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="transition-colors duration-200 group-hover:text-white text-gray-700">
+              {item.icon}
+            </span>
+          </motion.a>
+        ))}
+      </div>
       {/* Avatar Modal */}
       {showAvatarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
