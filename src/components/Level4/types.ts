@@ -2,6 +2,10 @@ export interface Case {
   id: number;
   title: string;
   scenario: string;
+  productName: string; // Name of the product for this case
+  batchNumber: string; // Batch number for this case
+  imageSrc: string; // Image source for the product
+  deviationType: string; // Type of deviation for this case
   questions: {
     violation: {
       question: string;

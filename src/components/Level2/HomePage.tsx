@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gameModes } from '../../data/Level2/gameModes';
 import { useDeviceLayout } from '../../hooks/useOrientation';
-import { GameStorage, GameStats } from '../../utils/Level2/gameStorage';
-import { Play, Filter, Zap, Crown, Gamepad2, ArrowLeft } from 'lucide-react';
+import { useLevel2GameStats } from './hooks/useLevel2GameStats';
+import { Play, Filter, Zap, Crown, Gamepad2, ArrowLeft, Database, HardDrive } from 'lucide-react';
 import './index.css';
 
 interface HomePageProps {
@@ -14,12 +14,7 @@ interface HomePageProps {
 const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
   const navigate = useNavigate();
   const { isMobile } = useDeviceLayout();
-  const [gameStats, setGameStats] = useState<GameStats>(GameStorage.getStats());
-
-  useEffect(() => {
-    // Load stats on component mount
-    setGameStats(GameStorage.getStats());
-  }, []);
+  const { stats: gameStats, loading: statsLoading, error: statsError } = useLevel2GameStats('1', 'gmp-vs-non-gmp');
 
   const getIcon = (modeId: string) => {
     switch (modeId) {
@@ -97,9 +92,24 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
                   <div className="text-green-100 text-xs font-bold">LVL</div>
                   <div className="text-white text-sm font-black">02</div>
                 </div>
-                <div className="pixel-border bg-blue-600 px-2 py-1">
-                  <div className="text-blue-100 text-xs font-bold">SCORE</div>
-                  <div className="text-white text-sm font-black">{gameStats.highScore.toString().padStart(4, '0')}</div>
+                <div className="pixel-border bg-blue-600 px-2 py-1 relative group">
+                  <div className="text-blue-100 text-xs font-bold flex items-center">
+                    SCORE
+                    {statsError ? (
+                      <HardDrive className="w-2 h-2 ml-1 text-yellow-300" />
+                    ) : (
+                      <Database className="w-2 h-2 ml-1 text-green-300" />
+                    )}
+                  </div>
+                  <div className="text-white text-sm font-black">
+                    {statsLoading ? '----' : gameStats.highScore.toString().padStart(4, '0')}
+                  </div>
+                  {/* Tooltip */}
+                  {statsError && (
+                    <div className="absolute bottom-full right-0 mb-1 bg-gray-800 text-white text-xs px-2 py-1 pixel-border opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                      Using local data
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -280,9 +290,38 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
                   <div className="text-green-100 text-xs font-bold">LEVEL</div>
                   <div className="text-white text-lg font-black">02</div>
                 </div>
-                <div className="pixel-border bg-blue-600 px-4 py-2">
-                  <div className="text-blue-100 text-xs font-bold">SCORE</div>
-                  <div className="text-white text-lg font-black">{gameStats.highScore.toString().padStart(4, '0')}</div>
+                <div className="pixel-border bg-blue-600 px-4 py-2 relative group">
+                  <div className="text-blue-100 text-xs font-bold flex items-center justify-center">
+                    SCORE
+                    {statsError ? (
+                      <HardDrive className="w-3 h-3 ml-1 text-yellow-300" />
+                    ) : (
+                      <Database className="w-3 h-3 ml-1 text-green-300" />
+                    )}
+                  </div>
+                  <div className="text-white text-lg font-black">
+                    {statsLoading ? '----' : gameStats.highScore.toString().padStart(4, '0')}
+                  </div>
+                  {/* Enhanced Tooltip for Desktop */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs px-3 py-2 pixel-border opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {statsError ? (
+                      <>
+                        <div className="text-yellow-300 font-bold">📱 Local Data</div>
+                        <div>Stored on this device</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-green-300 font-bold">☁️ Online Data</div>
+                        <div>Synced across devices</div>
+                        {'averageScore' in gameStats && (
+                          <div className="mt-1 pt-1 border-t border-gray-600">
+                            <div>Games: {gameStats.totalGamesPlayed}</div>
+                            <div>Average: {gameStats.averageScore}</div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

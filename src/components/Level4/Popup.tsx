@@ -1,14 +1,21 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { LevelProgressService } from "../../services/levelProgressService";
 
 interface PopupProps {
   open: boolean;
   onClose: () => void;
   showNext?: boolean;
   children: React.ReactNode;
+  showNavigation?: boolean;
+  onBack?: () => void;
+  onContinue?: () => void;
+  continueText?: string;
+  backText?: string;
 }
 
 export const Popup: React.FC<PopupProps> = ({
@@ -16,9 +23,23 @@ export const Popup: React.FC<PopupProps> = ({
   onClose,
   showNext,
   children,
+  showNavigation,
+  onBack,
+  onContinue,
+  continueText = "Start Investigation",
+  backText = "Back"
 }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
+  
+  const handleBack = () => {
+    if (onBack) onBack();
+  };
+  
+  const handleContinue = () => {
+    if (onContinue) onContinue();
+  };
+  
   return (
     <AnimatePresence>
       {open && (
@@ -109,6 +130,34 @@ export const Popup: React.FC<PopupProps> = ({
               </button>
             )}
             {children}
+            
+            {/* Navigation Buttons at Bottom */}
+            {showNavigation && (
+              <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4 sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
+                <button 
+                  onClick={handleBack} 
+                  className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
+                >
+                  <Icon 
+                    icon="mdi:chevron-left" 
+                    className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" 
+                  />
+                  <span>{backText}</span>
+                </button>
+                <div className="flex w-auto justify-end">
+                  <button 
+                    onClick={handleContinue} 
+                    className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
+                  >
+                    <span>{continueText}</span>
+                    <Icon 
+                      icon="mdi:chevron-right" 
+                      className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4 ml-1" 
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -130,6 +179,9 @@ interface VictoryPopupProps {
 export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   open,
   onClose,
+  score,
+  combo,
+  health,
   showNext = false,
   showGoToModules = true,
   moduleId,
@@ -137,19 +189,68 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
+  // Calculate stars based on score (0-5 stars)
+  const maxScore = 30;
+  const stars = Math.round((score / maxScore) * 5);
+
+  // Get module ID from URL path if not provided
+  const getModuleIdFromPath = () => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : "1";
+  };
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || isUpdatingProgress) return;
+
+      const currentModuleId = moduleId || getModuleIdFromPath();
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(currentModuleId),
+          4 // Level 4
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 4 of Module ${currentModuleId} marked as completed`);
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, moduleId, isUpdatingProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
 
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
     let id = moduleId;
-    if (!id) {
+    // Always fallback to '1' if id is falsy (empty string, undefined, null, etc)
+    if (!id || id === '/modules' || id === 'modules') {
+      // Try to extract moduleId from current URL, fallback to '1'
       const match = window.location.pathname.match(/modules\/(\w+)/);
-      id = match ? match[1] : "";
+      id = match && match[1] ? match[1] : '1';
     }
-    if (id) {
-      navigate(`/modules/${id}`);
-    } else {
-      navigate("/modules");
-    }
+    // If id is still not a valid number, fallback to '1'
+    if (!id || isNaN(Number(id))) id = '1';
+    // Go to the module root page (not levels list)
+    navigate(`/modules/${id}`);
   }, [moduleId, navigate]);
 
   // Handler for Next
@@ -220,17 +321,19 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               centerY +
               radius * Math.sin(angle) -
               (isMobileHorizontal ? 12 : 20);
+            // Show filled star if i < stars, else gray
             return (
               <motion.span
                 key={i}
-                className={`absolute text-yellow-400${
-                  isMobileHorizontal ? " text-2xl" : " text-4xl"
-                }`}
+                className={`absolute ${i < stars ? "text-yellow-400" : "text-gray-300"}${isMobileHorizontal ? " text-2xl" : " text-4xl"}`}
                 style={{
                   left: isMobileHorizontal
                     ? `${x}px`
                     : `calc(50% + ${x - 300}px)`,
                   top: `${y}px`,
+                  filter: i < stars
+                    ? "drop-shadow(0 0 3px #fde68a) drop-shadow(0 0 6px #fbbf24)"
+                    : undefined,
                 }}
                 initial={{ scale: 0, rotate: -90 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -267,6 +370,39 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         >
           Well Done!
         </motion.h2>
+        
+        {/* Score, Combo, and Health Display */}
+        <motion.div 
+          className={`flex justify-center ${isMobileHorizontal ? "gap-2 mb-1" : "gap-6 mb-3"}`}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{
+            delay: 0.55,
+            type: "spring",
+            stiffness: 200,
+            damping: 18,
+          }}
+        >
+          <div className="flex flex-col items-center">
+            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Score</span>
+            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-green-600`}>
+              {score} / 30
+            </span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Combo</span>
+            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-yellow-600`}>
+              {combo}
+            </span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Health</span>
+            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-pink-600`}>
+              {health}
+            </span>
+          </div>
+        </motion.div>
+        
         {/* 🧑‍🔬 Character */}
         <motion.div
           className={`relative w-full flex justify-center items-center mb-2 py-3${
@@ -298,6 +434,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             }}
           />
         </motion.div>
+        {/* Removed duplicate Score/Combo/Health display since it's already shown above */}
         {/* 🔘 Buttons */}
         <motion.div
           className={`flex justify-center gap-3 w-full mt-1${
@@ -315,42 +452,30 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         >
           {showGoToModules && (
             <button
-              className={`bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2$${
-                isMobileHorizontal ? " py-1 px-2 text-xs" : ""
-              } border border-green-200/60`}
-              style={{
-                boxShadow: "0 2px 8px 0 rgba(34,197,94,0.10)",
-                background: undefined,
-              }}
+              className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
               onClick={handleGoToLevels}
               aria-label="Back to Levels"
               type="button"
             >
               <Icon
                 icon="mdi:map-marker-path"
-                className={`w-6 h-6${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1"
               />
-              Back to Levels
+              <span>Back to Modules</span>
             </button>
           )}
           {showNext && (
             <button
-              className={`bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2$${
-                isMobileHorizontal ? " py-1 px-3 text-xs" : ""
-              } border border-blue-200/60`}
-              style={{
-                boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
-                background: undefined,
-              }}
+              className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
               onClick={handleNext}
-              aria-label="Next"
+              aria-label="Next Case"
               type="button"
             >
               <Icon
                 icon="mdi:arrow-right-bold"
-                className={`w-6 h-6${isMobileHorizontal ? " w-4 h-4" : ""}`}
+                className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1"
               />
-              Next
+              <span>Next Case</span>
             </button>
           )}
         </motion.div>
@@ -363,8 +488,9 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
 interface FeedbackPopupProps {
   open: boolean;
   onClose: () => void;
-  onNext: () => void;
+  onNext?: () => void; // Made optional since we're using our own navigation
   onBackToLevels: () => void;
+  onPlayAgain: () => void; // NEW: callback to reset to login
   score: number;
   time: string;
 }
@@ -372,22 +498,63 @@ interface FeedbackPopupProps {
 export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
   open,
   onClose,
-  onNext,
   onBackToLevels,
+  onPlayAgain, // NEW
   score,
   time,
+  // onNext is not used as we're handling navigation directly
 }) => {
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
   // Calculate stars: 0-5 based on score (max 30)
   const maxScore = 30;
   const stars = Math.round((score / maxScore) * 5);
   const isMobile = window.innerWidth <= 600;
   const popupHeight = isMobile ? 'auto' : 'auto';
   const popupMaxHeight = isMobile ? '80vh' : '90vh';
-  const navigate = useNavigate();
-  // Try to get moduleId from URL, fallback to 1
-  let moduleId = 1;
-  const match = window.location.pathname.match(/modules\/(\d+)/);
-  if (match && match[1]) moduleId = match[1];
+
+  // Get module ID from URL path
+  const getModuleIdFromPath = () => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : "1";
+  };
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || isUpdatingProgress) return;
+
+      const moduleId = getModuleIdFromPath();
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(moduleId),
+          4 // Level 4
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 4 of Module ${moduleId} marked as completed`);
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, isUpdatingProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
   return (
     <AnimatePresence>
       {open && (
@@ -458,36 +625,89 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
                 </span>
               </span>
             </button>
-            {/* Stars */}
-            <div className="flex justify-center mt-2 mb-2">
-              {[...Array(5)].map((_, i) => (
-                <span
-                  key={i}
-                  className={`text-4xl mx-1 ${
-                    i < stars ? "text-yellow-400" : "text-gray-300"
-                  }`}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
+            {/* Stars in a curved arc */}
+            <motion.div
+              className={`relative flex items-center justify-center w-full ${isMobile ? "w-[260px] h-8 mb-1 justify-center" : "h-14 mb-2"}`}
+              style={
+                isMobile
+                  ? { marginLeft: 0, justifyContent: "center" }
+                  : { margin: "0 auto", justifyContent: "center" }
+              }
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                delay: 0.1,
+                type: "spring",
+                stiffness: 180,
+                damping: 18,
+              }}
+            >
+              {[0, 1, 2, 3, 4].map((i) => {
+                // Arc math: angle from 120deg to 60deg (flatter upside-down arc)
+                const angle = -(120 - i * 15) * (Math.PI / 180); // 120, 105, 90, 75, 60
+                const radius = isMobile ? 140 : 200;
+                const centerX = isMobile ? 130 : 300;
+                const centerY = isMobile ? 160 : 240;
+                const x =
+                  centerX +
+                  radius * Math.cos(angle) -
+                  (isMobile ? 12 : 20);
+                const y =
+                  centerY +
+                  radius * Math.sin(angle) -
+                  (isMobile ? 12 : 20);
+                // Show filled star if i < stars, else gray
+                return (
+                  <motion.span
+                    key={i}
+                    className={`absolute ${i < stars ? "text-yellow-400" : "text-gray-300"}${isMobile ? " text-2xl" : " text-4xl"}`}
+                    style={{
+                      left: isMobile
+                        ? `${x}px`
+                        : `calc(50% + ${x - 300}px)`,
+                      top: `${y}px`,
+                      filter: i < stars
+                        ? "drop-shadow(0 0 3px #fde68a) drop-shadow(0 0 6px #fbbf24)"
+                        : undefined,
+                    }}
+                    initial={{ scale: 0, rotate: -90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{
+                      delay: 0.2 + i * 0.07,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 18,
+                    }}
+                  >
+                    ⭐
+                  </motion.span>
+                );
+              })}
+            </motion.div>
             {/* Well Done! */}
-            <h2 className="text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-2 text-center">
+            <h2 className="text-xl lg:text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-2 mt-6 text-center">
               Well Done!
             </h2>
-            {/* Score and Time */}
-            <div className="flex justify-center gap-6 mb-4">
-              <div className="flex flex-col items-center">
-                <span className="text-lg font-bold text-blue-700">Score</span>
-                <span className="text-2xl font-extrabold text-green-600">
-                  {score} / 30
-                </span>
+            {/* Score and Time + Character */}
+            <div className="flex items-center justify-center gap-4 lg:mb-4 w-full">
+              {/* Left: Score and Time content */}
+              <div className="flex flex-col items-start justify-center">
+                <div className="mb-2">
+                  <span className="text-sm lg:text-lg font-bold text-blue-700">Score</span>
+                  <span className="block text-sm lg:text-2xl font-extrabold text-green-600">{score} / 30</span>
+                </div>
+                <div>
+                  <span className="text-sm lg:text-lg font-bold text-blue-700">Time</span>
+                  <span className="block text-sm lg:text-2xl  font-extrabold text-yellow-600">{time}</span>
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <span className="text-lg font-bold text-blue-700">Time</span>
-                <span className="text-2xl font-extrabold text-yellow-600">
-                  {time}
-                </span>
+              {/* Right: Character image */}
+              <div className="flex-shrink-0">
+                <img
+                  src="/Level4/chara1.webp"
+                  alt="Character"
+                  className="object-contain w-[90px] h-[90px] lg:w-[120px] lg:h-[120px] rounded-lg  "
+                />
               </div>
             </div>
             {/* Character and background */}
@@ -505,17 +725,25 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
               />
             </div> */}
             {/* Buttons */}
-            <div className="flex justify-center gap-4 mt-4">
+            <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} justify-center ${isMobile ? 'gap-2' : 'gap-4'} mt-2 lg:mt-4 w-full px-2`}>
               <button
-                className="bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 hover:from-green-500 hover:to-teal-500 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center gap-2 border border-green-200/60"
-                onClick={() => navigate(`/modules/${moduleId}/`)}
+                className={`  hover:text-teal-400 hover:border-teal-400 text-white font-bold ${isMobile ? 'py-1.5 text-sm' : 'py-2'} px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2 border border-green-200/60 ${isMobile ? 'w-full' : ''}`}
+                onClick={onBackToLevels}
                 aria-label="Back to Levels"
                 type="button"
               >
-                <Icon icon="mdi:map-marker-path" className="w-6 h-6" />
-                Back to Levels
+                <Icon icon="mdi:map-marker-path" className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+                Back to Modules
               </button>
-             
+              <button
+                className={` hover:text-teal-400 hover:border-teal-400 text-white font-bold ${isMobile ? 'py-1.5 text-sm' : 'py-2'} px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2 border border-green-200/60 ${isMobile ? 'w-full' : ''}`}
+                onClick={onPlayAgain}
+                aria-label="Play Again"
+                type="button"
+              >
+                <Icon icon="mdi:arrow-right-bold" className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+                Play Again
+              </button>
             </div>
           </motion.div>
         </motion.div>

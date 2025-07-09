@@ -5,6 +5,10 @@ export const cases: Case[] = [
     id: 1,
     title: "Cleaning Record Missing",
     scenario: "QA discovers that cleaning records for a mixer used in 3 batches were not filled. All batches passed QC visually.",
+    productName: "Paracetamol Syrup",
+    batchNumber: "BATCH-001",
+    imageSrc: "/Level4/product1.webp", // Example image, update as needed
+    deviationType: "Documentation",
     questions: {
       violation: {
         question: "What GMP principle is violated?",
@@ -42,6 +46,10 @@ export const cases: Case[] = [
     id: 2,
     title: "Uncalibrated Equipment Used",
     scenario: "A batch was processed using a balance that had expired calibration. QA caught the error post-batch completion.",
+    productName: "Cough Syrup",
+    batchNumber: "BATCH-002",
+    imageSrc: "/Level4/product2.webp", // Example image, update as needed
+    deviationType: "Equipment Calibration",
     questions: {
       violation: {
         question: "What GMP aspect failed?",
