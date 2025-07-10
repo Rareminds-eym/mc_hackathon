@@ -127,14 +127,18 @@ export const useBingoGame = () => {
         is_completed: gameComplete,
         current_definition: selectedDefinition,
         game_start_time: gameStartTime,
+        module_number: 1, // Added for Level 1
+        level_number: 1,  // Added for Level 1
         ...gameData
       };
 
-      // First try to update existing record for this user
+      // First try to update existing record for this user, module, and level
       const { data: updateData, error: updateError } = await supabase
         .from('level_1')
         .update(dataToSave)
         .eq('user_id', user.id)
+        .eq('module', 1)
+        .eq('level', 1)
         .select();
 
       let data, error;
@@ -232,9 +236,13 @@ export const useBingoGame = () => {
           total_time_seconds: timer,
           score,
           rows_solved: rowsSolved,
-          username: user.user_metadata?.full_name || user.email || 'Unknown User'
+          username: user.user_metadata?.full_name || user.email || 'Unknown User',
+          module_number: 1, // Added for Level 1
+          level_number: 1,  // Added for Level 1
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('module', 1)
+        .eq('level', 1);
 
       if (error) {
         console.warn('Database update failed (table might not exist):', error.message);
@@ -595,7 +603,9 @@ export const useBingoGame = () => {
             score,
             rows_solved: rowsSolved,
             username: user.user_metadata?.full_name || user.email || 'Unknown User',
-            is_restarted: true // Add a flag to indicate this was a restart, not natural completion
+            is_restarted: true, // Add a flag to indicate this was a restart, not natural completion
+            module_number: 1, // Added for Level 1
+            level_number: 1,  // Added for Level 1
           })
           .eq('user_id', user.id);
       } catch (error) {

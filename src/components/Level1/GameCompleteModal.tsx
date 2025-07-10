@@ -96,7 +96,8 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
           <p className={`${isMobileLandscape ? 'text-sm mb-4' : 'text-slate-600 mb-6'}`}>
             You've mastered all the quality control terms! Great job on your learning journey.
           </p>
-          {/* <button
+          {/* Play Again button (uncommented and fixed) */}
+          <button
             onClick={onPlayAgain}
             className={`flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-semibold border-none cursor-pointer transition-all mx-auto scale-100 ${
               isMobileLandscape ? 'py-2 px-4 text-sm' : 'py-3 px-8 text-base'
@@ -104,7 +105,6 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
           >
             <RotateCcw className={`${isMobileLandscape ? 'w-4 h-4' : 'w-5 h-5'}`} />
             <span>Play Again</span>
-          </button> */}
           </button>
           <button
             onClick={() => window.location.href = '/level2'}
