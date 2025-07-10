@@ -272,7 +272,7 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
                     disabled={isTyping}
                     aria-label="Next"
                   >
-                    {current && 'isLetsPlay' in current && current.isLetsPlay ? "Show Countdown" : "Next"}
+                    {current && 'isLetsPlay' in current && current.isLetsPlay ? "Start Game" : "Next"}
                   </button>
                   <button
                     className={`px-2 py-1 rounded-sm pixel-border font-black pixel-text bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow transition-all duration-200 outline-none ${

@@ -322,16 +322,24 @@ export const useBingoGame = () => {
           setGameStartTime(savedGame.game_start_time);
           setSessionId(savedGame.session_id || (user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`));
           setGameComplete(savedGame.is_completed || false);
-          
-          // Set the current definition or select a new one if none exists
+
+          // Only set the current definition if it is still unanswered
           if (savedGame.current_definition) {
-            setSelectedDefinitionState(savedGame.current_definition);
+            // Check if the current definition is for a cell that is already selected
+            const isAnswered = restoredCells.some(cell => cell.definition === savedGame.current_definition && cell.selected);
+            if (!isAnswered) {
+              setSelectedDefinitionState(savedGame.current_definition);
+            } else {
+              setTimeout(() => {
+                selectRandomDefinition(restoredCells);
+              }, 0);
+            }
           } else {
             setTimeout(() => {
               selectRandomDefinition(restoredCells);
             }, 0);
           }
-          
+
           console.log('Game restored from database');
         } else if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
           // Restore from Redux

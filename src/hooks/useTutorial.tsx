@@ -22,11 +22,11 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     id: 2,
-    title: 'How to Play',
-    message: 'Read the definition shown in the instructions panel, then click the matching term on the Bingo grid. Complete all grids to win!',
+    title: 'Definition Panel',
+    message: 'Read the definition shown in the panel after the countdown, then click the matching term on the Bingo grid. Complete all grids to proceed to Level2!',
     icon: React.createElement(Lightbulb, { className: "h-5 w-5 text-white" }),
     position: 'top',
-    highlight: 'Look for the definition in this container',
+    highlight: 'Look for the definition in the highlighted container',
     trigger: 'auto'
   },
   {
@@ -35,16 +35,16 @@ const tutorialSteps: TutorialStep[] = [
     message: 'Select the correct term that matches the definition best. ',
     icon: React.createElement(Target, { className: "h-5 w-5 text-white" }),
     position: 'top',
-    highlight: 'Click any term on the Bingo Panel and see how it highlights',
+    highlight: 'Hover any term on the Bingo Panel and see how it pops out!',
     trigger: 'interaction'
   },
   {
     id: 4,
     title: 'Track Your Progress',
-    message: 'Check your stats in the menu button to see your timer, score, and rows completed. The navbar shows your current level.',
+    message: 'Check your stats in the menu bar to see your timer, score, and rows completed. The navbar shows your current level.',
     icon: React.createElement(Trophy, { className: "h-5 w-5 text-white" }),
     position: 'top',
-    highlight: 'Your progress is tracked in real-time',
+    highlight: '5 cell completion = 1 row(line) = 10m points', // Updated highlight text
     trigger: 'auto'
   },
   {
