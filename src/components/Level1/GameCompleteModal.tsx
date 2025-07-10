@@ -3,6 +3,7 @@ import { Trophy, Star, RotateCcw } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { useAuth } from '../../contexts/AuthContext';
 import { LevelProgressService } from '../../services/levelProgressService';
+import { useLevelProgress } from '../../hooks/useLevelProgress';
 
 interface GameCompleteModalProps {
   isVisible: boolean;
@@ -24,6 +25,9 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const isMobileLandscape = isMobile && isHorizontal;
 
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(moduleId);
+
   // Update level progress when modal becomes visible
   useEffect(() => {
     const updateLevelProgress = async () => {
@@ -41,6 +45,8 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
           console.error('Failed to update level progress:', error);
         } else {
           console.log(`Level ${levelId} of Module ${moduleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
         }
       } catch (error) {
         console.error('Error updating level progress:', error);
@@ -50,7 +56,7 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
     };
 
     updateLevelProgress();
-  }, [isVisible, user, moduleId, levelId, isUpdatingProgress]);
+  }, [isVisible, user, moduleId, levelId, isUpdatingProgress, refreshProgress]);
 
   if (!isVisible) return null;
 

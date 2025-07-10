@@ -3,6 +3,7 @@ import { ArrowRight, X } from 'lucide-react';
 import { Term } from '../../../types/Level2/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LevelProgressService } from '../../../services/levelProgressService';
+import { useLevelProgress } from '../../../hooks/useLevelProgress';
 
 interface ResultsModalProps {
   showResults: boolean;
@@ -33,6 +34,9 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
 }) => {
   const { user } = useAuth();
   const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
+
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(moduleId);
 
   // Update level progress when modal becomes visible and game is completed
   useEffect(() => {
@@ -74,6 +78,8 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
             userId: user.id,
             data
           });
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
         }
       } catch (error) {
         console.error('ResultsModal: Error updating level progress:', error);
@@ -81,7 +87,7 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
     };
 
     updateLevelProgress();
-  }, [showResults, user, moduleId, levelId, hasUpdatedProgress, score]);
+  }, [showResults, user, moduleId, levelId, hasUpdatedProgress, score, refreshProgress]);
 
   // Reset the progress update flag when modal is closed
   useEffect(() => {

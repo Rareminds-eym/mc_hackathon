@@ -5,6 +5,7 @@ import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { LevelProgressService } from "../../services/levelProgressService";
+import { useLevelProgress } from "../../hooks/useLevelProgress";
 
 interface PopupProps {
   open: boolean;
@@ -348,6 +349,9 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { user } = useAuth();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(moduleId ? parseInt(moduleId) : undefined);
+
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
     let id = moduleId;
@@ -389,6 +393,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
           console.error('Failed to update level progress:', error);
         } else {
           console.log(`Level 3 of Module ${moduleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
         }
       } catch (error) {
         console.error('Error updating level progress:', error);
@@ -398,7 +404,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
     };
 
     updateLevelProgress();
-  }, [open, user, isLevelCompleted, moduleId, isUpdatingProgress]);
+  }, [open, user, isLevelCompleted, moduleId, isUpdatingProgress, refreshProgress]);
 
   // Reset the progress update flag when modal is closed
   useEffect(() => {
