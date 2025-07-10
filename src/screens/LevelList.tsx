@@ -6,7 +6,7 @@ import { useLevelProgress } from '../hooks/useLevelProgress';
 import { Button, DifficultyBadge } from '../components/ui';
 import { useDeviceLayout } from '../hooks/useOrientation';
 import type { Level, Module } from '../types';
-import LevelProgressDebug from '../components/Debug/LevelProgressDebug';
+
 
 const LevelList: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -24,7 +24,8 @@ const LevelList: React.FC = () => {
   const {
     isLoading: progressLoading,
     isLevelCompleted: isLevelCompletedDB,
-    isLevelUnlocked: isLevelUnlockedDB,
+    isLevelUnlocked,
+    isLevelUnlockedDB,
     completeLevel: completeLevelDB
   } = useLevelProgress(module?.id);
 
@@ -48,9 +49,9 @@ const LevelList: React.FC = () => {
     );
   }
 
-  const selectLevel = (level: Level) => {
+  const selectLevel = async (level: Level) => {
     // Check if level is unlocked before allowing navigation
-    const isUnlocked = isLevelUnlockedDB(module.id, level.id);
+    const isUnlocked = await isLevelUnlockedDB(module.id, level.id);
     if (!isUnlocked) {
       alert(`Level ${level.id} is locked. Complete the previous level first.`);
       return;
@@ -203,7 +204,7 @@ const LevelList: React.FC = () => {
           {module.levels.map((level) => {
             const levelId = level.id;
             const isCompleted = isLevelCompletedDB(module.id, levelId);
-            const isUnlocked = isLevelUnlockedDB(module.id, levelId);
+            const isUnlocked = isLevelUnlocked(module.id, levelId);
 
             return (
               <button
@@ -302,7 +303,7 @@ const LevelList: React.FC = () => {
               const isCompletedRedux = isLevelCompleted(module.id, level.id);
               const isCompletedDB = isLevelCompletedDB(module.id, level.id);
               const isCompleted = isCompletedRedux || isCompletedDB;
-              const isUnlocked = isLevelUnlockedDB(module.id, level.id);
+              const isUnlocked = isLevelUnlocked(module.id, level.id);
               const colorIndex = index % levelColors.length;
               const position = (index / (module.levels.length - 1)) * 100;
 
@@ -449,7 +450,7 @@ const LevelList: React.FC = () => {
               const isCompletedRedux = isLevelCompleted(module.id, level.id);
               const isCompletedDB = isLevelCompletedDB(module.id, level.id);
               const isCompleted = isCompletedRedux || isCompletedDB;
-              const isUnlocked = isLevelUnlockedDB(module.id, level.id);
+              const isUnlocked = isLevelUnlocked(module.id, level.id);
               const colorIndex = index % levelColors.length;
 
               return (
@@ -614,10 +615,7 @@ const LevelList: React.FC = () => {
           </div>
         </div>
 
-        {/* Debug component - temporary */}
-        <div style={{ marginTop: '20px' }}>
-          <LevelProgressDebug moduleId={module.id} />
-        </div>
+
       </div>
     </div>
   );

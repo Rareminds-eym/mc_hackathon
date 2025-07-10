@@ -5,6 +5,7 @@ import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { LevelProgressService } from "../../services/levelProgressService";
+import { useLevelProgress } from "../../hooks/useLevelProgress";
 
 interface PopupProps {
   open: boolean;
@@ -192,22 +193,26 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { user } = useAuth();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
-  // Calculate stars based on score (0-5 stars)
-  const maxScore = 30;
-  const stars = Math.round((score / maxScore) * 5);
-
   // Get module ID from URL path if not provided
   const getModuleIdFromPath = () => {
     const match = window.location.pathname.match(/modules\/(\w+)/);
     return match ? match[1] : "1";
   };
 
+  const currentModuleId = moduleId || getModuleIdFromPath();
+
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(parseInt(currentModuleId));
+
+  // Calculate stars based on score (0-5 stars)
+  const maxScore = 30;
+  const stars = Math.round((score / maxScore) * 5);
+
   // Update level progress when modal becomes visible
   useEffect(() => {
     const updateLevelProgress = async () => {
       if (!open || !user || isUpdatingProgress) return;
 
-      const currentModuleId = moduleId || getModuleIdFromPath();
       setIsUpdatingProgress(true);
       try {
         const { error } = await LevelProgressService.completeLevel(
@@ -220,6 +225,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
           console.error('Failed to update level progress:', error);
         } else {
           console.log(`Level 4 of Module ${currentModuleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
         }
       } catch (error) {
         console.error('Error updating level progress:', error);
@@ -229,7 +236,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
     };
 
     updateLevelProgress();
-  }, [open, user, moduleId, isUpdatingProgress]);
+  }, [open, user, currentModuleId, isUpdatingProgress, refreshProgress]);
 
   // Reset the progress update flag when modal is closed
   useEffect(() => {
@@ -520,12 +527,16 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
     return match ? match[1] : "1";
   };
 
+  const moduleId = getModuleIdFromPath();
+
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(parseInt(moduleId));
+
   // Update level progress when modal becomes visible
   useEffect(() => {
     const updateLevelProgress = async () => {
       if (!open || !user || isUpdatingProgress) return;
 
-      const moduleId = getModuleIdFromPath();
       setIsUpdatingProgress(true);
       try {
         const { error } = await LevelProgressService.completeLevel(
@@ -538,6 +549,8 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
           console.error('Failed to update level progress:', error);
         } else {
           console.log(`Level 4 of Module ${moduleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
         }
       } catch (error) {
         console.error('Error updating level progress:', error);
@@ -547,7 +560,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
     };
 
     updateLevelProgress();
-  }, [open, user, isUpdatingProgress]);
+  }, [open, user, moduleId, isUpdatingProgress, refreshProgress]);
 
   // Reset the progress update flag when modal is closed
   useEffect(() => {
