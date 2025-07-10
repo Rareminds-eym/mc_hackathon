@@ -102,6 +102,8 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
           <p className={`${isMobileLandscape ? 'text-sm mb-4' : 'text-slate-600 mb-6'}`}>
             You've mastered all the quality control terms! Great job on your learning journey.
           </p>
+
+          {/* Play Again button (uncommented and fixed) */}
           <button
             onClick={onPlayAgain}
             className={`flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-semibold border-none cursor-pointer transition-all mx-auto scale-100 ${
