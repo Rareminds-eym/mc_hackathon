@@ -130,7 +130,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
         <div className={`flex-1 flex flex-col items-center justify-center ${isMobileLandscape ? 'hidden' : ''}`}> {/* Hide stats in mobile landscape */}
           <div className="flex items-center justify-center gap-4 w-full">
             <div className="flex-1 flex justify-end">
-              <div className="flex items-center gap-4">
+              <div className={`flex items-center gap-4${tutorialStep === 4 ? ' tutorial-highlight-navbar-stats' : ''}`}> {/* Highlight for tutorial step 4 */}
                 <div className="pixel-border bg-blue-900 px-2 py-1 flex flex-col items-center text-xs sm:text-sm">
                   <span className="text-blue-300 font-bold pixel-text">TIME</span>
                   <span className="text-white font-black pixel-text">{formatTime(timer)}</span>
@@ -150,7 +150,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
         </div>
         {/* Stats for mobile landscape: show compact row of icons+values */}
         {isMobileLandscape && (
-          <div className="flex flex-1 items-center justify-end gap-2">
+          <div className={`flex flex-1 items-center justify-end gap-2${tutorialStep === 4 ? ' tutorial-highlight-navbar-stats' : ''}`}> {/* Highlight for tutorial step 4 on mobile */}
             <div className="pixel-border bg-blue-900 px-1 py-0.5 flex items-center text-[10px] font-bold pixel-text">
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-blue-300 mr-1"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path d="M12 6v6l4 2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               {formatTime(timer)}
