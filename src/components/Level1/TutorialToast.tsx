@@ -26,12 +26,12 @@ const TutorialToast: React.FC<TutorialToastProps> = ({ step, onNext, onSkip, isV
   // Move modal to avoid covering highlighted elements
   const getPositionClasses = () => {
     if (!step) return '';
-    // Step 2: highlight instructions (top left), so show modal bottom right
-    if (step.id === 2) return isMobileLandscape ? 'bottom-4 right-4 left-auto top-auto transform-none' : 'bottom-8 right-8 left-auto top-auto transform-none';
+    // Step 2: highlight instructions (top left), so show modal bottom right and overlap content
+    if (step.id === 2) return isMobileLandscape ? 'bottom-4 right-4 left-auto top-auto transform-none z-[60]' : 'bottom-8 right-8 left-auto top-auto transform-none z-[60]';
     // Step 3: highlight grid (center), so show modal left bottom
     if (step.id === 3) return isMobileLandscape ? 'bottom-4 left-4 right-auto top-auto transform-none' : 'bottom-8 left-8 right-auto top-auto transform-none';
     // Step 4: highlight menu (right), so show modal right (top right)
-    if (step.id === 4) return isMobileLandscape ? 'top-4 right-4 left-auto bottom-auto transform-none' : 'top-8 right-8 left-auto bottom-auto transform-none';
+    if (step.id === 4) return isMobileLandscape ? 'top-16 right-4 left-auto bottom-auto transform-none' : 'top-24 right-8 left-auto bottom-auto transform-none';
     // Default: center
     switch (step.position) {
       case 'top':
@@ -117,25 +117,25 @@ const TutorialToast: React.FC<TutorialToastProps> = ({ step, onNext, onSkip, isV
             z-index: 51;
             box-shadow: 0 0 0 3px rgba(252, 242, 89, 0.7), 0 0 15px rgba(252, 242, 89, 0.5);
             border-radius: 4px;
-            animation: pulse-highlight 2s infinite;
+            animation: pulse-highlight-small 2s infinite;
           }
-          
           .tutorial-highlight-large {
             position: relative;
             z-index: 51;
-            box-shadow: 0 0 0 6px rgba(252, 242, 89, 0.7), 0 0 28px rgba(252, 242, 89, 0.5);
+            box-shadow: 0 0 0 3px rgba(252, 242, 89, 0.7), 0 0 15px rgba(252, 242, 89, 0.5);
             border-radius: 4px;
-            animation: pulse-highlight-large 2s infinite;
+            animation: pulse-highlight-small 2s infinite;
           }
-          
-          @keyframes pulse-highlight {
+          .tutorial-highlight-navbar-stats {
+            position: relative;
+            z-index: 51;
+            box-shadow: 0 0 0 3px rgba(252, 242, 89, 0.7), 0 0 15px rgba(252, 242, 89, 0.5);
+            border-radius: 4px;
+            animation: pulse-highlight-small 2s infinite;
+          }
+          @keyframes pulse-highlight-small {
             0%, 100% { box-shadow: 0 0 0 3px rgba(252, 242, 89, 0.6), 0 0 15px rgba(252, 242, 89, 0.5); }
-            50% { box-shadow: 0 0 0 6px rgba(252, 242, 89, 0.9), 0 0 20px rgba(252, 242, 89, 0.5); }
-          }
-          
-          @keyframes pulse-highlight-large {
-            0%, 100% { box-shadow: 0 0 0 6px rgba(252, 242, 89, 0.6), 0 0 28px rgba(252, 242, 89, 0.5); }
-            50% { box-shadow: 0 0 0 14px rgba(252, 242, 89, 0.9), 0 0 40px rgba(252, 242, 89, 0.5); }
+            50% { box-shadow: 0 0 0 7px rgba(252, 242, 89, 0.9), 0 0 22px rgba(252, 242, 89, 0.5); }
           }
         `}</style>
       )}
