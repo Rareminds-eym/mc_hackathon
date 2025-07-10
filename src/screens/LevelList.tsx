@@ -1,4 +1,5 @@
 import React from 'react';
+import {Check, Play} from 'lucide-react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { GMP_MODULES } from '../data/gmpModules';
 import { useGameRedux } from '../store/useGameRedux';
@@ -6,6 +7,7 @@ import { useLevelProgress } from '../hooks/useLevelProgress';
 import { Button, DifficultyBadge } from '../components/ui';
 import { useDeviceLayout } from '../hooks/useOrientation';
 import type { Level, Module } from '../types';
+import UnlockIcon from '../assets/unlock.svg';
 
 
 const LevelList: React.FC = () => {
@@ -28,7 +30,6 @@ const LevelList: React.FC = () => {
     isLevelUnlockedDB,
     completeLevel: completeLevelDB
   } = useLevelProgress(module?.id);
-
   if (!module) {
     return (
       <div style={{
@@ -193,7 +194,7 @@ const LevelList: React.FC = () => {
         </div>
 
         {/* Test Complete Buttons */}
-        <div style={{
+        {/* <div style={{
           display: 'flex',
           justifyContent: 'center',
           gap: isMobileLandscape ? '8px' : '15px',
@@ -263,7 +264,7 @@ const LevelList: React.FC = () => {
               </button>
             );
           })}
-        </div>
+        </div> */}
 
         {/* Horizontal Timeline */}
         <div style={{
@@ -526,11 +527,15 @@ const LevelList: React.FC = () => {
                   {/* Level number badge */}
                   <div
                     style={{
+                      display:'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      justifyContent: 'center',
                       position: 'absolute',
                       top: isMobileLandscape ? '-8px' : (isMobile ? '-10px' : '-15px'),
                       left: isMobileLandscape ? '8px' : (isMobile ? '10px' : '25px'),
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      color: !isUnlocked ? '#6b7280' : levelColors[colorIndex].square,
+                      background: isCompleted ? 'rgba(255, 255, 255, 0.9)' : (!isUnlocked ? 'rgba(245, 66, 66,1)' : 'rgba(255, 193, 7, 1)'),
+                      color: !isUnlocked ? '#6b7280' : '#000000',
                       padding: isMobileLandscape ? '3px 6px' : (isMobile ? '4px 8px' : '8px 16px'),
                       borderRadius: isMobileLandscape ? '10px' : (isMobile ? '12px' : '20px'),
                       fontSize: isMobileLandscape ? '0.6rem' : (isMobile ? '0.65rem' : '0.9rem'),
@@ -539,11 +544,16 @@ const LevelList: React.FC = () => {
                       border: '2px solid rgba(255,255,255,0.3)'
                     }}
                   >
-                    {!isUnlocked ? '🔒' : `${index + 1}.`} {level.taxonomy}
+                    {level.id} {level.taxonomy}
+                    {
+                      isCompleted ? 
+                      <Check className='text-white bg-emerald-500/90 p-1 rounded-3xl'/> :
+                      (!isUnlocked ? ':Locked' : <Play className='animate-pulse text-black bg-yellow-200/80 p-1 rounded-3xl '/>)
+                    }
                   </div>
 
                   {/* Completion badge */}
-                  {isCompleted && (
+                  {/* {isCompleted && (
                     <div style={{
                       position: 'absolute',
                       top: isMobileLandscape ? '-8px' : (isMobile ? '-10px' : '-15px'),
@@ -559,7 +569,7 @@ const LevelList: React.FC = () => {
                     }}>
                       ✓ Completed
                     </div>
-                  )}
+                  )} */}
 
                   {/* Level content */}
                   <div style={{ marginTop: isMobileLandscape ? '8px' : (isMobile ? '10px' : '20px') }}>
