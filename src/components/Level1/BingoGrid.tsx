@@ -52,34 +52,29 @@ const BingoGrid: React.FC<BingoGridProps> = ({
       'transition-all',
       'duration-200',
       'ease-[cubic-bezier(.4,2,.6,1)]',
-      'border-[0.5px]',
+      'border', // changed from border-[0.5px] to border for thinner border
       'border-black',
       'bg-white',
       'text-gray-800',
       'box-border',
+      'text-small'
     ];
 
     // Only use horizontal mode for mobile devices in landscape
     if (isMobile && isHorizontal) {
       classes.push(
-        'min-w-[20px]',
-        'text-[0.65rem]',
+        'min-w-[40px]',
+        'text-[0.8rem]', // increased from 0.5rem
         'aspect-[1.2/0.64]', 
       );
     } else {
       classes.push(
-        'aspect-[1.6/1.2]',
+        'aspect-[2.4/1.8]',
         'min-w-[20px]',
-        'text-base', 
-        'text-[0.6rem]',
+        'text-small', 
+        'text-[0.7rem]', // increased from 0.6rem
       );
     }
-
-    // Corner radius
-    if (cell.id === 0) classes.push('rounded-tl-lg');
-    if (cell.id === 4) classes.push('rounded-tr-lg');
-    if (cell.id === 20) classes.push('rounded-bl-lg');
-    if (cell.id === 24) classes.push('rounded-br-lg');
 
     // Selected state
     if (cell.selected) {
@@ -90,7 +85,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
           'from-yellow-400',
           'to-yellow-500',
           'text-white',
-          'border-[0.5px]',
+          'border-2', // Decreased border thickness for completed lines
           'border-black',
           'shadow-[0_4px_16px_rgba(251,191,36,0.3)]',
         );
@@ -98,22 +93,22 @@ const BingoGrid: React.FC<BingoGridProps> = ({
         classes = classes.filter(c => !c.includes('bg-') && !c.includes('text-') && !c.includes('border-'));
         classes.push(
           'bg-white',
-          'text-green-800',
-          'border-2',
-          'border-emerald-300',
+          'text-green-600',
+          'border-3',
+          'border-[#77B254]',
           'shadow-[0_4px_16px_rgba(16,185,129,0.2)]'
         );
       }
       // Always re-apply the correct text size class for selected cells
       if (isMobile && isHorizontal) {
-        classes.push('text-[0.65rem]');
+        classes.push('text-[0.9rem]'); // increased from 0.65rem
       } else {
-        classes.push('text-[0.6rem]');
+        classes.push('text-[1rem]'); // increased from 0.6rem
       }
     }
 
     if (cell.id === 24) {
-      classes.push('border-2 border-emerald-400 shadow-[0_0_0_2px_#4ade80]');
+      classes.push('border-3 border-[#77B254] shadow-[0_0_0_2px_#4ade80]');
     }
 
     if (gameComplete || cell.selected) {
@@ -146,28 +141,28 @@ const BingoGrid: React.FC<BingoGridProps> = ({
     `;
   };
 
-  // Container classes based on orientation
-  const containerClasses = `rounded-[8rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)] p-2 transition-[box-shadow,transform] duration-300 ${
-    isHorizontal ? 'p-1 rounded-[3rem]' : ''
-  } ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`;
-
   // Grid classes based on orientation
-  const gridClasses = `bingo-grid-grid grid grid-cols-5 gap-px border border-black bg-black rounded-lg shadow-[0_0_32px_8px_rgba(255,255,255,0.5),0_0_32px_16px_rgba(255,255,255,0.25)] ${
+  const gridClasses = `bingo-grid-grid grid grid-cols-5 gap-px pixel-border-narrow bg-gray-900 shadow-[0_0_32px_8px_rgba(59,130,246,0.10),0_0_32px_16px_rgba(59,130,246,0.08)] ${
     isHorizontal ? 'gap-0.5' : ''
   }`;
 
   return (
-    <div className={containerClasses} data-tutorial-highlight="bingogrid">
+    <div className={`pixel-border-narrow bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl p-3 sm:p-4 transition-[box-shadow,transform] duration-300 ${
+      isHorizontal ? 'p-1' : ''
+    } ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`}
+      data-tutorial-highlight="bingogrid"
+    >
       <div className={gridClasses}>
         {cells.map((cell) => (
           <button
             key={cell.id}
-            className={`${getCellClasses(cell)} ${hoverClasses(cell)}`}
+            className={`${getCellClasses(cell)} ${hoverClasses(cell)} pixel-border bg-gradient-to-br from-gray-200 to-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400`}
             onClick={() => onCellClick(cell.id)}
-            disabled={gameComplete || cell.selected || disabled} // <-- Disable if prop is true
+            disabled={gameComplete || cell.selected || disabled}
             title={cell.definition}
+            style={{ margin: 2 }}
           >
-            <span className="text-center leading-tight w-full break-words">
+            <span className="text-center leading-tight w-full break-words font-black pixel-text">
               {cell.term}
             </span>
           </button>

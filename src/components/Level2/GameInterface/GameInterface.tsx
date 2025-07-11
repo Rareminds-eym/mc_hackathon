@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { GameMode, Term } from '../../../types/Level2/types';
 import { useDeviceLayout } from '../../../hooks/useOrientation';
-import { useLevel2Game } from '../../../hooks/Level2/useLevel2Game';
+import { useLevel2Game } from '../hooks/useLevel2Game';
 import DndProvider from '../DndProvider';
 import { soundManager, playDragSound, playCorrectSound, playIncorrectSound, playScoreSound } from '../../../utils/Level2/sounds';
 import MobileLayout from './MobileLayout';
@@ -103,10 +103,9 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     setCurrentScore(totalPointsEarned);
 
     // Save game data using the hook
-    const isPerfect = percentageScore === 100;
     await saveGameData({
       score: totalPointsEarned,
-      isCompleted: isPerfect,
+      isCompleted: true,
       time: timeElapsed,
       totalTerms: terms.length,
       placedTerms: terms,
@@ -278,6 +277,9 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             isMobile={isMobile}
             onNextLevel={handleNextLevel}
             onReset={resetGame}
+            onClose={() => setShowResults(false)}
+            moduleId={parseInt(moduleId)}
+            levelId={2}
           />
         </div>
       </div>

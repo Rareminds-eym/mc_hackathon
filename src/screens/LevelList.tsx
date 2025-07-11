@@ -1,10 +1,14 @@
 import React from 'react';
+import {Check, Play} from 'lucide-react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { GMP_MODULES } from '../data/gmpModules';
 import { useGameRedux } from '../store/useGameRedux';
+import { useLevelProgress } from '../hooks/useLevelProgress';
 import { Button, DifficultyBadge } from '../components/ui';
 import { useDeviceLayout } from '../hooks/useOrientation';
 import type { Level, Module } from '../types';
+import UnlockIcon from '../assets/unlock.svg';
+
 
 const LevelList: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -18,6 +22,14 @@ const LevelList: React.FC = () => {
   const module: Module = location.state?.module ||
     GMP_MODULES.find(m => m.id === parseInt(moduleId || '0'));
 
+  // Use level progress hook for database-backed progress tracking
+  const {
+    isLoading: progressLoading,
+    isLevelCompleted: isLevelCompletedDB,
+    isLevelUnlocked,
+    isLevelUnlockedDB,
+    completeLevel: completeLevelDB
+  } = useLevelProgress(module?.id);
   if (!module) {
     return (
       <div style={{
@@ -38,7 +50,14 @@ const LevelList: React.FC = () => {
     );
   }
 
-  const selectLevel = (level: Level) => {
+  const selectLevel = async (level: Level) => {
+    // Check if level is unlocked before allowing navigation
+    const isUnlocked = await isLevelUnlockedDB(module.id, level.id);
+    if (!isUnlocked) {
+      alert(`Level ${level.id} is locked. Complete the previous level first.`);
+      return;
+    }
+
     navigate(`/modules/${module.id}/levels/${level.id}`, {
       state: { module, level }
     });
@@ -174,6 +193,79 @@ const LevelList: React.FC = () => {
           </button>
         </div>
 
+        {/* Test Complete Buttons */}
+        {/* <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: isMobileLandscape ? '8px' : '15px',
+          marginBottom: isMobileLandscape ? '15px' : '30px',
+          flexWrap: 'wrap',
+          maxWidth: '100%'
+        }}>
+          {module.levels.map((level) => {
+            const levelId = level.id;
+            const isCompleted = isLevelCompletedDB(module.id, levelId);
+            const isUnlocked = isLevelUnlocked(module.id, levelId);
+
+            return (
+              <button
+                key={levelId}
+                onClick={async () => {
+                  const success = await completeLevelDB(module.id, levelId);
+                  if (success) {
+                    alert(`Level ${levelId} of ${module.title} completed successfully!`);
+                  } else {
+                    alert('Failed to complete level. Please try again.');
+                  }
+                }}
+                disabled={progressLoading || !isUnlocked}
+                style={{
+                  background: progressLoading
+                    ? '#94a3b8'
+                    : !isUnlocked
+                      ? '#6b7280'
+                      : isCompleted
+                        ? '#10b981'
+                        : '#3b82f6',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: isMobileLandscape ? '0.4rem 0.8rem' : '0.6rem 1.2rem',
+                  fontWeight: 600,
+                  fontSize: isMobileLandscape ? '0.7rem' : '0.8rem',
+                  cursor: (progressLoading || !isUnlocked) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  opacity: !isUnlocked ? 0.6 : 1,
+                  minWidth: isMobileLandscape ? '120px' : '160px',
+                  textAlign: 'center' as const,
+                }}
+                onMouseOver={e => {
+                  if (!progressLoading && isUnlocked) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
+                  }
+                }}
+                onMouseOut={e => {
+                  if (!progressLoading && isUnlocked) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                  }
+                }}
+              >
+                {progressLoading
+                  ? 'Completing...'
+                  : !isUnlocked
+                    ? `🔒 Module ${moduleId || '?'} Level ${levelId} Locked`
+                    : isCompleted
+                      ? `✓ Module ${moduleId || '?'} Level ${levelId} Completed`
+                      : `Complete Module ${moduleId || '?'} Level ${levelId}`
+                }
+              </button>
+            );
+          })}
+        </div> */}
+
         {/* Horizontal Timeline */}
         <div style={{
           display: 'flex',
@@ -208,7 +300,11 @@ const LevelList: React.FC = () => {
 
             {/* Level indicators on timeline */}
             {module.levels.map((level: Level, index: number) => {
-              const isCompleted = isLevelCompleted(module.id, level.id);
+              // Check completion from both Redux state and database
+              const isCompletedRedux = isLevelCompleted(module.id, level.id);
+              const isCompletedDB = isLevelCompletedDB(module.id, level.id);
+              const isCompleted = isCompletedRedux || isCompletedDB;
+              const isUnlocked = isLevelUnlocked(module.id, level.id);
               const colorIndex = index % levelColors.length;
               const position = (index / (module.levels.length - 1)) * 100;
 
@@ -223,26 +319,36 @@ const LevelList: React.FC = () => {
                       transform: 'translateX(-50%)',
                       width: isMobileLandscape ? '20px' : '32px',
                       height: isMobileLandscape ? '20px' : '32px',
-                      background: levelColors[colorIndex].square,
+                      background: !isUnlocked ? '#6b7280' : levelColors[colorIndex].square,
                       borderRadius: isMobileLandscape ? '5px' : '8px',
                       border: isMobileLandscape ? '2px solid #fff' : '3px solid #fff',
                       boxShadow: isMobileLandscape ? '0 2px 6px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.3)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: 'pointer',
+                      cursor: isUnlocked ? 'pointer' : 'not-allowed',
                       transition: 'all 0.3s ease',
-                      zIndex: 10
+                      zIndex: 10,
+                      opacity: !isUnlocked ? 0.6 : 1,
                     }}
-                    onClick={() => selectLevel(level)}
+                    onClick={() => isUnlocked && selectLevel(level)}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateX(-50%) scale(1.2)';
+                      if (isUnlocked) {
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.2)';
+                      }
                     }}
                     onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                      if (isUnlocked) {
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                      }
                     }}
                   >
-                    {isCompleted ? (
+                    {!isUnlocked ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="#fff" strokeWidth="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#fff" strokeWidth="2"/>
+                      </svg>
+                    ) : isCompleted ? (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M20 6L9 17l-5-5" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
@@ -341,28 +447,34 @@ const LevelList: React.FC = () => {
           >
             {module.levels.map((level: Level, index: number) => {
               const levelScore = getLevelScore(module.id, level.id);
-              const isCompleted = isLevelCompleted(module.id, level.id);
+              // Check completion from both Redux state and database
+              const isCompletedRedux = isLevelCompleted(module.id, level.id);
+              const isCompletedDB = isLevelCompletedDB(module.id, level.id);
+              const isCompleted = isCompletedRedux || isCompletedDB;
+              const isUnlocked = isLevelUnlocked(module.id, level.id);
               const colorIndex = index % levelColors.length;
 
               return (
                 <div
                   key={level.id}
-                  onClick={() => selectLevel(level)}
+                  onClick={() => isUnlocked && selectLevel(level)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if ((e.key === 'Enter' || e.key === ' ') && isUnlocked) {
                       e.preventDefault();
                       selectLevel(level);
                     }
                   }}
-                  tabIndex={0}
+                  tabIndex={isUnlocked ? 0 : -1}
                   role="button"
-                  aria-label={`Select ${level.name} - ${level.difficulty} level`}
+                  aria-label={`${isUnlocked ? 'Select' : 'Locked'} ${level.name} - ${level.difficulty} level`}
                   aria-describedby={`level-${level.id}-description`}
                   style={{
-                    background: levelColors[colorIndex].bg,
+                    background: !isUnlocked
+                      ? 'linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #d1d5db 100%)'
+                      : levelColors[colorIndex].bg,
                     padding: isMobileLandscape ? '10px 8px' : (isMobile ? '12px 10px' : '30px 25px'),
                     borderRadius: isMobileLandscape ? '12px' : '20px',
-                    cursor: 'pointer',
+                    cursor: isUnlocked ? 'pointer' : 'not-allowed',
                     transition: 'all 0.3s ease',
                     boxShadow: isMobileLandscape
                       ? '0 5px 15px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.1)'
@@ -374,25 +486,56 @@ const LevelList: React.FC = () => {
                     flexShrink: isMobile ? 0 : undefined,
                     color: '#fff',
                     backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.2)'
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    opacity: !isUnlocked ? 0.7 : 1,
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
-                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.2)';
+                    if (isUnlocked) {
+                      e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+                      e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.2)';
+                    }
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)';
+                    if (isUnlocked) {
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)';
+                    }
                   }}
                 >
+                  {/* Lock overlay for locked levels */}
+                  {!isUnlocked && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      zIndex: 20,
+                      background: 'rgba(0, 0, 0, 0.8)',
+                      borderRadius: '50%',
+                      padding: isMobileLandscape ? '15px' : '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <svg width={isMobileLandscape ? "24" : "32"} height={isMobileLandscape ? "24" : "32"} viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="#fff" strokeWidth="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#fff" strokeWidth="2"/>
+                      </svg>
+                    </div>
+                  )}
+
                   {/* Level number badge */}
                   <div
                     style={{
+                      display:'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      justifyContent: 'center',
                       position: 'absolute',
                       top: isMobileLandscape ? '-8px' : (isMobile ? '-10px' : '-15px'),
                       left: isMobileLandscape ? '8px' : (isMobile ? '10px' : '25px'),
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      color: levelColors[colorIndex].square,
+                      background: isCompleted ? 'rgba(255, 255, 255, 0.9)' : (!isUnlocked ? 'rgba(245, 66, 66,1)' : 'rgba(255, 193, 7, 1)'),
+                      color: !isUnlocked ? '#6b7280' : '#000000',
                       padding: isMobileLandscape ? '3px 6px' : (isMobile ? '4px 8px' : '8px 16px'),
                       borderRadius: isMobileLandscape ? '10px' : (isMobile ? '12px' : '20px'),
                       fontSize: isMobileLandscape ? '0.6rem' : (isMobile ? '0.65rem' : '0.9rem'),
@@ -401,11 +544,16 @@ const LevelList: React.FC = () => {
                       border: '2px solid rgba(255,255,255,0.3)'
                     }}
                   >
-                    {index + 1}. {level.taxonomy}
+                    {level.id} {level.taxonomy}
+                    {
+                      isCompleted ? 
+                      <Check className='text-white bg-emerald-500/90 p-1 rounded-3xl'/> :
+                      (!isUnlocked ? ':Locked' : <Play className='animate-pulse text-black bg-yellow-200/80 p-1 rounded-3xl '/>)
+                    }
                   </div>
 
                   {/* Completion badge */}
-                  {isCompleted && (
+                  {/* {isCompleted && (
                     <div style={{
                       position: 'absolute',
                       top: isMobileLandscape ? '-8px' : (isMobile ? '-10px' : '-15px'),
@@ -421,7 +569,7 @@ const LevelList: React.FC = () => {
                     }}>
                       ✓ Completed
                     </div>
-                  )}
+                  )} */}
 
                   {/* Level content */}
                   <div style={{ marginTop: isMobileLandscape ? '8px' : (isMobile ? '10px' : '20px') }}>
@@ -476,6 +624,8 @@ const LevelList: React.FC = () => {
             })}
           </div>
         </div>
+
+
       </div>
     </div>
   );

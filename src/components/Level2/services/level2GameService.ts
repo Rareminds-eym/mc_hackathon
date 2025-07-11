@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { Level2GameData, Level2GameStats } from '../types/Level2/types';
+import { supabase } from '../../../lib/supabase';
+import { Level2GameData, Level2GameStats } from '../../../types/Level2/types';
 
 /**
  * Level2GameService - Handles all database operations for Level 2 game data

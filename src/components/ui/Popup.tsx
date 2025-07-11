@@ -1,8 +1,11 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { LevelProgressService } from "../../services/levelProgressService";
+import { useLevelProgress } from "../../hooks/useLevelProgress";
 
 interface PopupProps {
   open: boolean;
@@ -70,6 +73,8 @@ interface VictoryPopupProps {
   score: number;
   combo: number;
   health: number;
+  highScore?: number; // Add high score property
+  showNext?: boolean;
   isLevelCompleted?: boolean;
   showGoToModules?: boolean;
   showReset?: boolean;
@@ -83,6 +88,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   score,
   combo,
   health,
+  highScore, // Add high score parameter
+  showNext = false,
   isLevelCompleted = false,
   showGoToModules = true,
   showReset = false,
@@ -96,6 +103,11 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(moduleId ? parseInt(moduleId) : undefined);
 
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
@@ -117,6 +129,47 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   }, [onClose]);
 
   // Handler for Reset
+  const handleReset = useCallback(() => {
+    if (onReset) onReset();
+  }, [onReset]);
+
+  // Update level progress when modal becomes visible and level is completed
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || !isLevelCompleted || !moduleId || isUpdatingProgress) return;
+
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(moduleId),
+          3 // Level 3
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 3 of Module ${moduleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, isLevelCompleted, moduleId, isUpdatingProgress, refreshProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
+
   return (
     <Popup open={open} onClose={onClose} hideClose={showReset}>
       <div className={`flex flex-col items-center mx-auto justify-center text-center text-white${isMobileHorizontal ? " scale-90 max-w-[320px] px-1" : ""}`}
@@ -188,6 +241,12 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   <span>Health:</span>
                   <span className="font-black text-pink-100">{health}</span>
                 </span>
+              <div
+                className={`flex items-center gap-2 font-semibold text-white/90 ${
+                  isMobileHorizontal ? "text-sm" : "text-base"
+                }`}
+              >
+                Well Done!
               </div>
             </div>
           </div>
@@ -205,6 +264,65 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               <Icon icon="mdi:home-map-marker" className="w-5 h-5 mr-1" />
               Back to Levels
             </button>
+              {/* Button shadow/glow effect */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur-[4px] opacity-50 -z-10 scale-105${
+                  isMobileHorizontal ? " blur-[2px]" : ""
+                }`}
+                style={{
+                  transform: "translateY(2px)",
+                  animation: "pulse-subtle 2s infinite ease-in-out",
+                }}
+              />
+
+              {/* Main button */}
+              <button
+                className={`group relative bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 text-white font-bold rounded-lg 
+                  flex items-center gap-1 px-3 py-2 overflow-hidden transition-all duration-200 active:translate-y-[2px] 
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,100,0,0.5),0_0_12px_rgba(34,197,94,0.2)]
+                  active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_0_rgba(0,0,0,0.3),0_0px_0_rgba(0,100,0,0.5)] ${
+                    isMobileHorizontal ? " px-2 py-1.5 text-xs" : " text-sm"
+                  }`}
+                onClick={handleGoToLevels}
+                aria-label="Back to Levels"
+                type="button"
+              >
+                {/* Shimmering overlay */}
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,white,transparent_70%)] group-hover:opacity-30"></div>
+
+                {/* Button content */}
+                <div className="relative flex items-center gap-1 z-10">
+                  {/* Icon with animated glow */}
+                  <div className="relative">
+                    <div
+                      className={`absolute inset-0 rounded-full bg-white/30 blur-[3px] scale-125 animate-pulse-slow opacity-0 group-hover:opacity-80`}
+                    ></div>
+                    <Icon
+                      icon="mdi:home-map-marker"
+                      className={`w-5 h-5 drop-shadow-glow${
+                        isMobileHorizontal ? " w-4 h-4" : ""
+                      }`}
+                    />
+                  </div>
+                  <span className="whitespace-nowrap"></span>
+                </div>
+
+                {/* Particle effects - only shown on hover */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={`particle-${i}`}
+                      className="absolute w-1 h-1 rounded-full bg-white opacity-0 group-hover:animate-particle-float"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: "100%",
+                        animationDelay: `${Math.random() * 1.5}s`,
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              </button>
+            </motion.div>
           )}
           {!isLevelCompleted && (
             <button

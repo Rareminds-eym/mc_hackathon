@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Level2GameService } from '../../services/level2GameService';
-import { Level2GameStats } from '../../types/Level2/types';
-import { GameStorage, GameStats } from '../../utils/Level2/gameStorage';
-import { useAuth } from '../../contexts/AuthContext';
+import { Level2GameService } from '../services/level2GameService';
+import { Level2GameStats } from '../../../types/Level2/types';
+import { GameStorage, GameStats } from '../../../utils/Level2/gameStorage';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface UseLevel2GameStatsResult {
   stats: Level2GameStats | GameStats;

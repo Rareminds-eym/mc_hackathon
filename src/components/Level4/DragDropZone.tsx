@@ -49,7 +49,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
           {currentCase.questions.rootCause.options.map((option, idx) => (
             <div
               key={idx}
-              className={`flex items-center p-0.5 sm:p-1 lg:px-4 lg:py-2 xl:px-6 xl:py-3 rounded-lg border cursor-move bg-white/30 shadow-sm text-[7px] sm:text-[10px] lg:text-base xl:text-lg  ${selectedAnswer === idx ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex items-center p-0.5 sm:p-1 lg:px-4 lg:py-2 xl:px-6 xl:py-3 rounded-lg border cursor-move bg-white/60 shadow-sm text-[7px] sm:text-[10px] lg:text-base xl:text-lg  ${selectedAnswer === idx ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ minWidth: 0, width: '100%' }}
               draggable={!disabled}
               onDragStart={() => onDragStart(idx)}
@@ -75,7 +75,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
         </div>
         {/* Drop zone to the right for mobile/tablet */}
         <div
-          className="flex-shrink-0 ml-0.5 sm:ml-1 p-1 sm:p-2 border-2 border-dashed rounded-lg text-center transition-colors duration-200 text-[8px] sm:text-xs mt-0.5 sm:mt-1 align-top lg:hidden flex flex-col justify-end items-center min-h-[60px] bg-white/30"
+          className="flex-shrink-0 ml-0.5 sm:ml-1 p-1 sm:p-2 border-2 border-dashed rounded-lg text-center transition-colors duration-200 text-[8px] sm:text-xs mt-0.5 sm:mt-1 align-top lg:hidden flex flex-col justify-end  items-center min-h-[60px] bg-white/40"
           style={{ minWidth: 0, width: '80px', maxWidth: '30vw' }}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}

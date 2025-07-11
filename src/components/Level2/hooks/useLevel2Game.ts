@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { Level2GameService } from '../../services/level2GameService';
-import { Level2GameData, Level2GameStats, Term } from '../../types/Level2/types';
-import { GameStorage } from '../../utils/Level2/gameStorage';
+import { useAuth } from '../../../contexts/AuthContext';
+import { Level2GameService } from '../services/level2GameService';
+import { Level2GameData, Level2GameStats, Term } from '../../../types/Level2/types';
+import { GameStorage } from '../../../utils/Level2/gameStorage';
 
 interface UseLevel2GameOptions {
   moduleId: string;

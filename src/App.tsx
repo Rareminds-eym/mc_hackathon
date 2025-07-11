@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { GameLayout } from './layouts/GameLayout';
@@ -8,6 +8,7 @@ import { ModuleMapScreen } from './screens/ModuleMap';
 import { LevelList } from './screens/LevelList';
 import AuthPage from './screens/AuthPage';
 import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 // import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
 import {
@@ -26,6 +27,7 @@ import { GameBoard2D } from './components/Level4/GameBoard2D';
 import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
 import Score from './components/Scores/Score';
+import DebugPage from './pages/DebugPage';
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -57,7 +59,7 @@ function RouteErrorBoundary() {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const handleSplashComplete = () => setShowSplash(false);
 
@@ -78,17 +80,18 @@ function App() {
             <AuthPage />
           ),
         },
-        { path: '/home', element: <HomeScreen />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules', element: <ModuleMapScreen />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId', element: <LevelList />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/1', element: <BingoGame />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/2', element: <Level2 />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/3', element: <Level3 />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/4', element: <Level4 />, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/4/gameboard2d', element: <GameBoard2D />, errorElement: <RouteErrorBoundary /> },
+        { path: '/home', element: <ProtectedRoute><HomeScreen /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules', element: <ProtectedRoute><ModuleMapScreen /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId', element: <ProtectedRoute><LevelList /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/levels/1', element: <ProtectedRoute><BingoGame /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/levels/2', element: <ProtectedRoute><Level2 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/levels/3', element: <ProtectedRoute><Level3 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/levels/4', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/levels/4/gameboard2d', element: <ProtectedRoute><GameBoard2D /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/auth', element: <AuthPage />, errorElement: <RouteErrorBoundary /> },
-        { path: '/instructions', element: <InstructionsPage />, errorElement: <RouteErrorBoundary /> },
-        { path: '/scores', element: <Score />, errorElement: <RouteErrorBoundary /> },
+        { path: '/instructions', element: <ProtectedRoute><InstructionsPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/scores', element: <ProtectedRoute><Score /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/debug', element: <ProtectedRoute><DebugPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '*', element: <Navigate to="/" replace />, errorElement: <RouteErrorBoundary /> },
       ],
     },
