@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 @import "./theme/cosmic-theme.css";
+@import "./grid-pattern.css";
 
 @tailwind base;
 @tailwind components;
