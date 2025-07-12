@@ -96,10 +96,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   onReset,
   moduleId,
 }) => {
-  // Handler for reset button
-  const handleReset = () => {
-    if (onReset) onReset();
-  };
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
@@ -240,18 +236,19 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   <span className="pixel-dot bg-pink-400 w-3 h-3 inline-block rounded-sm" />
                   <span>Health:</span>
                   <span className="font-black text-pink-100">{health}</span>
-                </span>
-              <div
-                className={`flex items-center gap-2 font-semibold text-white/90 ${
-                  isMobileHorizontal ? "text-sm" : "text-base"
-                }`}
-              >
-                Well Done!
-              </div>
-            </div>
+            </span>
+          </div>
+          <div
+            className={`flex items-center gap-2 font-semibold text-white/90 ${
+              isMobileHorizontal ? "text-sm" : "text-base"
+            }`}
+          >
+            Well Done!
           </div>
         </div>
-        {/* Pixel-art retro buttons */}
+      </div>
+    </div>
+    {/* Pixel-art retro buttons */}
         <div className={`flex justify-center gap-4 w-full mt-2${isMobileHorizontal ? " gap-2 mt-1 justify-center" : ""}`} style={isMobileHorizontal ? { justifyContent: "center" } : {}}>
           {showGoToModules && (
             <button
@@ -264,65 +261,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               <Icon icon="mdi:home-map-marker" className="w-5 h-5 mr-1" />
               Back to Levels
             </button>
-              {/* Button shadow/glow effect */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur-[4px] opacity-50 -z-10 scale-105${
-                  isMobileHorizontal ? " blur-[2px]" : ""
-                }`}
-                style={{
-                  transform: "translateY(2px)",
-                  animation: "pulse-subtle 2s infinite ease-in-out",
-                }}
-              />
-
-              {/* Main button */}
-              <button
-                className={`group relative bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 text-white font-bold rounded-lg 
-                  flex items-center gap-1 px-3 py-2 overflow-hidden transition-all duration-200 active:translate-y-[2px] 
-                  shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,100,0,0.5),0_0_12px_rgba(34,197,94,0.2)]
-                  active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_0_rgba(0,0,0,0.3),0_0px_0_rgba(0,100,0,0.5)] ${
-                    isMobileHorizontal ? " px-2 py-1.5 text-xs" : " text-sm"
-                  }`}
-                onClick={handleGoToLevels}
-                aria-label="Back to Levels"
-                type="button"
-              >
-                {/* Shimmering overlay */}
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,white,transparent_70%)] group-hover:opacity-30"></div>
-
-                {/* Button content */}
-                <div className="relative flex items-center gap-1 z-10">
-                  {/* Icon with animated glow */}
-                  <div className="relative">
-                    <div
-                      className={`absolute inset-0 rounded-full bg-white/30 blur-[3px] scale-125 animate-pulse-slow opacity-0 group-hover:opacity-80`}
-                    ></div>
-                    <Icon
-                      icon="mdi:home-map-marker"
-                      className={`w-5 h-5 drop-shadow-glow${
-                        isMobileHorizontal ? " w-4 h-4" : ""
-                      }`}
-                    />
-                  </div>
-                  <span className="whitespace-nowrap"></span>
-                </div>
-
-                {/* Particle effects - only shown on hover */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={`particle-${i}`}
-                      className="absolute w-1 h-1 rounded-full bg-white opacity-0 group-hover:animate-particle-float"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: "100%",
-                        animationDelay: `${Math.random() * 1.5}s`,
-                      }}
-                    ></div>
-                  ))}
-                </div>
-              </button>
-            </motion.div>
           )}
           {!isLevelCompleted && (
             <button
