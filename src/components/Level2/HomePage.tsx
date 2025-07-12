@@ -44,9 +44,14 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden pixel-perfect ${
+    <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-[url('/Level2/level3bg.webp')] bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${
       isMobile ? 'p-2' : 'p-6'
     }`}>
+      {/* Gamified Overlay */}
+      <div
+        className="absolute inset-0 z-0 bg-gradient-to-r from-cyan-500/40 via-purple-500/40 to-transparent opacity-80 pixel-glow"
+      ></div>
+
       {/* Animated Grid Background */}
       <div className="absolute inset-0 opacity-20">
         <div className="grid-pattern"></div>
