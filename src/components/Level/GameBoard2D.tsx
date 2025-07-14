@@ -818,8 +818,8 @@ export const GameBoard2D: React.FC = () => {
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[60px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0">
             {/* Centered: Question Panel */}
-            <div className="rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up">
-              <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
+            <div className="rounded-2xl shadow-xl flex flex-col items-center justify-center w-[100vw] sm:w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up">
+              <div className="sm:w-full h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
                 <QuestionPanel
                   key={`question-${currentPhase}-${animationKey}`}
                   case={currentCase}
