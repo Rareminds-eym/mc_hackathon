@@ -12,7 +12,7 @@ import {
   AlertTriangle, 
   ChevronLeft
 } from 'lucide-react';
-import CharacterRotator from './CharacterRotator';
+
 // Additional imports can be added here as needed
 import { FeedbackPopup } from './Popup';
 import HighScoreAlert from './HighScoreAlert';
@@ -905,9 +905,9 @@ export const GameBoard2D: React.FC = () => {
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-row gap-2 items-start flex-1 w-full min-h-0 px-4 pb-[70px] sm:pb-0">
             {/* Left: Character */}
-            <div className="flex justify-center items-center flex-shrink-0 p-2" style={{ minWidth: 0 }}>
+            {/* <div className="flex justify-center items-center flex-shrink-0 p-2" style={{ minWidth: 0 }}>
                <CharacterRotator />
-            </div>
+            </div> */}
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
