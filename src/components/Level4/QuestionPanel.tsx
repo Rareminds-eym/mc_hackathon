@@ -105,8 +105,8 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   };
 
   return (
-    <div className=" bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 pixel-perfect relative overflow-hidden">
-      <div className="bg-black/40 rounded-2xl shadow-xl flex flex-col w-full max-w-full min-h-[70vh] mx-auto overflow-hidden landscape:text-[9px] sm:text-xs sm:max-w-[400px] sm:min-h-0 lg:w-[900px] lg:max-w-[900px] xl:w-[1100px] xl:max-w-[1100px] transition-all duration-300 hover:scale-[1.01] pixel-border-thick">
+    <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 pixel-perfect relative overflow-hidden">
+      <div className="bg-black/40 rounded-2xl shadow-xl flex flex-col w-full max-w-[98vw] lg:min-h-[70vh] mx-auto overflow-hidden  sm:text-xs sm:max-w-[400px] sm:min-h-0 lg:w-[900px] lg:max-w-[900px] xl:w-[1100px] xl:max-w-[1100px] transition-all duration-300 hover:scale-[1.01] pixel-border-thick">
         {/* QuestionPannelHeader */}
         <div className={`bg-gradient-to-r ${config.gradient} px-2 py-1 border-b-4 ${config.borderColor} landscape:px-2 landscape:py-2 sm:landscape:px-3 sm:landscape:py-2 
           flex items-center gap-3 rounded-t-2xl shadow-xl pixel-border-thick pixel-perfect relative overflow-hidden`}
@@ -130,10 +130,37 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
             <circle cx="80" cy="50" r="40" fill="white" fillOpacity="0.2" />
           </svg>
         </div>
-
-        <div className="flex-1 flex flex-col w-full p-[4vw] pt-6 lg:p-4 xl:p-4 overflow-y-auto max-h-[calc(100vh-220px)]">
+        {/* Navigation button area - outside the step 1 div, right side */}
+        {/* <div className="flex-shrink-0 flex flex-row items-center justify-end w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight" style={{marginTop: '-40px', marginRight: '16px', alignSelf: 'flex-end', zIndex: 10, position: 'relative'}}>
+          {selectedAnswers[currentQuestion] !== null && !showFeedback && (
+            <button 
+              onClick={() => {
+                if (typeof onContinue === 'function') {
+                  onContinue();
+                } else if (selectedAnswers[currentQuestion] !== null) {
+                  onAnswerSelect(currentQuestion, selectedAnswers[currentQuestion]!);
+                }
+              }}
+              className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-sm sm:text-base lg:text-lg rounded-lg shadow-lg pixel-text"
+            >
+              <span>Continue</span>
+              <CheckCircle className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 ml-1" />
+            </button>
+          )}
+          {showFeedback && (
+            <button 
+              disabled
+              className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-gray-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/30 backdrop-blur-md border border-gray-500/30 transition-all duration-300"
+            >
+              <span>Next Step</span>
+              <CheckCircle className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 ml-1" />
+            </button>
+          )}
+        </div> */}
+        
+        <div className="flex-1 flex flex-col  p-[1vw] pt-3 lg:pt-3 lg:p-4 xl:p-4 min-h-[60vh] sm:overflow-y-auto sm:max-h-[calc(100vh-220px)]">
           {/* Question */}
-          <div className={`pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl rounded-xl border-4 ${config.borderColor} px-2 py-2 lg:px-4 lg:py-2 xl:px-6 xl:py-3 flex items-center gap-2 mb-4`}> 
+          <div className={`pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl rounded-xl border-4 ${config.borderColor} px-2 py-2 lg:px-4 lg:py-2 xl:px-6 xl:py-3 flex items-center gap-2 lg:mb-0`}> 
             <Zap className="w-5 h-5 text-yellow-400 drop-shadow-lg" />
             <span className="ml-2 text-xs font-bold text-cyan-200 lg:text-lg xl:text-xl pixel-text break-words flex-1">{question.question}</span>
           </div>
@@ -255,35 +282,21 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
               })}
             </div>
           )}
+          {/* Desktop only: Continue button at bottom of Step 1 panel */}
+          {currentQuestion === 'violation' && selectedAnswers.violation !== null && !showFeedback && (
+            <div className="hidden md:flex w-full justify-end mt-6">
+              {/* <button
+                onClick={onContinue}
+                className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-xs md:text-sm rounded-lg shadow-lg"
+                aria-label="Continue"
+              >
+                <span className="mr-2">Continue</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </button> */}
+            </div>
+          )}
         </div>
         
-        {/* Navigation button area - fixed at bottom */}
-        <div className="flex-shrink-0 flex flex-row items-center justify-end w-full px-4 py-3 pb-0">
-            {selectedAnswers[currentQuestion] !== null && !showFeedback && (
-              <button 
-                onClick={() => {
-                  if (typeof onContinue === 'function') {
-                    onContinue();
-                  } else if (selectedAnswers[currentQuestion] !== null) {
-                    onAnswerSelect(currentQuestion, selectedAnswers[currentQuestion]!);
-                  }
-                }}
-                className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-sm sm:text-base lg:text-lg rounded-lg shadow-lg pixel-text"
-              >
-                <span>Continue</span>
-                <CheckCircle className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 ml-1" />
-              </button>
-            )}
-            {showFeedback && (
-              <button 
-                disabled
-                className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-gray-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/30 backdrop-blur-md border border-gray-500/30 transition-all duration-300"
-              >
-                <span>Next Step</span>
-                <CheckCircle className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 ml-1" />
-              </button>
-            )}
-        </div>
         <style>{`
 @keyframes drop-pulse {
   0% { transform: scale(1); box-shadow: 0 0 0 0 #b45309; }
@@ -301,3 +314,4 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
     </div>
   );
 };
+; // Added missing semicolon
