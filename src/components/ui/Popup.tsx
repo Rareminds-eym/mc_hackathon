@@ -256,9 +256,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             </div>
           </div>
         </div>
-      </div>
-    </div>
-    {/* Pixel-art retro buttons */}
+        {/* Pixel-art retro buttons */}
         <div className={`flex justify-center gap-4 w-full mt-2${isMobileHorizontal ? " gap-2 mt-1 justify-center" : ""}`} style={isMobileHorizontal ? { justifyContent: "center" } : {}}>
           {showGoToModules && (
             <button

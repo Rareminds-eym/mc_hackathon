@@ -153,7 +153,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
           {/* Level indicator */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-xs opacity-80 font-medium text-white">
-              {isComplete ? "COMPLETED!" : "IN PROGRESS..."}
+              {isComplete ? "COMPLETED!" : "DROP PIECES FROM ARSENAL..."}
             </div>
             <div
               className={`text-xs font-bold px-2 py-1 rounded-md flex items-center ${
