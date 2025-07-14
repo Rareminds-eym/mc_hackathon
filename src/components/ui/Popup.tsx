@@ -96,7 +96,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   onReset,
   moduleId,
 }) => {
-  // Removed duplicate handleReset
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
@@ -257,7 +256,9 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             </div>
           </div>
         </div>
-        {/* Pixel-art retro buttons */}
+      </div>
+    </div>
+    {/* Pixel-art retro buttons */}
         <div className={`flex justify-center gap-4 w-full mt-2${isMobileHorizontal ? " gap-2 mt-1 justify-center" : ""}`} style={isMobileHorizontal ? { justifyContent: "center" } : {}}>
           {showGoToModules && (
             <button

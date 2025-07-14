@@ -1,8 +1,11 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { LevelProgressService } from "../../services/levelProgressService";
+import { useLevelProgress } from "../../hooks/useLevelProgress";
 
 interface PopupProps {
   open: boolean;
@@ -49,7 +52,7 @@ export const Popup: React.FC<PopupProps> = ({
           transition={{ duration: 0.25 }}
         >
           <motion.div
-            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 w-full flex flex-col ${isMobileHorizontal ? 'max-w-xs' : 'max-w-md'}`}
+            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 w-full overflow-visible ${isMobileHorizontal ? 'max-w-xs p-2' : 'max-w-md p-6'}`}
             style={
               isMobileHorizontal
                 ? {
@@ -58,21 +61,16 @@ export const Popup: React.FC<PopupProps> = ({
                       'linear-gradient(135deg, rgba(255,255,255,0.16) 60%, rgba(200,240,255,0.08) 100%)',
                     backdropFilter: 'blur(64px)',
                     WebkitBackdropFilter: 'blur(64px)',
+                    padding: '0.5rem',
                     maxWidth: '90vw',
                     width: '95vw',
                     minHeight: '120px',
-                    maxHeight: 'calc(90vh - 40px)',
-                    display: 'flex',
-                    flexDirection: 'column'
                   }
                 : {
                     background:
                       'linear-gradient(135deg, rgba(255,255,255,0.16) 60%, rgba(200,240,255,0.08) 100%)',
                     backdropFilter: 'blur(64px)',
                     WebkitBackdropFilter: 'blur(64px)',
-                    maxHeight: 'calc(90vh - 40px)',
-                    display: 'flex',
-                    flexDirection: 'column'
                   }
             }
             initial={{ scale: 0.8, opacity: 0 }}
@@ -132,17 +130,14 @@ export const Popup: React.FC<PopupProps> = ({
                 </span>
               </button>
             )}
-            {/* Scrollable content area */}
-            <div className="flex-1 overflow-y-auto p-6 pt-2">
-              {children}
-            </div>
+            {children}
             
-            {/* Navigation section */}
+            {/* Navigation Buttons at Bottom */}
             {showNavigation && (
-              <>
+              <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4 sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
                 <button 
                   onClick={handleBack} 
-                  className="absolute top-16 left-4 rounded-lg px-2 py-0.5 font-bold text-cyan-400 z-50 sm:top-16 sm:left-4 flex flex-row items-center bg-black/30 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
+                  className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
                 >
                   <Icon 
                     icon="mdi:chevron-left" 
@@ -150,19 +145,19 @@ export const Popup: React.FC<PopupProps> = ({
                   />
                   <span>{backText}</span>
                 </button>
-                <div className="flex-shrink-0 flex flex-row items-center justify-end w-full px-4 py-3 border-t border-cyan-400/30 bg-black/40">
+                <div className="flex w-auto justify-end">
                   <button 
                     onClick={handleContinue} 
-                    className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
+                    className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
                   >
                     <span>{continueText}</span>
                     <Icon 
                       icon="mdi:chevron-right" 
-                      className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 ml-1" 
+                      className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4 ml-1" 
                     />
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </motion.div>
         </motion.div>
@@ -195,9 +190,60 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
+  // Get module ID from URL path if not provided
+  const getModuleIdFromPath = () => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : "1";
+  };
+
+  const currentModuleId = moduleId || getModuleIdFromPath();
+
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(parseInt(currentModuleId));
+
   // Calculate stars based on score (0-5 stars)
   const maxScore = 30;
   const stars = Math.round((score / maxScore) * 5);
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || isUpdatingProgress) return;
+
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(currentModuleId),
+          4 // Level 4
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 4 of Module ${currentModuleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, currentModuleId, isUpdatingProgress, refreshProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
 
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
@@ -413,7 +459,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         >
           {showGoToModules && (
             <button
-              className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-sm sm:text-base lg:text-lg rounded-lg shadow-lg pixel-text"
+              className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
               onClick={handleGoToLevels}
               aria-label="Back to Levels"
               type="button"
@@ -427,7 +473,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
           )}
           {showNext && (
             <button
-              className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-sm sm:text-base lg:text-lg rounded-lg shadow-lg pixel-text"
+              className="rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
               onClick={handleNext}
               aria-label="Next Case"
               type="button"
@@ -465,12 +511,63 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
   time,
   // onNext is not used as we're handling navigation directly
 }) => {
+  const { user } = useAuth();
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
   // Calculate stars: 0-5 based on score (max 30)
   const maxScore = 30;
   const stars = Math.round((score / maxScore) * 5);
   const isMobile = window.innerWidth <= 600;
   const popupHeight = isMobile ? 'auto' : 'auto';
   const popupMaxHeight = isMobile ? '80vh' : '90vh';
+
+  // Get module ID from URL path
+  const getModuleIdFromPath = () => {
+    const match = window.location.pathname.match(/modules\/(\w+)/);
+    return match ? match[1] : "1";
+  };
+
+  const moduleId = getModuleIdFromPath();
+
+  // Use level progress hook to refresh progress after completion
+  const { refreshProgress } = useLevelProgress(parseInt(moduleId));
+
+  // Update level progress when modal becomes visible
+  useEffect(() => {
+    const updateLevelProgress = async () => {
+      if (!open || !user || isUpdatingProgress) return;
+
+      setIsUpdatingProgress(true);
+      try {
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(moduleId),
+          4 // Level 4
+        );
+
+        if (error) {
+          console.error('Failed to update level progress:', error);
+        } else {
+          console.log(`Level 4 of Module ${moduleId} marked as completed`);
+          // Refresh the level progress to update UI with newly unlocked levels
+          await refreshProgress();
+        }
+      } catch (error) {
+        console.error('Error updating level progress:', error);
+      } finally {
+        setIsUpdatingProgress(false);
+      }
+    };
+
+    updateLevelProgress();
+  }, [open, user, moduleId, isUpdatingProgress, refreshProgress]);
+
+  // Reset the progress update flag when modal is closed
+  useEffect(() => {
+    if (!open) {
+      setIsUpdatingProgress(false);
+    }
+  }, [open]);
   return (
     <AnimatePresence>
       {open && (
@@ -643,7 +740,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
             {/* Buttons */}
             <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} justify-center ${isMobile ? 'gap-2' : 'gap-4'} mt-2 lg:mt-4 w-full px-2`}>
               <button
-                className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 ${isMobile ? 'py-1.5 text-sm' : 'py-2'} text-white font-black rounded-lg shadow-lg pixel-text ${isMobile ? 'w-full' : ''}`}
+                className={`  hover:text-teal-400 hover:border-teal-400 text-white font-bold ${isMobile ? 'py-1.5 text-sm' : 'py-2'} px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2 border border-green-200/60 ${isMobile ? 'w-full' : ''}`}
                 onClick={onBackToLevels}
                 aria-label="Back to Levels"
                 type="button"
@@ -652,7 +749,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
                 Back to Modules
               </button>
               <button
-                className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 ${isMobile ? 'py-1.5 text-sm' : 'py-2'} text-white font-black rounded-lg shadow-lg pixel-text ${isMobile ? 'w-full' : ''}`}
+                className={` hover:text-teal-400 hover:border-teal-400 text-white font-bold ${isMobile ? 'py-1.5 text-sm' : 'py-2'} px-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex items-center justify-center gap-2 border border-green-200/60 ${isMobile ? 'w-full' : ''}`}
                 onClick={onPlayAgain}
                 aria-label="Play Again"
                 type="button"

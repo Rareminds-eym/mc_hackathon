@@ -4,30 +4,41 @@ import { GameState } from './types';
 import { cases } from './data/cases';
 import { Product2D } from './Product2D';
 import { QuestionPanel } from './QuestionPanel';
-import { DragDropZone } from './DragDropZone';
-import { FeedbackPanel } from './FeedbackPanel';
 import { GameHeader } from './GameHeader';
-import BoyBook from './boybook';
 import Animation_manufacture from './animated_manufacture'
 import { useSupabaseSync } from './hooks/useSupabaseSync';
 import { 
   ChevronRight, 
   AlertTriangle, 
-  ChevronLeft, 
-  TrendingUp, 
-  Target,
-  Brain
+  ChevronLeft
 } from 'lucide-react';
 import CharacterRotator from './CharacterRotator';
-import Characterboybook from './Characterboybook';
-import { useDeviceLayout } from '../../hooks/useOrientation';
+// Additional imports can be added here as needed
 import { FeedbackPopup } from './Popup';
 import HighScoreAlert from './HighScoreAlert';
+import Level4ScoreBoard from './Level4ScoreBoard';
+import { saveLevel4Completion } from '../../services/level4GameService';
+import { useAuth } from '../../contexts/AuthContext';
+import { Button } from '../../components/ui';
+import { Crown, Gamepad2 } from 'lucide-react';
 
 type GamePhase = 'login' | 'reportView' | 'step1' | 'step2' | 'step3' | 'feedback';
 
+// Avatar options for modal (copied from HomeScreen)
+const AVATAR_OPTIONS = [
+  { label: "Arjun", src: "/characters/Intern1.png" },
+  { label: "Bharat", src: "/characters/Intern2.png" },
+  { label: "Hari", src: "/characters/Intern3.png" },
+  { label: "Pranav", src: "/characters/Intern4.png" },
+  { label: "Lakshya", src: "/characters/Intern5.png" },
+  { label: "Faisal", src: "/characters/Intern6.png" },
+  { label: "Lalit", src: "/characters/Intern7.png" },
+  { label: "Tejas", src: "/characters/Intern8.png" },
+];
+
 export const GameBoard2D: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // All state hooks need to be at the top level of the component
   const [gameState, setGameState] = useState<GameState>({
@@ -44,7 +55,8 @@ export const GameBoard2D: React.FC = () => {
   });
 
   // Track all component state at the top level
-  const [isHighScore, setIsHighScore] = useState(false); // Use original name for consistency
+  // High score state is handled elsewhere now
+  const [, setIsHighScore] = useState(false); // Keep setter for future use
   const [currentPhase, setCurrentPhase] = useState<GamePhase>('login');
   const [canContinue, setCanContinue] = useState(true); // Login phase always allows continue
   const [timer, setTimer] = useState<number>(0); // Start from 0
@@ -53,6 +65,8 @@ export const GameBoard2D: React.FC = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [showHighScorePopup, setShowHighScorePopup] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+  const [step2InstructionDismissed, setStep2InstructionDismissed] = useState(false);
+  const [showCorrectionMessage, setShowCorrectionMessage] = useState(false);
   // allAnswersCorrectAtFeedback will be declared later
   
   // All refs need to be at the top level too
@@ -197,8 +211,7 @@ export const GameBoard2D: React.FC = () => {
         setCanContinue(true);
         // Log when starting a new case
         console.log(`[Game] Starting case ${gameState.currentCase + 1} with accumulated score ${gameState.score}`);
-        // Hide loading after a short delay to show the transition
-        setTimeout(() => setLoading(false), 800);
+        // Loading state is handled differently now, so no need to set it
         break;
       case 'reportView':
         setCurrentPhase('step1');
@@ -266,6 +279,30 @@ export const GameBoard2D: React.FC = () => {
             // IMPROVED: First complete the game in Supabase with the accumulated total score
             // This ensures the data is saved before we update the UI
             await completeGame(completedGameState, timer);
+            
+            // ADDITIONAL: Also save to our new summary system
+            // Get count of correct answers
+            const correctAnswers = getCorrectAnswers();
+            
+            // Only proceed if we have a valid user
+            if (user) {
+              try {
+                await saveLevel4Completion({
+                  userId: user.id,
+                  moduleId: 1, // Assuming module 1 for Level 4
+                  score: gameState.score,
+                  time: timer,
+                  violations: gameState.currentCase + 1, // Number of cases completed
+                  correctAnswers: correctAnswers,
+                  totalQuestions: 3 // violation, rootCause, impact
+                });
+                console.log("[Game] Successfully saved to level_4_user_summary table");
+              } catch (err) {
+                console.error("[Game] Error saving to level_4_user_summary:", err);
+              }
+            } else {
+              console.error("[Game] Cannot save summary - user is not authenticated");
+            }
             
             // Now update the UI state
             setGameState(completedGameState);
@@ -398,387 +435,230 @@ export const GameBoard2D: React.FC = () => {
     return correct;
   };
 
-  // Debug: Show current answers and correct answers in feedback for troubleshooting
-  const renderCharacter = () => (
-    <div className="flex flex-col items-center ">
-      <div className="w-full h-full flex items-center justify-center">
-        {/* <img 
-          src="/rendering-cartoon-fantasy-scene-illustration.png" 
-          alt="Alert" 
-          className="landscape:w-48 landscape:h-48 landscape:max-w-[192px] landscape:max-h-[192px] landscape:object-contain object-contain" 
-          style={{ maxWidth: '100%', height: 'auto' }}
-        /> */}
-        <Animation_manufacture />
-      </div>
-    </div>
-  );// Phase 1: Login/Deviation Report
-  const renderLogin = () => (
-    <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
-      {/* Neon Animated SVG Background - only one layer */}
-      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
-        <Animation_manufacture />
-      </div>
-      {/* Case label top left on login page */}
-      <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 sm:text-lg sm:px-4 sm:py-2 flex flex-col items-start bg-black/30 backdrop-blur-md border border-cyan-400/30">
-        <span className="text-cyan-300 font-bold text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
-      </div>
-      {/* Main content with gradient overlay */}
-      <div className="relative z-10 h-full w-full flex flex-col text-xs md:text-sm lg:text-base">
-        {/* Header */}
-        <div className="flex flex-col items-center justify-center w-full z-10 landscape:relative landscape:z-20 landscape:bg-transparent landscape:pt-2 ">
-          <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-red-600  ">DEVIATION REPORT</h1>
-          <p className=" text-cyan-400 text-[10px] lg:text-2xl font-semibold landscape:mb-1 lg:mb-2 glow-cyan-2">
-            Quality deviation detected - Investigation required
-          </p>
+  // Character rendering is now handled by the CharacterRotator component
+  // Phase 1: Login
+  const renderLogin = () => {
+    // Filter for special cases with negative indices
+    const specialCases = cases.filter((c, idx) => idx === -1 || idx === -2);
+    return (
+      <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+        {/* Neon Animated SVG Background - only one layer */}
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
+          <Animation_manufacture />
         </div>
+        {/* Main content with gradient overlay */}
+        <div className="relative z-10 h-full w-full flex flex-col text-xs md:text-sm lg:text-base">
+          {/* Header */}
+          <div className="flex flex-col items-center justify-center w-full z-10 landscape:relative landscape:z-20 landscape:bg-transparent landscape:pt-2 ">
+            <div className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 p-1 lg:p-4 relative">
+              <div className="flex items-center space-x-2 lg:space-x-4">
+                <div className="w-8 h-18 lg:w-16 lg:h-16 bg-yellow-300 pixel-border flex items-center justify-center">
+                  <Crown className="w-5 h-5 sm:w-8 sm:h-8 text-yellow-800" />
+                </div>
+                <div className="text-left">
+                  <h1 className="text-lg lg:text-4xl font-black text-white pixel-text tracking-wider">
+                    DEVIATION REPORT
+                  </h1>
+                  <div className="text-yellow-200 text-xs sm:text-sm font-bold tracking-widest">
+                    Quality deviation detected - Investigation required
+                  </div>
+                </div>
+                <div className="w-8 h-8 lg:w-16 lg:h-16 bg-orange-300 pixel-border flex items-center justify-center">
+                  <Gamepad2 className="w-5 h-5 sm:w-8 sm:h-8 text-orange-800" />
+                </div>
+              </div>
+            </div>
+          </div>
 
-        {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-        <div className="pt-2 items-center justify-center flex-1 w-full h-full lg:flex lg:items-center lg:justify-center">
-          <div
-            className="rounded-2xl shadow-xl bg-black/40 lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-100 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
-            style={{
-              backgroundImage: `url('/exam-pad-bg.png')`,
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              minHeight: '160px',
-            }}
-          >
-            <div className=" flex flex-col items-center justify-center gap-1 mt-2 lg:overflow-visible w-auto h-auto max-w-full max-h-full">
-              <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-cyan-400 text-center whitespace-pre-line mb-2 lg:mb-4 xl:mb-6 px-0 animate-typing overflow-hidden border-r-2 border-cyan-400">Product Under Investigation</h2>
-              <div className="w-full h-full flex flex-col items-center justify-center lg:overflow-visible">
-                <Product2D
-                  productName={currentCase.productName}
-                  batchNumber={currentCase.batchNumber}
-                  hasDeviation={true}
-                  imageSrc={currentCase.imageSrc}
-                />
+          {/* Special Cases Display */}
+          {specialCases.length > 0 && (
+            <div className="flex flex-col items-center justify-center w-full mt-4">
+              <h3 className="text-cyan-300 font-bold text-lg mb-2">Special Cases</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+                {specialCases.map((c, idx) => (
+                  <div key={idx} className="pixel-border bg-gradient-to-br from-gray-800 via-blue-900 to-purple-900 p-4 rounded-xl shadow-lg flex flex-col items-center">
+                    <h4 className="text-yellow-300 font-bold text-base mb-1">{c.title || `Case ${idx - 2}`}</h4>
+                    <p className="text-white text-xs mb-2">{c.scenario}</p>
+                    <div className="w-full flex flex-col items-center justify-center">
+                      <Product2D
+                        productName={c.productName}
+                        batchNumber={c.batchNumber}
+                        hasDeviation={true}
+                        imageSrc={c.imageSrc}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
+          <div className="flex flex-col items-center justify-center flex-1 w-full h-auto lg:h-full mb-4 md:mb-0 lg:mt-2">
+            <div
+              className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl min-h-[3 40px] lg:max-h-[calc(100vh-120px)] lg:p-4 rounded-2xl border-2 border-cyan-400/40"
+            >
+              {/* Header */}
+              {/* <div className="flex flex-col items-center justify-center w-full mb-4">
+                <h1 className="text-xl md:text-2xl lg:text-4xl font-black text-cyan-300 tracking-wide">DEVIATION REPORT</h1>
+                <p className="text-cyan-400 text-xs lg:text-lg font-semibold text-center">
+                  Quality deviation detected - Investigation required
+                </p>
+              </div> */}
+              {/* Score/Case Info */}
+              {/* <div className="flex flex-row justify-center items-center gap-4 mb-4">
+                <div className="pixel-border bg-green-600 px-3 py-2 rounded-lg flex flex-col items-center mb-1">
+                  <span className="text-green-100 text-xs font-bold">CASE</span>
+                  <span className="text-white text-lg font-black">{gameState.currentCase + 1}</span>
+                </div>
+                <div className="pixel-border bg-blue-600 px-3 py-2 rounded-lg flex flex-col items-center mb-1">
+                  <span className="text-blue-100 text-xs font-bold">SCORE</span>
+                  <span className="text-white text-lg font-black">{gameState.score}</span>
+                </div>
+                <div className="pixel-border bg-yellow-600 px-3 py-2 rounded-lg flex flex-col items-center">
+                  <span className="text-yellow-100 text-xs font-bold">TOTAL</span>
+                  <span className="text-white text-lg font-black">{gameState.totalQuestions}</span>
+                </div>
+              </div> */}
+              {/* Main Content */}
+              <div className="flex-1 flex flex-col items-center justify-start lg:justify-center px-4 py-2 w-full">
+                <h2 className="text-xs md:text-xl lg:text-2xl xl:text-3xl font-bold text-cyan-400 text-center mb-1 lg:mb-4">
+                  Product Under Investigation
+                </h2>
+                <div className="w-full flex flex-col items-center justify-center">
+                  <Product2D
+                    productName={currentCase.productName}
+                    batchNumber={currentCase.batchNumber}
+                    hasDeviation={true}
+                    imageSrc={currentCase.imageSrc}
+                  />
+                </div>
+              </div>
+              {/* Navigation footer */}
+              <div className="flex-shrink-0 flex flex-row items-center justify-center w-full lg:px-4 py-3">
+                <button
+                  onClick={handleContinue}
+                  disabled={!canContinue}
+                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-2 text-white font-black text-sm lg:text-lg rounded-lg shadow-lg"
+                  style={{ minWidth: 180 }}
+                  aria-label="Start Investigation"
+                >
+                  <ChevronRight className="w-5 h-5 mr-2" />
+                  START INVESTIGATION
+                </button>
               </div>
             </div>
           </div>
         </div>
-        {/* Navigation - always visible in mobile landscape */}
-        <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
-          <button
-            onClick={handleBack}
-            className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg  flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
-          >
-            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
-            <span>Back</span>
-          </button>
-          <div className="flex w-auto justify-end">
-            <button
-              onClick={handleContinue}
-              className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
-            >
-              <span>Start Investigation</span>
-              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4 ml-1" />
-            </button>
-          </div>
-        </div>
       </div>
-      {/* Custom CSS for floating shapes and neon theme */}
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          25% { transform: translateY(-20px) translateX(10px); }
-          50% { transform: translateY(-10px) translateX(-5px); }
-          75% { transform: translateY(-25px) translateX(5px); }
-        }
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes fade-slide-up {
-          0% {
-            opacity: 0;
-            transform: translateY(30px) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        .animate-fade-slide-up {
-          animation: fade-slide-up 0.6s ease-out forwards;
-        }
-        @keyframes fade-in-down {
-          0% {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in-down {
-          animation: fade-in-down 0.4s ease-out forwards;
-        }
-        @keyframes slide-in-option {
-          0% {
-            opacity: 0;
-            transform: translateX(-30px) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
-        }
-        .animate-slide-in-option {
-          animation: slide-in-option 0.5s ease-out forwards;
-        }
-        @keyframes pulse-text {
-          0%, 100% {
-            color: rgba(255, 255, 255, 0.8);
-            text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
-          }
-          50% {
-            color: rgba(59, 130, 246, 0.9);
-            text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
-          }
-        }
-        .animate-pulse-text {
-          animation: pulse-text 2s ease-in-out infinite;
-        }
-        @keyframes slide-in-option-left {
-          0% {
-            opacity: 0;
-            transform: translateX(-30px) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
-        }
-        @keyframes slide-in-option-right {
-          0% {
-            opacity: 0;
-            transform: translateX(30px) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
-        }
-        @keyframes slide-in-option-up {
-          0% {
-            opacity: 0;
-            transform: translateY(30px) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        .animate-slide-in-left {
-          animation: slide-in-option-left 0.5s ease-out forwards;
-        }
-        .animate-slide-in-right {
-          animation: slide-in-option-right 0.5s ease-out forwards;
-        }
-        .animate-slide-in-up {
-          animation: slide-in-option-up 0.5s ease-out forwards;
-        }
-        @keyframes typing {
-          0% {
-            width: 0;
-          }
-          100% {
-            width: 100%;
-          }
-        }
-        @keyframes blink {
-          0%, 50% {
-            border-color: transparent;
-          }
-          51%, 100% {
-            border-color: #06b6d4;
-          }
-        }
-        .animate-typing {
-          width: 0;
-          animation: typing 2s steps(25, end) forwards, blink 0.75s step-end infinite;
-          white-space: nowrap;
-        }
-        @keyframes fade-in-scale {
-          0% {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        @keyframes slide-up {
-          0% {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes bounce-in {
-          0% {
-            opacity: 0;
-            transform: scale(0.3);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-          70% {
-            transform: scale(0.9);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        .animate-fade-in-scale {
-          opacity: 0;
-          animation: fade-in-scale 0.6s ease-out forwards;
-        }
-        .animate-slide-up {
-          opacity: 0;
-          animation: slide-up 0.5s ease-out forwards;
-        }
-        .animate-bounce-in {
-          opacity: 0;
-          animation: bounce-in 0.8s ease-out forwards;
-        }
-        .triangle-shape {
-          clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-        }
-        .square-shape {
-          border-radius: 2px;
-        }
-        .floating-shape {
-          will-change: transform;
-        }
-        @keyframes report-field-fade-in {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-report-field {
-          opacity: 0;
-          animation: report-field-fade-in 0.5s ease-out forwards;
-        }
-        .glow-cyan {
-          text-shadow: 0 0 8px #22d3ee, 0 0 16px #38bdf8, 0 0 24px #0ea5e9;
-        }
-        .glow-green {
-          text-shadow: 0 0 8px #4ade80, 0 0 16px #22c55e;
-        }
-        .glow-yellow {
-          text-shadow: 0 0 8px #fde68a, 0 0 16px #facc15;
-        }
-      `}</style>
-    </div>
-  );
+    );
+  };
+
   // Phase 2: Report View
-  const renderReportView = () => (
-    <div 
-      key={`reportView-${animationKey}`}
-      className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
-    >
-      {/* Animated background layer */}
-      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
-        <Animation_manufacture />
-      </div>
-      <div className="w-[100%] h-[100%] flex-1 flex flex-col relative z-10">
-        {/* Header */}
-        <div className="text-center mb-[1vw] w-[100%]">
-          <h1 className="text-xl md:text-2xl font-bold text-cyan-400  ">Deviation Investigation Game</h1>
-          <p className="text-[10px] lg:text-2xl text-white  ">Case Report Review</p>
+  const renderReportView = () => {
+    return (
+      <div 
+        key={`reportView-${animationKey}`}
+        className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
+      >
+        {/* Animated background layer */}
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 opacity-25">
+          <Animation_manufacture />
         </div>
-        {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-        <div className="flex flex-col items-center justify-center flex-1 w-full h-full mb-4 md:mb-0 mt-2 lg:flex lg:items-center lg:justify-center">
-          <div
-            className="rounded-2xl shadow-xl bg-black/40  lg:p-12 xl:p-16 h-auto pt-4 pb-4 flex flex-col justify-center mx-auto items-center border-2 border-cyan-400 relative w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl lg:min-h-[420px] xl:min-h-[520px] py-4 max-h-[calc(100vh-120px)] mb-4"
-            style={{
-              backgroundImage: `url('/exam-pad-bg.png')`,
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              minHeight: '160px',
-              // boxShadow: '0 0 12px 2px #06b6d4, 0 2px 16px 0 #000'
-            }}
-          >
-            {/* Exam pad ring/clip at the top */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-[-18px] w-20 h-6 bg-gray-300 rounded-b-2xl border-2 border-gray-400 shadow-md z-10 flex items-center justify-center">
-              <div className="w-8 h-2 bg-gray-400 rounded-full"></div>
-            </div>
-            {/* Paper styling */}
-            <div className="mt-[1vw] w-full h-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl max-h-full max-w-full overflow-auto break-words px-2 md:px-4 lg:px-0">
-              <div className="text-center mb-2 w-full">
-                <h2 className="text-xs md:text-sm lg:text-2xl xl:text-3xl font-bold text-red-600 mb-1">DEVIATION REPORT</h2>
-                <div className="w-full h-px bg-gray-300 mb-1"></div>
-              </div>
-              <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl text-cyan-400">
-                <div className="animate-report-field  text-white" style={{ animationDelay: '0.2s' }}>
-                  <span className="font-bold text-cyan-400">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
-                </div>
-                <div className="animate-report-field text-white" style={{ animationDelay: '0.4s' }}>
-                  <span className="font-bold text-cyan-400">Date:</span> {new Date().toLocaleDateString()}
-                </div>
-                <div className="animate-report-field text-white" style={{ animationDelay: '0.6s' }}>
-                  <span className="font-bold text-cyan-400">Title:</span> <span className="break-words text-[10px] lg:text-lg">{currentCase.title}</span>
-                </div>
-                <div className="animate-report-field text-white" style={{ animationDelay: '0.8s' }}>
-                  <span className="font-bold text-cyan-400">Description:</span>
-                  <p className="mt-1  leading-relaxed text-[10px] lg:text-lg break-words ">{currentCase.scenario}</p>
-                </div>
-                <div className="animate-report-field text-white" style={{ animationDelay: '1.0s' }}>
-                  <span className="font-bold text-[10px] lg:text-lg text-cyan-400">Product:</span> <span className="text-[10px] lg:text-lg">Pharmaceutical Tablet</span>
-                </div>
-                <div className="animate-report-field text-white" style={{ animationDelay: '1.2s' }}>
-                  <span className="font-bold text-[10px] lg:text-lg text-cyan-400">Batch:</span> <span className="text-[10px] lg:text-lg">A2024-{String(gameState.currentCase + 1).padStart(3, '0')}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1 mt-1 w-full animate-report-field" style={{ animationDelay: '1.4s' }}>
-                  <div className="flex flex-col items-center justify-center bg-red-50 p-0.5 rounded border-l-4 border-red-500 min-w-0 w-full">
-                    <div className="font-bold text-red-800 text-[10px] lg:text-lg leading-tight truncate">Priority</div>
-                    <div className="text-red-600 text-[10px] lg:text-lg leading-tight truncate">HIGH</div>
-                  </div>
-                  <div className="flex flex-col items-center justify-center bg-yellow-50 p-0.5 rounded border-l-4 border-yellow-500 min-w-0 w-full">
-                    <div className="font-bold text-yellow-800 text-[10px] lg:text-lg leading-tight truncate">Status</div>
-                    <div className="text-yellow-600 text-[10px] lg:text-lg leading-tight truncate">OPEN</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Navigation */}
-        <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
-          <button
-            onClick={handleBack}
-            className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
-          >
-            <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
-            <span>Back</span>
-          </button>
-          <div className="flex w-auto justify-end">
-            <button
-              onClick={handleContinue}
-              className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300"
+        <div className="w-[100%] h-[100%] flex-1 flex flex-col relative z-10">
+          {/* Header */}
+          {/* <div className="text-center mb-[1vw] w-[100%]">
+            <h1 className="text-xl md:text-2xl font-bold text-cyan-400  ">Deviation Investigation Game</h1>
+            <p className="text-[10px] lg:text-2xl text-white  ">Case Report Review</p>
+          </div> */}
+          {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
+          <div className="flex flex-col items-center justify-center flex-1 w-full h-full lg:mb-4 lg:md:mb-0 mt-2">
+            <div
+              className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl h-[60%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-120px)] p-4 rounded-2xl border-2 border-cyan-400/40"
             >
-              <span>Start Investigation</span>
-              <ChevronRight className="w-5 h-5 md:w-[1vw] md:h-[1vw] lg:w-8 lg:h-8 min-w-4 min-h-4 ml-1" />
-            </button>
+              {/* Header */}
+              <div className="flex flex-col items-center justify-center w-full lg:mb-4">
+                <h1 className="text-xl md:text-2xl lg:text-4xl font-black text-cyan-300 tracking-wide">DEVIATION REPORT</h1>
+                <p className="text-cyan-400 text-xs lg:text-lg font-semibold text-center">
+                  Quality deviation detected - Investigation required
+                </p>
+              </div>
+              {/* Score/Case Info */}
+              {/* <div className="flex flex-row justify-center items-center gap-4 mb-4">
+                <div className="pixel-border bg-green-600 px-3 py-2 rounded-lg flex flex-col items-center mb-1">
+                  <span className="text-green-100 text-xs font-bold">CASE</span>
+                  <span className="text-white text-lg font-black">{gameState.currentCase + 1}</span>
+                </div>
+                <div className="pixel-border bg-blue-600 px-3 py-2 rounded-lg flex flex-col items-center mb-1">
+                  <span className="text-blue-100 text-xs font-bold">SCORE</span>
+                  <span className="text-white text-lg font-black">{gameState.score}</span>
+                </div>
+                <div className="pixel-border bg-yellow-600 px-3 py-2 rounded-lg flex flex-col items-center">
+                  <span className="text-yellow-100 text-xs font-bold">TOTAL</span>
+                  <span className="text-white text-lg font-black">{gameState.totalQuestions}</span>
+                </div>
+              </div> */}
+              {/* Main Content - Case Report */}
+              <div className="flex-1 overflow-y-auto px-4 py-2 w-full">
+                {/* Paper styling */}
+                <div className="mt-[1vw] w-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl break-words">
+                  <div className="text-center mb-2 w-full">
+                    {/* <h2 className="text-xs md:text-sm lg:text-2xl xl:text-3xl font-bold text-red-600 mb-1">DEVIATION REPORT</h2> */}
+                    <div className="w-full h-px bg-gray-300 mb-1"></div>
+                  </div>
+                  <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl text-cyan-400">
+                    <div className="animate-report-field text-white" style={{ animationDelay: '0.2s' }}>
+                      <span className="font-bold text-cyan-400">Case ID:</span> DEV-{String(gameState.currentCase + 1).padStart(3, '0')}
+                    </div>
+                    <div className="animate-report-field text-white" style={{ animationDelay: '0.4s' }}>
+                      <span className="font-bold text-cyan-400">Date:</span> {new Date().toLocaleDateString()}
+                    </div>
+                    <div className="animate-report-field text-white" style={{ animationDelay: '0.6s' }}>
+                      <span className="font-bold text-cyan-400">Title:</span> <span className="break-words text-[10px] lg:text-lg">{currentCase.title}</span>
+                    </div>
+                    <div className="animate-report-field text-white" style={{ animationDelay: '0.8s' }}>
+                      <span className="font-bold text-cyan-400">Description:</span>
+                      <p className="mt-1 leading-relaxed text-[10px] lg:text-lg break-words">{currentCase.scenario}</p>
+                    </div>
+                    <div className="animate-report-field text-white" style={{ animationDelay: '1.0s' }}>
+                      <span className="font-bold text-[10px] lg:text-lg text-cyan-400">Product:</span> <span className="text-[10px] lg:text-lg">Pharmaceutical Tablet</span>
+                    </div>
+                    <div className="animate-report-field text-white" style={{ animationDelay: '1.2s' }}>
+                      <span className="font-bold text-[10px] lg:text-lg text-cyan-400">Batch:</span> <span className="text-[10px] lg:text-lg">A2024-{String(gameState.currentCase + 1).padStart(3, '0')}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 mt-1 w-full animate-report-field" style={{ animationDelay: '1.4s' }}>
+                      <div className="flex flex-col items-center justify-center bg-red-50 p-0.5 rounded border-l-4 border-red-500 min-w-0 w-full">
+                        <div className="font-bold text-red-800 text-[10px] lg:text-lg leading-tight truncate">Priority</div>
+                        <div className="text-red-600 text-[10px] lg:text-lg leading-tight truncate">HIGH</div>
+                      </div>
+                      <div className="flex flex-col items-center justify-center bg-yellow-50 p-0.5 rounded border-l-4 border-yellow-500 min-w-0 w-full">
+                        <div className="font-bold text-yellow-800 text-[10px] lg:text-lg leading-tight truncate">Status</div>
+                        <div className="text-yellow-600 text-[10px] lg:text-lg leading-tight truncate">OPEN</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Navigation button inside container */}
+              <div className="flex-shrink-0 flex flex-row items-center justify-center w-full lg:px-4 lg:py-3">
+                <button
+                  onClick={handleContinue}
+                  disabled={!canContinue}
+                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-white font-black text-lg rounded-lg shadow-lg"
+                  style={{ minWidth: 180 }}
+                  aria-label="Start Investigation"
+                >
+                  <ChevronRight className="w-5 h-5 mr-2" />
+                  START INVESTIGATION
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Phase 3-5: Investigation Steps
   const renderInvestigationStep = () => {
@@ -788,13 +668,6 @@ export const GameBoard2D: React.FC = () => {
       'step3': 'Step 3: Impact Assessment'
     };
 
-    const stepIcons = {
-      'step1': Target,
-      'step2': Brain,
-      'step3': TrendingUp
-    };
-
-    const StepIcon = stepIcons[currentPhase as keyof typeof stepIcons];
     return (
       <div 
         key={`step-${currentPhase}-${animationKey}`}
@@ -806,58 +679,80 @@ export const GameBoard2D: React.FC = () => {
         </div>
         <div className="relative w-[100%] h-[100%] flex-1 flex flex-col z-10">
           {/* Header */}
-          <div className="text-center mb-[1vw] w-[100%] animate-fade-in-down">
-            {/* <div className="inline-flex items-center justify-center w-[3vw] h-[3vw] min-w-[24px] min-h-[24px] bg-blue-100 rounded-full mb-[0.5vw]">
-              <StepIcon className="w-[1.5vw] h-[1.5vw] min-w-[12px] min-h-[12px] text-blue-600" />
-            </div> */}
-            <h1 className="text-lg md:text-xl font-bold text-cyan-400 mb-1 ">{stepTitles[currentPhase as keyof typeof stepTitles]}</h1>
-            <p className="text-[10px] lg:text-lg text-cyan-400">Deviation Investigation Game</p>
-          </div>
+          {/* <div className="text-center mb-[1vw] w-[100%] animate-fade-in-down">
+             <h1 className="text-lg md:text-xl font-bold text-cyan-400 mb-1 ">{stepTitles[currentPhase as keyof typeof stepTitles]}</h1>
+            <p className="text-lg md:text-xl font-bold text-cyan-400 mb-1">Deviation Investigation Game</p>
+          </div> */}
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-          <div className="flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[60px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0">
-            {/* Centered: Question Panel */}
-            <div className="rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[480px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up">
-              <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
-                <QuestionPanel
-                  key={`question-${currentPhase}-${animationKey}`}
-                  case={currentCase}
-                  currentQuestion={
-                    currentPhase === 'step1'
-                      ? 'violation'
-                      : currentPhase === 'step2'
-                      ? 'rootCause'
-                      : 'impact'
-                  }
-                  selectedAnswers={gameState.answers}
-                  onAnswerSelect={handleAnswerSelect}
-                  showFeedback={false}
-                />
+          <div className={`flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[10px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0${currentPhase === 'step2' && step2InstructionDismissed ? ' lg:justify-center' : ''}`}> 
+            {/* Centered: Question Panel - only show in step2 after OK is clicked, or always for other steps */}
+            {((currentPhase !== 'step2') || (currentPhase === 'step2' && step2InstructionDismissed)) && (
+              <div className={`rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[600px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up${currentPhase === 'step2' && step2InstructionDismissed ? ' mx-auto' : ''}`}>
+                <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
+                  <QuestionPanel
+                    key={`question-${currentPhase}-${animationKey}`}
+                    case={currentCase}
+                    currentQuestion={
+                      currentPhase === 'step1'
+                        ? 'violation'
+                        : currentPhase === 'step2'
+                        ? 'rootCause'
+                        : 'impact'
+                    }
+                    selectedAnswers={gameState.answers}
+                    onAnswerSelect={handleAnswerSelect}
+                    showFeedback={false}
+                    onContinue={handleContinue}
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-          {/* Navigation */}
-          <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
-            <button
-              onClick={handleBack}
-              className="top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg flex flex-row items-center bg-black/40 backdrop-blur-md border border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0"
-            >
-              <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
-              <span>Back</span>
-            </button>
-            <div className="flex w-auto justify-end">
-              <button
-                onClick={handleContinue}
-                disabled={!canContinue}
-                className={`top-4 left-4 rounded-lg px-1.5 py-0.5 text-[10px] font-bold flex flex-row items-center z-50 sm:px-4 sm:py-2 sm:text-sm lg:text-lg sm:font-bold sm:rounded-lg sm:transition-all sm:duration-300 sm:bg-black/40 sm:backdrop-blur-md sm:border sm:border-cyan-400/30 hover:bg-cyan-900/60 transition-all duration-300 mb-2 sm:mb-0 ${
-                  canContinue
-                    ? 'text-cyan-400'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+            )}
+            {/* Gamified message - only show in step2 (Root Cause Analysis) - visible on all screens */}
+            {currentPhase === 'step2' && !step2InstructionDismissed && (
+              <div
+                className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col items-center justify-center rounded-2xl border-2 border-cyan-400/40 px-6 py-6 w-full max-w-xs lg:w-[340px] animate-bounce-in relative overflow-visible mt-4 lg:mt-0 mx-auto"
+                style={{ minWidth: '0', maxWidth: '360px' }}
               >
-                <span>Continue</span>
-                <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4 ml-1" />
-              </button>
-            </div>
+                <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-5xl select-none gamify-shake"
+                  style={{
+                    animation: 'gamify-shake 1.5s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55)',
+                    filter: '',
+                    color: '',
+                    textShadow: '0 0 24px #06b6d4, 0 0 8px #fff',
+                    fontWeight: 900
+                  }}
+                >🖐️</span>
+                <span className="text-xl font-extrabold text-cyan-200 drop-shadow-lg mb-2 animate-pulse-text pixel-text" style={{ letterSpacing: '1px' }}>
+                  Drag & Drop!
+                </span>
+                <span className="text-base font-bold text-cyan-100 text-center animate-slide-in-up pixel-text">
+                  Drag the most suitable answer<br />
+                  into the neon container<br />
+                  to solve the root cause
+                </span>
+                <button
+                  className="mt-6 px-6 py-2 rounded-lg font-bold text-lg bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
+                  disabled={false}
+                  onClick={() => {
+                    setStep2InstructionDismissed(true);
+                    setCanContinue(true);
+                  }}
+                >
+                  OK
+                </button>
+                <style>{`
+                  @keyframes gamify-shake {
+                    0% { transform: translate(-50%, 0) rotate(-8deg) scale(1); }
+                    10% { transform: translate(-60%, 0) rotate(-18deg) scale(1.08); }
+                    20% { transform: translate(-40%, 0) rotate(12deg) scale(1.12); }
+                    30% { transform: translate(-60%, 0) rotate(-18deg) scale(1.08); }
+                    40% { transform: translate(-40%, 0) rotate(12deg) scale(1.12); }
+                    50% { transform: translate(-50%, 0) rotate(-8deg) scale(1); }
+                    100% { transform: translate(-50%, 0) rotate(-8deg) scale(1); }
+                  }
+                `}</style>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -923,6 +818,37 @@ export const GameBoard2D: React.FC = () => {
             score={gameState.score}
             totalQuestions={gameState.totalQuestions}
           />
+          {/* Correction message above feedback panel */}
+          {showCorrectionMessage && !allAnswersCorrectAtFeedback && (
+            <div className="fixed inset-0 flex items-center justify-center z-50" style={{ pointerEvents: 'none' }}>
+              <div className="p-3 bg-yellow-200 border-l-4 border-yellow-600 rounded shadow text-yellow-900 font-bold text-center animate-fade-in flex flex-col items-center max-w-lg w-full mx-auto" style={{ pointerEvents: 'auto' }}>
+                <span className="mb-2">Please go back and correct the answer to proceed.</span>
+                <div className="flex gap-3 mt-2">
+                  <button
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-bold shadow hover:bg-yellow-700 transition-colors"
+                    onClick={() => {
+                      setShowCorrectionMessage(false);
+                      setCurrentPhase('step1');
+                      setCanContinue(true);
+                      setGameState(prev => ({
+                        ...prev,
+                        answers: { ...prev.answers, violation: null, rootCause: null, impact: null },
+                        showFeedback: false
+                      }));
+                    }}
+                  >
+                    OK
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-bold shadow hover:bg-cyan-700 transition-colors"
+                    onClick={() => setShowCorrectionMessage(false)}
+                  >
+                    Read feedback
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-row gap-2 items-start flex-1 w-full min-h-0 px-4 pb-[70px] sm:pb-0">
             {/* Left: Character */}
@@ -932,68 +858,67 @@ export const GameBoard2D: React.FC = () => {
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
-                // Enhanced feedback panel with better visibility and readability
-                "bg-slate-800/95 backdrop-blur-sm rounded-xl mb-4 shadow-2xl border border-cyan-400/30 p-2 sm:p-3 lg:p-6 xl:p-8 flex flex-col gap-1 sm:gap-2 lg:gap-3 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg overflow-y-auto lg:overflow-auto lg:max-h-[80vh] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 hover:shadow-cyan-400/20 hover:shadow-xl"
+                `pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl rounded-2xl border-2 border-cyan-400/40 p-4 flex flex-col gap-2 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg max-h-[80vh] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 ${showCorrectionMessage && !allAnswersCorrectAtFeedback ? 'overflow-y-hidden' : 'overflow-y-auto'}`
               }
               style={{ minHeight: 0 }}
             >
-              {/* Parent div for detailed feedback */}
-              <div className="flex flex-col w-full gap-1  lg:gap-3 xl:gap-4">
-                {/* Header */}
-                <div className="flex flex-col items-start mb-1 sm:mb-2">
-                  <span className="text-yellow-400 font-bold text-sm  lg:text-xl xl:text-2xl leading-tight drop-shadow-sm">{isAllCorrect ? 'Excellent!' : 'Needs Improvement'}</span>
-                  <span className="text-cyan-300 text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold leading-tight mt-1">Case analysis complete - Review your results</span>
+              {/* Feedback Header */}
+              <div className="flex flex-col items-start mb-1 sm:mb-2">
+                <span className="text-yellow-400 font-bold text-sm lg:text-xl xl:text-2xl leading-tight drop-shadow-sm">{isAllCorrect ? 'Excellent!' : 'Needs Improvement'}</span>
+                <span className="text-cyan-300 text-xs sm:text-sm lg:text-lg xl:text-xl font-semibold leading-tight mt-1">Case analysis complete - Review your results</span>
+              </div>
+              {/* Score summary */}
+              <div className="flex flex-row items-center gap-2 sm:gap-3 mt-1">
+                <div className="pixel-border bg-black/30 rounded-lg px-2 sm:px-3 py-1 sm:py-2 flex flex-col items-center justify-center">
+                  <span className="text-red-700 font-bold text-sm lg:text-lg xl:text-xl leading-tight">{correctAnswers}/3 Correct</span>
+                  <span className="text-slate-400 text-xs lg:text-base xl:text-lg leading-tight font-medium">Case Accuracy: {caseAccuracy}%</span>
                 </div>
-                {/* Score summary */}
-                <div className="flex flex-row items-center gap-2 sm:gap-3 mt-1">
-                  <div className="flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1 sm:py-2 border border-white/20 shadow-lg">
-                    <span className="text-red-700 font-bold text-sm  lg:text-lg xl:text-xl leading-tight">{correctAnswers}/3 Correct</span>
-                    <span className="text-slate-600 text-xs  lg:text-base xl:text-lg leading-tight font-medium">Case Accuracy: {caseAccuracy}%</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center bg-black/20  backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1 sm:py-2 border border-white/20 shadow-lg">
-                    <span className="text-cyan-600 font-bold text-sm  lg:text-lg xl:text-xl leading-tight">{Math.min(performance, 100)}%</span>
-                    <span className="text-slate-600 text-xs  lg:text-base xl:text-lg leading-tight font-medium">Performance</span>
-                  </div>
+                <div className="pixel-border bg-black/30 rounded-lg px-2 sm:px-3 py-1 sm:py-2 flex flex-col items-center justify-center">
+                  <span className="text-cyan-400 font-bold text-sm lg:text-lg xl:text-xl leading-tight">{Math.min(performance, 100)}%</span>
+                  <span className="text-slate-400 text-xs lg:text-base xl:text-lg leading-tight font-medium">Performance</span>
                 </div>
-                {/* Detailed Analysis */}
-                <div className="mt-1 lg:mt-2 ">
-                  <span className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl text-cyan-300 leading-tight drop-shadow-sm">Detailed Analysis</span>
-                  <div className="flex flex-col gap-2 sm:gap-3 mt-2 sm:mt-3">
-                    <div className="flex flex-col bg-white/70 backdrop-blur-sm border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg border border-white/20">
-                      <span className="font-bold text-yellow-600 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">🔍 GMP Violation Identification</span>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg mt-2 gap-1 sm:gap-2">
-                        <span className="text-slate-700 lg:text-lg text-sm">Correct: <span className="text-green-700 font-semibold">{violationCorrect}</span></span>
-                        <span className={`font-semibold ${violationIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{violationUser || 'Not answered'}</span></span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col bg-white/70 backdrop-blur-sm border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg border border-white/20">
-                      <span className="font-bold text-yellow-600 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">🎯 Root Cause Analysis</span>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg mt-2 gap-1 sm:gap-2">
-                        <span className="text-slate-700 font-medium">Correct: <span className="text-green-700 font-semibold">{rootCauseCorrect}</span></span>
-                        <span className={`font-semibold ${rootCauseIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{rootCauseUser || 'Not answered'}</span></span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col bg-white/70 backdrop-blur-sm border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg border border-white/20">
-                      <span className="font-bold text-yellow-600 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">⚡ Impact Assessment</span>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg mt-2 gap-1 sm:gap-2">
-                        <span className="text-slate-700 font-medium">Correct: <span className="text-green-700 font-semibold">{impactCorrect}</span></span>
-                        <span className={`font-semibold ${impactIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{impactUser || 'Not answered'}</span></span>
-                      </div>
+              </div>
+              {/* Detailed Analysis */}
+              <div className="mt-1 lg:mt-2">
+                <span className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl text-cyan-300 leading-tight drop-shadow-sm">Detailed Analysis</span>
+                <div className="flex flex-col gap-2 sm:gap-3 mt-2 sm:mt-3">
+                  {/* Violation */}
+                  <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
+                    <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🔍 GMP Violation</span>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg gap-1 sm:gap-2">
+                      <span className="text-slate-700">Correct: <span className="text-green-700 font-semibold">{violationCorrect}</span></span>
+                      <span className={`font-semibold ${violationIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{violationUser || 'Not answered'}</span></span>
                     </div>
                   </div>
+                  {/* Root Cause */}
+                  <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
+                    <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🎯 Root Cause</span>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg gap-1 sm:gap-2">
+                      <span className="text-slate-700">Correct: <span className="text-green-700 font-semibold">{rootCauseCorrect}</span></span>
+                      <span className={`font-semibold ${rootCauseIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{rootCauseUser || 'Not answered'}</span></span>
+                    </div>
+                  </div>
+                  {/* Impact */}
+                  <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
+                    <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">⚡ Impact</span>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg gap-1 sm:gap-2">
+                      <span className="text-slate-700">Correct: <span className="text-green-700 font-semibold">{impactCorrect}</span></span>
+                      <span className={`font-semibold ${impactIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{impactUser || 'Not answered'}</span></span>
+                    </div>
+                  </div>
                 </div>
-                {/* Learning Insight */}
-                <div className="mt-2 sm:mt-3 bg-blue-50/70 backdrop-blur-sm border-l-4 border-blue-400 rounded-lg p-2 sm:p-3 flex flex-col shadow-lg border border-blue-200/50">
-                  <span className="font-bold text-blue-700 text-sm sm:text-base lg:text-lg xl:text-xl leading-tight flex items-center gap-2">💡 Learning Insight</span>
-                  <span className="text-slate-700 text-xs sm:text-sm lg:text-base xl:text-lg flex items-start mt-2 leading-relaxed">
-                    <span className="mr-2 text-base" role="img" aria-label="book">📚</span>
-                    <span className="font-medium">This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
-                  </span>
-                </div>
-                {/* Next Case button - only show if not last case */}
-                {gameState.currentCase < cases.length - 1 }
-                {/* Summary message at the bottom */}
-                <div className="flex flex-col items-start justify-center bg-yellow-50/70 backdrop-blur-sm border-l-4 border-yellow-500 p-2 sm:p-3 w-full rounded-lg mt-2 sm:mt-3 shadow-lg border border-yellow-200/50">
+              </div>
+              {/* Learning Insight */}
+              <div className="mt-2 sm:mt-3 pixel-border bg-gradient-to-r from-blue-50 via-white to-blue-100 border-l-4 border-blue-400 rounded-lg p-2 sm:p-3 flex flex-col shadow-lg">
+                <span className="font-bold text-blue-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">💡 Learning Insight</span>
+                <span className="text-slate-700 text-xs sm:text-sm lg:text-base xl:text-lg flex items-start mt-2 leading-relaxed">
+                  <span className="mr-2 text-base" role="img" aria-label="book">📚</span>
+                  <span className="font-medium">This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
+                </span>
+              </div>
+              {/* Summary message at the bottom */}
+              {(!isAllCorrect) && (
+                <div className="flex flex-col items-start justify-center pixel-border bg-gradient-to-r from-yellow-50 via-white to-yellow-100 border-l-4 border-yellow-500 p-2 sm:p-3 w-full rounded-lg mt-2 sm:mt-3 shadow-lg">
                   <div className="flex items-center min-h-[20px] py-1">
                     <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 mr-2 flex-shrink-0" />
                     <span className="text-yellow-700 font-semibold text-xs sm:text-sm lg:text-base xl:text-lg leading-tight">Needs Improvement - You must get all answers correct to continue</span>
@@ -1001,41 +926,29 @@ export const GameBoard2D: React.FC = () => {
                   </div>
                   <div className="text-slate-700 text-xs sm:text-sm lg:text-base xl:text-lg font-medium text-start mt-2 w-full bg-transparent leading-relaxed">Case analysis complete - Review your results and try again</div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
           {/* Navigation - fixed at bottom, full width, justify-between */}
-          <div className="flex flex-row items-center justify-between w-full px-2 pb-1 pt-1 sm:px-4  sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
-            <button
-              onClick={handleBack}
-              disabled={isAllCorrect}
-              className={`px-1.5 py-0.5 text-[10px] rounded-lg font-semibold flex items-center space-x-1 transition-all duration-300 sm:px-4 sm:py-2 sm:text-sm lg:text-lg ${
-                isAllCorrect
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-cyan-400/30 hover:text-cyan-200 border border-cyan-400/30 shadow-md'
-              }`}
-            >
-              <ChevronLeft className="w-[0.7vw] h-[0.7vw] min-w-3 min-h-3" />
-              <span>Back</span>
-            </button>
+          <div className="flex flex-row items-center justify-end w-full px-2 pb-1 pt-1 sm:px-4 sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
             <div className="flex w-auto justify-end">
-              {/* Show Submit only in feedback phase for case2 (index 1), all answers provided, and all correct */}
+              {/* Show Submit only in feedback phase of case2 (index 1), all answers provided, and all correct */}
               {currentPhase === 'feedback' && gameState.currentCase === 1 && allAnswersProvided && allAnswersCorrect && (
                 <button
                   onClick={() => setPopupOpen(true)}
-                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-white rounded-xl hover:from-cyan-500 hover:to-purple-700 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
+                  className="w-full pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-6 py-3 font-black text-base sm:text-lg rounded-lg shadow-lg pixel-text transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2"
                 >
                   <span>Submit</span>
-                  <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
+                  <ChevronRight className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
                 </button>
               )}
               {isAllCorrect && gameState.currentCase !== 1 && (
                 <button
                   onClick={handleContinue}
-                  className="px-1.5 py-0.5 text-[10px] sm:px-4 sm:py-2 sm:text-sm lg:text-lg min-px-4 min-py-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-white rounded-xl hover:from-cyan-500 hover:to-purple-700 transition-all duration-300 font-bold flex items-center space-x-2 shadow-lg border border-cyan-400/30"
+                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-2 py-2 font-black text-xs pixel-text transition-all duration-300 flex items-center justify-center space-x-1"
                 >
                   <span>Next Case</span>
-                  <ChevronRight className="w-[1vw] h-[1vw] min-w-4 min-h-4" />
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               )}
             </div>
@@ -1051,6 +964,39 @@ export const GameBoard2D: React.FC = () => {
               score={gameState.score}
               time={formatTimer(timer)}
             />
+          )}
+          
+          {/* Game Complete - Show score board on final feedback screen */}
+          {gameState.gameComplete && user && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-[70]">
+              <div className="bg-slate-800/95 backdrop-blur-sm rounded-xl p-6 max-w-2xl w-full mx-4">
+                <h2 className="text-2xl font-bold text-cyan-400 mb-4">Game Complete!</h2>
+                <div className="mb-4">
+                  <p className="text-white">Final Score: <span className="text-yellow-400 font-bold">{gameState.score}</span></p>
+                  <p className="text-white">Time: <span className="text-green-400 font-bold">{formatTimer(timer)}</span></p>
+                </div>
+                
+                <div className="border-t border-cyan-400/30 my-4 pt-4">
+                  <h3 className="text-xl font-bold text-cyan-400 mb-4">Your Level 4 Performance</h3>
+                  <Level4ScoreBoard moduleId={1} />
+                </div>
+                
+                <div className="flex justify-end mt-6 space-x-4">
+                  <button 
+                    onClick={handlePlayAgain}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Play Again
+                  </button>
+                  <button 
+                    onClick={() => window.location.assign('/modules')}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Back to Modules
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -1086,6 +1032,7 @@ export const GameBoard2D: React.FC = () => {
     setCanContinue(true);   // Ensure continue button is enabled
     setTimerActive(false);  // Ensure timer is stopped
     setPopupOpen(false);    // Close any open popups
+    setStep2InstructionDismissed(false); // Reset step 2 instruction dismissal
     
     // Force reset the animation
     setAnimationKey(prev => prev + 1);
@@ -1118,6 +1065,42 @@ export const GameBoard2D: React.FC = () => {
     }
   }, [currentPhase]);
 
+  // Profile modal state
+  const [profileOpen, setProfileOpen] = useState(false);
+  useEffect(() => {
+    if (profileOpen) {
+      const timer = setTimeout(() => setProfileOpen(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [profileOpen]);
+
+  // Add this effect at the top level, after showCorrectionMessage state
+  useEffect(() => {
+    if (
+      currentPhase === 'feedback' &&
+      gameState.showFeedback &&
+      !allAnswersCorrectAtFeedback
+    ) {
+      setShowCorrectionMessage(false);
+      const timer = setTimeout(() => {
+        setShowCorrectionMessage(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowCorrectionMessage(false);
+    }
+  }, [currentPhase, gameState.showFeedback, allAnswersCorrectAtFeedback]);
+
+  // Avatar selection state, default to Intern 1, load from localStorage if available
+  const [avatar, setAvatar] = useState<string>(
+    () => localStorage.getItem("selectedAvatar") || "/characters/Intern1.png"
+  );
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("selectedAvatar", avatar);
+  }, [avatar]);
+
   // Main render logic
   return (
     <div className="relative h-full w-full min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 overflow-hidden">
@@ -1127,18 +1110,108 @@ export const GameBoard2D: React.FC = () => {
         isVisible={showHighScorePopup} 
         onClose={() => setShowHighScorePopup(false)}
       />
-      
       {/* Neon Animated SVG Background */}
-      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
-       
-      </div>
-      {/* Case label and Timer/Score always top left */}
-      {showTimer && (
-        <div className="absolute top-4 left-4 rounded-lg px-2 py-0.5 font-bold text-cyan-400 z-50 sm:top-4 sm:left-4 flex flex-col items-start bg-black/30 backdrop-blur-md border border-cyan-400/30">
-          {/* Case label above timer */}
-          <span className="text-cyan-300 font-bold text-[9px] sm:text-xs md:text-base mb-1">Case-{gameState.currentCase + 1}</span>
-          <span className="text-[9px] sm:text-xs md:text-base">Time : {formatTimer(timer)}</span>
-          <span className="text-green-400 font-bold mt-1 text-[9px] sm:text-xs md:text-base">Score : {gameState.score}</span>
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none"></div>
+      {/* Back button always top left, above timer/case label */}
+      <button
+        onClick={handleBack}
+        className="absolute top-2 lg:left-4 bg-red-600 hover:bg-red-700 text-white px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-[60] hover:shadow-xl"
+        style={{ minWidth: 64, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}
+      >
+        <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
+        <span>BACK</span>
+      </button>
+      {/* Case label and Timer/Score always top, horizontal center */}
+      {currentPhase !== 'feedback' && (
+        <div className="flex flex-row items-center justify-center w-full mb-[1vw] mt-2 px-2">
+          <div className="flex flex-row items-center gap-2">
+            <span className="pixel-border bg-green-600 px-2 py-1 rounded-lg text-white font-bold text-xs md:text-sm">CASE: {gameState.currentCase + 1}</span>
+            <span className="pixel-border bg-blue-600 px-2 py-1 rounded-lg text-white font-bold text-xs md:text-sm">TIME: {formatTimer(timer)}</span>
+            <span className="pixel-border bg-yellow-600 px-2 py-1 rounded-lg text-white font-bold text-xs md:text-sm">SCORE: {gameState.score}</span>
+          </div>
+        </div>
+      )}
+      {/* Profile/User info at top right */}
+      {user && (
+        <div className="absolute top-2 right-0 lg:right-4 z-[60] flex items-center gap-2">
+          <div
+            className="pixel-border-thick bg-gradient-to-br from-cyan-900 via-blue-900 to-purple-900 shadow-xl flex items-center lg:gap-2 rounded-xl px-3 py-1 border-2 border-cyan-400/40 min-w-[48px] max-w-xs cursor-pointer hover:bg-cyan-900/60 transition relative"
+            onClick={() => setProfileOpen((v) => !v)}
+            tabIndex={0}
+            role="button"
+            aria-label="Show profile"
+          >
+            <img
+              src={avatar}
+              alt="Player Avatar"
+              className="w-8 h-8 rounded-full border-2 border-cyan-400 object-cover bg-cyan-700"
+            />
+            {/* Only show email on large screens */}
+            <span className="hidden lg:inline text-cyan-200 font-bold text-xs md:text-sm truncate max-w-[80px] pixel-text">{user.email || 'User'}</span>
+            {/* Profile Popover */}
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-2xl p-4 z-[200] border-2 border-cyan-400/40 flex flex-col items-center animate-fade-in-scale bg-gradient-to-br from-cyan-900 via-blue-900 to-purple-900" style={{top: '100%', overflow: 'hidden', wordBreak: 'break-word'}}>
+                <button
+                  className="absolute top-2 right-2 text-gray-500 hover:text-cyan-400 text-xl font-black"
+                  onClick={e => { e.stopPropagation(); setProfileOpen(false); }}
+                  aria-label="Close profile"
+                  tabIndex={0}
+                >
+                  ×
+                </button>
+                <img
+                  src={avatar}
+                  alt="Player Avatar Large"
+                  className="w-16 h-16 rounded-full border-2 border-cyan-400 object-cover bg-cyan-700 mb-3"
+                />
+                <div className="text-center w-full">
+                  <div className="text-lg font-black text-cyan-200 mb-1 break-all truncate whitespace-normal max-w-full pixel-text">{user.email}</div>
+                </div>
+                {/* <button
+                  className="mt-4 px-4 py-2 rounded-lg font-bold text-base bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
+                  onClick={() => setShowAvatarModal(true)}
+                >
+                  Change Avatar
+                </button> */}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Avatar Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl shadow-2xl p-8 w-full max-w-md flex flex-col items-center relative">
+            <h2 className="font-bold mb-6 text-white drop-shadow text-2xl">Choose Your Avatar</h2>
+            <div className="grid grid-cols-4 gap-6 w-full mb-2">
+              {AVATAR_OPTIONS.map((option) => (
+                <button
+                  key={option.label}
+                  className={`flex flex-col items-center justify-center rounded-2xl border-2 transition-all bg-white/80 hover:bg-white p-4 ${
+                    avatar === option.src ? "border-blue-500 ring-2 ring-blue-300" : "border-transparent"
+                  }`}
+                  onClick={() => {
+                    setAvatar(option.src);
+                    setShowAvatarModal(false);
+                  }}
+                  type="button"
+                >
+                  <img
+                    src={option.src}
+                    alt={option.label}
+                    className="w-12 h-12 rounded-full object-cover mb-1"
+                  />
+                  <span className="text-xs font-bold text-cyan-900">{option.label}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              className="mt-4 px-4 py-2 rounded-lg font-bold text-base bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
+              onClick={() => setShowAvatarModal(false)}
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
       {/* Phase rendering */}
@@ -1363,6 +1436,10 @@ export const GameBoard2D: React.FC = () => {
         }
         .glow-yellow {
           text-shadow: 0 0 8px #fde68a, 0 0 16px #facc15;
+        }
+        .neon-glow {
+          box-shadow: 0 0 24px 6px #06b6d4, 0 0 8px 2px #06b6d4;
+          border: 2.5px solid #06b6d4;
         }
       `}</style>
     </div>
