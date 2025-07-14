@@ -75,7 +75,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
         </div>
         {/* Drop zone to the right for mobile/tablet */}
         <div
-          className="flex-shrink-0 ml-0.5 sm:ml-1 p-1 sm:p-2 border-2 border-dashed rounded-lg text-center transition-colors duration-200 text-[8px] sm:text-xs mt-0.5 sm:mt-1 align-top lg:hidden flex flex-col justify-end  items-center min-h-[60px] bg-white/40 overflow-hidden"
+          className="flex-shrink-0 ml-0.5 sm:ml-1 p-1 sm:p-2 border-2 border-dashed border-b-orange-300 rounded-lg text-center transition-colors duration-200 text-[8px] sm:text-xs mt-0.5 sm:mt-1 align-top lg:hidden flex flex-col justify-end  items-center min-h-[60px] bg-white/40 overflow-hidden"
           style={{ minWidth: 0, width: '80px', maxWidth: '30vw' }}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}

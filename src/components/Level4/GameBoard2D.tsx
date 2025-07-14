@@ -539,7 +539,7 @@ export const GameBoard2D: React.FC = () => {
                 <button
                   onClick={handleContinue}
                   disabled={!canContinue}
-                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-2 text-white font-black text-sm lg:text-lg rounded-lg shadow-lg"
+                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-white font-black text-sm lg:text-lg rounded-lg shadow-lg"
                   style={{ minWidth: 180 }}
                   aria-label="Start Investigation"
                 >
@@ -559,7 +559,7 @@ export const GameBoard2D: React.FC = () => {
     return (
       <div 
         key={`reportView-${animationKey}`}
-        className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
+        className="fixed inset-0 h-[auto] w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
       >
         {/* Animated background layer */}
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 opacity-25">
@@ -574,7 +574,7 @@ export const GameBoard2D: React.FC = () => {
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-col items-center justify-center flex-1 w-full h-full lg:mb-4 lg:md:mb-0 mt-2">
             <div
-              className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl h-[60%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-120px)] p-4 rounded-2xl border-2 border-cyan-400/40"
+              className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-lg lg:max-w-lg  lg:h-[60%] h-[100%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-80px)] p-4 rounded-2xl border-2 border-cyan-400/40"
             >
               {/* Header */}
               <div className="flex flex-col items-center justify-center w-full lg:mb-4">
@@ -604,7 +604,7 @@ export const GameBoard2D: React.FC = () => {
                 <div className="mt-[1vw] w-full text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl break-words">
                   <div className="text-center mb-2 w-full">
                     {/* <h2 className="text-xs md:text-sm lg:text-2xl xl:text-3xl font-bold text-red-600 mb-1">DEVIATION REPORT</h2> */}
-                    <div className="w-full h-px bg-gray-300 mb-1"></div>
+                    <div className="w-full h-[auto] bg-gray-300 mb-1"></div>
                   </div>
                   <div className="space-y-1 text-[10px] md:text-xs lg:text-base xl:text-lg 2xl:text-xl text-cyan-400">
                     <div className="animate-report-field text-white" style={{ animationDelay: '0.2s' }}>
@@ -641,11 +641,11 @@ export const GameBoard2D: React.FC = () => {
               </div>
               
               {/* Navigation button inside container */}
-              <div className="flex-shrink-0 flex flex-row items-center justify-center w-full lg:px-4 lg:py-3">
+              <div className="flex-shrink-0 flex flex-row items-center justify-center w-full p-2 lg:px-4 lg:py-3">
                 <button
                   onClick={handleContinue}
                   disabled={!canContinue}
-                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-white font-black text-lg rounded-lg shadow-lg"
+                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-white font-black text-sm lg:text-lg p-1  rounded-lg shadow-lg"
                   style={{ minWidth: 180 }}
                   aria-label="Start Investigation"
                 >
@@ -684,33 +684,86 @@ export const GameBoard2D: React.FC = () => {
             <p className="text-lg md:text-xl font-bold text-cyan-400 mb-1">Deviation Investigation Game</p>
           </div> */}
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
-          <div className={`flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[10px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0${currentPhase === 'step2' && step2InstructionDismissed ? ' lg:justify-center' : ''}`}> 
+          <div className={`flex items-center justify-center flex-1 w-[100%] min-h-0 overflow-visible mb-[10px] lg:mb-0 lg:gap-[2vw] lg:px-2 lg:py-6 lg:h-full h-auto mt-4 lg:mt-0${currentPhase === 'step2' && step2InstructionDismissed ? ' lg:justify-center' : ''}`}>
             {/* Centered: Question Panel - only show in step2 after OK is clicked, or always for other steps */}
             {((currentPhase !== 'step2') || (currentPhase === 'step2' && step2InstructionDismissed)) && (
-              <div className={`rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible landscape:p-2 landscape:max-w-xs landscape:text-[9px] sm:text-xs lg:w-auto lg:min-w-[600px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up${currentPhase === 'step2' && step2InstructionDismissed ? ' mx-auto' : ''}`}>
-                <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
-                  <QuestionPanel
-                    key={`question-${currentPhase}-${animationKey}`}
-                    case={currentCase}
-                    currentQuestion={
-                      currentPhase === 'step1'
-                        ? 'violation'
-                        : currentPhase === 'step2'
-                        ? 'rootCause'
-                        : 'impact'
-                    }
-                    selectedAnswers={gameState.answers}
-                    onAnswerSelect={handleAnswerSelect}
-                    showFeedback={false}
-                    onContinue={handleContinue}
-                  />
+              <div className="flex flex-row w-full h-auto items-start">
+                <div className="flex flex-row w-full h-auto items-start relative">
+                  <div className={`rounded-2xl shadow-xl p-[1vw] flex flex-col items-center justify-center w-full h-auto overflow-visible  sm:text-xs lg:w-auto lg:min-w-[600px] lg:max-w-2xl lg:p-8 xl:p-12 mx-auto animate-fade-slide-up${currentPhase === 'step2' && step2InstructionDismissed ? ' mx-auto' : ''}`}> 
+                    <div className="w-auto h-full text-[9px] md:text-sm landscape:text-[9px] mt-2 md:mt-0 landscape:leading-tight">
+                      <QuestionPanel
+                        key={`question-${currentPhase}-${animationKey}`}
+                        case={currentCase}
+                        currentQuestion={
+                          currentPhase === 'step1'
+                            ? 'violation'
+                            : currentPhase === 'step2'
+                            ? 'rootCause'
+                            : 'impact'
+                        }
+                        selectedAnswers={gameState.answers}
+                        onAnswerSelect={handleAnswerSelect}
+                        showFeedback={false}
+                        onContinue={currentPhase === 'step1' ? handleContinue : undefined}
+                      />
+                      {/* Desktop only: Continue button for step1, step2, and step3, inside the panel, below options */}
+                      {((currentPhase === 'step1' && gameState.answers.violation !== null) ||
+                        (currentPhase === 'step2' && gameState.answers.rootCause !== null) ||
+                        (currentPhase === 'step3' && gameState.answers.impact !== null)) && (
+                        <div className="hidden md:flex w-full justify-end mt-4">
+                          <button
+                            onClick={handleContinue}
+                            disabled={!canContinue}
+                            className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-xs md:text-sm rounded-lg shadow-lg"
+                            aria-label="Continue"
+                          >
+                            <span className="mr-2">Continue</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Mobile: absolutely bottom right button */}
+                  {((currentPhase === 'step1' && gameState.answers.violation !== null) ||
+                    (currentPhase === 'step2' && gameState.answers.rootCause !== null) ||
+                    (currentPhase === 'step3' && gameState.answers.impact !== null)) && (
+                    <>
+                      {/* Mobile only */}
+                      <div className="absolute right-2 bottom-2 z-20 md:hidden">
+                        <button
+                          onClick={handleContinue}
+                          disabled={!canContinue}
+                          className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-xs rounded-lg shadow-lg"
+                          aria-label="Continue"
+                        >
+                          <span className="mr-2">Continue</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                      </div>
+                      {/* Desktop only: previous column-aligned button */}
+                      {/* <div className="hidden md:flex flex-col w-[40%] h-full min-h-[120px] md:w-[120px] relative justify-end items-center">
+                        <div className="flex-1 flex items-end justify-center w-full">
+                          <button
+                            onClick={handleContinue}
+                            disabled={!canContinue}
+                            className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-xs md:text-sm rounded-lg shadow-lg"
+                            aria-label="Continue"
+                          >
+                            <span className="mr-2">Continue</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                        </div>
+                      </div> */}
+                    </>
+                  )}
                 </div>
               </div>
             )}
             {/* Gamified message - only show in step2 (Root Cause Analysis) - visible on all screens */}
             {currentPhase === 'step2' && !step2InstructionDismissed && (
               <div
-                className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col items-center justify-center rounded-2xl border-2 border-cyan-400/40 px-6 py-6 w-full max-w-xs lg:w-[340px] animate-bounce-in relative overflow-visible mt-4 lg:mt-0 mx-auto"
+                className=" pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col items-center justify-center rounded-2xl border-2 border-cyan-400/40 px-3 py-3 lg:px-6 lg:py-6 w-full max-w-xs lg:w-[340px] animate-bounce-in relative overflow-visible mt-4 lg:mt-0 mx-auto"
                 style={{ minWidth: '0', maxWidth: '360px' }}
               >
                 <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-5xl select-none gamify-shake"
@@ -727,11 +780,11 @@ export const GameBoard2D: React.FC = () => {
                 </span>
                 <span className="text-base font-bold text-cyan-100 text-center animate-slide-in-up pixel-text">
                   Drag the most suitable answer<br />
-                  into the neon container<br />
+                  into the container<br />
                   to solve the root cause
                 </span>
                 <button
-                  className="mt-6 px-6 py-2 rounded-lg font-bold text-lg bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
+                  className="mt-6 lg:px-6 lg:py-2 px-3 py-1 rounded-lg font-bold text-lg bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
                   disabled={false}
                   onClick={() => {
                     setStep2InstructionDismissed(true);
@@ -858,7 +911,7 @@ export const GameBoard2D: React.FC = () => {
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
-                `pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl rounded-2xl border-2 border-cyan-400/40 p-4 flex flex-col gap-2 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg max-h-[80vh] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 ${showCorrectionMessage && !allAnswersCorrectAtFeedback ? 'overflow-y-hidden' : 'overflow-y-auto'}`
+                `pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl rounded-2xl border-2 border-cyan-400/40 p-4 flex flex-col gap-2 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg max-h-[80vh]   lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 ${showCorrectionMessage && !allAnswersCorrectAtFeedback ? 'overflow-y-hidden' : 'overflow-y-auto'}`
               }
               style={{ minHeight: 0 }}
             >

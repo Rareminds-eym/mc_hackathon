@@ -70,7 +70,7 @@ const Level4LoadingScreen: React.FC<Level4LoadingScreenProps> = ({ onComplete })
       <div className="absolute inset-0 z-10 bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-transparent opacity-50 pixel-glow" />
       {/* Main loading container */}
       <div
-        className={`z-20 pixel-border-thick bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col justify-center items-center border-2 border-cyan-400/40 mb-[16px] backdrop-blur-md ${isMobile ? 'p-2' : 'p-8'} ${isMobile ? 'w-[96vw] max-w-[98vw] min-w-[220px]' : 'w-[440px] max-w-[440px] min-w-[320px]'} rounded-2xl pixel-perfect`}
+        className={`z-20 pixel-border-thick bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col justify-center items-center border-2 border-cyan-400/40 mb-[16px] backdrop-blur-md ${isMobile ? 'p-2' : 'p-8'} ${isMobile ? 'w-[440px] max-w-[440px] min-w-[220px]' : 'w-[440px] max-w-[440px] min-w-[320px]'} rounded-2xl pixel-perfect`}
         style={{
           backgroundColor: 'rgba(22, 79, 95, 0.72)',
           boxShadow: '0 8px 32px rgba(31, 38, 135, 0.4)',
