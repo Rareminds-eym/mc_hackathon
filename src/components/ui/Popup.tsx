@@ -88,18 +88,15 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   score,
   combo,
   health,
-  highScore, // Add high score parameter
-  showNext = false,
+  // highScore, // Add high score parameter (not used)
+  // showNext = false, // not used
   isLevelCompleted = false,
   showGoToModules = true,
   showReset = false,
   onReset,
   moduleId,
 }) => {
-  // Handler for reset button
-  const handleReset = () => {
-    if (onReset) onReset();
-  };
+  // Removed duplicate handleReset
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
@@ -169,6 +166,14 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
       setIsUpdatingProgress(false);
     }
   }, [open]);
+
+  // DEBUG: Log prop values to help diagnose reset button issue
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line no-console
+      console.log('[VictoryPopup] isLevelCompleted:', isLevelCompleted, 'showReset:', showReset, 'onReset:', typeof onReset === 'function');
+    }
+  }, [open, isLevelCompleted, showReset, onReset]);
 
   return (
     <Popup open={open} onClose={onClose} hideClose={showReset}>
@@ -241,6 +246,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   <span>Health:</span>
                   <span className="font-black text-pink-100">{health}</span>
                 </span>
+              </div>
               <div
                 className={`flex items-center gap-2 font-semibold text-white/90 ${
                   isMobileHorizontal ? "text-sm" : "text-base"
@@ -264,67 +270,21 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               <Icon icon="mdi:home-map-marker" className="w-5 h-5 mr-1" />
               Back to Levels
             </button>
-              {/* Button shadow/glow effect */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur-[4px] opacity-50 -z-10 scale-105${
-                  isMobileHorizontal ? " blur-[2px]" : ""
-                }`}
-                style={{
-                  transform: "translateY(2px)",
-                  animation: "pulse-subtle 2s infinite ease-in-out",
-                }}
-              />
-
-              {/* Main button */}
-              <button
-                className={`group relative bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 text-white font-bold rounded-lg 
-                  flex items-center gap-1 px-3 py-2 overflow-hidden transition-all duration-200 active:translate-y-[2px] 
-                  shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-4px_0_rgba(0,0,0,0.2),0_4px_0_rgba(0,100,0,0.5),0_0_12px_rgba(34,197,94,0.2)]
-                  active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_0_rgba(0,0,0,0.3),0_0px_0_rgba(0,100,0,0.5)] ${
-                    isMobileHorizontal ? " px-2 py-1.5 text-xs" : " text-sm"
-                  }`}
-                onClick={handleGoToLevels}
-                aria-label="Back to Levels"
-                type="button"
-              >
-                {/* Shimmering overlay */}
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_120%,white,transparent_70%)] group-hover:opacity-30"></div>
-
-                {/* Button content */}
-                <div className="relative flex items-center gap-1 z-10">
-                  {/* Icon with animated glow */}
-                  <div className="relative">
-                    <div
-                      className={`absolute inset-0 rounded-full bg-white/30 blur-[3px] scale-125 animate-pulse-slow opacity-0 group-hover:opacity-80`}
-                    ></div>
-                    <Icon
-                      icon="mdi:home-map-marker"
-                      className={`w-5 h-5 drop-shadow-glow${
-                        isMobileHorizontal ? " w-4 h-4" : ""
-                      }`}
-                    />
-                  </div>
-                  <span className="whitespace-nowrap"></span>
-                </div>
-
-                {/* Particle effects - only shown on hover */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={`particle-${i}`}
-                      className="absolute w-1 h-1 rounded-full bg-white opacity-0 group-hover:animate-particle-float"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: "100%",
-                        animationDelay: `${Math.random() * 1.5}s`,
-                      }}
-                    ></div>
-                  ))}
-                </div>
-              </button>
-            </motion.div>
           )}
-          {!isLevelCompleted && (
+          {isLevelCompleted ? (
+            showReset && onReset && (
+              <button
+                className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px]"
+                onClick={handleReset}
+                aria-label="Reset Level"
+                type="button"
+                style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
+              >
+                <Icon icon="mdi:refresh" className="w-5 h-5 mr-1" />
+                Reset Level
+              </button>
+            )
+          ) : (
             <button
               className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px]"
               onClick={handleNext}
@@ -334,18 +294,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             >
               Next
               <Icon icon="mdi:arrow-right-bold" className="w-5 h-5 ml-1" />
-            </button>
-          )}
-          {showReset && onReset && (
-            <button
-              className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px]"
-              onClick={handleReset}
-              aria-label="Reset Level"
-              type="button"
-              style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
-            >
-              <Icon icon="mdi:refresh" className="w-5 h-5 mr-1" />
-              Reset Level
             </button>
           )}
         </div>

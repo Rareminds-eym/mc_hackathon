@@ -101,8 +101,8 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
 
   // Pixel/retro card style for container, inspired by HomePage.tsx
   return (
-    <div className="w-full max-w-md mx-auto relative z-10">
-      <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden">
+    <div className="w-full max-w-md mx-auto relative z-10 h-full flex flex-col">
+      <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden flex-1 flex flex-col">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-50"></div>
         <div className="absolute top-0 right-0 w-12 h-12 bg-cyan-500 opacity-10 pixel-corner"></div>
