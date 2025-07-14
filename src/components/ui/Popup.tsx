@@ -88,8 +88,8 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   score,
   combo,
   health,
-  // highScore, // Add high score parameter (not used)
-  // showNext = false, // not used
+  highScore, // Add high score parameter
+  showNext = false,
   isLevelCompleted = false,
   showGoToModules = true,
   showReset = false,
@@ -166,14 +166,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
     }
   }, [open]);
 
-  // DEBUG: Log prop values to help diagnose reset button issue
-  useEffect(() => {
-    if (open) {
-      // eslint-disable-next-line no-console
-      console.log('[VictoryPopup] isLevelCompleted:', isLevelCompleted, 'showReset:', showReset, 'onReset:', typeof onReset === 'function');
-    }
-  }, [open, isLevelCompleted, showReset, onReset]);
-
   return (
     <Popup open={open} onClose={onClose} hideClose={showReset}>
       <div className={`flex flex-col items-center mx-auto justify-center text-center text-white${isMobileHorizontal ? " scale-90 max-w-[320px] px-1" : ""}`}
@@ -244,16 +236,14 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   <span className="pixel-dot bg-pink-400 w-3 h-3 inline-block rounded-sm" />
                   <span>Health:</span>
                   <span className="font-black text-pink-100">{health}</span>
-                </span>
-              </div>
-              <div
-                className={`flex items-center gap-2 font-semibold text-white/90 ${
-                  isMobileHorizontal ? "text-sm" : "text-base"
-                }`}
-              >
-                Well Done!
-              </div>
-            </div>
+            </span>
+          </div>
+          <div
+            className={`flex items-center gap-2 font-semibold text-white/90 ${
+              isMobileHorizontal ? "text-sm" : "text-base"
+            }`}
+          >
+            Well Done!
           </div>
         </div>
         {/* Pixel-art retro buttons */}
@@ -270,20 +260,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
               Back to Levels
             </button>
           )}
-          {isLevelCompleted ? (
-            showReset && onReset && (
-              <button
-                className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px]"
-                onClick={handleReset}
-                aria-label="Reset Level"
-                type="button"
-                style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
-              >
-                <Icon icon="mdi:refresh" className="w-5 h-5 mr-1" />
-                Reset Level
-              </button>
-            )
-          ) : (
+          {!isLevelCompleted && (
             <button
               className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px]"
               onClick={handleNext}
@@ -293,6 +270,18 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             >
               Next
               <Icon icon="mdi:arrow-right-bold" className="w-5 h-5 ml-1" />
+            </button>
+          )}
+          {showReset && onReset && (
+            <button
+              className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px]"
+              onClick={handleReset}
+              aria-label="Reset Level"
+              type="button"
+              style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
+            >
+              <Icon icon="mdi:refresh" className="w-5 h-5 mr-1" />
+              Reset Level
             </button>
           )}
         </div>
