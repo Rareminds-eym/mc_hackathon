@@ -236,54 +236,56 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
                   <span className="pixel-dot bg-pink-400 w-3 h-3 inline-block rounded-sm" />
                   <span>Health:</span>
                   <span className="font-black text-pink-100">{health}</span>
-            </span>
+                </span>
+              </div>
+              <div
+                className={`flex items-center gap-2 font-semibold text-white/90 ${
+                  isMobileHorizontal ? "text-sm" : "text-base"
+                }`}
+              >
+                Well Done!
+              </div>
+            </div>
           </div>
-          <div
-            className={`flex items-center gap-2 font-semibold text-white/90 ${
-              isMobileHorizontal ? "text-sm" : "text-base"
-            }`}
-          >
-            Well Done!
+          {/* Pixel-art retro buttons */}
+          <div className={`flex justify-center gap-4 w-full mt-2${isMobileHorizontal ? " gap-2 mt-1 justify-center" : ""}`} style={isMobileHorizontal ? { justifyContent: "center" } : {}}>
+            {showGoToModules && (
+              <button
+                className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px]"
+                onClick={handleGoToLevels}
+                aria-label="Back to Levels"
+                type="button"
+                style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
+              >
+                <Icon icon="mdi:home-map-marker" className="w-5 h-5 mr-1" />
+                Back to Levels
+              </button>
+            )}
+            {!isLevelCompleted && (
+              <button
+                className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px]"
+                onClick={handleNext}
+                aria-label="Next"
+                type="button"
+                style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
+              >
+                Next
+                <Icon icon="mdi:arrow-right-bold" className="w-5 h-5 ml-1" />
+              </button>
+            )}
+            {showReset && onReset && (
+              <button
+                className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px]"
+                onClick={handleReset}
+                aria-label="Reset Level"
+                type="button"
+                style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
+              >
+                <Icon icon="mdi:refresh" className="w-5 h-5 mr-1" />
+                Reset Level
+              </button>
+            )}
           </div>
-        </div>
-        {/* Pixel-art retro buttons */}
-        <div className={`flex justify-center gap-4 w-full mt-2${isMobileHorizontal ? " gap-2 mt-1 justify-center" : ""}`} style={isMobileHorizontal ? { justifyContent: "center" } : {}}>
-          {showGoToModules && (
-            <button
-              className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px]"
-              onClick={handleGoToLevels}
-              aria-label="Back to Levels"
-              type="button"
-              style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
-            >
-              <Icon icon="mdi:home-map-marker" className="w-5 h-5 mr-1" />
-              Back to Levels
-            </button>
-          )}
-          {!isLevelCompleted && (
-            <button
-              className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px]"
-              onClick={handleNext}
-              aria-label="Next"
-              type="button"
-              style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
-            >
-              Next
-              <Icon icon="mdi:arrow-right-bold" className="w-5 h-5 ml-1" />
-            </button>
-          )}
-          {showReset && onReset && (
-            <button
-              className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded-sm flex items-center gap-1 px-4 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px]"
-              onClick={handleReset}
-              aria-label="Reset Level"
-              type="button"
-              style={{ fontSize: isMobileHorizontal ? 14 : 16 }}
-            >
-              <Icon icon="mdi:refresh" className="w-5 h-5 mr-1" />
-              Reset Level
-            </button>
-          )}
         </div>
       </div>
     </Popup>
