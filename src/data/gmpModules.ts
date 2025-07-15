@@ -57,7 +57,7 @@ export const GMP_MODULES: Module[] = [
     color: "#059669",
     position: { x: 25, y: 60 },
     completed: false,
-    unlocked: false,
+    unlocked: true,
     levels: [
       {
         id: 1,
@@ -105,7 +105,7 @@ export const GMP_MODULES: Module[] = [
     color: "#DC2626",
     position: { x: 45, y: 70 },
     completed: false,
-    unlocked: false,
+    unlocked: true,
     levels: [
       {
         id: 1,

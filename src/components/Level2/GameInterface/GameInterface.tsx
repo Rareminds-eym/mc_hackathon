@@ -19,10 +19,11 @@ interface GameInterfaceProps {
 
 const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBack, onNextLevel }) => {
   const { isMobile } = useDeviceLayout();
-  const { 
-    isLoading: isGameLoading, 
-    saveGameData, 
-    markLevelCompleted
+  const {
+    isLoading: isGameLoading,
+    saveGameDataWithHistory,
+    markLevelCompleted,
+    gameDataWithHistory
   } = useLevel2Game({ moduleId, gameModeId: gameMode.id });
   
   const [terms, setTerms] = useState<Term[]>(() =>
@@ -102,8 +103,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     const totalPointsEarned = correct * 5;
     setCurrentScore(totalPointsEarned);
 
-    // Save game data using the hook
-    await saveGameData({
+    // Save game data using the hook with history tracking
+    await saveGameDataWithHistory({
       score: totalPointsEarned,
       isCompleted: true,
       time: timeElapsed,
@@ -112,7 +113,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     });
 
     setShowResults(true);
-  }, [terms, timeElapsed, saveGameData, hasExecuted, isGameLoading]);
+  }, [terms, timeElapsed, saveGameDataWithHistory, hasExecuted, isGameLoading]);
 
   // Auto-execute when all items are placed (only if not already executed)
   useEffect(() => {
@@ -282,6 +283,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             onClose={() => setShowResults(false)}
             moduleId={parseInt(moduleId)}
             levelId={2}
+            scoreHistory={gameDataWithHistory?.score_history}
+            timeHistory={gameDataWithHistory?.time_history}
           />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight, X, Clock, Target } from 'lucide-react';
 import { Term } from '../../../types/Level2/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LevelProgressService } from '../../../services/levelProgressService';
@@ -17,6 +17,8 @@ interface ResultsModalProps {
   onClose: () => void;
   moduleId?: number;
   levelId?: number;
+  scoreHistory?: number[];
+  timeHistory?: number[];
 }
 
 const ResultsModal: React.FC<ResultsModalProps> = ({
@@ -31,6 +33,8 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
   onClose,
   moduleId = 1,
   levelId = 2,
+  scoreHistory = [],
+  timeHistory = [],
 }) => {
   const { user } = useAuth();
   const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
@@ -96,22 +100,85 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
     }
   }, [showResults]);
 
-  const getScoreRank = (score: number) => {
-    if (score >= 95) return { rank: "S+", color: "text-yellow-300", bg: "bg-yellow-600" };
-    if (score >= 90) return { rank: "S", color: "text-yellow-400", bg: "bg-yellow-700" };
-    if (score >= 80) return { rank: "A", color: "text-green-400", bg: "bg-green-700" };
-    if (score >= 70) return { rank: "B", color: "text-blue-400", bg: "bg-blue-700" };
-    if (score >= 60) return { rank: "C", color: "text-purple-400", bg: "bg-purple-700" };
-    return { rank: "D", color: "text-red-400", bg: "bg-red-700" };
+
+
+  const getContextualFeedback = (currentScore: number, scoreHistory: number[]) => {
+
+
+    const current = currentScore;
+    const previous = scoreHistory[1]; // previous score
+    const lastPrevious = scoreHistory[2]; // past previous score
+
+    // Check for contextual feedback conditions
+    if (previous !== undefined && current > previous) {
+      // Current score is better than previous
+      return { message: "🎉 Great! You're improving!", color: "text-green-300" };
+    } else if (previous !== undefined && current < previous) {
+      // Check if scores have dropped two sessions in a row
+      if (lastPrevious !== undefined && previous < lastPrevious) {
+        // Two consecutive drops: lastPrevious > previous > current
+        return { message: "⚠️ Need help? Focus on the tricky parts!", color: "text-orange-300" };
+      } else {
+        // Single drop
+        return { message: "💪 Don't worry—try again to beat your last score!", color: "text-blue-300" };
+      }
+    } else {
+      // Handle two distinct scenarios for same score or no previous score
+      if (!scoreHistory || scoreHistory.length === 0 || previous === undefined) {
+        // No previous score exists - first time completion
+        return { message: "Congrats this is your first score!", color: "text-blue-300" };
+      } else if (current === previous) {
+        // Same score as previous attempt
+        return { message: "Keep practicing to improve!", color: "text-blue-300" };
+      } else {
+        // Fallback for any other case
+        return { message: "Keep practicing to improve!", color: "text-blue-300" };
+      }
+    }
   };
 
-  const getPerformanceMessage = (score: number) => {
-    if (score >= 95) return { message: "LEGENDARY MASTER!", color: "text-yellow-300" };
-    if (score >= 90) return { message: "EXPERT LEVEL!", color: "text-green-300" };
-    if (score >= 80) return { message: "GREAT SUCCESS!", color: "text-blue-300" };
-    if (score >= 70) return { message: "GOOD WORK!", color: "text-purple-300" };
-    if (score >= 60) return { message: "KEEP TRAINING!", color: "text-orange-300" };
-    return { message: "KEEP TRAINING!", color: "text-orange-300" };
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const renderScoreHistory = () => {
+    if (!scoreHistory || scoreHistory.length === 0) return null;
+
+    return (
+      <div className="mt-3 p-2 bg-gray-900 bg-opacity-50 pixel-border">
+        <div className="text-gray-400 text-xs font-bold mb-2 pixel-text">SCORE HISTORY</div>
+        <div className="space-y-1">
+          {scoreHistory.slice(0, 3).map((historyScore, index) => {
+            const historyTime = timeHistory?.[index];
+            const isCurrentScore = index === 0;
+            return (
+              <div
+                key={index}
+                className={`flex items-center justify-between text-xs pixel-text ${
+                  isCurrentScore ? 'text-yellow-400' : 'text-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Target className="w-3 h-3" />
+                  <span>{isCurrentScore ? 'High Score' : `PREV ${index}`}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold">{historyScore}/40</span>
+                  {historyTime && (
+                    <>
+                      <Clock className="w-3 h-3" />
+                      <span>{formatTime(historyTime)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   if (!showResults) return null;
@@ -143,36 +210,29 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
               {/* Top Section - Mission Status */}
               <div className="flex-shrink-0">
                 <div className="text-gray-400 text-xs font-bold mb-1 pixel-text">MISSION STATUS</div>
-                <div className={`text-lg font-black pixel-text ${getPerformanceMessage(score).color} mb-2`}>
-                  {getPerformanceMessage(score).message}
+                <div className={`text-lg font-black pixel-text ${getContextualFeedback(currentScore, scoreHistory).color} mb-2`}>
+                  {getContextualFeedback(currentScore, scoreHistory).message}
                 </div>
               </div>
 
               {/* Middle Section - Scores and Stats in Horizontal Layout */}
               <div className="flex-1 flex items-center justify-center">
                 <div className="w-full">
-                  {/* Rank and Scores - Horizontal Layout */}
-                  <div className="flex items-center justify-center space-x-4 mb-3">
-                    {/* Rank Badge - Smaller */}
-                    <div className={`w-12 h-12 ${getScoreRank(score).bg} pixel-border flex items-center justify-center animate-bounce flex-shrink-0`}>
-                      <span className={`text-lg font-black pixel-text ${getScoreRank(score).color}`}>
-                        {getScoreRank(score).rank}
-                      </span>
+                  {/* Scores */}
+                  <div className="text-center mb-3">
+                    <div className="text-2xl font-black text-yellow-400 pixel-text">
+                      {currentScore}/40
                     </div>
-                    
-                    {/* Scores */}
-                    <div className="text-center">
-                      <div className="text-2xl font-black text-yellow-400 pixel-text">
-                        {currentScore}/40
-                      </div>
-                      <div className="text-xl font-black text-cyan-300 pixel-text">
-                        {score}%
-                      </div>
-                      <p className="text-gray-300 text-xs font-bold pixel-text">
-                        {totalCorrect}/{terms.length} TARGETS HIT
-                      </p>
+                    <div className="text-xl font-black text-cyan-300 pixel-text">
+                      {score}%
                     </div>
+                    <p className="text-gray-300 text-xs font-bold pixel-text">
+                      {totalCorrect}/{terms.length} TARGETS HIT
+                    </p>
                   </div>
+
+                  {/* Score History for Mobile */}
+                  {renderScoreHistory()}
                 </div>
               </div>
 
@@ -204,19 +264,12 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
               {/* Mission Status */}
               <div className="mb-4">
                 <div className="text-gray-400 text-sm font-bold mb-1 pixel-text">MISSION STATUS</div>
-                <div className={`text-2xl font-black mb-1 pixel-text ${getPerformanceMessage(score).color}`}>
-                  {getPerformanceMessage(score).message}
+                <div className={`text-2xl font-black mb-1 pixel-text ${getContextualFeedback(currentScore, scoreHistory).color}`}>
+                  {getContextualFeedback(currentScore, scoreHistory).message}
                 </div>
               </div>
 
-              {/* Rank Badge */}
-              <div className="mb-4">
-                <div className={`inline-block w-16 h-16 ${getScoreRank(score).bg} pixel-border flex items-center justify-center animate-bounce`}>
-                  <span className={`text-2xl font-black pixel-text ${getScoreRank(score).color}`}>
-                    {getScoreRank(score).rank}
-                  </span>
-                </div>
-              </div>
+
 
               {/* Score Display */}
               <div className="mb-4">
@@ -229,6 +282,9 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
                 <p className="text-gray-300 text-base font-bold pixel-text">
                   {totalCorrect}/{terms.length} TARGETS HIT
                 </p>
+
+                {/* Score History for Desktop */}
+                {renderScoreHistory()}
               </div>
 
               {/* Action Buttons */}

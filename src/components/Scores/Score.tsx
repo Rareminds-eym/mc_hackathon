@@ -6,6 +6,7 @@ import ModuleStone from './ModuleStone';
 import ModuleDetailModal from './ModuleDetailModal';
 import { Module } from './types/GameData';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import AnimatedBackground from './AnimatedBackground';
 
 
 const Score: React.FC = () => {
@@ -100,24 +101,43 @@ const Score: React.FC = () => {
 
 
   return (
-    <div
-      className="h-screen overflow-hidden game-roadmap-container roadmap-entrance landscape:h-screen relative"
-      style={{
-        backgroundImage: 'url(/backgrounds/bg_02_h.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      {/* Frosted glass overlay for enhanced depth */}
+    <AnimatedBackground className="h-screen overflow-hidden game-roadmap-container roadmap-entrance landscape:h-screen">
+      {/* Enhanced atmospheric overlay with game-like depth */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          background: 'rgba(0, 0, 0, 0.1)',
-          backdropFilter: 'blur(1px)',
-          WebkitBackdropFilter: 'blur(1px)'
+          background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(30, 27, 58, 0.2) 50%, rgba(15, 10, 30, 0.3) 100%)',
+          backdropFilter: 'blur(2px)',
+          WebkitBackdropFilter: 'blur(2px)'
         }}
       />
+
+      {/* Additional atmospheric effects */}
+      <div className="absolute inset-0 z-1 pointer-events-none">
+        {/* Subtle vignette effect */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.3) 100%)',
+          }}
+        />
+
+        {/* Dynamic light rays */}
+        <div
+          className="absolute top-0 left-1/4 w-1 h-full opacity-10 bg-gradient-to-b from-yellow-200 via-transparent to-transparent transform rotate-12"
+          style={{
+            background: 'linear-gradient(180deg, rgba(251, 191, 36, 0.3) 0%, transparent 60%)',
+            filter: 'blur(3px)',
+          }}
+        />
+        <div
+          className="absolute top-0 right-1/3 w-1 h-full opacity-8 bg-gradient-to-b from-purple-200 via-transparent to-transparent transform -rotate-6"
+          style={{
+            background: 'linear-gradient(180deg, rgba(167, 139, 250, 0.2) 0%, transparent 50%)',
+            filter: 'blur(4px)',
+          }}
+        />
+      </div>
       <div className="relative w-full h-full flex items-center justify-center z-10">
         <svg
           width={isMobile ? "100%" : "105%"}
@@ -131,125 +151,132 @@ const Score: React.FC = () => {
             maxHeight: isMobile ? '100vh' : '100vh'
           }}
         >
-          {/* Enhanced game roadmap background */}
+          {/* Enhanced game roadmap background with realistic textures */}
           <defs>
-            <pattern id="sandPattern" patternUnits="userSpaceOnUse" width="60" height="60">
-              <circle cx="8" cy="8" r="1.5" fill="#F59E0B" opacity="0.08" />
-              <circle cx="25" cy="20" r="1" fill="#EA580C" opacity="0.06" />
-              <circle cx="40" cy="12" r="1.8" fill="#F97316" opacity="0.07" />
-              <circle cx="50" cy="35" r="1.2" fill="#FB923C" opacity="0.08" />
-              <circle cx="15" cy="45" r="0.8" fill="#D97706" opacity="0.05" />
+            {/* Realistic mountain stone path texture pattern */}
+            <pattern id="stonePattern" patternUnits="userSpaceOnUse" width="45" height="45">
+              <rect width="45" height="45" fill="#1E293B" opacity="0.15"/>
+              <circle cx="10" cy="8" r="2.5" fill="#475569" opacity="0.2" />
+              <circle cx="28" cy="18" r="1.8" fill="#64748B" opacity="0.18" />
+              <circle cx="38" cy="28" r="2.2" fill="#334155" opacity="0.16" />
+              <circle cx="18" cy="35" r="1.5" fill="#475569" opacity="0.14" />
+              <circle cx="35" cy="8" r="1.2" fill="#64748B" opacity="0.12" />
+              <ellipse cx="15" cy="22" rx="3" ry="1.5" fill="#1E293B" opacity="0.25" />
+              <ellipse cx="32" cy="40" rx="2.5" ry="1.8" fill="#0F172A" opacity="0.2" />
             </pattern>
 
+            {/* Enhanced mountain stone path shadow with multiple layers */}
             <filter id="pathShadow">
-              <feDropShadow dx="3" dy="6" stdDeviation="4" floodColor="#92400E" floodOpacity="0.4" />
+              <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="#0F172A" floodOpacity="0.7" />
+              <feDropShadow dx="4" dy="8" stdDeviation="6" floodColor="#020617" floodOpacity="0.4" />
+              <feDropShadow dx="6" dy="12" stdDeviation="9" floodColor="#000000" floodOpacity="0.2" />
             </filter>
 
-            <filter id="glowEffect">
-              <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+            {/* Magical glow effect for the path */}
+            <filter id="magicalGlow">
+              <feGaussianBlur stdDeviation="6" result="coloredBlur" />
               <feMerge>
                 <feMergeNode in="coloredBlur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
 
-            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#D4A574" />
-              <stop offset="50%" stopColor="#E8C4A0" />
-              <stop offset="100%" stopColor="#D4A574" />
+            {/* Realistic stone path gradient - matching mountain environment */}
+            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#64748B" />
+              <stop offset="20%" stopColor="#475569" />
+              <stop offset="50%" stopColor="#334155" />
+              <stop offset="80%" stopColor="#1E293B" />
+              <stop offset="100%" stopColor="#0F172A" />
             </linearGradient>
 
-            <radialGradient id="mountainGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#8B7355" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#654321" stopOpacity="0.1" />
-            </radialGradient>
+            {/* Path border gradient - darker mountain stone */}
+            <linearGradient id="pathBorderGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#1E293B" />
+              <stop offset="30%" stopColor="#0F172A" />
+              <stop offset="70%" stopColor="#020617" />
+              <stop offset="100%" stopColor="#000000" />
+            </linearGradient>
+
+            {/* Single white energy gradient for center line */}
+            <linearGradient id="energyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.8" />
+            </linearGradient>
           </defs>
 
          
-
-         
-          {/* Enhanced path with game-style depth */}
-          {/* Path shadow (bottom layer) */}
+          {/* Enhanced realistic game path with multiple layers */}
+          {/* Path shadow (deepest layer) - darker mountain shadow */}
           <path
             d={pathData}
             fill="none"
-            stroke="#7a66ae"
+            stroke="#020617"
             strokeWidth={strokeWidths.shadow}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.6"
-            transform="translate(4, 8)"
+            opacity="0.9"
+            transform="translate(3, 6)"
             filter="url(#pathShadow)"
           />
 
-          {/* Path outer border (dark brown) */}
+          {/* Path outer border (dark stone) */}
           <path
             d={pathData}
             fill="none"
-            stroke="#5e45be"
+            stroke="url(#pathBorderGradient)"
             strokeWidth={strokeWidths.outer}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.9"
+            opacity="1"
           />
 
-          {/* Path main body (enhanced tan/beige) */}
+          {/* Path main body (stone texture) */}
           <path
             d={pathData}
             fill="none"
-            stroke="#351b77"
+            stroke="url(#pathGradient)"
             strokeWidth={strokeWidths.main}
             strokeLinecap="round"
             strokeLinejoin="round"
             opacity="1"
           />
 
-          {/* Path inner highlight (lighter tan) */}
+          {/* Stone texture overlay */}
           <path
             d={pathData}
             fill="none"
-            stroke="#351b77"
+            stroke="url(#stonePattern)"
             strokeWidth={strokeWidths.inner}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.95"
-          />
-
-          {/* White center highlight */}
-          <path
-            d={pathData}
-            fill="none"
-            stroke="#000000"
-            strokeWidth={strokeWidths.center}
             strokeLinecap="round"
             strokeLinejoin="round"
             opacity="0.6"
           />
 
-          {/* Game-style dashed center line */}
+          {/* Inner path highlight - subtle mountain stone highlight */}
           <path
             d={pathData}
             fill="none"
-            stroke="#FFFFFF"
+            stroke="#64748B"
+            strokeWidth={strokeWidths.center}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.3"
+          />
+
+          {/* Single animated energy line */}
+          <path
+            d={pathData}
+            fill="none"
+            stroke="url(#energyGradient)"
             strokeWidth={strokeWidths.dashed}
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="15,10"
-            opacity="0.9"
-            className="path-glow-animation"
+            strokeDasharray="20,25"
+            opacity="0.7" 
+            filter="url(#magicalGlow)"
+            className="path-energy-animation"
           />
-
-          {/* Subtle glow effect for the path */}
-          {/* <path
-            d={pathData}
-            fill="none"
-            stroke="#FFE4B5"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="1"
-            filter="url(#glowEffect)"
-          /> */}
 
 
           {/* Module stones */}
@@ -263,60 +290,92 @@ const Score: React.FC = () => {
           ))}
         </svg>
 
-        {/* Enhanced Back Button with Frosted Glass Effect - Responsive sizing */}
+        {/* Enhanced Game-Style Back Button */}
         <div className="absolute top-0 left-2 landscape:top-1 landscape:left-3 md:top-6 md:left-6 z-20">
           <button
             onClick={handleBackToHome}
-            className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white font-bold py-1 px-2 landscape:py-1.5 landscape:px-3 md:py-3 md:px-6 rounded landscape:rounded-lg md:rounded-xl shadow-lg md:shadow-xl transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:shadow-xl md:hover:shadow-2xl flex items-center space-x-1 landscape:space-x-2 md:space-x-3 border border-white/30 md:border-2 text-xs landscape:text-sm md:text-lg"
+            className="group relative bg-gradient-to-br from-slate-700/80 via-slate-600/70 to-slate-800/80 backdrop-blur-md hover:from-slate-600/90 hover:via-slate-500/80 hover:to-slate-700/90 text-white font-bold py-1 px-2 landscape:py-1.5 landscape:px-3 md:py-3 md:px-6 rounded landscape:rounded-lg md:rounded-xl shadow-lg md:shadow-xl transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:shadow-xl md:hover:shadow-2xl flex items-center space-x-1 landscape:space-x-2 md:space-x-3 border border-slate-500/50 md:border-2 text-xs landscape:text-sm md:text-lg overflow-hidden"
             style={{
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              background: 'rgba(255, 255, 255, 0.15)',
-              borderColor: 'rgba(255, 255, 255, 0.2)'
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
             }}
           >
-            <ArrowLeft className="w-3 h-3 md:w-5 md:h-5" />
-            { !isMobile && <span className="hidden sm:inline">Back to Home</span>}
+            {/* Subtle inner glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            {/* Button content */}
+            <div className="relative flex items-center space-x-1 landscape:space-x-2 md:space-x-3">
+              <ArrowLeft className="w-3 h-3 md:w-5 md:h-5 drop-shadow-sm" />
+              { !isMobile && <span className="hidden sm:inline drop-shadow-sm">Back to Home</span>}
+            </div>
+
+            {/* Decorative corner accents */}
+            <div className="absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 border-yellow-400/60 rounded-tl" />
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 border-yellow-400/60 rounded-br" />
           </button>
         </div>
 
 
-        {/* Enhanced Progress indicator with Frosted Glass Effect - Mobile landscape optimized */}
+        {/* Enhanced Game-Style Progress Panel */}
         <div
-          className="absolute top-1 right-2 landscape:top-2 landscape:right-4 md:top-8 md:right-8 z-10 rounded landscape:rounded-lg md:rounded-xl p-1.5 landscape:p-2 md:p-6 shadow-lg md:shadow-xl border border-white/30 md:border-2"
+          className="absolute top-1 right-2 landscape:top-2 landscape:right-4 md:top-8 md:right-8 z-10 rounded landscape:rounded-lg md:rounded-xl p-1.5 landscape:p-2 md:p-6 shadow-lg md:shadow-xl border border-slate-500/50 md:border-2 overflow-hidden"
           style={{
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            background: 'rgba(255, 255, 255, 0.15)',
-            borderColor: 'rgba(255, 255, 255, 0.2)'
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            background: 'linear-gradient(135deg, rgba(51, 65, 85, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%)',
           }}
         >
-          <div className="text-xs landscape:text-sm md:text-lg font-bold text-white mb-1 landscape:mb-1.5 md:mb-3">Overall Progress</div>
+          {/* Decorative header accent */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400/60 to-transparent" />
+
+          <div className="text-xs landscape:text-sm md:text-lg font-bold text-white mb-1 landscape:mb-1.5 md:mb-3 flex items-center">
+            <span className="drop-shadow-sm">Overall Progress</span>
+            <div className="ml-2 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          </div>
+
           {!isMobile &&
             <div className="flex space-x-0.5 landscape:space-x-1 md:space-x-2 mb-1 landscape:mb-1.5 md:mb-3">
               {modules.map((module) => (
                 <div
                   key={module.id}
-                  className={`w-1.5 h-1.5 landscape:w-2.5 landscape:h-2.5 md:w-4 md:h-4 rounded-full transition-all duration-300 ${module.status === 'completed' ? 'bg-green-500 shadow-sm md:shadow-lg shadow-green-200' :
-                      module.status === 'unlocked' ? 'bg-yellow-500 shadow-sm md:shadow-lg shadow-yellow-200 module-pulse-animation' :
-                        'bg-gray-300 shadow-sm md:shadow-md'
-                    }`}
+                  className={`relative w-1.5 h-1.5 landscape:w-2.5 landscape:h-2.5 md:w-4 md:h-4 rounded-full transition-all duration-300 ${
+                    module.status === 'completed'
+                      ? 'bg-emerald-500 shadow-sm md:shadow-lg shadow-emerald-200/50' :
+                    module.status === 'unlocked'
+                      ? 'bg-yellow-500 shadow-sm md:shadow-lg shadow-yellow-200/50 module-pulse-animation' :
+                      'bg-slate-400 shadow-sm md:shadow-md'
+                  }`}
                   title={`Module ${module.id} - ${module.status}`}
-                />
+                >
+                  {/* Inner glow for completed modules */}
+                  {module.status === 'completed' && (
+                    <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse" />
+                  )}
+                </div>
               ))}
             </div>
           }
-          <div className="text-xs landscape:text-xs md:text-sm text-white/90 font-medium">
+
+          <div className="text-xs landscape:text-xs md:text-sm text-white/90 font-medium drop-shadow-sm">
             {modules.filter(m => m.status === 'completed').length} / {modules.length} completed
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-0.5 landscape:h-1 md:h-2 mt-1 landscape:mt-1 md:mt-2">
+
+          {/* Enhanced progress bar */}
+          <div className="w-full bg-slate-700/60 rounded-full h-0.5 landscape:h-1 md:h-2 mt-1 landscape:mt-1 md:mt-2 border border-slate-600/50 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-green-400 to-green-600 h-0.5 landscape:h-1 md:h-2 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 h-full rounded-full transition-all duration-500 relative"
               style={{
                 width: `${(modules.filter(m => m.status === 'completed').length / modules.length) * 100}%`
               }}
-            />
+            >
+              {/* Progress bar shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+            </div>
           </div>
+
+          {/* Decorative corner accents */}
+          <div className="absolute top-1 left-1 w-1.5 h-1.5 border-l border-t border-yellow-400/40" />
+          <div className="absolute bottom-1 right-1 w-1.5 h-1.5 border-r border-b border-yellow-400/40" />
         </div>
       </div>
 
@@ -326,7 +385,7 @@ const Score: React.FC = () => {
         module={selectedModule}
         onClose={closeModal}
       />
-    </div>
+    </AnimatedBackground>
   );
 };
 
