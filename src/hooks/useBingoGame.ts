@@ -137,8 +137,8 @@ export const useBingoGame = () => {
         .from('level_1')
         .update(dataToSave)
         .eq('user_id', user.id)
-        .eq('module', 1)
-        .eq('level', 1)
+        .eq('module_number', 1)
+        .eq('level_number', 1)
         .select();
 
       let data, error;
@@ -241,8 +241,8 @@ export const useBingoGame = () => {
           level_number: 1,  // Added for Level 1
         })
         .eq('user_id', user.id)
-        .eq('module', 1)
-        .eq('level', 1);
+        .eq('module_number', 1)
+        .eq('level_number', 1);
 
       if (error) {
         console.warn('Database update failed (table might not exist):', error.message);
@@ -386,12 +386,13 @@ export const useBingoGame = () => {
 
   // Timer logic (controlled internally)
   useEffect(() => {
-    if (gameComplete || !timerActive) return;
+    // Pause timer if answer feedback or completed line modal is visible
+    if (gameComplete || !timerActive || answerFeedback.isVisible || completedLineModal) return;
     const interval = setInterval(() => {
       setTimerState((prev: number) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [gameComplete, timerActive]);
+  }, [gameComplete, timerActive, answerFeedback.isVisible, completedLineModal]);
 
   // Timer control functions
   const startTimer = useCallback(() => setTimerActive(true), []);
