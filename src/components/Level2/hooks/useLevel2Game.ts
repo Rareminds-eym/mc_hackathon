@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Level2GameService } from '../services/level2GameService';
-import { Level2GameData, Level2GameStats, Term } from '../../../types/Level2/types';
+import { Level2GameData, Level2GameStats, Level2ScoreHistory, Level2GameDataWithHistory, Term } from '../../../types/Level2/types';
 import { GameStorage } from '../../../utils/Level2/gameStorage';
 
 interface UseLevel2GameOptions {
@@ -12,6 +12,8 @@ interface UseLevel2GameOptions {
 interface UseLevel2GameReturn {
   isLoading: boolean;
   stats: Level2GameStats | null;
+  scoreHistory: Level2ScoreHistory | null;
+  gameDataWithHistory: Level2GameDataWithHistory | null;
   saveGameData: (gameData: {
     score: number;
     isCompleted: boolean;
@@ -19,7 +21,16 @@ interface UseLevel2GameReturn {
     totalTerms: number;
     placedTerms: Term[];
   }) => Promise<boolean>;
+  saveGameDataWithHistory: (gameData: {
+    score: number;
+    isCompleted: boolean;
+    time: number;
+    totalTerms: number;
+    placedTerms: Term[];
+  }) => Promise<boolean>;
   loadBestScore: () => Promise<Level2GameData | null>;
+  loadScoreHistory: () => Promise<Level2ScoreHistory | null>;
+  loadGameDataWithHistory: () => Promise<Level2GameDataWithHistory | null>;
   markLevelCompleted: () => Promise<boolean>;
   hasCompleted: boolean;
   error: string | null;
@@ -29,6 +40,8 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<Level2GameStats | null>(null);
+  const [scoreHistory, setScoreHistory] = useState<Level2ScoreHistory | null>(null);
+  const [gameDataWithHistory, setGameDataWithHistory] = useState<Level2GameDataWithHistory | null>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +67,18 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
           throw new Error('Failed to check completion status');
         }
         setHasCompleted(completionData);
+
+        // Load score history
+        const { data: historyData, error: historyError } = await Level2GameService.getPastThreeScores(moduleId, gameModeId);
+        if (!historyError && historyData) {
+          setScoreHistory(historyData);
+        }
+
+        // Load game data with history
+        const { data: gameHistoryData, error: gameHistoryError } = await Level2GameService.getUserGameDataWithHistory(moduleId, gameModeId);
+        if (!gameHistoryError && gameHistoryData) {
+          setGameDataWithHistory(gameHistoryData);
+        }
 
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -178,11 +203,135 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
     }
   }, [user, moduleId, gameModeId]);
 
+  const saveGameDataWithHistory = useCallback(async (gameData: {
+    score: number;
+    isCompleted: boolean;
+    time: number;
+    totalTerms: number;
+    placedTerms: Term[];
+  }): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Always save to localStorage for offline support
+      GameStorage.updateScore(gameData.score, gameData.time, gameData.isCompleted);
+
+      // Save to database with history if user is authenticated
+      if (user) {
+        const dbGameData = {
+          module_id: moduleId,
+          level_number: 2,
+          game_mode_id: gameModeId,
+          score: gameData.score,
+          is_completed: gameData.isCompleted,
+          time: gameData.time,
+          total_terms: gameData.totalTerms,
+          placed_terms: gameData.placedTerms,
+        };
+
+        const { data: savedData, error: saveError } = await Level2GameService.saveGameDataWithHistory(dbGameData);
+        if (saveError) {
+          // If it's a duplicate save prevention, don't treat it as an error
+          if (saveError.message === 'Duplicate save prevented') {
+            console.log('Duplicate save prevented - this is expected behavior');
+          } else {
+            console.error('Failed to save game data with history to database:', saveError);
+            throw new Error('Failed to save game data with history to database');
+          }
+        } else if (savedData) {
+          console.log('Game data with history saved successfully:', {
+            id: savedData.id,
+            score: savedData.score,
+            isCompleted: savedData.is_completed,
+            scoreHistory: savedData.score_history,
+            timeHistory: savedData.time_history
+          });
+        }
+
+        // Update local state
+        if (gameData.isCompleted) {
+          setHasCompleted(true);
+        }
+
+        // Refresh stats and history
+        const { data: updatedStats, error: statsError } = await Level2GameService.getGameStats(moduleId, gameModeId);
+        if (!statsError && updatedStats) {
+          setStats(updatedStats);
+        }
+
+        const { data: updatedHistory, error: historyError } = await Level2GameService.getPastThreeScores(moduleId, gameModeId);
+        if (!historyError && updatedHistory) {
+          setScoreHistory(updatedHistory);
+        }
+
+        const { data: updatedGameHistory, error: gameHistoryError } = await Level2GameService.getUserGameDataWithHistory(moduleId, gameModeId);
+        if (!gameHistoryError && updatedGameHistory) {
+          setGameDataWithHistory(updatedGameHistory);
+        }
+      }
+
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save game data with history';
+      setError(errorMessage);
+      console.error('Error saving game data with history:', errorMessage);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, moduleId, gameModeId]);
+
+  const loadScoreHistory = useCallback(async (): Promise<Level2ScoreHistory | null> => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await Level2GameService.getPastThreeScores(moduleId, gameModeId);
+      if (error) {
+        throw new Error('Failed to load score history');
+      }
+      if (data) {
+        setScoreHistory(data);
+      }
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load score history';
+      setError(errorMessage);
+      console.error('Error loading score history:', errorMessage);
+      return null;
+    }
+  }, [user, moduleId, gameModeId]);
+
+  const loadGameDataWithHistory = useCallback(async (): Promise<Level2GameDataWithHistory | null> => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await Level2GameService.getUserGameDataWithHistory(moduleId, gameModeId);
+      if (error) {
+        throw new Error('Failed to load game data with history');
+      }
+      if (data) {
+        setGameDataWithHistory(data);
+      }
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load game data with history';
+      setError(errorMessage);
+      console.error('Error loading game data with history:', errorMessage);
+      return null;
+    }
+  }, [user, moduleId, gameModeId]);
+
   return {
     isLoading,
     stats,
+    scoreHistory,
+    gameDataWithHistory,
     saveGameData,
+    saveGameDataWithHistory,
     loadBestScore,
+    loadScoreHistory,
+    loadGameDataWithHistory,
     markLevelCompleted,
     hasCompleted,
     error,

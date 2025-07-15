@@ -13,8 +13,7 @@ export interface ModuleLevel extends Level {
 export interface Module {
   id: number;
   status: 'completed' | 'unlocked' | 'locked';
-  levels: Level[];
-  isGiftBox?: boolean;
+  levels?: ModuleLevel[];
 }
 
 export interface ModulePosition {

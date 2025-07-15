@@ -391,6 +391,32 @@ body {
     opacity: 0;
   }
 }
+/* Path line moving animations */
+@keyframes path-energy-flow {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.6;
+  }
+}
+
+@keyframes path-pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(167, 139, 250, 0.4));
+    opacity: 0.6;
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.8)) drop-shadow(0 0 15px rgba(60, 165, 250, 0.6));
+    opacity: 1;
+  }
+}
+
 
 .animate-scale-in {
   animation: scale-in 0.2s ease-out;

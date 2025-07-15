@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import HomePage from '../../components/Level2/HomePage';
 import GameInterface from '../../components/Level2/GameInterface';
-import { gameModes } from '../../data/Level2/gameModes';
+import { getGameModesByModule } from '../../components/Level2/data/gameModes';
 import { GameMode } from '../../types/Level2/types';
 import '../../components/Level2/index.css';
 
@@ -12,7 +12,8 @@ const Level2: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
 
   const handleGameModeSelect = (modeId: string) => {
-    const gameMode = gameModes.find(mode => mode.id === modeId);
+    const filteredGameModes = getGameModesByModule(parseInt(moduleId || '1'));
+    const gameMode = filteredGameModes.find(mode => mode.id === modeId);
     if (gameMode) {
       setSelectedGameMode(gameMode);
     }
@@ -23,7 +24,7 @@ const Level2: React.FC = () => {
   };
 
   const handleExitToModules = () => {
-    navigate('/modules/1');
+    navigate(`/modules/${moduleId}`);
   };
 
   const handleNextLevel = () => {
@@ -44,6 +45,7 @@ const Level2: React.FC = () => {
 
   return (
     <HomePage
+      moduleId={moduleId}
       onGameModeSelect={handleGameModeSelect}
       onExit={handleExitToModules}
     />

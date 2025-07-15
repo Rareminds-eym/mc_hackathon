@@ -1,25 +1,34 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameModes } from '../../data/Level2/gameModes';
+import { getGameModesByModule } from './data/gameModes';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { useLevel2GameStats } from './hooks/useLevel2GameStats';
 import { Play, Filter, Zap, Crown, Gamepad2, ArrowLeft, Database, HardDrive } from 'lucide-react';
 import './index.css';
 
 interface HomePageProps {
+  moduleId?: string;
   onGameModeSelect?: (modeId: string) => void;
   onExit?: () => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
+const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, onExit }) => {
   const navigate = useNavigate();
   const { isMobile } = useDeviceLayout();
-  const { stats: gameStats, loading: statsLoading, error: statsError } = useLevel2GameStats('1', 'gmp-vs-non-gmp');
+
+  // Get filtered game modes based on current module
+  const filteredGameModes = getGameModesByModule(parseInt(moduleId));
+
+  // Use the first available game mode for stats, or fallback to default
+  const defaultGameModeId = filteredGameModes.length > 0 ? filteredGameModes[0].id : 'gmp-vs-non-gmp';
+  const { stats: gameStats, loading: statsLoading, error: statsError } = useLevel2GameStats(moduleId, defaultGameModeId);
 
   const getIcon = (modeId: string) => {
     switch (modeId) {
       case 'gmp-vs-non-gmp':
         return <Filter className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />;
+      case 'documentation-vs-production':
+        return <Database className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />;
       default:
         return <Play className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />;
     }
@@ -30,13 +39,15 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
       onGameModeSelect(modeId);
     } else {
       // Fallback to navigation if no callback provided
-      navigate(`/modules/1/levels/2`);
+      navigate(-1);
     }
   };
 
   const getDifficulty = (modeId: string) => {
     switch (modeId) {
       case 'gmp-vs-non-gmp':
+        return { level: 'ROOKIE', stars: 1, color: 'text-green-400', bgColor: 'bg-green-900' };
+      case 'documentation-vs-production':
         return { level: 'ROOKIE', stars: 1, color: 'text-green-400', bgColor: 'bg-green-900' };
       default:
         return { level: 'ROOKIE', stars: 1, color: 'text-green-400', bgColor: 'bg-green-900' };
@@ -76,7 +87,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
             <div className="text-center mb-4 relative">
               {/* EXIT Button - Mobile */}
               <button
-                onClick={() => onExit ? onExit() : navigate('/modules/1')}
+                onClick={() => onExit ? onExit() : navigate(`/modules/${moduleId}`)}
                 className="absolute top-0 left-0 bg-red-600 hover:bg-red-700 text-white px-3 py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-10 hover:shadow-xl"
                 style={{
                   boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
@@ -139,7 +150,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
             {/* Main Content Area - Horizontal Layout for Landscape */}
             <div className="flex-1 flex items-center justify-center">
               <div className="w-full max-w-2xl">
-                {gameModes.map((mode, index) => {
+                {filteredGameModes.map((mode, index) => {
                   const difficulty = getDifficulty(mode.id);
                   return (
                     <div
@@ -250,7 +261,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
             {/* EXIT Button - Desktop */}
             <div className="absolute top-6 left-6 z-20">
               <button
-                onClick={() => onExit ? onExit() : navigate('/modules/1')}
+                onClick={() => onExit ? onExit() : navigate(`/modules/${moduleId}`)}
                 className="pixel-border bg-red-700 hover:bg-red-600 text-red-300 hover:text-white py-2 px-4 font-bold pixel-text transition-all duration-200 hover:scale-105"
               >
                 <div className="flex items-center space-x-2">
@@ -329,7 +340,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGameModeSelect, onExit }) => {
             {/* Game Mode Selection Cards */}
             <div className="flex justify-center">
               <div className="max-w-md">
-                {gameModes.map((mode, index) => {
+                {filteredGameModes.map((mode, index) => {
                   const difficulty = getDifficulty(mode.id);
                   return (
                     <div

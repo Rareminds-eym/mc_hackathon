@@ -1,11 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Trophy, Target } from 'lucide-react';
 import { ModuleDetailModalProps, Level } from './types/GameData';
 import { useDeviceLayout } from '../../hooks/useOrientation';
+import { useAuth } from '../../contexts/AuthContext';
+import { Level2GameService } from '../Level2/services/level2GameService';
+import { Level2GameData } from '../../types/Level2/types';
 
 const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, onClose }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
+  const { user } = useAuth();
   const isMobileLandscape = isMobile && isHorizontal;
+
+  // State for level2_game_data
+  const [level2Data, setLevel2Data] = useState<Level2GameData[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  // Fetch level2_game_data when modal opens for Module 1
+  useEffect(() => {
+    const fetchLevel2Data = async () => {
+      if (!isOpen || !module || module.id !== 1 || !user) return;
+
+      setIsLoadingData(true);
+      setDataError(null);
+
+      try {
+        // Fetch all game modes for Module 1
+        const { data, error } = await Level2GameService.getUserGameData('1', 'gmp-vs-non-gmp');
+        if (error) {
+          setDataError(error.message);
+        } else { 
+          setLevel2Data(data || []);
+        }
+      } catch (err) {
+        setDataError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchLevel2Data();
+  }, [isOpen, module, user]);
 
   if (!isOpen || !module) return null;
 
@@ -32,7 +67,7 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
         isMobile ? 'max-w-xs mx-2' : 'max-w-md'
       }`}>
         {/* Header */}
-        <div className={`flex items-center justify-between border-b border-orange-200 ${
+        <div className={`flex items-center justify-between border-b border-red-200 ${
           isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-6'
         }`}>
           <div className={`flex items-center ${
@@ -74,7 +109,7 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
           </h3>
 
           <div className={isMobileLandscape ? 'space-y-1.5' : isMobile ? 'space-y-2' : 'space-y-3'}>
-            {module.levels.map((level: Level) => (
+            {module.levels?.map((level: Level) => (
               <div
                 key={level.id}
                 className={`flex items-center justify-between bg-white rounded-lg shadow-sm border border-orange-100 hover:shadow-md transition-shadow duration-200 ${
@@ -109,6 +144,88 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
               </div>
             ))}
           </div>
+
+          {/* Level 2 Game Data Section - Only show for Module 1 */}
+          {module.id === 1 && (
+            <>
+              <div className={`mt-4 ${isMobileLandscape ? 'mt-3' : isMobile ? 'mt-4' : 'mt-6'}`}>
+                {isLoadingData ? (
+                  <div className={`flex items-center justify-center bg-white rounded-lg shadow-sm border border-blue-100 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span className={`ml-2 text-gray-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      Loading game data...
+                    </span>
+                  </div>
+                ) : dataError ? (
+                  <div className={`bg-red-50 rounded-lg shadow-sm border border-red-200 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <p className={`text-red-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      Error: {dataError}
+                    </p>
+                  </div>
+                ) : level2Data.length === 0 ? (
+                  <div className={`bg-gray-50 rounded-lg shadow-sm border border-gray-200 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <p className={`text-gray-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      No Level 2 game data found for Module 1
+                    </p>
+                  </div>
+                ) : (
+                  <div className={isMobileLandscape ? 'space-y-1.5' : isMobile ? 'space-y-2' : 'space-y-3'}>
+                    {level2Data.map((gameData, index) => (
+                      <div
+                        key={gameData.id || index}
+                        className={`bg-white rounded-lg shadow-sm border border-blue-100 hover:shadow-md transition-shadow duration-200 ${
+                          isMobileLandscape ? 'p-1.5' : isMobile ? 'p-2' : 'p-4'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={`flex items-center ${
+                            isMobileLandscape ? 'space-x-1.5' : isMobile ? 'space-x-2' : 'space-x-3'
+                          }`}>
+                            <div>
+                              <h4 className={`font-medium text-gray-800 ${
+                                isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-base'
+                              }`}>
+                                Level {gameData.level_number} 
+                              </h4>
+                              <p className={`text-gray-500 ${
+                                isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                              }`}>
+                                {gameData.game_mode_id}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`font-bold ${gameData.is_completed ? 'text-green-600' : 'text-gray-600'} ${
+                              isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-lg'
+                            }`}>
+                              {gameData.is_completed ? 'Completed' : 'Uncompleted'}
+                            </div>
+                            <div className={`text-gray-500 ${
+                              isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                            }`}>
+                              Score: {gameData.score}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
