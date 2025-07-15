@@ -440,6 +440,27 @@ export const GameBoard2D: React.FC = () => {
   const renderLogin = () => {
     // Filter for special cases with negative indices
     const specialCases = cases.filter((c, idx) => idx === -1 || idx === -2);
+    // Determine played and current cases for highlighting (vertical stack)
+    const caseCards = [0, 1].map(idx => {
+      let brightness = '';
+      if (gameState.currentCase === idx) {
+        brightness = 'brightness-125 border-yellow-400 shadow-lg';
+      } else if (gameState.currentCase > idx) {
+        brightness = 'brightness-100 border-cyan-400';
+      } else {
+        brightness = 'brightness-50 border-gray-400';
+      }
+      return (
+        <div
+          key={idx}
+          className={`flex flex-col items-center justify-center px-2 py-2 my-1 rounded-xl border-2 pixel-border transition-all duration-300 cursor-pointer ${brightness}`}
+          style={{ minWidth: 80, minHeight: 60 }}
+        >
+          <span className="font-bold text-md lg:text-lg text-white">Case {idx + 1}</span>
+          {/* <span className="text-xs text-cyan-200 mt-1">{cases[idx]?.title || ''}</span> */}
+        </div>
+      );
+    });
     return (
       <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
         {/* Neon Animated SVG Background - only one layer */}
@@ -448,6 +469,10 @@ export const GameBoard2D: React.FC = () => {
         </div>
         {/* Main content with gradient overlay */}
         <div className="relative z-10 h-full w-full flex flex-col text-xs md:text-sm lg:text-base">
+          {/* Case cards column below back button, left-aligned */}
+          <div className="absolute left-2 top-16 z-40 flex flex-col items-center justify-start">
+            {caseCards}
+          </div>
           {/* Header */}
           <div className="flex flex-col items-center justify-center w-full z-10 landscape:relative landscape:z-20 landscape:bg-transparent landscape:pt-2 ">
             <div className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 p-1 lg:p-4 relative">
@@ -464,7 +489,8 @@ export const GameBoard2D: React.FC = () => {
                   </div>
                 </div>
                 <div className="w-8 h-8 lg:w-16 lg:h-16 bg-orange-300 pixel-border flex items-center justify-center">
-                  <Gamepad2 className="w-5 h-5 sm:w-8 sm:h-8 text-orange-800" />
+<Gamepad2 className="w-5 h-5 sm:w-8 sm:h-8 text-orange-800 drop-shadow-glow animate-bounce-slow" />
+
                 </div>
               </div>
             </div>
@@ -983,7 +1009,7 @@ export const GameBoard2D: React.FC = () => {
             </div>
           </div>
           {/* Navigation - fixed at bottom, full width, justify-between */}
-          <div className="flex flex-row items-center justify-end w-full px-2 pb-1 pt-1 sm:px-4 sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
+          <div className="flex flex-row items-center justify-end w-full px-2 t-20 pb-1 pt-1  sm:px-4 sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
             <div className="flex w-auto justify-end">
               {/* Show Submit only in feedback phase of case2 (index 1), all answers provided, and all correct */}
               {currentPhase === 'feedback' && gameState.currentCase === 1 && allAnswersProvided && allAnswersCorrect && (
@@ -1186,7 +1212,7 @@ export const GameBoard2D: React.FC = () => {
       )}
       {/* Profile/User info at top right */}
       {user && (
-        <div className="absolute top-2 right-0 lg:right-4 z-[60] flex items-center gap-2">
+        <div className="absolute top-2 right-1 lg:right-4 z-[60] flex items-center gap-2">
           <div
             className="pixel-border-thick bg-gradient-to-br from-cyan-900 via-blue-900 to-purple-900 shadow-xl flex items-center lg:gap-2 rounded-xl px-3 py-1 border-2 border-cyan-400/40 min-w-[48px] max-w-xs cursor-pointer hover:bg-cyan-900/60 transition relative"
             onClick={() => setProfileOpen((v) => !v)}
