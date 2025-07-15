@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
+// Format seconds as mm:ss
+function formatTime(seconds: number) {
+  if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return '-';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+import { supabase } from '../../lib/supabase';
+import { getSortedAttempts } from './Hooks/getSortedAttempts';
 import { Trophy, Star, RotateCcw } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { useAuth } from '../../contexts/AuthContext';
 import { LevelProgressService } from '../../services/levelProgressService';
 import { useLevelProgress } from '../../hooks/useLevelProgress';
 
-interface GameCompleteModalProps {
+type GameCompleteModalProps = {
   isVisible: boolean;
   onPlayAgain: () => void;
   score: number;
   moduleId?: number;
   levelId?: number;
-}
+};
 
 const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   isVisible,
@@ -24,6 +33,31 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   const { user } = useAuth();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const isMobileLandscape = isMobile && isHorizontal;
+
+  // State for attempt history
+  const [attempts, setAttempts] = useState<{score: number, timer: number, attempt: number}[]>([]);
+
+  // Fetch score/timer history when modal is shown
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!isVisible || !user) return;
+      const { data, error } = await supabase
+        .from('level_1')
+        .select('score_history, timer_history')
+        .eq('user_id', user.id)
+        .eq('module_number', moduleId)
+        .eq('level_number', levelId)
+        .order('game_start_time', { ascending: false })
+        .limit(1);
+      if (!error && data && data.length > 0) {
+        const { score_history, timer_history } = data[0];
+        setAttempts(getSortedAttempts(score_history || [], timer_history || []));
+      } else {
+        setAttempts([]);
+      }
+    };
+    fetchHistory();
+  }, [isVisible, user, moduleId, levelId]);
 
   // Use level progress hook to refresh progress after completion
   const { refreshProgress } = useLevelProgress(moduleId);
@@ -90,6 +124,42 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
               <Star className={`${isMobileLandscape ? 'w-3 h-3' : 'w-6 h-6'} text-yellow-400 drop-shadow`} />
             </div>
             <div className={`${isMobileLandscape ? 'text-lg' : 'text-4xl'} font-extrabold text-blue-600 pixel-text drop-shadow`}>{score} Points</div>
+            {/* Attempts Table */}
+            {attempts.length > 0 && (
+              <div className={`${isMobileLandscape ? 'mt-2' : 'mt-4'} text-left`}>
+                <div className={`${isMobileLandscape ? 'text-xs' : 'text-base'} font-bold text-slate-700 mb-1`}>Your Attempts (Latest First):</div>
+                <table className="w-full text-center border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1">#</th>
+                      <th className="px-2 py-1">Score</th>
+                      <th className="px-2 py-1">Time (s)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attempts
+                      .filter(a => a.score !== -1)
+                      .slice() // copy array
+                      .reverse() // latest first
+                      .map((a, idx, arr) => {
+                        // Attempt number: oldest is 1, latest is N
+                        const attemptNum = arr.length - idx;
+                        // Find best attempt (highest score, then lowest time)
+                        const best = arr.reduce((best, curr) =>
+                          curr.score > best.score || (curr.score === best.score && curr.timer < best.timer) ? curr : best, arr[0]);
+                        const isBest = a === best;
+                        return (
+                          <tr key={idx} className={isBest ? 'font-bold text-green-700 bg-green-100' : ''}>
+                            <td className="px-2 py-1">{attemptNum}</td>
+                            <td className="px-2 py-1">{a.score}</td>
+                            <td className="px-2 py-1">{formatTime(a.timer)}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
           <p className={`${isMobileLandscape ? 'text-xs mb-2' : 'text-slate-600 mb-6'} font-semibold pixel-text`}>You've mastered all the quality control terms!<br/>Great job on your learning journey.</p>
           <div className="flex flex-col gap-2 items-center w-full">

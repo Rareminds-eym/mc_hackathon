@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useDispatch, useSelector } from 'react-redux';
-import { setTimer, setSelectedCells, setSelectedDefinition, saveState } from '../store/slices/bingoSlice';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { setTimer, setSelectedCells, setSelectedDefinition, saveState } from '../../../store/slices/bingoSlice';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface BingoCell {
   id: number;
@@ -34,6 +34,8 @@ interface Level1GameData {
   current_definition?: string;
   session_id?: string;
   is_restarted?: boolean;
+  // Allow extra fields for module_number, level_number, etc.
+  [key: string]: unknown;
 }
 
 interface BingoState {
@@ -104,16 +106,54 @@ export const useBingoGame = () => {
   };
 
   // Save game progress to Supabase
-  const saveGameToDatabase = useCallback(async (gameData: Partial<Level1GameData>) => {
+  // Helper to update score/timer history only on game end or play again
+  const updateAttemptHistory = async (score: number, timer: number) => {
+    if (!user) return { score_history: [score], timer_history: [timer] };
+    let score_history: number[] = [];
+    let timer_history: number[] = [];
+    const { data: existing, error: fetchError } = await supabase
+      .from('level_1')
+      .select('score_history, timer_history')
+      .eq('user_id', user.id)
+      .eq('module_number', 1)
+      .eq('level_number', 1)
+      .order('game_start_time', { ascending: false })
+      .limit(1);
+    if (!fetchError && existing && existing.length > 0) {
+      score_history = Array.isArray(existing[0].score_history) ? existing[0].score_history : [];
+      timer_history = Array.isArray(existing[0].timer_history) ? existing[0].timer_history : [];
+    }
+    score_history = [...score_history, score].slice(-3);
+    timer_history = [...timer_history, timer].slice(-3);
+    return { score_history, timer_history };
+  };
+
+  // Save game progress to Supabase (does NOT update history unless told)
+  const saveGameToDatabase = useCallback(async (gameData: Partial<Level1GameData>, opts?: { updateHistory?: boolean; resetHistory?: boolean }) => {
     if (!user) return;
 
     try {
+      let score_history: number[] = [];
+      let timer_history: number[] = [];
+      if (opts && opts.updateHistory) {
+        // Only update history if requested (on game end or play again)
+        const result = await updateAttemptHistory(gameData.score ?? score, gameData.total_time_seconds ?? timer);
+        score_history = result.score_history;
+        timer_history = result.timer_history;
+      } else if (opts && opts.resetHistory) {
+        // On restart, reset attempt
+        score_history = [];
+        timer_history = [];
+      }
+
       const dataToSave = {
         user_id: user.id,
         username: user.user_metadata?.full_name || user.email || 'Unknown User',
         session_id: sessionId,
         total_time_seconds: timer,
         score,
+        score_history: score_history.length ? score_history : undefined,
+        timer_history: timer_history.length ? timer_history : undefined,
         rows_solved: rowsSolved,
         cells_selected: gameData.cells_selected || cells.filter(cell => cell.selected).map(cell => cell.id),
         completed_lines: gameData.completed_lines || completedLines,
@@ -137,8 +177,8 @@ export const useBingoGame = () => {
         .from('level_1')
         .update(dataToSave)
         .eq('user_id', user.id)
-        .eq('module', 1)
-        .eq('level', 1)
+        .eq('module_number', 1)
+        .eq('level_number', 1)
         .select();
 
       let data, error;
@@ -167,7 +207,7 @@ export const useBingoGame = () => {
       console.warn('Error in saveGameToDatabase (continuing without database):', error);
       // Game continues to work without database
     }
-  }, [user, sessionId, timer, score, rowsSolved, cells, completedLines, gameComplete, selectedDefinition, gameStartTime]);
+  }, [user, sessionId, timer, score, rowsSolved, cells, completedLines, gameComplete, selectedDefinition, gameStartTime, updateAttemptHistory]);
 
   // Load game progress from Supabase
   const loadGameFromDatabase = useCallback(async () => {
@@ -188,7 +228,18 @@ export const useBingoGame = () => {
       }
 
       // Only return saved game if it exists and is not a restarted game
-      return data && data.length > 0 ? data[0] : null;
+      if (data && data.length > 0) {
+        // If score_history/timer_history exist, use the latest value for display
+        const game = data[0];
+        if (Array.isArray(game.score_history) && game.score_history.length > 0) {
+          game.score = game.score_history[game.score_history.length - 1];
+        }
+        if (Array.isArray(game.timer_history) && game.timer_history.length > 0) {
+          game.total_time_seconds = game.timer_history[game.timer_history.length - 1];
+        }
+        return game;
+      }
+      return null;
     } catch (error) {
       console.warn('Error in loadGameFromDatabase (using Redux fallback):', error);
       return null; // Return null so game uses Redux fallback
@@ -224,35 +275,24 @@ export const useBingoGame = () => {
   }, []);
 
   // Mark game as completed in database
+  // On game complete, update history
   const markGameCompleted = useCallback(async () => {
     if (!user) return;
-
     try {
-      const { error } = await supabase
-        .from('level_1')
-        .update({
-          is_completed: true,
-          game_end_time: new Date().toISOString(),
-          total_time_seconds: timer,
-          score,
-          rows_solved: rowsSolved,
-          username: user.user_metadata?.full_name || user.email || 'Unknown User',
-          module_number: 1, // Added for Level 1
-          level_number: 1,  // Added for Level 1
-        })
-        .eq('user_id', user.id)
-        .eq('module', 1)
-        .eq('level', 1);
-
-      if (error) {
-        console.warn('Database update failed (table might not exist):', error.message);
-        // Don't throw error, just log it
-      }
+      await saveGameToDatabase({
+        is_completed: true,
+        game_end_time: new Date().toISOString(),
+        total_time_seconds: timer,
+        score,
+        rows_solved: rowsSolved,
+        username: user.user_metadata?.full_name || user.email || 'Unknown User',
+        module_number: 1,
+        level_number: 1,
+      }, { updateHistory: true });
     } catch (error) {
       console.warn('Error in markGameCompleted (continuing without database):', error);
-      // Game continues to work without database
     }
-  }, [user, timer, score, rowsSolved]);
+  }, [user, timer, score, rowsSolved, saveGameToDatabase]);
 
   const selectRandomDefinition = useCallback((currentCells: BingoCell[]) => {
     const unselectedCells = currentCells.filter(cell => !cell.selected);
@@ -386,12 +426,13 @@ export const useBingoGame = () => {
 
   // Timer logic (controlled internally)
   useEffect(() => {
-    if (gameComplete || !timerActive) return;
+    // Pause timer if answer feedback or completed line modal is visible
+    if (gameComplete || !timerActive || answerFeedback.isVisible || completedLineModal) return;
     const interval = setInterval(() => {
       setTimerState((prev: number) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [gameComplete, timerActive]);
+  }, [gameComplete, timerActive, answerFeedback.isVisible, completedLineModal]);
 
   // Timer control functions
   const startTimer = useCallback(() => setTimerActive(true), []);
@@ -591,51 +632,72 @@ export const useBingoGame = () => {
     }));
   };
 
-  const resetGame = async () => {
+  // Play Again: Save current attempt to history, then start new game (for GameCompleteModal)
+  const playAgain = async () => {
     setAnswerFeedback({
       isVisible: false,
       isCorrect: false,
       selectedTerm: '',
       correctDefinition: ''
     });
-    
-    // Mark current game as completed with a special flag for restart
-    if (user && sessionId && !gameComplete) {
+    // Mark current game as completed and update attempt history
+    if (user && sessionId && gameComplete) {
       try {
-        await supabase
-          .from('level_1')
-          .update({
-            is_completed: true,
-            game_end_time: new Date().toISOString(),
-            total_time_seconds: timer,
-            score,
-            rows_solved: rowsSolved,
-            username: user.user_metadata?.full_name || user.email || 'Unknown User',
-            is_restarted: true, // Add a flag to indicate this was a restart, not natural completion
-            module_number: 1, // Added for Level 1
-            level_number: 1,  // Added for Level 1
-          })
-          .eq('user_id', user.id);
+        await saveGameToDatabase({
+          is_completed: true,
+          game_end_time: new Date().toISOString(),
+          total_time_seconds: timer,
+          score,
+          rows_solved: rowsSolved,
+          username: user.user_metadata?.full_name || user.email || 'Unknown User',
+          module_number: 1,
+          level_number: 1,
+        }, { updateHistory: true });
       } catch (error) {
-        console.warn('Error marking game as restarted:', error);
+        console.warn('Error saving attempt history:', error);
       }
     }
-    
-    // Initialize a completely new game
+    // Start a new game (new attempt)
     initializeGame();
-    
-    // Reset Redux state as well
+    setScoreState(0); // Extra safety: ensure score is zeroed before user can interact
     dispatch(saveState({
       timer: 0,
       score: 0,
       completedLines: 0,
-      completedLinesState: [], // Reset completed lines
-      rowsSolved: 0, // Reset rowsSolved
+      completedLinesState: [],
+      rowsSolved: 0,
       boardState: [],
       selectedCells: [],
       selectedDefinition: '',
     }));
   };
+
+  // Restart: Just reset state, do NOT update attempt history (for Navbar)
+  const restartGame = () => {
+    setAnswerFeedback({
+      isVisible: false,
+      isCorrect: false,
+      selectedTerm: '',
+      correctDefinition: ''
+    });
+    initializeGame();
+    setScoreState(0); // Extra safety: ensure score is zeroed before user can interact
+    dispatch(saveState({
+      timer: 0,
+      score: 0,
+      completedLines: 0,
+      completedLinesState: [],
+      rowsSolved: 0,
+      boardState: [],
+      selectedCells: [],
+      selectedDefinition: '',
+    }));
+  };
+
+  // Old resetGame for compatibility (calls restartGame)
+  const resetGame = restartGame;
+  // Helper: get sorted attempts for modal (highest score, then lowest time)
+  // (moved to bottom of file for export)
 
   const isInCompletedLine = (cellId: number): boolean => {
     return completedLines.some(line => line.includes(cellId));
@@ -651,7 +713,8 @@ export const useBingoGame = () => {
     gameComplete,
     completedLineModal,
     toggleCell,
-    resetGame,
+    restartGame, // for Navbar: just resets state, no history
+    playAgain,   // for GameCompleteModal: saves attempt, then new game
     closeAnswerModal,
     closeCompletedLineModal,
     isInCompletedLine,
