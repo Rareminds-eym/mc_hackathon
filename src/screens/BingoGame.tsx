@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { useBingoGame } from '../hooks/useBingoGame';
-import { useTutorial } from '../hooks/useTutorial';
+import { useBingoGame } from '../components/Level1/Hooks/useBingoGame';
+import { useTutorial } from '../components/Level1/Hooks/useTutorial';
 import { useDeviceLayout } from '../hooks/useOrientation';
 import Navbar from '../components/Level1/Navbar';
 import BingoGrid from '../components/Level1/BingoGrid';
@@ -23,7 +23,8 @@ const BingoGame: React.FC = () => {
     rowsSolved,
     gameComplete,
     toggleCell,
-    resetGame,
+    restartGame,
+    playAgain,
     closeAnswerModal,
     isInCompletedLine,
     timer,
@@ -43,12 +44,16 @@ const BingoGame: React.FC = () => {
     waitingForInteraction
   } = useTutorial();
 
+
   // Timer state for this component
   const [tutorialDone, setTutorialDone] = React.useState(false);
   const [instructionsStep, setInstructionsStep] = React.useState<number | undefined>(undefined); // For skipping to definitions
 
   // Add a resetCount state to force re-mounting GameInstructions
   const [resetCount, setResetCount] = React.useState(0);
+
+  // Track if answering is allowed (from GameInstructions)
+  const [answeringAllowed, setAnsweringAllowed] = React.useState(false);
 
   // Auto-skip tutorial if game is restored
   React.useEffect(() => {
@@ -62,8 +67,11 @@ const BingoGame: React.FC = () => {
     skipTutorial();
     setTutorialDone(true);
     onUserInteraction();
-    setInstructionsStep('definitions'); // Use a string to indicate jump to definitions
+    // Jump to definitions step (conversation.length)
+    setInstructionsStep(conversationLength);
   };
+// Helper: conversation length for instructions step
+const conversationLength = 8; // Update if conversation array changes in GameInstructions
 
   const handleBackClick = () => {
     console.log('Back button clicked');
@@ -199,21 +207,32 @@ const BingoGame: React.FC = () => {
     setInstructionsStep(undefined); // Reset for next time
   };
 
-  // Handle step changes from GameInstructions to control the timer
-  const handleInstructionsStepChange = (step: number | string, atDefinitions: boolean) => {
-    if (atDefinitions && !tutorialActive) {
+
+  // Handle step changes from GameInstructions to control the timer and answeringAllowed
+  const handleInstructionsStepChange = (step: number, atDefinitions?: boolean) => {
+    const allowed = !!atDefinitions;
+    setAnsweringAllowed(allowed);
+    if (allowed && !tutorialActive) {
       startTimer();
     } else {
       stopTimer();
     }
   };
 
-  // Custom play again handler to reset game and instructions
-  const handlePlayAgain = () => {
-    resetGame();
+  // Play Again: Save attempt and start new game (for GameCompleteModal)
+  const handlePlayAgain = async () => {
+    await playAgain();
     setInstructionsStep(undefined); // Start from the beginning of instructions
     setTutorialDone(false); // Show instructions/conversation again
     setResetCount(c => c + 1); // Force re-mount GameInstructions
+  };
+
+  // Restart: Just reset state, do NOT update attempt history (for Navbar)
+  const handleRestart = () => {
+    restartGame();
+    setInstructionsStep(undefined);
+    setTutorialDone(false);
+    setResetCount(c => c + 1);
   };
 
   if (loading) {
@@ -235,7 +254,7 @@ const BingoGame: React.FC = () => {
           onHomeClick={handleHomeClick}
           onResetTutorial={resetTutorial}
           timer={timer}
-          onPlayAgain={handlePlayAgain} // Use custom handler
+          onPlayAgain={handleRestart} // Use restart handler for Navbar
           tutorialStep={currentStep?.id} // Pass tutorial step to Navbar
         />
         <motion.div
@@ -318,7 +337,8 @@ const BingoGame: React.FC = () => {
                     gameComplete={gameComplete}
                     onCellClick={handleCellClick}
                     isInCompletedLine={isInCompletedLine}
-                    disabled={!tutorialDone || waitingForInteraction}
+                    // Only allow answering if tutorial is done, not waiting, and answeringAllowed is true
+                    disabled={!tutorialDone || waitingForInteraction || !answeringAllowed}
                     tutorialStep={currentStep?.id}
                   />
                 </motion.div>
@@ -488,7 +508,8 @@ const BingoGame: React.FC = () => {
                     gameComplete={gameComplete}
                     onCellClick={handleCellClick}
                     isInCompletedLine={isInCompletedLine}
-                    disabled={!tutorialDone || waitingForInteraction}
+                    // Only allow answering if tutorial is done, not waiting, and answeringAllowed is true
+                    disabled={!tutorialDone || waitingForInteraction || !answeringAllowed}
                     tutorialStep={currentStep?.id}
                   />
                 </motion.div>

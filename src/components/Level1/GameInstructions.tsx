@@ -78,6 +78,14 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
   const { isHorizontal, isMobile } = useDeviceLayout();
   const isMobileLandscape = isMobile && isHorizontal;
 
+  // Expose a flag to parent: is answering allowed?
+  const answeringAllowed = step > conversation.length - 1;
+  useEffect(() => {
+    if (onStepChange) {
+      onStepChange(step, answeringAllowed);
+    }
+  }, [step, answeringAllowed, onStepChange]);
+
   // Determine if we're in conversation, countdown, or showing the definition
   const inConversation = step < conversation.length - 1;
   const inCountdown = step === conversation.length - 1;
