@@ -13,6 +13,20 @@ html, body, #root {
   font-family: 'Orbitron', sans-serif;
 }
 
+.pixel-border-thick {
+  border: 4px solid;
+  border-image: 
+    linear-gradient(45deg, 
+      transparent 0%, transparent 20%, 
+      currentColor 20%, currentColor 80%, 
+      transparent 80%, transparent 100%
+    ) 4;
+  box-shadow: 
+    inset 0 0 0 2px rgba(255, 255, 255, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+
 /* Mobile orientation requirement */
 @media (max-width: 768px) and (orientation: portrait) {
   .rotation-overlay {

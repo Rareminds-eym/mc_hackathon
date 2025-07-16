@@ -256,9 +256,19 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
 
   return (
     <DndProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-[url('/Level2/level3bg.webp')] bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${isMobile ? 'p-2' : 'p-6'}`}>
-        {/* Gamified Overlay */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-cyan-500/40 via-purple-500/40 to-transparent opacity-80 pixel-glow"></div>
+      <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${isMobile ? 'p-2' : 'p-6'}`}
+        style={{ backgroundImage: 'url("/Level2/level3bg.webp")' }}>
+        {/* Gamified Overlay - matches Level2 HomePage */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Slightly darkened base overlay for gamified look */}
+          <div className="absolute inset-0 bg-black opacity-40"></div>
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/30 via-purple-500/30 to-transparent opacity-80 pixel-glow"></div>
+          {/* Scan Lines Overlay */}
+          <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+          {/* Glow Overlay */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-purple-500 opacity-30 blur-lg"></div>
+        </div>
         {isGameLoading && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="text-white text-xl">Saving progress...</div>

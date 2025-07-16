@@ -55,13 +55,21 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, o
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-[url('/Level2/level3bg.webp')] bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${
-      isMobile ? 'p-2' : 'p-6'
-    }`}>
+    <div
+      className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${isMobile ? 'p-2' : 'p-6'}`}
+      style={{ backgroundImage: 'url("/Level2/level3bg.webp")' }}
+    >
       {/* Gamified Overlay */}
-      <div
-        className="absolute inset-0 z-0 bg-gradient-to-r from-cyan-500/40 via-purple-500/40 to-transparent opacity-80 pixel-glow"
-      ></div>
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* Slightly darkened base overlay for gamified look */}
+        <div className="absolute inset-0 bg-black opacity-30"></div>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/30 via-purple-500/30 to-transparent opacity-40 pixel-glow"></div>
+        {/* Scan Lines Overlay */}
+        <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+        {/* Glow Overlay */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-purple-500 opacity-30 blur-lg"></div>
+      </div>
 
       {/* Animated Grid Background */}
       <div className="absolute inset-0 opacity-20">
