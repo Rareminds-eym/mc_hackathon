@@ -331,14 +331,16 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
             >
               {/* Character sprite: only one, always above the first available module */}
               {(() => {
-                const availableIndex = modules.findIndex(
+                // Find the last available module
+                const reversedIndex = [...modules].reverse().findIndex(
                   (m) => m.status === "available"
                 );
-                if (availableIndex === -1) return null;
+                const lastAvailableIndex = reversedIndex === -1 ? -1 : modules.length - 1 - reversedIndex;
+                if (lastAvailableIndex === -1) return null;
                 // Hide sprite in mobile horizontal
                 if (isMobile && isHorizontal) return null;
                 // Placement logic
-                let zigzagOffset = availableIndex % 2 === 0 ? -60 : 60;
+                let zigzagOffset = lastAvailableIndex % 2 === 0 ? -60 : 60;
                 let spriteTop, spriteLeft, spriteScale;
                 spriteTop = `calc(50% + ${zigzagOffset - 10}px)`;
                 spriteLeft = `${120}px`;
@@ -356,8 +358,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                     }}
                   >
                     <CharacterSprite
-                      key={modules[availableIndex].id}
-                      moduleId={modules[availableIndex].id}
+                      key={modules[lastAvailableIndex].id}
+                      moduleId={modules[lastAvailableIndex].id}
                       platformWidth={PLATFORM_WIDTH}
                       platformSpacing={PLATFORM_SPACING}
                     />
