@@ -103,38 +103,46 @@ export const useGameLogic = (
     }
   }, [scenarioIndex, scenarios.length]);
 
-  // Save game progress to database
+  // Save game progress to database using Supabase RPC for history tracking
   const saveGameProgress = useCallback(async () => {
     if (!user?.id) return;
 
+    // Try to get level_number and time_taken from scenario or props, fallback to 1 and 0
+    const levelNumber = scenario?.level_number || 1;
+    const timeTaken = scenario?.time_taken || 0;
+
+    // Debug log to verify parameters
+    console.log('Saving progress to Supabase:', {
+      p_user_id: user.id,
+      p_module_id: moduleId,
+      p_level_number: levelNumber,
+      p_scenario_index: scenarioIndex,
+      p_score: score,
+      p_health: health,
+      p_combo: combo,
+      p_placed_pieces: placedPieces,
+      p_is_completed: isComplete,
+      p_time_taken: timeTaken
+    });
+
     try {
-      // Construct the progress object
-      const progress: GameProgress = {
-        user_id: user.id,
-        module_id: moduleId,
-        scenario_index: scenarioIndex,
-        score,
-        health,
-        combo,
-        placed_pieces: placedPieces,
-        completed: isComplete,
-        created_at: new Date().toISOString(),
-      };
+      const { error } = await supabase.rpc('upsert_level3_progress_with_history', {
+        p_user_id: user.id,
+        p_module_id: moduleId,
+        p_level_number: levelNumber,
+        p_scenario_index: scenarioIndex,
+        p_score: score,
+        p_health: health,
+        p_combo: combo,
+        p_placed_pieces: placedPieces,
+        p_is_completed: isComplete,
+        p_time_taken: timeTaken
+      });
 
-      // Use upsert operation (conflict only on user_id and scenario_index)
-      const { error } = await supabase
-        .from("level3_progress")
-        .upsert(progress, {
-          onConflict: "user_id,scenario_index",
-          ignoreDuplicates: false,
-        });
-
-      // Log any errors but don't disrupt gameplay
       if (error) {
         console.error("Error saving progress:", error);
       }
     } catch (error) {
-      // Capture and log any unexpected errors
       console.error("Unexpected error saving progress:", error);
     }
   }, [
@@ -146,6 +154,7 @@ export const useGameLogic = (
     combo,
     placedPieces,
     isComplete,
+    scenario
   ]);
 
   // Check for game completion
