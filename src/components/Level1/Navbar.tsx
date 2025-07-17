@@ -86,23 +86,6 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
             {!isMobileLandscape && <span className="hidden sm:inline">HOME</span>}
           </button>
           <button
-            data-tutorial="navbar-restart"
-            onClick={() => {
-              if (onPlayAgain) onPlayAgain();
-            }}
-            className="pixel-border bg-yellow-700 hover:bg-yellow-600 text-white px-2 py-1 flex items-center gap-1 font-bold pixel-text transition-all duration-200 text-xs sm:text-sm"
-            onMouseOver={() => setHoveredBtn('restart')}
-            onMouseOut={() => setHoveredBtn(null)}
-            style={{
-              background: hoveredBtn === 'restart' ? '#fbbf24' : undefined,
-              color: hoveredBtn === 'restart' ? '#fff' : undefined,
-              transform: hoveredBtn === 'restart' ? 'scale(1.08)' : undefined
-            }}
-          >
-            <RotateCcw className="w-4 h-4" />
-            {!isMobileLandscape && <span className="hidden sm:inline">RESTART</span>}
-          </button>
-          <button
             data-tutorial="navbar-tutorial"
             onClick={handleTutorialClick}
             className="pixel-border bg-green-700 hover:bg-green-600 text-white px-2 py-1 flex items-center gap-1 font-bold pixel-text transition-all duration-200 text-xs sm:text-sm"
