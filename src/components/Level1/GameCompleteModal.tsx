@@ -16,10 +16,11 @@ import { useLevelProgress } from '../../hooks/useLevelProgress';
 
 type GameCompleteModalProps = {
   isVisible: boolean;
-  onPlayAgain: () => void;
+  onPlayAgain: () => Promise<void> | void;
   score: number;
   moduleId?: number;
   levelId?: number;
+  isSaving?: boolean; // optional loader prop from hook
 };
 
 const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
@@ -27,7 +28,8 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   onPlayAgain,
   score,
   moduleId = 1,
-  levelId = 1
+  levelId = 1,
+  isSaving = false
 }) => {
   const { isHorizontal, isMobile } = useDeviceLayout();
   const { user } = useAuth();
@@ -92,91 +94,149 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
     updateLevelProgress();
   }, [isVisible, user, moduleId, levelId, isUpdatingProgress, refreshProgress]);
 
+
+
+  // Find the best attempt: highest score, then least time
+  // If multiple attempts have the same highest score, pick the one with the least time
+  let bestAttempt = null;
+  if (attempts.length > 0) {
+    const maxScore = Math.max(...attempts.map(a => a.score));
+    const bestAttempts = attempts.filter(a => a.score === maxScore);
+    bestAttempt = bestAttempts.reduce((min, curr) => curr.timer < min.timer ? curr : min, bestAttempts[0]);
+  }
+
+  // Feedback message based on best attempt's time
+  const getTimeFeedback = (timer: number) => {
+    if (timer <= 100) return { message: "Unbelievable speed!", color: "text-yellow-300" };
+    if (timer <= 160) return { message: "Lightning fast!", color: "text-green-300" };
+    if (timer <= 140) return { message: "Great pace!", color: "text-blue-300" };
+    if (timer <= 180) return { message: "Solid effort!", color: "text-purple-300" };
+    return { message: "Keep practicing for a faster time!", color: "text-orange-300" };
+  };
+
+  const [saving, setSaving] = useState(false);
   if (!isVisible) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div
-        className={`pixel-border-thick bg-gradient-to-br from-yellow-50 via-blue-100 to-purple-100 rounded-2xl shadow-2xl mx-2 scale-100 animate-[scale-in_0.2s_cubic-bezier(0.4,0,0.2,1)] transition-all duration-300 ${
-          isMobileLandscape ? 'p-2 max-w-[260px] min-h-[180px]' : 'p-8 max-w-xl mx-4'
-        }`}
-      >
-        <div className="text-center">
-          <div className={`flex justify-center ${isMobileLandscape ? 'mb-1' : 'mb-4'}`}>
-            <div
-              className={`pixel-border bg-gradient-to-r from-yellow-400 to-orange-400 ${
-                isMobileLandscape ? 'w-10 h-10' : 'w-24 h-24'
-              } rounded-xl flex items-center justify-center animate-bounce shadow-xl`}
-            >
-              <Trophy className={`${isMobileLandscape ? 'w-5 h-5' : 'w-12 h-12'} text-white drop-shadow-lg`} />
-            </div>
-          </div>
-          <h2 className={`${isMobileLandscape ? 'text-lg' : 'text-4xl'} font-extrabold text-yellow-700 mb-1 pixel-text drop-shadow`}>🎉 Congratulations! 🎉</h2>
-          <p className={`${isMobileLandscape ? 'text-xs' : 'text-xl'} text-slate-700 mb-2 font-semibold pixel-text`}>You've completed all 24 terms!</p>
-          <div
-            className={`pixel-border bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl ${
-              isMobileLandscape ? 'p-2 mb-2' : 'p-6 mb-6'
-            } shadow`}
-          >
-            <div className={`flex items-center justify-center gap-2 ${isMobileLandscape ? 'mb-1' : 'mb-3'}`}>
-              <Star className={`${isMobileLandscape ? 'w-3 h-3' : 'w-6 h-6'} text-yellow-400 drop-shadow`} />
-              <span className={`${isMobileLandscape ? 'text-xs' : 'text-lg'} font-bold text-slate-800 pixel-text`}>Final Score</span>
-              <Star className={`${isMobileLandscape ? 'w-3 h-3' : 'w-6 h-6'} text-yellow-400 drop-shadow`} />
-            </div>
-            <div className={`${isMobileLandscape ? 'text-lg' : 'text-4xl'} font-extrabold text-blue-600 pixel-text drop-shadow`}>{score} Points</div>
-            {/* Attempts Table */}
-            {attempts.length > 0 && (
-              <div className={`${isMobileLandscape ? 'mt-2' : 'mt-4'} text-left`}>
-                <div className={`${isMobileLandscape ? 'text-xs' : 'text-base'} font-bold text-slate-700 mb-1`}>Your Attempts (Latest First):</div>
-                <table className="w-full text-center border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="px-2 py-1">#</th>
-                      <th className="px-2 py-1">Score</th>
-                      <th className="px-2 py-1">Time (s)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attempts
-                      .filter(a => a.score !== -1)
-                      .slice() // copy array
-                      .reverse() // latest first
-                      .map((a, idx, arr) => {
-                        // Attempt number: oldest is 1, latest is N
-                        const attemptNum = arr.length - idx;
-                        // Find best attempt (highest score, then lowest time)
-                        const best = arr.reduce((best, curr) =>
-                          curr.score > best.score || (curr.score === best.score && curr.timer < best.timer) ? curr : best, arr[0]);
-                        const isBest = a === best;
-                        return (
-                          <tr key={idx} className={isBest ? 'font-bold text-green-700 bg-green-100' : ''}>
-                            <td className="px-2 py-1">{attemptNum}</td>
-                            <td className="px-2 py-1">{a.score}</td>
-                            <td className="px-2 py-1">{formatTime(a.timer)}</td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+  // Score history block styled like Level2 ResultsModal
+  const renderScoreHistory = () => {
+    if (!attempts || attempts.length === 0) return null;
+    // Sort attempts: highest score first, then least time
+    const sortedAttempts = [...attempts].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.timer - b.timer;
+    });
+    // Always show up to 3 attempts (pad with empty if less)
+    const displayAttempts = sortedAttempts.slice(0, 3);
+    return (
+      <div className="mt-3 p-2 bg-gray-900 bg-opacity-50 pixel-border">
+        <div className="text-gray-400 text-xs font-bold mb-2 pixel-text">SCORE HISTORY</div>
+        <div className="space-y-1">
+          {displayAttempts.map((a, index) => {
+            const isHighScore = index === 0;
+            return (
+              <div
+                key={index}
+                className={`flex items-center justify-between text-xs pixel-text ${isHighScore ? 'text-yellow-400' : 'text-gray-300'}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Star className="w-3 h-3" />
+                  <span>{isHighScore ? 'High Score' : `PREV ${index}`}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold">{a.score}</span>
+                  <span>{formatTime(a.timer)}</span>
+                </div>
               </div>
-            )}
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Confetti effect (keep from previous modal)
+  useEffect(() => {
+    if (isVisible) {
+      import('canvas-confetti').then(confetti => {
+        confetti.default({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+        });
+      });
+    }
+  }, [isVisible]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-2 z-50">
+      <div className={`pixel-border-thick bg-gray-800 relative overflow-hidden ${isMobileLandscape ? 'w-4/5 max-w-xs p-2 max-h-screen h-auto overflow-y-auto' : 'p-6 max-w-md w-full'}`}>
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-pixel-pattern opacity-10 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
+        <div className={`relative z-10 text-center h-full ${isMobileLandscape ? 'flex flex-col justify-between' : ''}`}> 
+          {/* Mission Status */}
+          <div className={isMobileLandscape ? 'flex-shrink-0 mb-1' : 'mb-4'}>
+            <div className="text-gray-400 text-xs font-bold mb-1 pixel-text">MISSION STATUS</div>
+            <div className={`font-black pixel-text ${isMobileLandscape ? 'text-lg' : 'text-2xl'} ${bestAttempt ? getTimeFeedback(bestAttempt.timer).color : 'text-yellow-300'} mb-2 flex items-center justify-center gap-2`}>
+              <span className="relative inline-block">
+                <span
+                  className={`absolute inset-0 z-0 ${isMobileLandscape ? 'w-10 h-10' : 'w-14 h-14'} bg-yellow-400 animate-pulse opacity-30`}
+                  style={{
+                    boxShadow: '0 0 24px 8px #FFD700, 0 0 40px 16px #FFD700',
+                    borderRadius: '0.5rem',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                ></span>
+                <span
+                  className={`relative z-10 flex items-center justify-center ${isMobileLandscape ? 'w-10 h-10' : 'w-14 h-14'} bg-yellow-500`} 
+                  style={{
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 0 16px 4px #FFD700',
+                  }}
+                >
+                  <Trophy className={`${isMobileLandscape ? 'w-6 h-6' : 'w-8 h-8'} text-yellow-100 animate-bounce`} />
+                </span>
+              </span>
+              <span>{bestAttempt ? getTimeFeedback(bestAttempt.timer).message : 'Complete!'}</span>
+            </div>
           </div>
-          <p className={`${isMobileLandscape ? 'text-xs mb-2' : 'text-slate-600 mb-6'} font-semibold pixel-text`}>You've mastered all the quality control terms!<br/>Great job on your learning journey.</p>
-          <div className="flex flex-col gap-2 items-center w-full">
+          {/* Score Display */}
+          <div className={isMobileLandscape ? 'flex-1 flex items-center justify-center' : 'mb-4'}>
+            <div className={isMobileLandscape ? 'w-full flex flex-col items-center justify-center mb-3' : 'flex flex-col items-center'}>
+              <div className={isMobileLandscape ? 'text-center mt-2' : 'mt-2 text-center'}>
+                <div className={isMobileLandscape ? 'text-2xl font-black text-yellow-400 pixel-text' : 'text-4xl font-black text-yellow-400 mb-1 pixel-text'}>
+                  {bestAttempt ? bestAttempt.score : score} Points
+                </div>
+                <div className={isMobileLandscape ? 'text-xs text-cyan-300 font-black pixel-text' : 'text-xl text-cyan-300 font-black pixel-text'}>
+                  {bestAttempt ? `Best Time: ${formatTime(bestAttempt.timer)}` : "You've completed all 24 terms!"}
+                </div>
+              </div>
+              {/* Score History */}
+              {renderScoreHistory()}
+            </div>
+          </div>
+          {/* Action Buttons */}
+          <div className={`flex flex-col gap-2 items-center w-full mt-4`}>
             <button
-              onClick={onPlayAgain}
-              className={`flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-bold border-none cursor-pointer transition-all mx-auto scale-100 pixel-border shadow-md ${
-                isMobileLandscape ? 'py-1 px-2 text-xs' : 'py-3 px-8 text-base'
-              } hover:from-blue-600 hover:to-blue-800`}
+              onClick={async () => {
+                setSaving(true);
+                await onPlayAgain();
+                setSaving(false);
+              }}
+              disabled={saving || isSaving}
+              className={`w-full pixel-border-thick bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-700 text-white font-black ${isMobileLandscape ? 'py-2 text-xs' : 'py-3 text-base'} pixel-text transition-all duration-300 hover:scale-105 ${saving || isSaving ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <RotateCcw className={`${isMobileLandscape ? 'w-3 h-3' : 'w-5 h-5'}`} />
-              <span>Play Again</span>
+              <div className="flex items-center justify-center gap-2">
+                <RotateCcw className={`${isMobileLandscape ? 'w-3 h-3' : 'w-5 h-5'}`} />
+                <span>Play Again</span>
+              </div>
             </button>
             <button
               onClick={() => window.location.href = '/level2'}
-              className={`flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-bold border-none cursor-pointer transition-all mx-auto pixel-border shadow-md ${
-                isMobileLandscape ? 'py-1 px-2 text-xs' : 'py-3 px-8 text-base'
-              } hover:from-green-600 hover:to-green-800`}
+              className={`w-full pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black ${isMobileLandscape ? 'py-2 text-xs' : 'py-3 text-base'} pixel-text transition-all duration-300 hover:scale-105`}
             >
               <span>Continue to Level 2</span>
             </button>
