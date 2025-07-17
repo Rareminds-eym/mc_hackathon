@@ -1,10 +1,24 @@
-import React, { Suspense } from "react";
+
+import React, { Suspense, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import { useParams } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setCurrentModule } from "../../store/slices/gameSlice";
 const JigsawBoard = React.lazy(() =>
   import("../../components/l3/JigsawBoard").then((mod) => ({ default: mod.JigsawBoard }))
 );
 
 const Level3 = () => {
+  const { moduleId } = useParams();
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (moduleId) {
+      const idNum = Number(moduleId);
+      if (!isNaN(idNum)) {
+        dispatch(setCurrentModule({ id: idNum }));
+      }
+    }
+  }, [moduleId, dispatch]);
   return (
     <Suspense
       fallback={
