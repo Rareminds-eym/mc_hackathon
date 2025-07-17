@@ -20,7 +20,7 @@ export const Arsenal: React.FC<ArsenalProps> = ({
   // Pixel/retro card style for arsenal, inspired by HomePage.tsx
   return (
     <div
-      className={`w-full max-w-md mx-auto ${isMobile ? '' : 'my-4'} relative z-10`}
+      className={`w-full max-w-md mx-auto relative z-10`}
       style={{ minHeight: isMobile ? 180 : 260 }}
     >
       <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden">
