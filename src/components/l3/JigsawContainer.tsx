@@ -108,7 +108,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
         <div className="absolute top-0 right-0 w-12 h-12 bg-cyan-500 opacity-10 pixel-corner"></div>
 
         {/* Header with icon and progress */}
-        <div className="flex items-center justify-between mb-2 relative z-10">
+        <div className="flex items-center justify-between lg:mb-2 relative z-10">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 pixel-border flex items-center justify-center">
               {theme.icon}
@@ -136,7 +136,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-gray-800 w-full mb-2">
+        <div className="h-1 bg-gray-800 w-full lg:mb-2">
           <div
             className="h-full transition-all duration-700 ease-out"
             style={{
@@ -149,7 +149,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
         </div>
 
         {/* Drop zone game board */}
-        <div className="p-2">
+        <div className="lg:p-2">
           {/* Level indicator */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-xs opacity-80 font-medium text-white">
