@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useDispatch, useSelector } from 'react-redux';
-import { setTimer, setSelectedCells, setSelectedDefinition, saveState } from '../store/slices/bingoSlice';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { setTimer, setSelectedCells, setSelectedDefinition, saveState } from '../../../store/slices/bingoSlice';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface BingoCell {
   id: number;
@@ -34,6 +34,7 @@ interface Level1GameData {
   current_definition?: string;
   session_id?: string;
   is_restarted?: boolean;
+  // Allow extra fields for module_number, level_number, etc.
   [key: string]: unknown;
 }
 
@@ -79,9 +80,6 @@ const BINGO_DATA = [
 export const useBingoGame = () => {
   const { user } = useAuth();
   const [cells, setCells] = useState<BingoCell[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [isResuming, setIsResuming] = useState(false);
   const [completedLines, setCompletedLines] = useState<number[][]>([]);
   const [score, setScoreState] = useState(0);
   const [rowsSolved, setRowsSolved] = useState(0);
@@ -99,20 +97,21 @@ export const useBingoGame = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [timerActive, setTimerActive] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [showGameCompleteModal, setShowGameCompleteModal] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
   const dispatch = useDispatch();
   const bingoRedux = useSelector((state: { bingo: BingoState }) => state.bingo);
 
+  // Generate unique session ID based on user ID
   const generateSessionId = () => {
     return user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-// Updated updateAttemptHistory: only store real attempts, pad with 0s/nulls at the start if < 3
-const updateAttemptHistory = async (score: number, timer: number) => {
-  if (!user) return { score_history: [], timer_history: [] };
-  try {
-    const { data: existing, error } = await supabase
+  // Save game progress to Supabase
+  // Helper to update score/timer history only on game end or play again
+  const updateAttemptHistory = async (score: number, timer: number) => {
+    if (!user) return { score_history: [score], timer_history: [timer] };
+    let score_history: number[] = [];
+    let timer_history: number[] = [];
+    const { data: existing, error: fetchError } = await supabase
       .from('level_1')
       .select('score_history, timer_history')
       .eq('user_id', user.id)
@@ -120,194 +119,137 @@ const updateAttemptHistory = async (score: number, timer: number) => {
       .eq('level_number', 1)
       .order('game_start_time', { ascending: false })
       .limit(1);
-    if (error) throw error;
-    let score_history = existing?.[0]?.score_history || [];
-    let timer_history = existing?.[0]?.timer_history || [];
-    if (!Array.isArray(score_history)) score_history = [];
-    if (!Array.isArray(timer_history)) timer_history = [];
-    // Remove any 0/0 or null/null pairs from the start (initial state)
-    while (score_history.length && (score_history[0] === 0 || score_history[0] == null) && (timer_history[0] === 0 || timer_history[0] == null)) {
-      score_history.shift();
-      timer_history.shift();
+    if (!fetchError && existing && existing.length > 0) {
+      score_history = Array.isArray(existing[0].score_history) ? existing[0].score_history : [];
+      timer_history = Array.isArray(existing[0].timer_history) ? existing[0].timer_history : [];
     }
-    // Only add if score > 0 and timer > 0
-    if (score > 0 && timer > 0) {
-      score_history.push(score);
-      timer_history.push(timer);
-    }
-    // Only keep last 3
-    while (score_history.length > 3) score_history.shift();
-    while (timer_history.length > 3) timer_history.shift();
-    // Pad with 0s at the start if less than 3
-    while (score_history.length < 3) score_history.unshift(0);
-    while (timer_history.length < 3) timer_history.unshift(0);
+    score_history = [...score_history, score].slice(-3);
+    timer_history = [...timer_history, timer].slice(-3);
     return { score_history, timer_history };
-  } catch (error) {
-    console.error('Error updating attempt history:', error);
-    return { score_history: [], timer_history: [] };
-  }
-};
+  };
 
-  // Updated saveGameToDatabase function
-const saveGameToDatabase = useCallback(async (gameData: Partial<Level1GameData>, opts?: { updateHistory?: boolean; resetHistory?: boolean }) => {
-  if (!user) return;
-  setIsSaving(true);
-  
-  try {
-    let score_history: number[] = [];
-    let timer_history: number[] = [];
-    
-    if (opts?.resetHistory) {
-      // Clear history for new games
-      score_history = [];
-      timer_history = [];
-    } else if (opts?.updateHistory) {
-      // Update history for completed games
-      const result = await updateAttemptHistory(gameData.score ?? score, gameData.total_time_seconds ?? timer);
-      score_history = result.score_history;
-      timer_history = result.timer_history;
-    }
+  // Save game progress to Supabase (does NOT update history unless told)
+  const saveGameToDatabase = useCallback(async (gameData: Partial<Level1GameData>, opts?: { updateHistory?: boolean; resetHistory?: boolean }) => {
+    if (!user) return;
 
-    const dataToSave = {
-      ...gameData,
-      user_id: user.id,
-      username: user.user_metadata?.full_name || user.email || 'Unknown User',
-      session_id: sessionId,
-      total_time_seconds: gameData.total_time_seconds ?? timer,
-      score: gameData.score ?? score,
-      rows_solved: gameData.rows_solved ?? rowsSolved,
-      cells_selected: gameData.cells_selected ?? cells.filter(cell => cell.selected).map(cell => cell.id),
-      completed_lines: gameData.completed_lines ?? completedLines,
-      board_state: gameData.board_state ?? [
-        cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
-        cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
-        cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
-        cells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
-        cells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
-      ],
-      is_completed: gameData.is_completed ?? gameComplete,
-      current_definition: gameData.current_definition ?? selectedDefinition,
-      game_start_time: gameData.game_start_time ?? gameStartTime,
-      module_number: 1,
-      level_number: 1,
-      ...(opts?.resetHistory || opts?.updateHistory ? { 
-        score_history,
-        timer_history 
-      } : {}),
-    };
-
-      // Use upsert to either update existing record or create new one
-    const { data, error } = await supabase
-      .from('level_1')
-      .upsert(dataToSave)
-      .eq('user_id', user.id)
-      .eq('module_number', 1)
-      .eq('level_number', 1)
-      .select();
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error saving game:', error);
-    throw error;
-  } finally {
-    setIsSaving(false);
-  }
-}, [user, sessionId, timer, score, rowsSolved, cells, completedLines, gameComplete, selectedDefinition, gameStartTime]);
-
-// Updated playAgain function
-const playAgain = async () => {
-  try {
-    // Save completed game first
-    if (user && sessionId) {
-      await saveGameToDatabase({
-        is_completed: true,
-        game_end_time: new Date().toISOString(),
-        total_time_seconds: timer,
-        score: score,
-        rows_solved: rowsSolved,
-      }, { updateHistory: true });
-    }
-
-    // Reset UI state
-    setAnswerFeedback({
-      isVisible: false,
-      isCorrect: false,
-      selectedTerm: '',
-      correctDefinition: ''
-    });
-    setShowGameCompleteModal(false);
-    setCountdown(3);
-
-    // Start countdown
-    let countdownValue = 3;
-    const countdownInterval = setInterval(() => {
-      countdownValue -= 1;
-      setCountdown(countdownValue);
-      
-      if (countdownValue <= 0) {
-        clearInterval(countdownInterval);
-        setCountdown(null);
-        
-        // Initialize new game with fresh history
-        const newSessionId = generateSessionId();
-        const newCells = BINGO_DATA.map((item, index) => ({
-          id: index,
-          term: item.term,
-          definition: item.definition,
-          selected: index === 24
-        }));
-        
-        setCells(newCells);
-        setCompletedLines([]);
-        setRowsSolved(0);
-        setScoreState(0);
-        setGameComplete(false);
-        setTimerState(0);
-        setGameStartTime(new Date().toISOString());
-        setSessionId(newSessionId);
-        setSelectedDefinitionState('');
-
-        // Save new game with reset history
-        if (user) {
-          saveGameToDatabase({
-            is_completed: false,
-            is_restarted: false,
-            total_time_seconds: 0,
-            score: 0,
-            rows_solved: 0,
-            cells_selected: [24],
-            completed_lines: [],
-            board_state: [
-              [0,0,0,0,0],
-              [0,0,0,0,0],
-              [0,0,0,0,0],
-              [0,0,0,0,0],
-              [0,0,0,0,0],
-            ],
-            current_definition: '',
-            session_id: newSessionId,
-            game_start_time: new Date().toISOString()
-          }, { resetHistory: true });
-        }
-
-        // Select first definition
-        setTimeout(() => {
-          selectRandomDefinition(newCells);
-        }, 0);
+    try {
+      let score_history: number[] = [];
+      let timer_history: number[] = [];
+      if (opts && opts.updateHistory) {
+        // Only update history if requested (on game end or play again)
+        const result = await updateAttemptHistory(gameData.score ?? score, gameData.total_time_seconds ?? timer);
+        score_history = result.score_history;
+        timer_history = result.timer_history;
+      } else if (opts && opts.resetHistory) {
+        // On restart, reset attempt
+        score_history = [];
+        timer_history = [];
       }
-    }, 1000);
-  } catch (error) {
-    console.error('Error in playAgain:', error);
-  }
-};
 
-const triggerGameCompleteConfetti = useCallback(() => {
-  const duration = 3000;
-  const end = Date.now() + duration;
+      const dataToSave = {
+        user_id: user.id,
+        username: user.user_metadata?.full_name || user.email || 'Unknown User',
+        session_id: sessionId,
+        total_time_seconds: timer,
+        score,
+        score_history: score_history.length ? score_history : undefined,
+        timer_history: timer_history.length ? timer_history : undefined,
+        rows_solved: rowsSolved,
+        cells_selected: gameData.cells_selected || cells.filter(cell => cell.selected).map(cell => cell.id),
+        completed_lines: gameData.completed_lines || completedLines,
+        board_state: gameData.board_state || [
+          cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+          cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+          cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+          cells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+          cells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+        ],
+        is_completed: gameComplete,
+        current_definition: selectedDefinition,
+        game_start_time: gameStartTime,
+        module_number: 1, // Added for Level 1
+        level_number: 1,  // Added for Level 1
+        ...gameData
+      };
+
+      // First try to update existing record for this user, module, and level
+      const { data: updateData, error: updateError } = await supabase
+        .from('level_1')
+        .update(dataToSave)
+        .eq('user_id', user.id)
+        .eq('module_number', 1)
+        .eq('level_number', 1)
+        .select();
+
+      let data, error;
+      
+      if (updateError || !updateData || updateData.length === 0) {
+        // No existing record found, insert new one
+        const { data: insertData, error: insertError } = await supabase
+          .from('level_1')
+          .insert(dataToSave)
+          .select();
+        
+        data = insertData;
+        error = insertError;
+      } else {
+        data = updateData;
+        error = updateError;
+      }
+
+      if (error) {
+        console.warn('Database save failed (table might not exist):', error.message);
+        // Don't throw error, just log it - game should continue working
+      } else {
+        console.log('Game saved successfully:', data);
+      }
+    } catch (error) {
+      console.warn('Error in saveGameToDatabase (continuing without database):', error);
+      // Game continues to work without database
+    }
+  }, [user, sessionId, timer, score, rowsSolved, cells, completedLines, gameComplete, selectedDefinition, gameStartTime, updateAttemptHistory]);
+
+  // Load game progress from Supabase
+  const loadGameFromDatabase = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('level_1')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .order('game_start_time', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.warn('Database load failed (table might not exist):', error.message);
+        return null; // Return null so game uses Redux fallback
+      }
+
+      // Only return saved game if it exists and is not a restarted game
+      if (data && data.length > 0) {
+        // If score_history/timer_history exist, use the latest value for display
+        const game = data[0];
+        if (Array.isArray(game.score_history) && game.score_history.length > 0) {
+          game.score = game.score_history[game.score_history.length - 1];
+        }
+        if (Array.isArray(game.timer_history) && game.timer_history.length > 0) {
+          game.total_time_seconds = game.timer_history[game.timer_history.length - 1];
+        }
+        return game;
+      }
+      return null;
+    } catch (error) {
+      console.warn('Error in loadGameFromDatabase (using Redux fallback):', error);
+      return null; // Return null so game uses Redux fallback
+    }
+  }, [user]);
+
+  const triggerGameCompleteConfetti = useCallback(() => {
+    // Multiple confetti bursts for game completion
+    const duration = 3000;
+    const end = Date.now() + duration;
 
     const frame = () => {
       confetti({
@@ -332,30 +274,25 @@ const triggerGameCompleteConfetti = useCallback(() => {
     frame();
   }, []);
 
-  const markGameCompleted = useCallback(async (finalScore?: number, finalTimer?: number, finalRowsSolved?: number) => {
+  // Mark game as completed in database
+  // On game complete, update history
+  const markGameCompleted = useCallback(async () => {
     if (!user) return;
-    if (window.__bingoGameCompletedSession === sessionId) return;
-    window.__bingoGameCompletedSession = sessionId;
-    // Persist modal state in localStorage for resume
-    try {
-      localStorage.setItem('bingo_showGameCompleteModal', 'true');
-    } catch {}
-    setShowGameCompleteModal(true);
     try {
       await saveGameToDatabase({
         is_completed: true,
         game_end_time: new Date().toISOString(),
-        total_time_seconds: typeof finalTimer === 'number' ? finalTimer : timer,
-        score: typeof finalScore === 'number' ? finalScore : score,
-        rows_solved: typeof finalRowsSolved === 'number' ? finalRowsSolved : rowsSolved,
+        total_time_seconds: timer,
+        score,
+        rows_solved: rowsSolved,
         username: user.user_metadata?.full_name || user.email || 'Unknown User',
         module_number: 1,
         level_number: 1,
       }, { updateHistory: true });
     } catch (error) {
-      console.warn('Error in markGameCompleted:', error);
+      console.warn('Error in markGameCompleted (continuing without database):', error);
     }
-  }, [user, timer, score, rowsSolved, saveGameToDatabase, sessionId]);
+  }, [user, timer, score, rowsSolved, saveGameToDatabase]);
 
   const selectRandomDefinition = useCallback((currentCells: BingoCell[]) => {
     const unselectedCells = currentCells.filter(cell => !cell.selected);
@@ -364,79 +301,53 @@ const triggerGameCompleteConfetti = useCallback(() => {
       setSelectedDefinitionState(randomCell.definition);
       dispatch(setSelectedDefinition(randomCell.definition));
       
+      // Save the new definition to database
       if (user && sessionId) {
         saveGameToDatabase({
           current_definition: randomCell.definition
         });
       }
     } else {
+      // All cells are selected, game is complete
       setGameComplete(true);
       triggerGameCompleteConfetti();
-      markGameCompleted(score, timer, rowsSolved);
+      markGameCompleted();
     }
-  }, [dispatch, triggerGameCompleteConfetti, markGameCompleted, user, sessionId, saveGameToDatabase, score, timer, rowsSolved]);
+  }, [dispatch, triggerGameCompleteConfetti, markGameCompleted, user, sessionId, saveGameToDatabase]);
 
   const initializeGame = useCallback(() => {
-    const newSessionId = generateSessionId();
+    const newSessionId = user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const newCells = BINGO_DATA.map((item, index) => ({
       id: index,
       term: item.term,
       definition: item.definition,
-      selected: index === 24
+      selected: index === 24 // Free Space is pre-selected
     }));
-    
     setCells(newCells);
     setCompletedLines([]);
     setRowsSolved(0);
     setScoreState(0);
     setGameComplete(false);
-    setTimerState(0);
+    setTimerState(0); // Always start timer at 0 for new games
     setGameStartTime(new Date().toISOString());
     setSessionId(newSessionId);
-    setSelectedDefinitionState('');
-
-    if (user) {
-      saveGameToDatabase({
-        score: 0,
-        total_time_seconds: 0,
-        is_completed: false,
-        is_restarted: false,
-        rows_solved: 0,
-        cells_selected: [24],
-        completed_lines: [],
-        board_state: [
-          [0,0,0,0,0],
-          [0,0,0,0,0],
-          [0,0,0,0,0],
-          [0,0,0,0,0],
-          [0,0,0,0,0],
-        ],
-        current_definition: '',
-        module_number: 1,
-        level_number: 1,
-        session_id: newSessionId,
-        game_start_time: new Date().toISOString(),
-        score_history: [],
-        timer_history: [],
-      }, { resetHistory: true });
-    }
-
+    // Use setTimeout to ensure cells are set before selecting definition
     setTimeout(() => {
       selectRandomDefinition(newCells);
     }, 0);
-  }, [selectRandomDefinition, user, saveGameToDatabase]);
+  }, [selectRandomDefinition, user]);
 
+  // Restore state from Redux or Database on mount (only once)
   useEffect(() => {
-    if (isInitialized) return;
-    setIsResuming(true);
+    if (isInitialized) return; // Prevent re-initialization
+    
     const initializeGameState = async () => {
-      let shouldShowModal = false;
-      try {
-        shouldShowModal = localStorage.getItem('bingo_showGameCompleteModal') === 'true';
-      } catch {}
       if (user) {
+        // Try to load from database first
         const savedGame = await loadGameFromDatabase();
         if (savedGame) {
+          // Restore from database
           const restoredCells = BINGO_DATA.map((item, index) => ({
             id: index,
             term: item.term,
@@ -449,15 +360,13 @@ const triggerGameCompleteConfetti = useCallback(() => {
           setScoreState(savedGame.score || 0);
           setTimerState(savedGame.total_time_seconds || 0);
           setGameStartTime(savedGame.game_start_time);
-          setSessionId(savedGame.session_id || generateSessionId());
-          setGameComplete(!!savedGame.is_completed);
-          if (savedGame.is_completed && shouldShowModal) {
-            setShowGameCompleteModal(true);
-            setSelectedDefinitionState('');
-          } else if (savedGame.current_definition) {
-            const isAnswered = restoredCells.some(cell => 
-              cell.definition === savedGame.current_definition && cell.selected
-            );
+          setSessionId(savedGame.session_id || (user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`));
+          setGameComplete(savedGame.is_completed || false);
+
+          // Only set the current definition if it is still unanswered
+          if (savedGame.current_definition) {
+            // Check if the current definition is for a cell that is already selected
+            const isAnswered = restoredCells.some(cell => cell.definition === savedGame.current_definition && cell.selected);
             if (!isAnswered) {
               setSelectedDefinitionState(savedGame.current_definition);
             } else {
@@ -470,7 +379,10 @@ const triggerGameCompleteConfetti = useCallback(() => {
               selectRandomDefinition(restoredCells);
             }, 0);
           }
-        } else if (bingoRedux?.selectedCells?.length > 0) {
+
+          console.log('Game restored from database');
+        } else if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
+          // Restore from Redux
           const restoredCells = BINGO_DATA.map((item, index) => ({
             id: index,
             term: item.term,
@@ -478,13 +390,15 @@ const triggerGameCompleteConfetti = useCallback(() => {
             selected: bingoRedux.selectedCells.includes(index)
           }));
           setCells(restoredCells);
-          setCompletedLines(bingoRedux.completedLinesState || []);
-          setRowsSolved(bingoRedux.rowsSolved || 0);
+          setCompletedLines(bingoRedux.completedLinesState || []); 
+          setRowsSolved(bingoRedux.rowsSolved || 0); 
           setScoreState(bingoRedux.score || 0);
           setGameComplete(false);
           setTimerState(bingoRedux.timer || 0);
           setGameStartTime(new Date().toISOString());
           setSessionId(generateSessionId());
+          
+          // Set the current definition or select a new one if none exists
           if (bingoRedux.selectedDefinition) {
             setSelectedDefinitionState(bingoRedux.selectedDefinition);
           } else {
@@ -492,19 +406,27 @@ const triggerGameCompleteConfetti = useCallback(() => {
               selectRandomDefinition(restoredCells);
             }, 0);
           }
+          
+          console.log('Game restored from Redux');
         } else {
           initializeGame();
+          console.log('New game initialized');
         }
       } else {
         initializeGame();
+        console.log('New game initialized (no user)');
       }
+      
       setIsInitialized(true);
-      setIsResuming(false);
     };
-    initializeGameState();
-  }, [user, bingoRedux, initializeGame, loadGameFromDatabase, selectRandomDefinition]);
 
+    initializeGameState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only depend on user, not on the other values that change
+
+  // Timer logic (controlled internally)
   useEffect(() => {
+    // Pause timer if answer feedback or completed line modal is visible
     if (gameComplete || !timerActive || answerFeedback.isVisible || completedLineModal) return;
     const interval = setInterval(() => {
       setTimerState((prev: number) => prev + 1);
@@ -512,22 +434,25 @@ const triggerGameCompleteConfetti = useCallback(() => {
     return () => clearInterval(interval);
   }, [gameComplete, timerActive, answerFeedback.isVisible, completedLineModal]);
 
+  // Timer control functions
   const startTimer = useCallback(() => setTimerActive(true), []);
   const stopTimer = useCallback(() => setTimerActive(false), []);
 
+  // Timer logic (start/stop externally, but always save to Redux)
   useEffect(() => {
     dispatch(setTimer(timer));
   }, [timer, dispatch]);
 
+  // Save the current game state to Redux whenever relevant state changes
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized) return; // Don't save until initialized
     
     dispatch(saveState({
       timer,
       score,
       completedLines: completedLines.length,
-      completedLinesState: completedLines,
-      rowsSolved,
+      completedLinesState: completedLines, // Save the actual completed lines
+      rowsSolved, // Save rowsSolved
       boardState: [
         cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
         cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
@@ -540,6 +465,7 @@ const triggerGameCompleteConfetti = useCallback(() => {
     }));
   }, [timer, score, completedLines, cells, selectedDefinition, rowsSolved, dispatch, isInitialized]);
 
+  // Separate effect for periodic database saves (every 30 seconds)
   useEffect(() => {
     if (!isInitialized || !user || !sessionId || gameComplete) return;
     
@@ -556,11 +482,22 @@ const triggerGameCompleteConfetti = useCallback(() => {
     const clickedCell = cells.find(cell => cell.id === id);
     if (!clickedCell || clickedCell.selected) return;
 
+    // Debug logging to help identify the issue
+    console.log('Clicked cell:', clickedCell.term, '- Definition:', clickedCell.definition);
+    console.log('Current definition shown:', selectedDefinition);
+    console.log('Definition lengths:', clickedCell.definition.length, 'vs', selectedDefinition.length);
+    
+    // More robust comparison that handles potential whitespace/encoding issues
     const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
     const cellDefNormalized = normalizeString(clickedCell.definition);
     const selectedDefNormalized = normalizeString(selectedDefinition);
     
+    console.log('Normalized cell definition:', cellDefNormalized);
+    console.log('Normalized selected definition:', selectedDefNormalized);
+    
+    // Show feedback modal
     const isCorrect = cellDefNormalized === selectedDefNormalized;
+    console.log('Is correct match:', isCorrect);
     
     setAnswerFeedback({
       isVisible: true,
@@ -569,6 +506,7 @@ const triggerGameCompleteConfetti = useCallback(() => {
       correctDefinition: selectedDefinition
     });
 
+    // If correct, update the cell
     if (isCorrect) {
       const newCells = cells.map(cell =>
         cell.id === id ? { ...cell, selected: true } : cell
@@ -576,6 +514,7 @@ const triggerGameCompleteConfetti = useCallback(() => {
       setCells(newCells);
       dispatch(setSelectedCells(newCells.filter(cell => cell.selected).map(cell => cell.id)));
       
+      // Save game progress to database with updated cell data
       saveGameToDatabase({
         cells_selected: newCells.filter(cell => cell.selected).map(cell => cell.id),
         board_state: [
@@ -587,6 +526,7 @@ const triggerGameCompleteConfetti = useCallback(() => {
         ]
       });
       
+      // Check for new lines after a short delay
       setTimeout(() => {
         checkForNewLines(newCells);
       }, 100);
@@ -596,11 +536,13 @@ const triggerGameCompleteConfetti = useCallback(() => {
   const closeAnswerModal = () => {
     setAnswerFeedback(prev => ({ ...prev, isVisible: false }));
     
+    // If the answer was correct, select next definition after modal closes
     if (answerFeedback.isCorrect) {
       setTimeout(() => {
+        // Get the current updated cells state and select next definition
         setCells(currentCells => {
           selectRandomDefinition(currentCells);
-          return currentCells;
+          return currentCells; // Return the same state, we just needed the current value
         });
       }, 300);
     }
@@ -608,19 +550,20 @@ const triggerGameCompleteConfetti = useCallback(() => {
 
   const checkForNewLines = (currentCells: BingoCell[]) => {
     const patterns = [
-      [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], 
-      [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
-      [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], 
-      [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
+      // Rows
+      [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
+      // Columns
+      [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
+      // Diagonals
       [0, 6, 12, 18, 24], [4, 8, 12, 16, 20]
     ];
 
     const newCompletedLines: number[][] = [];
     let newLineTriggered = false;
-    
     for (const pattern of patterns) {
       const isComplete = pattern.every(index => currentCells[index].selected);
       if (isComplete) {
+        // Check if this line is already completed
         const isAlreadyCompleted = completedLines.some(line => 
           line.length === pattern.length && line.every(id => pattern.includes(id))
         );
@@ -642,6 +585,7 @@ const triggerGameCompleteConfetti = useCallback(() => {
       setScoreState(newScore);
       if (newLineTriggered) setCompletedLineModal(true);
       
+      // Save game progress to database with updated values
       saveGameToDatabase({
         completed_lines: newCompletedLinesState,
         rows_solved: newRowsSolved,
@@ -655,11 +599,6 @@ const triggerGameCompleteConfetti = useCallback(() => {
           currentCells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
         ]
       });
-
-      if (newCompletedLinesState.length >= patterns.length) {
-        setGameComplete(true);
-        markGameCompleted();
-      }
     }
   };
 
@@ -674,6 +613,26 @@ const triggerGameCompleteConfetti = useCallback(() => {
     });
   };
 
+  const saveGameState = () => {
+    dispatch(saveState({
+      timer,
+      score,
+      completedLines: completedLines.length,
+      completedLinesState: completedLines,
+      rowsSolved,
+      boardState: [
+        cells.map(cell => cell.selected ? 1 : 0).slice(0, 5),
+        cells.map(cell => cell.selected ? 1 : 0).slice(5, 10),
+        cells.map(cell => cell.selected ? 1 : 0).slice(10, 15),
+        cells.map(cell => cell.selected ? 1 : 0).slice(15, 20),
+        cells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
+      ],
+      selectedCells: cells.filter(cell => cell.selected).map(cell => cell.id),
+      selectedDefinition,
+    }));
+  };
+
+  // Play Again: Save current attempt to history, then start new game (for GameCompleteModal)
   const playAgain = async () => {
     setAnswerFeedback({
       isVisible: false,
@@ -681,45 +640,67 @@ const triggerGameCompleteConfetti = useCallback(() => {
       selectedTerm: '',
       correctDefinition: ''
     });
-    setShowGameCompleteModal(false);
-    // Only clear the modal flag on explicit user action
-    try {
-      localStorage.removeItem('bingo_showGameCompleteModal');
-    } catch (e) { /* ignore */ }
-
-    if (user && sessionId) {
-      const completedScore = score;
-      const completedTimer = timer;
-      const completedRowsSolved = rowsSolved;
-      await saveGameToDatabase({
-        is_completed: true,
-        game_end_time: new Date().toISOString(),
-        total_time_seconds: completedTimer,
-        score: completedScore,
-        rows_solved: completedRowsSolved,
-        username: user.user_metadata?.full_name || user.email || 'Unknown User',
-        module_number: 1,
-        level_number: 1,
-      }, { updateHistory: true });
-    }
-
-    setScoreState(0);
-    setTimerState(0);
-    setCountdown(3);
-    let countdownValue = 3;
-    const countdownInterval = setInterval(() => {
-      countdownValue -= 1;
-      setCountdown(countdownValue);
-      if (countdownValue <= 0) {
-        clearInterval(countdownInterval);
-        setCountdown(null);
-        initializeGame();
+    // Mark current game as completed and update attempt history
+    if (user && sessionId && gameComplete) {
+      try {
+        await saveGameToDatabase({
+          is_completed: true,
+          game_end_time: new Date().toISOString(),
+          total_time_seconds: timer,
+          score,
+          rows_solved: rowsSolved,
+          username: user.user_metadata?.full_name || user.email || 'Unknown User',
+          module_number: 1,
+          level_number: 1,
+        }, { updateHistory: true });
+      } catch (error) {
+        console.warn('Error saving attempt history:', error);
       }
-    }, 1000);
+    }
+    // Start a new game (new attempt)
+    initializeGame();
+    setScoreState(0); // Extra safety: ensure score is zeroed before user can interact
+    dispatch(saveState({
+      timer: 0,
+      score: 0,
+      completedLines: 0,
+      completedLinesState: [],
+      rowsSolved: 0,
+      boardState: [],
+      selectedCells: [],
+      selectedDefinition: '',
+    }));
   };
 
+  // Restart: Just reset state, do NOT update attempt history (for Navbar)
+  const restartGame = () => {
+    setAnswerFeedback({
+      isVisible: false,
+      isCorrect: false,
+      selectedTerm: '',
+      correctDefinition: ''
+    });
+    initializeGame();
+    setScoreState(0); // Extra safety: ensure score is zeroed before user can interact
+    dispatch(saveState({
+      timer: 0,
+      score: 0,
+      completedLines: 0,
+      completedLinesState: [],
+      rowsSolved: 0,
+      boardState: [],
+      selectedCells: [],
+      selectedDefinition: '',
+    }));
+  };
+
+  // Old resetGame for compatibility (calls restartGame)
+  const resetGame = restartGame;
+  // Helper: get sorted attempts for modal (highest score, then lowest time)
+  // (moved to bottom of file for export)
+
   const isInCompletedLine = (cellId: number): boolean => {
-    return completedLines.some((line: number[]) => line.includes(cellId));
+    return completedLines.some(line => line.includes(cellId));
   };
 
   return {
@@ -732,26 +713,16 @@ const triggerGameCompleteConfetti = useCallback(() => {
     gameComplete,
     completedLineModal,
     toggleCell,
-    playAgain,
+    restartGame, // for Navbar: just resets state, no history
+    playAgain,   // for GameCompleteModal: saves attempt, then new game
     closeAnswerModal,
     closeCompletedLineModal,
     isInCompletedLine,
+    saveGameState,
     timer,
     setTimer: setTimerState,
     startTimer,
     stopTimer,
     timerActive,
-    isSaving,
-    isRestarting,
-    isResuming,
-    showGameCompleteModal,
-    setShowGameCompleteModal: (val: boolean) => {
-      setShowGameCompleteModal(val);
-      // Only clear the modal flag on explicit user action (close/dismiss)
-      if (!val) {
-        try { localStorage.removeItem('bingo_showGameCompleteModal'); } catch (e) { /* ignore */ }
-      }
-    },
-    countdown,
   };
 };

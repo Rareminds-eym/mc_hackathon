@@ -123,7 +123,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
           ))}
           {/* Drop zone below options on desktop */}
           <div
-            className={`hidden lg:flex flex-shrink-0 mt-4 p-3 pixel-border-thick bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 shadow-lg rounded-xl border-4 border-blue-400 text-center transition-colors duration-200 text-base xl:text-lg flex-col justify-end items-center min-h-[70px] lg:w-[180px] xl:w-[220px] mx-auto ${animateDrop ? 'animate-drop-pulse' : ''}`}
+            className={`hidden lg:flex flex-shrink-0 mt-4 p-3 pixel-border-thick border-yellow-400 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 shadow-lg rounded-xl border-4 text-center transition-colors duration-200 text-base xl:text-lg flex-col justify-end items-center min-h-[70px] lg:w-[180px] xl:w-[220px] mx-auto ${animateDrop ? 'animate-drop-pulse' : ''}`}
             style={{ minWidth: 0, width: '90%', maxWidth: '260px' }}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
@@ -138,7 +138,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
         </div>
         {/* Drop zone to the right for mobile/tablet */}
         <div
-          className={`flex-shrink-0 ml-0.5 sm:ml-1 p-1 sm:p-2 border-2 border-dashed rounded-lg text-center transition-colors duration-200 text-[8px] sm:text-xs mt-0.5 sm:mt-1 align-top lg:hidden flex flex-col justify-end  items-center min-h-[60px] bg-white/40 ${animateDrop ? 'animate-drop-pulse' : ''}`}
+          className={`flex-shrink-0 ml-0.5 sm:ml-1 p-1 sm:p-2 border-2 border-dashed border-orange-400 rounded-lg text-center transition-colors duration-200 text-[8px] sm:text-xs mt-0.5 sm:mt-1 align-top lg:hidden flex flex-col justify-end items-center min-h-[60px] bg-white/40 ${animateDrop ? 'animate-drop-pulse' : ''}`}
           style={{ minWidth: 0, width: '80px', maxWidth: '30vw' }}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
@@ -147,7 +147,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
           {selectedAnswer === null ? (
             <span className="w-full">Drop root cause here.</span>
           ) : (
-            <span className="w-full ">Selected: {currentCase.questions.rootCause.options[selectedAnswer]}</span>
+            <span className="w-full block text-left" style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}>Selected: {currentCase.questions.rootCause.options[selectedAnswer]}</span>
           )}
         </div>
       </div>

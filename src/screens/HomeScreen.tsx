@@ -43,6 +43,10 @@ const AVATAR_OPTIONS = [
   {
     label: "Niharika",
     src: "/characters/Intern9.png",
+  }, 
+  {
+    label: "Shiney",
+    src: "/characters/Intern10.png",
   }
 ];
 

@@ -14,7 +14,7 @@ import {
   useSensors,
   MeasuringStrategy,
 } from "@dnd-kit/core";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Gamepad2, ArrowLeft } from "lucide-react";
@@ -36,6 +36,8 @@ import { BACKGROUND_IMAGE_URL, preloadImage } from "./utils/gameUtils";
 
 // Types
 import type { PuzzlePiece } from "../../data/level3Scenarios";
+import { getLevel3ScenariosByModule } from "../../data/level3Scenarios";
+import { setScenarios } from "../../store/slices/level3Slice";
 
 /**
  * JigsawBoard Component
@@ -46,6 +48,7 @@ import type { PuzzlePiece } from "../../data/level3Scenarios";
 
 export const JigsawBoard: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   // ===== HOOKS & CONTEXT =====
   // Removed unused: user
   // State declarations (single set at top)
@@ -81,6 +84,20 @@ export const JigsawBoard: React.FC = () => {
 
   // Redux state (declare after state, so it's available for use)
   const scenarios = useSelector((state: RootState) => state.level3.scenarios);
+  const currentModule = useSelector((state: RootState) => state.game.currentModule);
+
+  // Update scenarios when module changes
+  useEffect(() => {
+    let moduleId: number | undefined = undefined;
+    if (typeof currentModule === 'object' && currentModule !== null && 'id' in currentModule) {
+      moduleId = currentModule.id;
+    } else if (typeof currentModule === 'number') {
+      moduleId = currentModule;
+    }
+    if (moduleId === 1 || moduleId === 2) {
+      dispatch(setScenarios(getLevel3ScenariosByModule(moduleId)));
+    }
+  }, [currentModule, dispatch]);
 
   // Auto-close feedback after 2.5 seconds
   useEffect(() => {
@@ -393,7 +410,7 @@ export const JigsawBoard: React.FC = () => {
 
           {/* Main Game Area - Now using CSS Grid for layout, with pixel borders */}
           <div
-            className="flex-1 flex flex-row gap-2 md:gap-4 p-2 md:p-8 items-stretch justify-center w-full"
+            className="flex-1 flex flex-row gap-2 md:gap-4 items-stretch justify-center w-full"
             style={{
               alignItems: "stretch",
               justifyItems: "center",
@@ -404,7 +421,6 @@ export const JigsawBoard: React.FC = () => {
           >
             {/* Violations Container */}
             <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
-              <div className="pixel-border-thick bg-gray-800 p-2 md:p-4 relative overflow-hidden w-full h-full flex-1 flex flex-col">
                 <JigsawContainer
                   type="violations"
                   title="Violation Container"
@@ -413,12 +429,10 @@ export const JigsawBoard: React.FC = () => {
                   onDrop={handleDrop}
                 />
                 <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
-              </div>
             </section>
 
             {/* Arsenal */}
             <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
-              <div className="pixel-border-thick bg-gray-800 p-2 md:p-4 relative overflow-hidden w-full h-full flex-1 flex flex-col">
                 <Arsenal
                   availablePieces={availablePieces}
                   isMobile={isMobile}
@@ -426,12 +440,10 @@ export const JigsawBoard: React.FC = () => {
                   arsenalRef={arsenalRef}
                 />
                 <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
-              </div>
             </section>
 
             {/* Actions Container */}
             <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
-              <div className="pixel-border-thick bg-gray-800 p-2 md:p-4 relative overflow-hidden w-full h-full flex-1 flex flex-col">
                 <JigsawContainer
                   type="actions"
                   title="Action Container"
@@ -440,7 +452,6 @@ export const JigsawBoard: React.FC = () => {
                   onDrop={handleDrop}
                 />
                 <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
-              </div>
             </section>
           </div>
 
