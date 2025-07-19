@@ -7,31 +7,39 @@ import DndProvider from '../DndProvider';
 import { soundManager, playDragSound, playCorrectSound, playIncorrectSound, playScoreSound } from '../../../utils/Level2/sounds';
 import MobileLayout from './MobileLayout';
 import DesktopLayout from './DesktopLayout';
-import ResultsModal from './ResultsModal';
+
 import '../index.css';
 
 interface GameInterfaceProps {
   gameMode: GameMode;
   moduleId: string;
   onBack: () => void;
-  onNextLevel?: () => void;
+  onNextLevel?: (score: number, currentScore: number, totalCorrect: number, terms: Term[], scoreHistory: number[], timeHistory: number[]) => void;
 }
 
 const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBack, onNextLevel }) => {
   const { isMobile } = useDeviceLayout();
   const {
     isLoading: isGameLoading,
-    saveGameDataWithHistory,
-    markLevelCompleted,
     gameDataWithHistory
   } = useLevel2Game({ moduleId, gameModeId: gameMode.id });
   
   const [terms, setTerms] = useState<Term[]>(() =>
     gameMode.terms.map(term => ({ ...term, currentCategory: undefined }))
   );
-  const [showResults, setShowResults] = useState(false);
-  const [score, setScore] = useState(0);
-  const [totalCorrect, setTotalCorrect] = useState(0);
+
+  // Update terms when gameMode changes (when moduleId and type change)
+  useEffect(() => {
+    setTerms(gameMode.terms.map(term => ({ ...term, currentCategory: undefined })));
+    // Reset game state when gameMode changes
+    setTimeElapsed(0);
+    setGameStarted(false);
+    setMoves(0);
+    setCurrentScore(0);
+    setHasExecuted(false);
+  }, [gameMode]);
+
+
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [moves, setMoves] = useState(0);
@@ -61,13 +69,13 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
   // Timer Effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (gameStarted && !showResults) {
+    if (gameStarted && !hasExecuted) {
       interval = setInterval(() => {
         setTimeElapsed(prev => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [gameStarted, showResults]);
+  }, [gameStarted, hasExecuted]);
 
   // Start game on first move
   useEffect(() => {
@@ -93,32 +101,42 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
       }
     });
 
-    setTotalCorrect(correct);
-
     // Calculate percentage score based on correct items
     const percentageScore = Math.round((correct / terms.length) * 100);
-    setScore(percentageScore);
 
     // Update current score to reflect total points earned (5 points per correct item)
     const totalPointsEarned = correct * 5;
     setCurrentScore(totalPointsEarned);
 
-    // Save game data using the hook with history tracking
-    await saveGameDataWithHistory({
-      score: totalPointsEarned,
-      isCompleted: true,
-      time: timeElapsed,
-      totalTerms: terms.length,
-      placedTerms: terms,
-    });
+    // NOTE: Database saving is now deferred to the ResultsModal for batch processing
+    // This allows all game types to be completed before any database operations occur
 
-    setShowResults(true);
-  }, [terms, timeElapsed, saveGameDataWithHistory, hasExecuted, isGameLoading]);
+    // Use existing data for history, since we're not saving to database yet
+    const updatedScoreHistory = gameDataWithHistory?.score_history || [];
+    const updatedTimeHistory = gameDataWithHistory?.time_history || [];
+
+    // Add current score and time to the history arrays for display purposes
+    const currentScoreHistory = [totalPointsEarned, ...updatedScoreHistory.slice(0, 2)];
+    const currentTimeHistory = [timeElapsed, ...updatedTimeHistory.slice(0, 2)];
+
+    // Instead of showing results modal directly, call the next level handler
+    // This will be handled by the GameNavigator based on the flow state
+    if (onNextLevel) {
+      onNextLevel(
+        percentageScore,
+        totalPointsEarned,
+        correct,
+        terms,
+        currentScoreHistory,
+        currentTimeHistory
+      );
+    }
+  }, [terms, timeElapsed, hasExecuted, isGameLoading, gameDataWithHistory, onNextLevel]);
 
   // Auto-execute when all items are placed (only if not already executed)
   useEffect(() => {
     const unassignedTerms = terms.filter(term => !term.currentCategory);
-    if (unassignedTerms.length === 0 && terms.length > 0 && !showResults && !hasExecuted && !isGameLoading) {
+    if (unassignedTerms.length === 0 && terms.length > 0 && !hasExecuted && !isGameLoading) {
       // Small delay to allow the last drop animation to complete
       const timeoutId = setTimeout(() => {
         // Double-check conditions before executing
@@ -127,11 +145,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
           checkAnswers();
         }
       }, 500);
-      
+
       // Cleanup timeout if component unmounts or dependencies change
       return () => clearTimeout(timeoutId);
     }
-  }, [terms, showResults, hasExecuted, checkAnswers, isGameLoading]);
+  }, [terms, hasExecuted, checkAnswers, isGameLoading]);
 
   const handleDragStart = () => {
     playDragSound();
@@ -172,7 +190,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             : term
         )
       );
-      setShowResults(false);
+
       setMoves(prev => prev + 1);
       
       // Reset hasExecuted when user makes a new move after seeing results
@@ -184,9 +202,6 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
 
   const resetGame = () => {
     setTerms(gameMode.terms.map(term => ({ ...term, currentCategory: undefined })));
-    setShowResults(false);
-    setScore(0);
-    setTotalCorrect(0);
     setTimeElapsed(0);
     setGameStarted(false);
     setMoves(0);
@@ -194,17 +209,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     setHasExecuted(false);
   };
 
-  const handleNextLevel = async () => {
-    // Mark the level as completed in the database
-    await markLevelCompleted();
-    
-    // Navigate to next level if handler is provided, otherwise go back
-    if (onNextLevel) {
-      onNextLevel();
-    } else {
-      onBack();
-    }
-  };
+
 
   const getTermsInCategory = (categoryId: string) => {
     return terms.filter(term => term.currentCategory === categoryId);
@@ -252,6 +257,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     getTermsInCategory,
     correctTerms: getCorrectTerms(),
     incorrectTerms: getIncorrectTerms(),
+    moduleId: gameMode.moduleId,
+    type: gameMode.type,
   };
 
   return (
@@ -271,21 +278,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             <DesktopLayout {...layoutProps} />
           )}
 
-          <ResultsModal
-            showResults={showResults}
-            score={score}
-            currentScore={currentScore}
-            totalCorrect={totalCorrect}
-            terms={terms}
-            isMobile={isMobile}
-            onNextLevel={handleNextLevel}
-            onReset={resetGame}
-            onClose={() => setShowResults(false)}
-            moduleId={parseInt(moduleId)}
-            levelId={2}
-            scoreHistory={gameDataWithHistory?.score_history}
-            timeHistory={gameDataWithHistory?.time_history}
-          />
+          {/* ResultsModal is now handled by GameNavigator based on flow state */}
         </div>
       </div>
     </DndProvider>

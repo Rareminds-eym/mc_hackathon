@@ -36,26 +36,26 @@ export const useLevel2ScoreHistory = ({
     setError(null);
 
     try {
-      // Load score history
+      // Load aggregated score history (no longer needs specific gameModeId)
       const { data: historyData, error: historyError } = await Level2GameService.getPastThreeScores(moduleId, gameModeId);
       if (historyError) {
-        console.warn('Failed to load score history:', historyError);
+        console.warn('Failed to load aggregated score history:', historyError);
       } else {
         setScoreHistory(historyData);
       }
 
-      // Load game data with history arrays
+      // Load game data with aggregated history arrays
       const { data: gameHistoryData, error: gameHistoryError } = await Level2GameService.getUserGameDataWithHistory(moduleId, gameModeId);
       if (gameHistoryError) {
-        console.warn('Failed to load game data with history:', gameHistoryError);
+        console.warn('Failed to load game data with aggregated history:', gameHistoryError);
       } else {
         setGameDataWithHistory(gameHistoryData);
       }
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load score history';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load aggregated score history';
       setError(errorMessage);
-      console.error('Error loading score history:', errorMessage);
+      console.error('Error loading aggregated score history:', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +78,7 @@ export const useLevel2ScoreHistory = ({
     }
 
     try {
-      // Test the history UPSERT functionality
+      // Test the aggregated history UPSERT functionality
       const result = await Level2GameService.testUpsertWithHistory(moduleId, gameModeId);
       
       // Refresh data after test

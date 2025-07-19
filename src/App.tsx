@@ -20,6 +20,7 @@ import {
   isRouteErrorResponse,
 } from 'react-router-dom';
 import Level2 from './screens/Level2/Index';
+import Level2GameNavigator from './screens/Level2/GameNavigator';
 import Level3 from './screens/Level3/Index';
 import Level4 from './screens/Level4/Index';
 import InstructionsPage from './screens/InstructionsPage';
@@ -84,6 +85,7 @@ function App() {
         { path: '/modules/:moduleId', element: <ProtectedRoute><LevelList /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/1', element: <ProtectedRoute><BingoGame /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/2', element: <ProtectedRoute><Level2 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/games', element: <ProtectedRoute><Level2GameNavigator /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/3', element: <ProtectedRoute><Level3 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4/gameboard2d', element: <ProtectedRoute><GameBoard2D /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },

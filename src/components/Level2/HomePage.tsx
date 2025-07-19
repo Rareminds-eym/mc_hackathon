@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getGameModesByModule } from './data/gameModes';
+import { getGameModesByModule, getGameModesGroupedByType } from './data/gameModes';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { useLevel2GameStats } from './hooks/useLevel2GameStats';
-import { Play, Filter, Zap, Crown, Gamepad2, ArrowLeft, Database, HardDrive } from 'lucide-react';
+import { useCompletedGameModes } from './hooks/useCompletedGameModes';
+import { RotateDeviceOverlay } from '../RotateDeviceOverlay';
+import { Play, Crown,Gamepad, Gamepad2, ArrowLeft, Database, HardDrive, Target, CheckCircle } from 'lucide-react';
 import './index.css';
 
 interface HomePageProps {
@@ -12,68 +14,53 @@ interface HomePageProps {
   onExit?: () => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, onExit }) => {
+const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onExit }) => {
   const navigate = useNavigate();
   const { isMobile } = useDeviceLayout();
 
   // Get filtered game modes based on current module
   const filteredGameModes = getGameModesByModule(parseInt(moduleId));
 
+  // Group games by type to show summary
+  const gamesByType = getGameModesGroupedByType(parseInt(moduleId));
+  const gameTypes = Object.keys(gamesByType).map(type => ({
+    type: parseInt(type),
+    title: gamesByType[parseInt(type)][0]?.title.replace(/🧩|📂|📋|🔍|🧼/g, '').trim() || `Type ${type}`,
+    gameModes: gamesByType[parseInt(type)] // Include game modes for completion checking
+  }));
+
   // Use the first available game mode for stats, or fallback to default
   const defaultGameModeId = filteredGameModes.length > 0 ? filteredGameModes[0].id : 'gmp-vs-non-gmp';
   const { stats: gameStats, loading: statsLoading, error: statsError } = useLevel2GameStats(moduleId, defaultGameModeId);
 
-  const getIcon = (modeId: string) => {
-    switch (modeId) {
-      case 'gmp-vs-non-gmp':
-        return <Filter className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />;
-      case 'documentation-vs-production':
-        return <Database className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />;
-      default:
-        return <Play className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />;
-    }
-  };
+  // Get completed game modes for visual indicators
+  const { isGameModeCompleted } = useCompletedGameModes({ moduleId });
 
-  const handleGameModeClick = (modeId: string) => {
-    if (onGameModeSelect) {
-      onGameModeSelect(modeId);
-    } else {
-      // Fallback to navigation if no callback provided
-      navigate(-1);
-    }
-  };
-
-  const getDifficulty = (modeId: string) => {
-    switch (modeId) {
-      case 'gmp-vs-non-gmp':
-        return { level: 'ROOKIE', stars: 1, color: 'text-green-400', bgColor: 'bg-green-900' };
-      case 'documentation-vs-production':
-        return { level: 'ROOKIE', stars: 1, color: 'text-green-400', bgColor: 'bg-green-900' };
-      default:
-        return { level: 'ROOKIE', stars: 1, color: 'text-green-400', bgColor: 'bg-green-900' };
-    }
-  };
+  // Show overlay if on mobile and not in landscape mode (landscape only)
+  if (isMobile && window.innerHeight > window.innerWidth) {
+    return <RotateDeviceOverlay />;
+  }
 
   return (
     <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-[url('/Level2/level3bg.webp')] bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${
-      isMobile ? 'p-2' : 'p-6'
+      isMobile ? 'p-0' : 'p-6'
     }`}>
-      {/* Gamified Overlay */}
+      {/* Gamified Overlay - Fixed z-index and pointer events */}
       <div
-        className="absolute inset-0 z-0 bg-gradient-to-r from-cyan-500/40 via-purple-500/40 to-transparent opacity-80 pixel-glow"
+        className="absolute inset-0 z-0 bg-gradient-to-r from-cyan-500/40 via-purple-500/40 to-transparent opacity-80 pixel-glow pointer-events-none"
       ></div>
 
-      {/* Animated Grid Background */}
-      <div className="absolute inset-0 opacity-20">
+      {/* Animated Grid Background - Fixed pointer events */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none z-0">
         <div className="grid-pattern"></div>
       </div>
 
-      {/* Floating Pixel Particles - Reduced for mobile */}
-      <div className="absolute inset-0">
+      {/* Floating Pixel Particles - Fixed z-index and pointer events */}
+      <div className="absolute inset-0 pointer-events-none z-0">
         {[...Array(isMobile ? 8 : 15)].map((_, i) => (
           <div
             key={i}
-            className={`absolute ${isMobile ? 'w-1 h-1' : 'w-2 h-2'} bg-cyan-400 pixel-particle animate-float`}
+            className={`absolute ${isMobile ? 'w-1 h-1' : 'w-2 h-2'} bg-cyan-400 pixel-particle animate-float pointer-events-none`}
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -84,32 +71,58 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, o
         ))}
       </div>
 
-      <div className={`relative z-10 ${isMobile ? 'max-w-full h-screen flex flex-col' : 'max-w-6xl mx-auto'}`}>
-        {/* Mobile Landscape Layout */}
+      <div className={`relative z-20 ${
+        isMobile
+          ? 'max-w-4xl mx-auto h-screen flex flex-col px-4' // Mobile landscape layout
+          : 'max-w-6xl mx-auto'
+      }`}>
+        {/* Mobile Layout - Landscape Only */}
         {isMobile ? (
-          <div className="h-full flex flex-col justify-between py-2">
-            {/* Compact Header for Mobile Landscape */}
-            <div className="text-center mb-4 relative">
-              {/* EXIT Button - Mobile */}
+          <div className="h-full flex flex-col py-2">
+            {/* Top Bar for Mobile */}
+            <div className="flex items-center justify-between w-full px-0 py-1">
+              {/* EXIT Button - Left Side */}
               <button
                 onClick={() => onExit ? onExit() : navigate(`/modules/${moduleId}`)}
-                className="absolute top-0 left-0 bg-red-600 hover:bg-red-700 text-white px-3 py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-10 hover:shadow-xl"
+                className="bg-red-500 hover:bg-red-600 text-red-100 px-2 py-2 pixel-border flex items-center space-x-1 font-bold shadow-lg transition-all duration-200 text-xs z-10 hover:shadow-xl border-2"
                 style={{
                   boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
                 }}
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3 h-3" />
                 <span>EXIT</span>
               </button>
 
-              {/* Compact Game Stats HUD - Top Right for Mobile */}
-              <div className="absolute top-0 right-0 flex space-x-2 z-10">
-                <div className="pixel-border bg-green-600 px-2 py-1">
-                  <div className="text-green-100 text-xs font-bold">LVL</div>
-                  <div className="text-white text-sm font-black">02</div>
+              {/* GMP QUEST - Center */}
+              <div className="flex-1 flex justify-center">
+                <div className="pixel-border-thick bg-gradient-to-r from-purple-500 to-indigo-600 p-2 relative">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-purple-300 pixel-border border-[2px] flex items-center justify-center">
+                      <Crown className="w-4 h-4 text-purple-800" />
+                    </div>
+                    <div className="text-center">
+                      <h1 className="text-sm font-black text-purple-100 pixel-text tracking-wider">
+                        GMP QUEST
+                      </h1>
+                      <div className="text-purple-200 text-xs font-bold tracking-widest">
+                        CLASSIFICATION ADVENTURE
+                      </div>
+                    </div>
+                    <div className="w-6 h-6 border-[2px] bg-indigo-300 pixel-border flex items-center justify-center">
+                      <Gamepad2 className="w-4 h-4 text-indigo-800" />
+                    </div>
+                  </div>
                 </div>
-                <div className="pixel-border bg-blue-600 px-2 py-1 relative group">
-                  <div className="text-blue-100 text-xs font-bold flex items-center">
+              </div>
+
+              {/* LVL and SCORE - Right Side */}
+              <div className="flex space-x-2">
+                <div className="pixel-border border-[2px] bg-green-500/70 px-2 py-1">
+                  <div className="text-green-200 text-xs font-bold">LVL</div>
+                  <div className="text-green-100 text-xs font-black">02</div>
+                </div>
+                <div className="pixel-border border-[2px] bg-blue-500 px-2 py-1 relative group">
+                  <div className="text-blue-200 text-xs font-bold flex items-center">
                     SCORE
                     {statsError ? (
                       <HardDrive className="w-2 h-2 ml-1 text-yellow-300" />
@@ -117,7 +130,7 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, o
                       <Database className="w-2 h-2 ml-1 text-green-300" />
                     )}
                   </div>
-                  <div className="text-white text-sm font-black">
+                  <div className="text-blue-100 text-xs font-black">
                     {statsLoading ? '----' : gameStats.highScore.toString().padStart(4, '0')}
                   </div>
                   {/* Tooltip */}
@@ -128,146 +141,90 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, o
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Compact Game Logo */}
-              <div className="inline-block relative mb-3">
-                <div className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 p-2 relative">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-yellow-300 pixel-border flex items-center justify-center">
-                      <Crown className="w-4 h-4 text-yellow-800" />
-                    </div>
-                    <div className="text-left">
-                      <h1 className="text-lg font-black text-white pixel-text tracking-wider">
-                        GMP QUEST
-                      </h1>
-                      <div className="text-yellow-200 text-xs font-bold tracking-widest">
-                        CLASSIFICATION ADVENTURE
+            {/* Main Content Area - Game Types Summary */}
+            <div className="flex-1 flex items-center justify-center px-4">
+              <div className="w-full max-w-3xl">
+                {/* Game Types Summary Card */}
+                <div className="group relative transform transition-all duration-300">
+                  <div className="pixel-border-thick bg-gray-800 p-3 relative overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-0"></div>
+                    <div className="absolute top-0 rotate-90 -right-0 w-8 h-8 bg-cyan-500 opacity-30 pixel-corner"></div>
+
+                    {/* Header */}
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-cyan-600 pixel-border flex items-center border-[2px] justify-center">
+                        <Gamepad2 className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-teal-300 pixel-text tracking-wide">
+                          GAME TYPES AVAILABLE
+                        </h3>
+                        <p className="text-white text-xs">
+                          {gameTypes.length} different types of sorting challenges
+                        </p>
                       </div>
                     </div>
-                    <div className="w-8 h-8 bg-orange-300 pixel-border flex items-center justify-center">
-                      <Gamepad2 className="w-4 h-4 text-orange-800" />
+
+                    {/* Game Types List */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {gameTypes.map((gameType) => {
+                        // Check if any game mode in this type is completed
+                        const isTypeCompleted = gameType.gameModes.some(gameMode => isGameModeCompleted(gameMode.id));
+
+                        return (
+                          <div
+                            key={gameType.type}
+                            className={`flex items-center justify-start p-2 pixel-border border-[2px] ${
+                              isTypeCompleted ? 'bg-green-300' : 'bg-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              {isTypeCompleted ? (
+                                <CheckCircle className="w-4 h-4 text-green-800" />
+                              ) : (
+                                <Gamepad className="w-4 h-4 text-emerald-300" />
+                              )}
+                              <div className={`font-bold text-[10px] ${
+                                isTypeCompleted ? 'text-green-800' : 'text-white'
+                              }`}>
+                                {gameType.title}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
+
+                    {/* Navigation Button - Fixed z-index and pointer events */}
+                    <button
+                      onClick={() => navigate(`/modules/${moduleId}/games`)}
+                      className="w-full mt-4 pixel-border-thick bg-gradient-to-r from-emerald-500 to-teal-600  p-2 hover:from-emerald-400 hover:to-teal-500 transition-all duration-300 cursor-pointer relative z-30 pointer-events-auto"
+                    >
+                      <div className="flex items-center justify-center text-emerald-100 font-black text-sm pixel-text">
+                        <Play className="w-4 h-4 mr-2" />
+                        Play Game
+                      </div>
+                    </button>
+
+                    {/* Scan Lines Effect */}
+                    <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-10"></div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Main Content Area - Horizontal Layout for Landscape */}
-            <div className="flex-1 flex items-center justify-center">
-              <div className="w-full max-w-2xl">
-                {filteredGameModes.map((mode, index) => {
-                  const difficulty = getDifficulty(mode.id);
-                  return (
-                    <div
-                      key={mode.id}
-                      className="group relative transform transition-all duration-300 hover:scale-105"
-                      style={{ animationDelay: `${index * 200}ms` }}
-                    >
-                      <button
-                        onClick={() => handleGameModeClick(mode.id)}
-                        className="relative w-full text-left overflow-hidden game-card-hover"
-                      >
-                        {/* Compact Mobile Card */}
-                        <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden">
-                          {/* Background Pattern */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-50"></div>
-                          <div className="absolute top-0 right-0 w-12 h-12 bg-cyan-500 opacity-10 pixel-corner"></div>
-                          
-                          {/* Horizontal Layout for Mobile Landscape */}
-                          <div className="flex items-center space-x-4">
-                            {/* Mission Icon */}
-                            <div className="relative flex-shrink-0">
-                              <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-600 pixel-border flex items-center justify-center group-hover:animate-bounce">
-                                <div className="text-white">
-                                  {getIcon(mode.id)}
-                                </div>
-                              </div>
-                              {/* Power indicator */}
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 pixel-border animate-pulse">
-                                <Zap className="w-2 h-2 text-yellow-800" />
-                              </div>
-                            </div>
-
-                            {/* Mission Info - Horizontal Layout */}
-                            <div className="flex-1 relative z-10">
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-lg font-black text-cyan-300 pixel-text tracking-wide group-hover:text-yellow-300 transition-colors">
-                                  {mode.title.replace(/🧩|📂|📋/g, '').trim()}
-                                </h3>
-                                
-                                {/* Difficulty Badge */}
-                                <div className={`pixel-border ${difficulty.bgColor} px-2 py-1`}>
-                                  <div className={`text-xs font-bold ${difficulty.color} tracking-wider`}>
-                                    {difficulty.level}
-                                  </div>
-                                  <div className="flex justify-center mt-1">
-                                    {[...Array(3)].map((_, i) => (
-                                      <div
-                                        key={i}
-                                        className={`w-1 h-1 mx-0.5 ${
-                                          i < difficulty.stars
-                                            ? 'bg-yellow-400'
-                                            : 'bg-gray-600'
-                                        } pixel-dot`}
-                                      ></div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <p className="text-gray-300 text-sm leading-relaxed mb-3 font-medium">
-                                {mode.description}
-                              </p>
-
-                              {/* Mission Stats - Horizontal */}
-                              <div className="flex items-center space-x-4">
-                                <div className="flex items-center space-x-2">
-                                  <div className="pixel-border bg-blue-900 px-2 py-1 text-center">
-                                    <div className="text-blue-300 text-xs font-bold">TARGETS</div>
-                                    <div className="text-white text-sm font-black">{mode.terms.length}</div>
-                                  </div>
-                                  <div className="pixel-border bg-purple-900 px-2 py-1 text-center">
-                                    <div className="text-purple-300 text-xs font-bold">ZONES</div>
-                                    <div className="text-white text-sm font-black">{mode.categories.length}</div>
-                                  </div>
-                                </div>
-
-                                {/* Start Mission Button - Compact */}
-                                <div className="flex-1">
-                                  <div className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 p-2 group-hover:from-green-400 group-hover:to-blue-500 transition-all duration-300">
-                                    <div className="flex items-center justify-center text-white font-black text-sm pixel-text">
-                                      <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                                      START MISSION
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Scan Lines Effect */}
-                          <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
-                        </div>
-
-                        {/* Glow Effect on Hover */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pixel-glow"></div>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
 
           </div>
         ) : (
           /* Desktop Layout - Updated */
           <>
             {/* EXIT Button - Desktop */}
-            <div className="absolute top-6 left-6 z-20">
+            <div className="absolute top-6 left-6 z-20 ">
               <button
                 onClick={() => onExit ? onExit() : navigate(`/modules/${moduleId}`)}
-                className="pixel-border bg-red-700 hover:bg-red-600 text-red-300 hover:text-white py-2 px-4 font-bold pixel-text transition-all duration-200 hover:scale-105"
+                className="pixel-border  bg-red-700 hover:bg-red-600 text-red-300 hover:text-white py-2 px-4 font-bold pixel-text transition-all duration-200 "
               >
                 <div className="flex items-center space-x-2">
                   <ArrowLeft className="w-4 h-4" />
@@ -301,7 +258,7 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, o
               </div>
 
               {/* Game Stats HUD - Updated with stored scores */}
-              <div className="flex justify-center space-x-4 mb-8">
+              <div className="flex justify-center space-x-4 ">
                 <div className="pixel-border bg-green-600 px-4 py-2">
                   <div className="text-green-100 text-xs font-bold">LEVEL</div>
                   <div className="text-white text-lg font-black">02</div>
@@ -342,106 +299,88 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onGameModeSelect, o
               </div>
             </div>
 
-            {/* Game Mode Selection Cards */}
-            <div className="flex justify-center">
-              <div className="max-w-md">
-                {filteredGameModes.map((mode, index) => {
-                  const difficulty = getDifficulty(mode.id);
-                  return (
-                    <div
-                      key={mode.id}
-                      className="group relative transform transition-all duration-300 hover:scale-105 hover:-translate-y-2"
-                      style={{ animationDelay: `${index * 200}ms` }}
-                    >
-                      <button
-                        onClick={() => handleGameModeClick(mode.id)}
-                        className="relative w-full text-left overflow-hidden game-card-hover"
-                      >
-                        {/* Main Card with Pixel Border */}
-                        <div className="pixel-border-thick bg-gray-800 p-6 relative overflow-hidden">
-                          {/* Animated Background Pattern */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-50"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-cyan-500 opacity-10 pixel-corner"></div>
-                          
-                          {/* Difficulty Badge */}
-                          <div className="absolute top-4 right-4">
-                            <div className={`pixel-border ${difficulty.bgColor} px-2 py-1`}>
-                              <div className={`text-xs font-bold ${difficulty.color} tracking-wider`}>
-                                {difficulty.level}
-                              </div>
-                              <div className="flex justify-center mt-1">
-                                {[...Array(3)].map((_, i) => (
-                                  <div
-                                    key={i}
-                                    className={`w-2 h-2 mx-0.5 ${
-                                      i < difficulty.stars
-                                        ? 'bg-yellow-400'
-                                        : 'bg-gray-600'
-                                    } pixel-dot`}
-                                  ></div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
+            {/* Game Types Summary - Desktop */}
+            <div className="flex justify-center ">
+              <div className="max-w-2xl w-full">
+                {/* Game Types Summary Card */}
+                <div className="group relative transform transition-all duration-300 ">
+                  <div className="pixel-border-thick bg-gray-800   p-8 relative overflow-hidden">
+                    {/* Animated Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-0"></div>
+                    <div className="absolute top-0 -right-1 rotate-90 w-20 h-20 bg-cyan-500/20 pixel-corner"></div>
 
-                          {/* Mission Icon */}
-                          <div className="relative mb-6">
-                            <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-600 pixel-border flex items-center justify-center group-hover:animate-bounce">
-                              <div className="text-white">
-                                {getIcon(mode.id)}
-                              </div>
-                            </div>
-                            {/* Power indicator */}
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 pixel-border animate-pulse">
-                              <Zap className="w-3 h-3 text-yellow-800" />
-                            </div>
-                          </div>
-
-                          {/* Mission Info */}
-                          <div className="relative z-10">
-                            <h3 className="text-xl font-black text-cyan-300 mb-3 pixel-text tracking-wide group-hover:text-yellow-300 transition-colors">
-                              {mode.title.replace(/🧩|📂|📋/g, '').trim()}
-                            </h3>
-                            
-                            <p className="text-gray-300 text-sm leading-relaxed mb-4 font-medium">
-                              {mode.description}
-                            </p>
-
-                            {/* Mission Stats */}
-                            <div className="grid grid-cols-2 gap-2 mb-4">
-                              <div className="pixel-border bg-blue-900 p-2 text-center">
-                                <div className="text-blue-300 text-xs font-bold">TARGETS</div>
-                                <div className="text-white font-black">{mode.terms.length}</div>
-                              </div>
-                              <div className="pixel-border bg-purple-900 p-2 text-center">
-                                <div className="text-purple-300 text-xs font-bold">ZONES</div>
-                                <div className="text-white font-black">{mode.categories.length}</div>
-                              </div>
-                            </div>
-
-                            {/* Start Mission Button */}
-                            <div className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 p-3 group-hover:from-green-400 group-hover:to-blue-500 transition-all duration-300">
-                              <div className="flex items-center justify-center text-white font-black text-lg pixel-text">
-                                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                                START MISSION
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Scan Lines Effect */}
-                          <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
-                        </div>
-
-                        {/* Glow Effect on Hover */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pixel-glow"></div>
-                      </button>
+                    {/* Header */}
+                    <div className="flex items-center space-x-6 mb-8">
+                      <div className="w-15 h-15 bg-gradient-to-br from-cyan-400/50 to-blue-600/50 pixel-border flex items-center justify-center p-1">
+                        <Gamepad2 className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black text-cyan-300 pixel-text tracking-wide mb-1">
+                          GAME TYPES AVAILABLE
+                        </h3>
+                        <p className="text-gray-300 text-sm">
+                          {gameTypes.length} different types of sorting challenges
+                        </p>
+                      </div>
                     </div>
-                  );
-                })}
+
+                    {/* Game Types Grid */}
+                    <div className="grid grid-cols-1 gap-4 mb-6 ">
+                      {gameTypes.map((gameType) => {
+                        // Check if any game mode in this type is completed
+                        const isTypeCompleted = gameType.gameModes.some(gameMode => isGameModeCompleted(gameMode.id));
+
+                        return (
+                          <div
+                            key={gameType.type}
+                            className="flex items-center justify-between p-2 pixel-border hover:opacity-90 transition-colors  bg-gray-700 hover:bg-gray-600"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className={`w-12 h-12 pixel-border flex items-center justify-center ${
+                                isTypeCompleted ? 'bg-green-600' : 'bg-blue-600'
+                              }`}>
+                                {isTypeCompleted ? (
+                                  <CheckCircle className="w-6 h-6 text-white" />
+                                ) : (
+                                  <Target className="w-6 h-6 text-white" />
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-bold text-sm text-white">
+                                  {gameType.title}
+                                </div>
+                                {isTypeCompleted && (
+                                  <div className="text-green-400 font-extrabold text-xs ">
+                                    ✓ Completed
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Navigation Button - Fixed z-index and pointer events */}
+                    <button
+                      onClick={() => navigate(`/modules/${moduleId}/games`)}
+                      className="w-full pixel-border-thick bg-gradient-to-r from-purple-500 to-pink-600 p-4 hover:from-purple-400 hover:to-pink-500 transition-all duration-300 group-hover:scale-105 relative z-30 pointer-events-auto "
+                    >
+                      <div className="flex items-center justify-center text-white font-black text-xl pixel-text">
+                        <Play className="w-6 h-6 mr-3" />
+                       Play Game
+                      </div>
+                    </button>
+
+                    {/* Scan Lines Effect */}
+                    <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-10"></div>
+                  </div>
+
+                  {/* Glow Effect on Hover */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pixel-glow"></div>
+                </div>
               </div>
             </div>
-
-
           </>
         )}
       </div>

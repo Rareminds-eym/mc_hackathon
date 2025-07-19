@@ -17,6 +17,7 @@ export interface GameMode {
   title: string;
   description: string;
   moduleId: number;
+  type: number;
   categories: Category[];
   terms: Term[];
 }
@@ -26,7 +27,8 @@ export interface Level2GameData {
   user_id?: string;
   module_id: string;
   level_number: number;
-  game_mode_id: string;
+  game_mode_id: string; // For service layer compatibility (single game mode being played)
+  game_mode_ids?: string[]; // Database field (array of all game modes played)
   score: number;
   is_completed: boolean;
   time?: number;

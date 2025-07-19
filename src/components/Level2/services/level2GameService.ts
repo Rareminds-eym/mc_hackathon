@@ -42,12 +42,14 @@ export class Level2GameService {
       // Update the timestamp
       this.lastSaveTimestamp.set(saveKey, now);
 
-      // Use the UPSERT function to insert or update existing data
-      const { data, error } = await supabase.rpc('upsert_level2_game_data', {
+      console.log(`Saving game data with game_mode_id: ${gameData.game_mode_id}`);
+
+      // Use the new UPSERT function that merges game_mode_ids arrays
+      const { data, error } = await supabase.rpc('upsert_level2_game_data_with_merge', {
         p_user_id: userData.user.id,
         p_module_id: gameData.module_id,
         p_level_number: gameData.level_number || this.LEVEL_NUMBER,
-        p_game_mode_id: gameData.game_mode_id,
+        p_game_mode_ids: [gameData.game_mode_id], // Pass as single-item array, DB function will merge
         p_score: gameData.score,
         p_is_completed: gameData.is_completed,
         p_time: gameData.time,
@@ -60,13 +62,13 @@ export class Level2GameService {
       }
 
       // Fetch the updated/inserted record to return full data
-      const { data: fullData, error: fetchError } = await supabase
+      const { data: fullData, error: fetchError2 } = await supabase
         .from('level2_game_data')
         .select('*')
         .eq('id', data)
         .single();
 
-      return { data: fullData, error: fetchError };
+      return { data: fullData, error: fetchError2 };
     } catch (error) {
       console.error('Error saving Level2 game data:', error);
       return { data: null, error: error as Error };
@@ -75,9 +77,20 @@ export class Level2GameService {
 
   /**
    * Update existing game progress
+   * WARNING: This method bypasses the UPSERT functions and should be used carefully.
+   * It will NOT merge game_mode_ids arrays - use saveGameData() or upsertGameData() instead.
    */
   static async updateGameData(id: string, gameData: Partial<Level2GameData>): Promise<{ data: Level2GameData | null; error: Error | null }> {
     try {
+      // Prevent accidental overwriting of game_mode_ids array
+      if (gameData.game_mode_ids) {
+        console.warn('WARNING: updateGameData() does not merge game_mode_ids arrays. Use saveGameData() or upsertGameData() instead.');
+        console.warn('Removing game_mode_ids from update to prevent data loss.');
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { game_mode_ids, ...safeGameData } = gameData;
+        gameData = safeGameData;
+      }
+
       const { data, error } = await supabase
         .from('level2_game_data')
         .update(gameData)
@@ -94,7 +107,7 @@ export class Level2GameService {
 
   /**
    * Upsert game data using the database function (more reliable for concurrent access)
-   * This method specifically uses the upsert_level2_game_data database function
+   * This method uses the new upsert_level2_game_data_with_merge database function
    */
   static async upsertGameData(gameData: Omit<Level2GameData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<{ data: Level2GameData | null; error: Error | null }> {
     try {
@@ -103,12 +116,12 @@ export class Level2GameService {
         throw new Error('User not authenticated');
       }
 
-      // Use the database UPSERT function directly
-      const { data: recordId, error } = await supabase.rpc('upsert_level2_game_data', {
+      // Use the new database UPSERT function that merges arrays
+      const { data: recordId, error } = await supabase.rpc('upsert_level2_game_data_with_merge', {
         p_user_id: userData.user.id,
         p_module_id: gameData.module_id,
         p_level_number: gameData.level_number || this.LEVEL_NUMBER,
-        p_game_mode_id: gameData.game_mode_id,
+        p_game_mode_ids: [gameData.game_mode_id], // Convert to array, DB function will merge
         p_score: gameData.score,
         p_is_completed: gameData.is_completed,
         p_time: gameData.time,
@@ -150,7 +163,7 @@ export class Level2GameService {
         .eq('user_id', userData.user.id)
         .eq('module_id', moduleId)
         .eq('level_number', this.LEVEL_NUMBER)
-        .eq('game_mode_id', gameModeId)
+        .contains('game_mode_ids', [gameModeId]) // Use contains for array field
         .order('created_at', { ascending: false });
 
       return { data, error };
@@ -159,6 +172,8 @@ export class Level2GameService {
       return { data: null, error: error as Error };
     }
   }
+
+
 
   /**
    * Get user's best score for a specific module and game mode
@@ -176,7 +191,7 @@ export class Level2GameService {
         .eq('user_id', userData.user.id)
         .eq('module_id', moduleId)
         .eq('level_number', this.LEVEL_NUMBER)
-        .eq('game_mode_id', gameModeId)
+        .contains('game_mode_ids', [gameModeId]) // Use contains for array field
         .order('score', { ascending: false })
         .limit(1)
         .single();
@@ -204,7 +219,7 @@ export class Level2GameService {
         .eq('user_id', userData.user.id)
         .eq('module_id', moduleId)
         .eq('level_number', this.LEVEL_NUMBER)
-        .eq('game_mode_id', gameModeId);
+        .contains('game_mode_ids', [gameModeId]); // Use contains for array field
 
       if (error || !games || games.length === 0) {
         return {
@@ -252,7 +267,7 @@ export class Level2GameService {
         .eq('user_id', userData.user.id)
         .eq('module_id', moduleId)
         .eq('level_number', this.LEVEL_NUMBER)
-        .eq('game_mode_id', gameModeId)
+        .contains('game_mode_ids', [gameModeId]) // Use contains for array field
         .eq('is_completed', true)
         .limit(1);
 
@@ -284,7 +299,7 @@ export class Level2GameService {
       }
 
       if (gameModeId) {
-        query = query.eq('game_mode_id', gameModeId);
+        query = query.contains('game_mode_ids', [gameModeId]); // Use contains for array field
       }
 
       const { error } = await query;
@@ -312,7 +327,7 @@ export class Level2GameService {
         .eq('user_id', userData.user.id)
         .eq('module_id', moduleId)
         .eq('level_number', this.LEVEL_NUMBER)
-        .eq('game_mode_id', gameModeId);
+        .contains('game_mode_ids', [gameModeId]); // Use contains for array field
 
       return { error };
     } catch (error) {
@@ -322,8 +337,90 @@ export class Level2GameService {
   }
 
   /**
-   * Save game data with score history management using the enhanced UPSERT function
-   * This method uses the upsert_level2_game_data_with_history function that manages score arrays
+   * Track game mode progression by saving only the game mode ID to the database
+   * This is called when a user completes a game mode and clicks "Continue To Next"
+   * It ensures all completed game mode IDs are tracked in the database array
+   * This method is careful to preserve existing score/time data while only adding the game mode ID
+   */
+  static async trackGameModeProgression(moduleId: string, gameModeId: string): Promise<{ error: Error | null }> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
+      }
+
+      console.log(`Tracking game mode progression: ${gameModeId} for module ${moduleId}`);
+
+      // First, check if a record already exists for this user/module/level
+      const { data: existingData, error: fetchError } = await supabase
+        .from('level2_game_data')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .eq('module_id', moduleId)
+        .eq('level_number', this.LEVEL_NUMBER)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error fetching existing data:', fetchError);
+        return { error: fetchError };
+      }
+
+      if (existingData) {
+        // Record exists - just add the game mode ID to the array if not already present
+        const currentGameModeIds = existingData.game_mode_ids || [];
+        if (!currentGameModeIds.includes(gameModeId)) {
+          const updatedGameModeIds = [...currentGameModeIds, gameModeId];
+
+          const { error: updateError } = await supabase
+            .from('level2_game_data')
+            .update({
+              game_mode_ids: updatedGameModeIds,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingData.id);
+
+          if (updateError) {
+            console.error('Error updating game mode IDs:', updateError);
+            return { error: updateError };
+          }
+
+          console.log(`Successfully added ${gameModeId} to existing record. Game mode IDs: [${updatedGameModeIds.join(', ')}]`);
+        } else {
+          console.log(`Game mode ${gameModeId} already tracked in existing record`);
+        }
+      } else {
+        // No record exists - create a new one with minimal data
+        const { error: insertError } = await supabase.rpc('upsert_level2_game_data_with_merge', {
+          p_user_id: userData.user.id,
+          p_module_id: moduleId,
+          p_level_number: this.LEVEL_NUMBER,
+          p_game_mode_ids: [gameModeId], // This will be merged with existing IDs
+          p_score: 0, // Placeholder score - actual scores are saved later in batch
+          p_is_completed: false, // Not fully completed until all game modes are done
+          p_time: 0, // Placeholder time
+          p_total_terms: 0, // Placeholder
+          p_placed_terms: []
+        });
+
+        if (insertError) {
+          console.error('Error creating new record for game mode progression:', insertError);
+          return { error: insertError };
+        }
+
+        console.log(`Successfully created new record with game mode progression: ${gameModeId}`);
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error in trackGameModeProgression:', error);
+      return { error: error as Error };
+    }
+  }
+
+  /**
+   * Save game data with aggregated score history management using the enhanced UPSERT function
+   * This method uses the upsert_level2_game_data_with_history function that aggregates scores
+   * across all game modes and manages score arrays with combined totals
    */
   static async saveGameDataWithHistory(gameData: Omit<Level2GameData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<{ data: Level2GameData | null; error: Error | null }> {
     try {
@@ -351,7 +448,7 @@ export class Level2GameService {
         p_user_id: userData.user.id,
         p_module_id: gameData.module_id,
         p_level_number: gameData.level_number || this.LEVEL_NUMBER,
-        p_game_mode_id: gameData.game_mode_id,
+        p_game_mode_ids: [gameData.game_mode_id], // Convert to array as expected by database function
         p_score: gameData.score,
         p_is_completed: gameData.is_completed,
         p_time: gameData.time || 0,
@@ -378,8 +475,9 @@ export class Level2GameService {
   }
 
   /**
-   * Get the past three scores for a user, module, level, and game mode
-   * Uses the get_level2_past_three_scores database function
+   * Get the past three aggregated scores for a user, module, and level
+   * Uses the get_level2_past_three_scores database function which now returns
+   * aggregated scores across all game modes instead of individual game mode scores
    */
   static async getPastThreeScores(moduleId: string, gameModeId: string): Promise<{ data: Level2ScoreHistory | null; error: Error | null }> {
     try {
@@ -409,9 +507,10 @@ export class Level2GameService {
   }
 
   /**
-   * Get user's game data with score history arrays
+   * Get user's game data with aggregated score history arrays
+   * Returns data with score_history and time_history containing aggregated totals across all game modes
    */
-  static async getUserGameDataWithHistory(moduleId: string, gameModeId: string): Promise<{ data: Level2GameDataWithHistory | null; error: Error | null }> {
+  static async getUserGameDataWithHistory(moduleId: string, gameModeId?: string): Promise<{ data: Level2GameDataWithHistory | null; error: Error | null }> {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
@@ -424,7 +523,7 @@ export class Level2GameService {
         .eq('user_id', userData.user.id)
         .eq('module_id', moduleId)
         .eq('level_number', this.LEVEL_NUMBER)
-        .eq('game_mode_id', gameModeId)
+        // Removed game_mode_id filter since we now store aggregated data across all game modes
         .order('updated_at', { ascending: false })
         .limit(1)
         .single();
@@ -432,6 +531,46 @@ export class Level2GameService {
       return { data, error };
     } catch (error) {
       console.error('Error fetching Level2 game data with history:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  /**
+   * Get all completed game mode IDs for a user in a specific module
+   * Returns an array of game mode IDs that the user has completed
+   */
+  static async getCompletedGameModeIds(moduleId: string): Promise<{ data: string[] | null; error: Error | null }> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('level2_game_data')
+        .select('game_mode_ids')
+        .eq('user_id', userData.user.id)
+        .eq('module_id', moduleId)
+        .eq('level_number', this.LEVEL_NUMBER)
+        .eq('is_completed', true);
+
+      if (error) {
+        return { data: null, error };
+      }
+
+      // Flatten all game_mode_ids arrays into a single array of unique IDs
+      const completedGameModeIds = new Set<string>();
+      if (data && data.length > 0) {
+        data.forEach(record => {
+          if (record.game_mode_ids && Array.isArray(record.game_mode_ids)) {
+            record.game_mode_ids.forEach(id => completedGameModeIds.add(id));
+          }
+        });
+      }
+
+      return { data: Array.from(completedGameModeIds), error: null };
+    } catch (error) {
+      console.error('Error fetching completed game mode IDs:', error);
       return { data: null, error: error as Error };
     }
   }
@@ -508,7 +647,8 @@ export class Level2GameService {
   }
 
   /**
-   * Test the UPSERT with history functionality (for development/testing purposes)
+   * Test the UPSERT with aggregated history functionality (for development/testing purposes)
+   * Tests that scores from different game modes are properly aggregated
    */
   static async testUpsertWithHistory(moduleId: string, gameModeId: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -520,7 +660,7 @@ export class Level2GameService {
       // Clear any existing data for clean test
       await this.deleteUserGameData(moduleId, gameModeId);
 
-      // First save - score 50
+      // First save - score 50 (will be the initial total)
       const gameData1 = {
         module_id: moduleId,
         level_number: this.LEVEL_NUMBER,
@@ -537,7 +677,7 @@ export class Level2GameService {
         return { success: false, message: `First save failed: ${error1.message}` };
       }
 
-      // Second save - score 75
+      // Second save - score 75 (will aggregate: 50 + 75 = 125)
       const gameData2 = {
         ...gameData1,
         score: 75,
@@ -549,7 +689,7 @@ export class Level2GameService {
         return { success: false, message: `Second save failed: ${error2.message}` };
       }
 
-      // Third save - score 90
+      // Third save - score 90 (will aggregate: 125 + 90 = 215)
       const gameData3 = {
         ...gameData1,
         score: 90,
@@ -572,8 +712,8 @@ export class Level2GameService {
         return { success: false, message: 'No score history returned' };
       }
 
-      // Verify the scores are in descending order (highest first)
-      const expectedScores = [90, 75, 50]; // Should be sorted by score DESC
+      // Verify the aggregated scores are in descending order (highest first)
+      const expectedScores = [215, 125, 50]; // Should be aggregated totals sorted by score DESC
       const actualScores = [
         scoreHistory.current_score,
         scoreHistory.previous_score,
@@ -594,7 +734,7 @@ export class Level2GameService {
 
       return {
         success: true,
-        message: `History UPSERT test passed! Score history: [${actualScores.join(', ')}]`
+        message: `Aggregated history UPSERT test passed! Aggregated score history: [${actualScores.join(', ')}]`
       };
     } catch (error) {
       return { success: false, message: `History test failed with error: ${error}` };

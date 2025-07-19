@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
+import { useScoreContext } from '../contexts/ScoreContext';
 
 interface GameHeaderProps {
   gameTitle: string;
@@ -17,49 +18,53 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   onBack,
   onReset,
   currentScore,
-  correctCount,
+  correctCount, // Not displayed - showing accumulated totals instead
   timeElapsed,
   moves,
   isMobile,
 }) => {
+  const { getTotalScore, getTotalTime } = useScoreContext();
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Calculate total accumulated values including current game
+  const totalAccumulatedScore = getTotalScore() + currentScore;
+  const totalAccumulatedTime = getTotalTime() + timeElapsed;
+
   if (isMobile) {
     return (
-      <div className="bg-slate-800 rounded-lg p-1.5 mb-1 flex items-center justify-between shadow-lg border border-slate-600">
+      <div className="bg-slate-800 p-1.5 mb-1 flex items-center justify-between shadow-lg  pixel-border ">
+        
         <button
           onClick={onBack}
-          className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md flex items-center space-x-1 font-bold shadow-md transition-all duration-200 text-xs"
+          className="bg-red-600 hover:bg-red-700 text-white px-0 py-1  flex items-center space-x-1 font-bold shadow-md pixel-border border-[1.5px] transition-all duration-200 text-xs"
         >
           <ArrowLeft className="w-3 h-3" />
           <span>EXIT</span>
         </button>
         
         <div className="text-center flex-1 mx-2">
-          <h1 className="text-xs font-black text-cyan-300 pixel-text">
+          <h1 className="text-sm font-black text-cyan-300 pixel-text">
             {gameTitle.replace(/🧩|📂|📋/g, '').trim()}
           </h1>
-          <div className="text-slate-400 text-xs font-bold">MISSION ACTIVE</div>
         </div>
 
         <div className="flex items-center space-x-1">
-          <div className="bg-orange-600 text-white px-1.5 py-0.5 rounded-md font-bold shadow-md">
-            <div className="text-xs">SCORE</div>
-            <div className="text-xs font-black">{currentScore}</div>
+          <div className="bg-orange-600 text-white px-1 py-0.5 pixel-border1 border-[2px] font-bold shadow-md">
+            <div className="text-xs">TOTAL:{totalAccumulatedScore}</div>
           </div>
-          
-          <div className="bg-green-600 text-white px-1.5 py-0.5 rounded-md font-bold shadow-md">
-            <div className="text-xs">CORRECT</div>
-            <div className="text-xs font-black">{correctCount}</div>
+
+          <div className="bg-blue-600 text-white px-1 py-0.5 pixel-border border-[2px] font-bold shadow-md">
+            <div className="text-xs">TIME:{formatTime(totalAccumulatedTime)}</div>
           </div>
 
           <button
             onClick={onReset}
-            className="bg-slate-600 hover:bg-slate-700 text-white px-1.5 py-1 rounded-md font-bold shadow-md transition-all duration-200"
+            className="bg-slate-600 hover:bg-slate-700 text-white px-1 py-1  font-bold shadow-md transition-all duration-200 pixel-border border-[2px]"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -96,10 +101,16 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 
         {/* Right Side - Stats and Restart */}
         <div className="flex items-center space-x-3">
-          {/* Time */}
+          {/* Current Game Time */}
           <div className="pixel-border bg-blue-900 px-3 py-1.5 text-center">
             <div className="text-blue-300 text-xs font-bold pixel-text">TIME</div>
             <div className="text-white text-sm font-black pixel-text">{formatTime(timeElapsed)}</div>
+          </div>
+
+          {/* Total Accumulated Time */}
+          <div className="pixel-border bg-cyan-900 px-3 py-1.5 text-center">
+            <div className="text-cyan-300 text-xs font-bold pixel-text">TOTAL TIME</div>
+            <div className="text-white text-sm font-black pixel-text">{formatTime(totalAccumulatedTime)}</div>
           </div>
 
           {/* Moves */}
@@ -108,10 +119,16 @@ const GameHeader: React.FC<GameHeaderProps> = ({
             <div className="text-white text-sm font-black pixel-text">{moves}</div>
           </div>
 
-          {/* Score */}
+          {/* Current Game Score */}
           <div className="pixel-border bg-orange-600 px-3 py-1.5 text-center">
             <div className="text-orange-100 text-xs font-bold pixel-text">SCORE</div>
             <div className="text-white text-sm font-black pixel-text">{currentScore}</div>
+          </div>
+
+          {/* Total Accumulated Score */}
+          <div className="pixel-border bg-yellow-600 px-3 py-1.5 text-center">
+            <div className="text-yellow-100 text-xs font-bold pixel-text">TOTAL SCORE</div>
+            <div className="text-white text-sm font-black pixel-text">{totalAccumulatedScore}</div>
           </div>
 
           {/* Restart Button */}
