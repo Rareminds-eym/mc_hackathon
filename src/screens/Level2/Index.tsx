@@ -28,8 +28,9 @@ const Level2: React.FC = () => {
   };
 
   const handleNextLevel = () => {
-    // Navigate to Level 3
-    navigate(`/modules/${moduleId}/levels/3`);
+    // Instead of navigating to Level 3, go back to the game mode selection
+    // This allows users to play other game modes within Level 2
+    setSelectedGameMode(null);
   };
 
   if (selectedGameMode) {

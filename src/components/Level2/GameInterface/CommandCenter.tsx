@@ -9,6 +9,8 @@ interface CommandCenterProps {
   progress: number;
   hasExecuted: boolean;
   isMobile: boolean;
+  moduleId: number;
+  type: number;
 }
 
 const CommandCenter: React.FC<CommandCenterProps> = ({
@@ -17,29 +19,30 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
   progress,
   hasExecuted,
   isMobile,
+  moduleId,
+  type,
 }) => {
   if (isMobile) {
     return (
-      <div className="w-48 bg-slate-800 rounded-lg p-2 flex flex-col shadow-lg border border-slate-600">
+      <div className="w-482 bg-slate-800 rounded-lg p-2 flex flex-col shadow-lg border border-slate-600">
         {/* Items Header */}
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-xs font-black text-cyan-300 pixel-text">ITEMS</h3>
-          <div className="text-slate-400 text-xs font-bold">
+          <h3 className="text-xs font-black text-cyan-300 pixel-text">Items</h3>
+          <div className="text-slate-400 text-mobile2 font-bold">
             {unassignedTerms.length} remaining
           </div>
         </div>
-
-        <div className="text-cyan-400 text-xs font-bold mb-1">Drag to Categories</div>
+        <div className="text-cyan-400 text-[10px] font-bold mb-1">Drag to Categories</div>
 
         {/* Progress Bar */}
         <div className="mb-2">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-slate-300 text-xs font-bold">PROGRESS</span>
-            <span className="text-white text-xs font-black">{Math.round(progress)}%</span>
+            <span className="text-slate-300 text-mobile1 font-bold">PROGRESS</span>
+            <span className="text-white text-mobile2  font-black">{Math.round(progress)}%</span>
           </div>
           <div className="bg-slate-700 rounded-full h-1.5 overflow-hidden shadow-inner border border-slate-600">
             <div 
-              className="bg-gradient-to-r from-cyan-400 to-blue-500 h-full transition-all duration-500 ease-out rounded-full"
+              className="bg-gradient-to-r from-cyan-400 to-blue-500 h-full transition-all duration-500 ease-out "
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -96,7 +99,7 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
             <div>
               <h2 className="text-sm font-black text-cyan-300 pixel-text">COMMAND CENTER</h2>
               <div className="text-xs text-gray-400 font-bold">
-                ITEMS: {unassignedTerms.length}
+                MODULE: {moduleId} | TYPE: {type} | ITEMS: {unassignedTerms.length}
               </div>
             </div>
           </div>

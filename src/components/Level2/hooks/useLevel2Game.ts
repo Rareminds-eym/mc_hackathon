@@ -27,12 +27,16 @@ interface UseLevel2GameReturn {
     time: number;
     totalTerms: number;
     placedTerms: Term[];
-  }) => Promise<boolean>;
+  }) => Promise<{ success: boolean; freshData?: Level2GameDataWithHistory }>;
   loadBestScore: () => Promise<Level2GameData | null>;
   loadScoreHistory: () => Promise<Level2ScoreHistory | null>;
   loadGameDataWithHistory: () => Promise<Level2GameDataWithHistory | null>;
   markLevelCompleted: () => Promise<boolean>;
+  trackGameModeProgression: () => Promise<boolean>;
   hasCompleted: boolean;
+  completedGameModeIds: string[];
+  isGameModeCompleted: (gameModeId: string) => boolean;
+  refreshCompletedGameModes: () => Promise<void>;
   error: string | null;
 }
 
@@ -43,6 +47,7 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
   const [scoreHistory, setScoreHistory] = useState<Level2ScoreHistory | null>(null);
   const [gameDataWithHistory, setGameDataWithHistory] = useState<Level2GameDataWithHistory | null>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
+  const [completedGameModeIds, setCompletedGameModeIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Load initial data when component mounts or dependencies change
@@ -78,6 +83,12 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
         const { data: gameHistoryData, error: gameHistoryError } = await Level2GameService.getUserGameDataWithHistory(moduleId, gameModeId);
         if (!gameHistoryError && gameHistoryData) {
           setGameDataWithHistory(gameHistoryData);
+        }
+
+        // Load completed game mode IDs
+        const { data: completedIds, error: completedError } = await Level2GameService.getCompletedGameModeIds(moduleId);
+        if (!completedError && completedIds) {
+          setCompletedGameModeIds(completedIds);
         }
 
       } catch (err) {
@@ -203,13 +214,32 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
     }
   }, [user, moduleId, gameModeId]);
 
+  const trackGameModeProgression = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await Level2GameService.trackGameModeProgression(moduleId, gameModeId);
+      if (error) {
+        throw new Error('Failed to track game mode progression');
+      }
+
+      console.log(`Successfully tracked progression for game mode: ${gameModeId}`);
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to track game mode progression';
+      setError(errorMessage);
+      console.error('Error tracking game mode progression:', errorMessage);
+      return false;
+    }
+  }, [user, moduleId, gameModeId]);
+
   const saveGameDataWithHistory = useCallback(async (gameData: {
     score: number;
     isCompleted: boolean;
     time: number;
     totalTerms: number;
     placedTerms: Term[];
-  }): Promise<boolean> => {
+  }): Promise<{ success: boolean; freshData?: Level2GameDataWithHistory }> => {
     setIsLoading(true);
     setError(null);
 
@@ -268,15 +298,16 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
         const { data: updatedGameHistory, error: gameHistoryError } = await Level2GameService.getUserGameDataWithHistory(moduleId, gameModeId);
         if (!gameHistoryError && updatedGameHistory) {
           setGameDataWithHistory(updatedGameHistory);
+          return { success: true, freshData: updatedGameHistory };
         }
       }
 
-      return true;
+      return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save game data with history';
       setError(errorMessage);
       console.error('Error saving game data with history:', errorMessage);
-      return false;
+      return { success: false };
     } finally {
       setIsLoading(false);
     }
@@ -288,7 +319,7 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
     try {
       const { data, error } = await Level2GameService.getPastThreeScores(moduleId, gameModeId);
       if (error) {
-        throw new Error('Failed to load score history');
+        throw new Error('Failed to load aggregated score history');
       }
       if (data) {
         setScoreHistory(data);
@@ -322,6 +353,28 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
     }
   }, [user, moduleId, gameModeId]);
 
+  // Helper function to refresh completed game modes
+  const refreshCompletedGameModes = useCallback(async (): Promise<void> => {
+    if (!user) {
+      setCompletedGameModeIds([]);
+      return;
+    }
+
+    try {
+      const { data: completedIds, error: completedError } = await Level2GameService.getCompletedGameModeIds(moduleId);
+      if (!completedError && completedIds) {
+        setCompletedGameModeIds(completedIds);
+      }
+    } catch (err) {
+      console.error('Error refreshing completed game modes:', err);
+    }
+  }, [user, moduleId]);
+
+  // Helper function to check if a specific game mode is completed
+  const isGameModeCompleted = useCallback((gameModeId: string): boolean => {
+    return completedGameModeIds.includes(gameModeId);
+  }, [completedGameModeIds]);
+
   return {
     isLoading,
     stats,
@@ -333,7 +386,11 @@ export const useLevel2Game = ({ moduleId, gameModeId }: UseLevel2GameOptions): U
     loadScoreHistory,
     loadGameDataWithHistory,
     markLevelCompleted,
+    trackGameModeProgression,
     hasCompleted,
+    completedGameModeIds,
+    isGameModeCompleted,
+    refreshCompletedGameModes,
     error,
   };
 };

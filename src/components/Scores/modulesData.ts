@@ -18,15 +18,15 @@ export const modules: Module[] = [
   },
   {
     id: 2,
-    status: 'locked'
+    status: 'completed'
   },
   {
     id: 3,
-    status: 'locked'
+    status: 'completed'
   },
   {
     id: 4,
-    status: 'locked'
+    status: 'completed'
   },
   {
     id: 5,

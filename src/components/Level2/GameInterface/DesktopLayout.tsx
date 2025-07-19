@@ -19,6 +19,8 @@ interface DesktopLayoutProps {
   getTermsInCategory: (categoryId: string) => Term[];
   correctTerms: Set<string>;
   incorrectTerms: Set<string>;
+  moduleId: number;
+  type: number;
 }
 
 const DesktopLayout: React.FC<DesktopLayoutProps> = ({
@@ -36,6 +38,8 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   getTermsInCategory,
   correctTerms,
   incorrectTerms,
+  moduleId,
+  type,
 }) => {
   return (
     <div className="h-screen flex flex-col">
@@ -60,6 +64,8 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
           progress={progress}
           hasExecuted={hasExecuted}
           isMobile={false}
+          moduleId={moduleId}
+          type={type}
         />
 
         {/* Target Zones - Horizontal Layout for Single Screen */}

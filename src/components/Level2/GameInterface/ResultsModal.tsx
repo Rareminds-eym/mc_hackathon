@@ -4,6 +4,9 @@ import { Term } from '../../../types/Level2/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LevelProgressService } from '../../../services/levelProgressService';
 import { useLevelProgress } from '../../../hooks/useLevelProgress';
+import { GameTypeResult } from '../hooks/useScoreAccumulator';
+import { useLevel2Game } from '../hooks/useLevel2Game';
+
 
 interface ResultsModalProps {
   showResults: boolean;
@@ -19,6 +22,9 @@ interface ResultsModalProps {
   levelId?: number;
   scoreHistory?: number[];
   timeHistory?: number[];
+  currentType?: number;
+  gameModeId?: string;
+  accumulatedResults?: GameTypeResult[];
 }
 
 const ResultsModal: React.FC<ResultsModalProps> = ({
@@ -35,12 +41,79 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
   levelId = 2,
   scoreHistory = [],
   timeHistory = [],
+  currentType: _currentType,
+  gameModeId: _gameModeId,
+  accumulatedResults = [],
 }) => {
   const { user } = useAuth();
   const [hasUpdatedProgress, setHasUpdatedProgress] = useState(false);
+  const [hasRemainingTypes, setHasRemainingTypes] = useState(false);
+  const [hasBatchProcessed, setHasBatchProcessed] = useState(false);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
   // Use level progress hook to refresh progress after completion
   const { refreshProgress } = useLevelProgress(moduleId);
+
+  // Initialize the Level2Game hook for batch processing
+  const { saveGameDataWithHistory } = useLevel2Game({
+    moduleId: moduleId.toString(),
+    gameModeId: _gameModeId || 'default'
+  });
+
+  // Batch process all accumulated results when modal becomes visible
+  useEffect(() => {
+    const batchProcessResults = async () => {
+      if (!showResults || !user || hasBatchProcessed || accumulatedResults.length === 0) {
+        return;
+      }
+
+      console.log('ResultsModal: Starting batch processing of accumulated results:', accumulatedResults);
+      setHasBatchProcessed(true);
+      setIsBatchProcessing(true);
+
+      try {
+        // Calculate aggregated totals from all game types
+        const totalScore = accumulatedResults.reduce((sum, result) => sum + result.currentScore, 0);
+        const totalTime = accumulatedResults.reduce((sum, result) => sum + result.time, 0);
+        const totalTerms = accumulatedResults.reduce((sum, result) => sum + result.totalTerms, 0);
+
+        // Combine all placed terms from all game types
+        const allPlacedTerms = accumulatedResults.reduce((allTerms, result) => {
+          return [...allTerms, ...result.placedTerms];
+        }, [] as Term[]);
+
+        // Check if all game types were completed
+        const allCompleted = accumulatedResults.every(result => result.isCompleted);
+
+        console.log(`ResultsModal: Saving aggregated total - Score: ${totalScore}, Time: ${totalTime}, Terms: ${totalTerms}, Completed: ${allCompleted}`);
+
+        // Save a single aggregated "Total" record instead of individual game type records
+        await saveGameDataWithHistory({
+          score: totalScore,
+          isCompleted: allCompleted,
+          time: totalTime,
+          totalTerms: totalTerms,
+          placedTerms: allPlacedTerms,
+        });
+
+        console.log('ResultsModal: Batch processing completed successfully with aggregated total');
+      } catch (error) {
+        console.error('ResultsModal: Error during batch processing:', error);
+      } finally {
+        setIsBatchProcessing(false);
+      }
+    };
+
+    batchProcessResults();
+  }, [showResults, user, hasBatchProcessed, accumulatedResults, saveGameDataWithHistory]);
+
+  // The flow system now handles when to show the ResultsModal
+  // This component should only be rendered when the entire module flow is complete
+  useEffect(() => {
+    // Always show the modal when this component is rendered
+    // The parent component (GameNavigator) controls when this should be shown
+    setHasRemainingTypes(false);
+  }, []);
 
   // Update level progress when modal becomes visible and game is completed
   useEffect(() => {
@@ -143,6 +216,85 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Calculate total accumulated scores from all game types
+  const getTotalAccumulatedScore = (): number => {
+    return accumulatedResults.reduce((total, result) => total + result.currentScore, 0);
+  };
+
+  const getTotalAccumulatedTime = (): number => {
+    return accumulatedResults.reduce((total, result) => total + result.time, 0);
+  };
+
+
+
+  // Safe navigation handler that waits for batch processing to complete
+  const handleSafeNavigation = async (navigationCallback: () => void) => {
+    // If batch processing is still in progress, wait for it to complete
+    if (isBatchProcessing) {
+      console.log('ResultsModal: Waiting for batch processing to complete before navigation...');
+      // Wait for batch processing to complete (with timeout)
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait
+      while (isBatchProcessing && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        console.warn('ResultsModal: Batch processing timeout, proceeding with navigation anyway');
+      } else {
+        console.log('ResultsModal: Batch processing completed, proceeding with navigation');
+      }
+    }
+
+    navigationCallback();
+  };
+
+  // Render accumulated results from all game types
+  const renderAccumulatedResults = () => {
+    if (!accumulatedResults || accumulatedResults.length === 0) {
+      return renderScoreHistory(); // Fallback to single game history
+    }
+
+    return (
+      <div className="mt-3 p-2 bg-gray-900 bg-opacity-50 pixel-border">
+        <div className="text-gray-400 text-xs font-bold mb-2 pixel-text">ALL GAME TYPES COMPLETED</div>
+        <div className="space-y-1">
+          {accumulatedResults.map((result) => (
+            <div
+              key={result.gameTypeId}
+              className="flex items-center justify-between text-xs pixel-text text-gray-300"
+            >
+              <div className="flex items-center space-x-2">
+                <Target className="w-3 h-3" />
+                <span>TYPE {result.gameTypeId}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-yellow-400">{result.currentScore}/40</span>
+                <Clock className="w-3 h-3" />
+                <span>{formatTime(result.time)}</span>
+              </div>
+            </div>
+          ))}
+          {/* Total Summary */}
+          <div className="border-t border-gray-600 pt-1 mt-1">
+            <div className="flex items-center justify-between text-xs pixel-text text-cyan-300 font-bold">
+              <div className="flex items-center space-x-2">
+                <Target className="w-3 h-3" />
+                <span>TOTAL</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span>{getTotalAccumulatedScore()}/{accumulatedResults.length * 40}</span>
+                <Clock className="w-3 h-3" />
+                <span>{formatTime(getTotalAccumulatedTime())}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderScoreHistory = () => {
     if (!scoreHistory || scoreHistory.length === 0) return null;
 
@@ -183,6 +335,9 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
 
   if (!showResults) return null;
 
+  // If there are remaining types in the current module, don't render the modal
+  if (hasRemainingTypes) return null;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-2 z-50">
       <div className={`pixel-border-thick bg-gray-800 relative overflow-hidden ${
@@ -220,19 +375,35 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
                 <div className="w-full">
                   {/* Scores */}
                   <div className="text-center mb-3">
-                    <div className="text-2xl font-black text-yellow-400 pixel-text">
-                      {currentScore}/40
-                    </div>
-                    <div className="text-xl font-black text-cyan-300 pixel-text">
-                      {score}%
-                    </div>
-                    <p className="text-gray-300 text-xs font-bold pixel-text">
-                      {totalCorrect}/{terms.length} TARGETS HIT
-                    </p>
+                    {accumulatedResults.length > 0 ? (
+                      <>
+                        <div className="text-2xl font-black text-yellow-400 pixel-text">
+                          {getTotalAccumulatedScore()}/{accumulatedResults.length * 40}
+                        </div>
+                        <div className="text-xl font-black text-cyan-300 pixel-text">
+                          {Math.round((getTotalAccumulatedScore() / (accumulatedResults.length * 40)) * 100)}%
+                        </div>
+                        <p className="text-gray-300 text-xs font-bold pixel-text">
+                          ALL {accumulatedResults.length} GAME TYPES COMPLETED
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-black text-yellow-400 pixel-text">
+                          {currentScore}/40
+                        </div>
+                        <div className="text-xl font-black text-cyan-300 pixel-text">
+                          {score}%
+                        </div>
+                        <p className="text-gray-300 text-xs font-bold pixel-text">
+                          {totalCorrect}/{terms.length} TARGETS HIT
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   {/* Score History for Mobile */}
-                  {renderScoreHistory()}
+                  {renderAccumulatedResults()}
                 </div>
               </div>
 
@@ -240,11 +411,16 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
               <div className="flex-shrink-0">
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={onNextLevel}
-                    className="pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-2 py-2 font-black text-xs pixel-text transition-all duration-300"
+                    onClick={() => handleSafeNavigation(onNextLevel)}
+                    disabled={isBatchProcessing}
+                    className={`pixel-border-thick ${
+                      isBatchProcessing
+                        ? 'bg-gray-600 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500'
+                    } text-white px-2 py-2 font-black text-xs pixel-text transition-all duration-300`}
                   >
                     <div className="flex items-center justify-center space-x-1">
-                      <span>NEXT LEVEL</span>
+                      <span>{isBatchProcessing ? 'SAVING...' : 'CONTINUE'}</span>
                       <ArrowRight className="w-3 h-3" />
                     </div>
                   </button>
@@ -273,28 +449,49 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
 
               {/* Score Display */}
               <div className="mb-4">
-                <div className="text-4xl font-black text-yellow-400 mb-1 pixel-text">
-                  {currentScore}/40
-                </div>
-                <div className="text-3xl font-black text-cyan-300 mb-1 pixel-text">
-                  {score}%
-                </div>
-                <p className="text-gray-300 text-base font-bold pixel-text">
-                  {totalCorrect}/{terms.length} TARGETS HIT
-                </p>
+                {accumulatedResults.length > 0 ? (
+                  <>
+                    <div className="text-4xl font-black text-yellow-400 mb-1 pixel-text">
+                      {getTotalAccumulatedScore()}/{accumulatedResults.length * 40}
+                    </div>
+                    <div className="text-3xl font-black text-cyan-300 mb-1 pixel-text">
+                      {Math.round((getTotalAccumulatedScore() / (accumulatedResults.length * 40)) * 100)}%
+                    </div>
+                    <p className="text-gray-300 text-base font-bold pixel-text">
+                      ALL {accumulatedResults.length} GAME TYPES COMPLETED
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-black text-yellow-400 mb-1 pixel-text">
+                      {currentScore}/40
+                    </div>
+                    <div className="text-3xl font-black text-cyan-300 mb-1 pixel-text">
+                      {score}%
+                    </div>
+                    <p className="text-gray-300 text-base font-bold pixel-text">
+                      {totalCorrect}/{terms.length} TARGETS HIT
+                    </p>
+                  </>
+                )}
 
                 {/* Score History for Desktop */}
-                {renderScoreHistory()}
+                {renderAccumulatedResults()}
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-2">
                 <button
-                  onClick={onNextLevel}
-                  className="w-full pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-6 py-3 font-black text-base pixel-text transition-all duration-300 hover:scale-105"
+                  onClick={() => handleSafeNavigation(onNextLevel)}
+                  disabled={isBatchProcessing}
+                  className={`w-full pixel-border-thick ${
+                    isBatchProcessing
+                      ? 'bg-gray-600 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 hover:scale-105'
+                  } text-white px-6 py-3 font-black text-base pixel-text transition-all duration-300`}
                 >
                   <div className="flex items-center justify-center space-x-2">
-                    <span>NEXT LEVEL</span>
+                    <span>{isBatchProcessing ? 'SAVING...' : 'CONTINUE'}</span>
                     <ArrowRight className="w-5 h-5" />
                   </div>
                 </button>

@@ -83,7 +83,7 @@ const CategoryBox: React.FC<CategoryBoxProps> = ({
       let baseStyles = `bg-gradient-to-br ${getCategoryColor()} h-full relative overflow-hidden transition-all duration-300 flex flex-col rounded-lg shadow-lg border-2 touch-manipulation`;
 
       if (isOver) {
-        baseStyles += ' border-cyan-400 transform scale-105 shadow-2xl mobile-drop-zone-active';
+        baseStyles += ' border-cyan-400 transform  shadow-2xl mobile-drop-zone-active';
       } else {
         baseStyles += ' border-slate-600 hover:border-slate-500';
       }
@@ -138,12 +138,12 @@ const CategoryBox: React.FC<CategoryBoxProps> = ({
               <div className="flex items-center space-x-2">
                 {/* Zone Title */}
                 <div>
-                  <h3 className={`text-sm font-black text-white transition-all duration-300 ${
+                  <h3 className={`text-mobile2 font-semibold  text-white transition-all duration-300 ${
                     isOver ? 'animate-pulse text-yellow-300' : ''
                   }`}>
                     {getCategoryName()}
                   </h3>
-                  <div className={`text-white/80 text-xs font-bold transition-all duration-300 ${
+                  <div className={`text-white/80 text-mobile1  transition-all duration-300 ${
                     isOver ? 'text-yellow-200' : ''
                   }`}>
                     {getCategorySubtitle()}
