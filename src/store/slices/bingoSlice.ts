@@ -10,7 +10,8 @@ interface BingoState {
   selectedCells: number[];     // array of selected cell indices
   selectedDefinition: string;  // current definition
   completedLinesState: number[][]; // array of completed line patterns
-  rowsSolved: number; // number of rows solved
+  rowsSolved: number;
+  is_completed: boolean; // number of rows solved
 }
 
 const initialState: BingoState = {
@@ -22,6 +23,7 @@ const initialState: BingoState = {
   selectedDefinition: '',
   completedLinesState: [],
   rowsSolved: 0,
+  is_completed: false,
 };
 
 const bingoSlice = createSlice({
@@ -55,6 +57,7 @@ const bingoSlice = createSlice({
       state.selectedDefinition = '';
       state.completedLinesState = [];
       state.rowsSolved = 0;
+      state.is_completed = false;
     },
     saveState: (state, action: PayloadAction<Partial<BingoState>>) => {
       Object.assign(state, action.payload);
