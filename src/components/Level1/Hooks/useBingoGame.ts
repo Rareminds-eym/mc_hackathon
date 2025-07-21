@@ -252,7 +252,6 @@ export const useBingoGame = () => {
         .from('level_1')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_completed', false)
         .order('game_start_time', { ascending: false })
         .limit(1);
 
@@ -425,8 +424,11 @@ export const useBingoGame = () => {
           // If the game is completed, show the modal on resume
           if (savedGame.is_completed) {
             setShowGameCompleteModal(true);
+            setGameComplete(true);
+            console.log('✅ Resumed game marked complete — confetti triggered!');
             setSelectedDefinitionState('');
-          } else if (savedGame.current_definition) {
+          } 
+          else if (savedGame.current_definition) {
             // Only set the current definition if it is still unanswered
             const isAnswered = restoredCells.some(cell => cell.definition === savedGame.current_definition && cell.selected);
             if (!isAnswered) {
@@ -443,12 +445,11 @@ export const useBingoGame = () => {
           }
           console.log('Game restored from database');
         } else if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
-          // Restore from Redux
           const restoredCells = BINGO_DATA.map((item, index) => ({
             id: index,
             term: item.term,
             definition: item.definition,
-            selected: bingoRedux.selectedCells.includes(index)
+            selected: bingoRedux.selectedCells.includes(index),
           }));
           setCells(restoredCells);
           setCompletedLines(bingoRedux.completedLinesState || []); 
@@ -491,7 +492,13 @@ export const useBingoGame = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, [gameComplete, timerActive, answerFeedback.isVisible, completedLineModal]);
-
+   useEffect(() => {
+  if (gameComplete) {
+    console.log("🎉 Running confetti because gameComplete = true");
+    triggerGameCompleteConfetti();
+    setShowGameCompleteModal(true);
+  }
+}, [gameComplete, triggerGameCompleteConfetti]);
   // Timer control functions
   const startTimer = useCallback(() => setTimerActive(true), []);
   const stopTimer = useCallback(() => setTimerActive(false), []);
@@ -520,8 +527,9 @@ export const useBingoGame = () => {
       ],
       selectedCells: cells.filter(cell => cell.selected).map(cell => cell.id),
       selectedDefinition,
+      is_completed: gameComplete,
     }));
-  }, [timer, score, completedLines, cells, selectedDefinition, rowsSolved, dispatch, isInitialized]);
+  }, [timer, score, completedLines, cells, selectedDefinition, rowsSolved, dispatch, isInitialized, gameComplete]);
 
   // Separate effect for periodic database saves (every 30 seconds)
   useEffect(() => {
@@ -661,6 +669,7 @@ export const useBingoGame = () => {
       // If all Bingo lines are completed, mark game as complete and persist it
       const totalPatterns = patterns.length;
       if (newCompletedLinesState.length >= totalPatterns) {
+        console.log('✅ All lines done!');
         setGameComplete(true);
         triggerGameCompleteConfetti();
         markGameCompleted(newScore, timer, newRowsSolved);
