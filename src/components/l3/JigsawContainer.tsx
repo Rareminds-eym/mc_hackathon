@@ -117,22 +117,6 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
               {theme.name}
             </span>
           </div>
-          {/* Progress stars */}
-          <div className="flex space-x-1">
-            {[...Array(3)].map((_, i) => (
-              <Award
-                key={i}
-                className={`w-4 h-4 ${
-                  i < starCount ? "text-yellow-400" : "text-gray-700"
-                } ${
-                  i === starCount - 1 && recentlyCompleted
-                    ? "animate-bounce"
-                    : ""
-                }`}
-                fill={i < starCount ? "rgb(250 204 21)" : "transparent"}
-              />
-            ))}
-          </div>
         </div>
 
         {/* Progress bar */}
@@ -220,7 +204,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
             {/* Pieces container */}
             <div className="p-2">
               {pieces.length > 0 ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3 items-center w-full">
                   {pieces.map((piece, index) => {
                     // --- DraggablePiece.tsx style ---
                     const borderColor = 'border-pink-400';
@@ -238,7 +222,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
                     return (
                       <div
                         key={piece.id}
-                        className={`group relative select-none flex
+                        className={`group relative select-none flex flex-col items-center justify-center
                           bg-gradient-to-br ${bgGradient} text-white p-4 font-extrabold text-center pixel-text tracking-wider
                           shadow-[0_0_24px_4px_#f0f,0_2px_12px_0_#0008]
                           border-4 ${borderColor} pixel-border-thick overflow-hidden
@@ -248,6 +232,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
                         style={{
                           minHeight: '58px',
                           maxWidth: '260px',
+                          width: '100%',
                           filter: isComplete ? 'brightness(1.1) grayscale(0.05)' : 'brightness(1.05)',
                           clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
                           borderRadius: '12px',
@@ -269,13 +254,13 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
                         </div>
 
                         {/* Cyberpunk Sparkle/Retro Effect */}
-                        <div className="absolute top-2 right-2 z-30 flex gap-1">
+                        <div className="absolute top-2 right-2 z-30 flex gap-1 items-center">
                           <Sparkles className="w-4 h-4 text-yellow-200 animate-pulse group-hover:animate-spin drop-shadow-glow" />
                           <Zap className="w-4 h-4 text-pink-300 animate-pulse group-hover:animate-spin drop-shadow-glow" />
                         </div>
 
                         {/* Main Content */}
-                        <div className="relative z-40 pointer-events-none h-full my-auto flex items-center justify-center text-center">
+                        <div className="relative z-40 pointer-events-none h-full my-auto flex items-center justify-center text-center w-full">
                           <div className="w-full text-base leading-tight drop-shadow-glow flex items-center justify-center text-center px-1" style={{textShadow:'0 2px 8px #f0f8, 0 1px 0 #fff8'}}>
                             {piece.text}
                           </div>
@@ -293,7 +278,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
                   {Array.from({ length: maxPieces - pieces.length }, (_, i) => (
                     <div
                       key={`empty-${i}`}
-                      className={`p-3 min-h-[52px] flex items-center justify-center transition-all duration-300 ${
+                      className={`p-3 min-h-[52px] flex items-center justify-center w-full transition-all duration-300 ${
                         isOver ? "bg-gray-800/60" : "bg-gray-900/30"
                       } ${isOver ? "animate-quick-pulse" : ""}`}
                       style={{

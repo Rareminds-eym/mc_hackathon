@@ -17,51 +17,50 @@ export const Arsenal: React.FC<ArsenalProps> = ({
   isMobile,
   isHorizontal
 }) => {
-  // Pixel/retro card style for arsenal, inspired by HomePage.tsx
+  // Pixel/retro card style for arsenal, matching JigsawContainer.tsx
   return (
-    <div
-      className={`w-full max-w-md mx-auto relative z-10`}
-      style={{ minHeight: isMobile ? 180 : 260 }}
-    >
+    <div className="w-full max-w-md mx-auto relative z-10">
       <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-50"></div>
         <div className="absolute top-0 right-0 w-12 h-12 bg-cyan-500 opacity-10 pixel-corner"></div>
 
-        {/* Arsenal Title */}
-        <div className="flex items-center space-x-3 mb-3 relative z-10">
-          <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 pixel-border flex items-center justify-center">
-            <Zap className="w-6 h-6 text-yellow-300 animate-flicker" />
+        {/* Header with icon and title */}
+        <div className="flex items-center justify-between lg:mb-2 relative z-10">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 pixel-border flex items-center justify-center">
+              <Zap className="w-5 h-5 text-yellow-300 animate-flicker" />
+            </div>
+            <span className="text-base font-black text-cyan-200 pixel-text tracking-wider">ARSENAL</span>
           </div>
-          <h3 className="text-lg font-black text-cyan-200 pixel-text tracking-wider">ARSENAL</h3>
         </div>
 
         {/* Pieces List */}
         <div
           ref={arsenalRef}
-          className="space-y-2 overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2"
+          className="overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2 gap-3"
           style={{ maxHeight: isMobile ? 180 : 260 }}
         >
-          {availablePieces.length === 0 ? (
-            <div className="text-gray-400 text-center text-sm py-8 opacity-70">No pieces left!</div>
+          {availablePieces.length > 0 ? (
+            <div className="flex flex-col gap-3 items-center w-full">
+              {availablePieces.map((piece: PuzzlePiece) => (
+                <DraggablePiece key={piece.id} piece={piece} />
+              ))}
+            </div>
           ) : (
-            availablePieces.map((piece: PuzzlePiece) => (
-              <DraggablePiece key={piece.id} piece={piece} />
-            ))
-          )}
-        </div>
-
-        {/* Start Mission Button (if empty, for style) */}
-        {availablePieces.length === 0 && (
-          <div className="mt-4 flex justify-center">
-            <div className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 p-2">
-              <div className="flex items-center justify-center text-white font-black text-sm pixel-text">
-                <Play className="w-4 h-4 mr-2" />
-                ALL PLACED!
+            <div className="flex flex-col items-center justify-center py-8 px-2 transition-all duration-300" style={{
+              clipPath:
+                "polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)",
+              border: "2px dashed rgba(14, 165, 233, 0.3)",
+            }}>
+              <Zap className="w-10 h-10 mb-2 animate-pulse text-blue-400" />
+              <p className="text-sm text-gray-400 text-center font-medium game-font">No pieces left!</p>
+              <div className="mt-3">
+                <div className="px-3 py-1 rounded-md border border-blue-600/50 text-blue-400 text-xs animate-pulse">ALL PLACED!</div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Scan Lines Effect */}
         <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>

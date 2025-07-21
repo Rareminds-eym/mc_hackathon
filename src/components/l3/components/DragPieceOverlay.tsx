@@ -14,7 +14,7 @@ export const DragPieceOverlay: React.FC<DragPieceOverlayProps> = ({
 }) => {
   if (!activeDragPiece) return null;
   
-  // --- DraggablePiece.tsx style ---
+  // Styles from DraggablePiece for visual consistency
   const borderColor = 'border-pink-400';
   const bgGradient = 'from-fuchsia-900/90 via-indigo-900/80 to-blue-800/80';
   const glassBg = 'bg-white/20 backdrop-blur-lg';
@@ -38,25 +38,23 @@ export const DragPieceOverlay: React.FC<DragPieceOverlayProps> = ({
       }}
     >
       <div
-        className={`group relative pointer-events-none select-none flex
-        bg-gradient-to-br ${bgGradient} text-white p-4 font-extrabold text-center pixel-text tracking-wider
-        shadow-[0_0_24px_4px_#f0f,0_2px_12px_0_#0008]
-        border-4 ${borderColor} pixel-border-thick overflow-hidden
-        ${isMobile ? 'arsenal-piece-mobile-horizontal' : ''}
-        ${glassBg}
+        className={`group relative select-none flex flex-col items-center justify-center pointer-events-none
+          bg-gradient-to-br ${bgGradient} text-white p-4 font-extrabold text-center pixel-text tracking-wider
+          shadow-[0_0_24px_4px_#f0f,0_2px_12px_0_#0008]
+          border-4 ${borderColor} pixel-border-thick overflow-hidden
+          ${glassBg}
+          transition-all duration-300 ease-out hover:translate-y-[-2px] hover:scale-[1.02] animate-drop-in
+          opacity-80 saturate-150 z-50
+          ${isMobile ? 'arsenal-piece-mobile-horizontal' : ''}
         `}
         style={{
-          minHeight: isMobile ? '58px' : '80px',
-          height: isMobile ? '58px' : undefined,
-          maxWidth: isMobile ? '220px' : '260px',
-          filter: 'brightness(1.2) grayscale(0.1) blur(0.5px)',
+          minHeight: '58px',
+          maxWidth: '260px',
+          width: '100%',
+          filter: 'brightness(1.1) grayscale(0.05)',
           clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
           borderRadius: '12px',
-          touchAction: 'none',
-          opacity: 0.9,
-          transform: 'scale(0.97) rotate(1deg)',
-          transition: 'transform 0.18s, opacity 0.18s, filter 0.18s',
-          boxShadow: '0 0 0 4px #fff, 0 0 32px 8px #f0f, 0 0 12px 2px #fff, 0 0 0 2px #f0f8',
+          boxShadow: '0 0 0 4px #fff, 0 0 32px 8px #0f0, 0 0 12px 2px #fff, 0 0 0 2px #0f08',
         }}
       >
         {/* Neon Scanline/Glow Overlay */}
