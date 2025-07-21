@@ -1,18 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import {
-  Target,
-  CheckCircle,
-  Puzzle,
-  Zap,
-  Shield,
-  Award,
-  Play,
-  Sparkles,
-} from "lucide-react";
+import { Target, CheckCircle, Puzzle, Zap, Shield, Play, Sparkles } from "lucide-react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import "../Level2/index.css";
-
 interface PuzzlePiece {
   id: string;
   text: string;
@@ -22,32 +12,17 @@ interface PuzzlePiece {
 
 interface JigsawContainerProps {
   type: "violations" | "actions";
-  title: string; // Keeping for compatibility
   pieces: PuzzlePiece[];
   maxPieces: number;
-  onDrop: (
-    containerType: "violations" | "actions",
-    piece: PuzzlePiece
-  ) => { success: boolean };
 }
 
-export const JigsawContainer: React.FC<JigsawContainerProps> = ({
-  type,
-  pieces,
-  maxPieces,
-  onDrop,
-}) => {
+export const JigsawContainer: React.FC<JigsawContainerProps> = ({ type, pieces, maxPieces }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
-  const isMobileHorizontal = isMobile && isHorizontal;
-  const { setNodeRef, isOver } = useDroppable({
-    id: type,
-    data: { type },
-  });
+  const { setNodeRef, isOver } = useDroppable({ id: type, data: { type } });
   const isComplete = pieces.length === maxPieces;
   const [showDropAnimation, setShowDropAnimation] = useState(false);
   const [recentlyCompleted, setRecentlyCompleted] = useState(false);
 
-  // Track when container becomes complete to trigger celebration animation
   useEffect(() => {
     if (isComplete) {
       setRecentlyCompleted(true);
@@ -56,7 +31,6 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
     }
   }, [isComplete]);
 
-  // Show drop zone animation briefly when hovering
   useEffect(() => {
     if (isOver) {
       setShowDropAnimation(true);
@@ -66,13 +40,12 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
     }
   }, [isOver]);
 
-  // Game theme based on container type
   const gameTheme = {
     violations: {
       name: "Security Vault",
       icon: <Shield className="w-5 h-5" />,
-      baseColor: "rgb(239, 68, 68)", // Red
-      hoverColor: "rgb(248, 113, 113)", // Light red
+      baseColor: "rgb(239, 68, 68)",
+      hoverColor: "rgb(248, 113, 113)",
       glowColor: "rgba(239, 68, 68, 0.6)",
       bgGradient:
         "radial-gradient(circle at top right, rgba(153, 27, 27, 0.4), rgba(15, 23, 42, 0.9))",
@@ -81,28 +54,24 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
     actions: {
       name: "Action Hub",
       icon: <Zap className="w-5 h-5" />,
-      baseColor: "rgb(14, 165, 233)", // Blue
-      hoverColor: "rgb(56, 189, 248)", // Light blue
+      baseColor: "rgb(14, 165, 233)",
+      hoverColor: "rgb(56, 189, 248)",
       glowColor: "rgba(14, 165, 233, 0.6)",
       bgGradient:
         "radial-gradient(circle at top right, rgba(30, 64, 175, 0.4), rgba(15, 23, 42, 0.9))",
       emptySlotMessage: "Action plan needs strategies!",
     },
   };
-
   const theme = gameTheme[type];
-
-  // Determine completion level for progress bar
   const completionPercent = (pieces.length / maxPieces) * 100;
   const progressBarWidth = `${completionPercent}%`;
-
-  // Calculate stars based on completion
-  const starCount = Math.ceil((pieces.length / maxPieces) * 3);
 
   // Pixel/retro card style for container, inspired by HomePage.tsx
   return (
     <div className="w-full max-w-md mx-auto relative z-10">
-      <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden">
+      <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden"
+      style={{ height: isMobile ? 'calc(100vh - 70px)' : 'calc(100vh - 220px)' }}
+      >
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 opacity-50"></div>
         <div className="absolute top-0 right-0 w-12 h-12 bg-cyan-500 opacity-10 pixel-corner"></div>
@@ -186,18 +155,6 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
             {recentlyCompleted && (
               <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
                 <div className="absolute inset-0 animate-fade-out bg-green-500/10" />
-                {[...Array(20)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full bg-yellow-400 animate-confetti"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 1}s`,
-                      animationDuration: `${1 + Math.random() * 2}s`,
-                    }}
-                  />
-                ))}
               </div>
             )}
 
@@ -343,7 +300,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({
           </div>
 
           {/* Bottom display - like a game console */}
-          {isComplete && (
+          {isComplete && !isMobile && (
             <div className="mt-4 flex justify-center">
               <div className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 p-2">
                 <div className="flex items-center justify-center text-white font-black text-sm pixel-text">

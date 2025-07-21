@@ -39,7 +39,7 @@ export const Arsenal: React.FC<ArsenalProps> = ({
         <div
           ref={arsenalRef}
           className="overflow-y-auto flex-1 min-h-0 flex flex-col items-center custom-scrollbar relative z-10 w-full px-2 py-2 gap-3"
-          style={{ maxHeight: isMobile ? 180 : 260 }}
+          style={{ maxHeight: isMobile ? 'calc(100vh - 140px)' : 'calc(100vh - 300px)' }}
         >
           {availablePieces.length > 0 ? (
             <div className="flex flex-col gap-3 items-center w-full">

@@ -532,10 +532,8 @@ export const JigsawBoard: React.FC = () => {
             <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
               <JigsawContainer
                 type="violations"
-                title="Violation Container"
                 pieces={placedPieces.violations}
                 maxPieces={correctViolations.length}
-                onDrop={handleDrop}
               />
               <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
             </section>
@@ -555,10 +553,8 @@ export const JigsawBoard: React.FC = () => {
             <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
               <JigsawContainer
                 type="actions"
-                title="Action Container"
                 pieces={placedPieces.actions}
                 maxPieces={correctActions.length}
-                onDrop={handleDrop}
               />
               <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
             </section>
