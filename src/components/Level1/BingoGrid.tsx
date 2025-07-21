@@ -147,7 +147,7 @@ const BingoGrid: React.FC<BingoGridProps> = ({
   }`;
 
   return (
-    <div className={`pixel-border-narrow bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl p-3 sm:p-4 transition-[box-shadow,transform] duration-300 ${
+    <div className={`pixel-border-narrow bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl p-3 sm:p-1 transition-[box-shadow,transform] duration-300 ${
       isHorizontal ? 'p-1' : ''
     } ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`}
       data-tutorial-highlight="bingogrid"
