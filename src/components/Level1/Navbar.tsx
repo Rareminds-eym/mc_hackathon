@@ -43,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
 
   // Pixel/Panel UI
   return (
-    <nav className={`relative z-50 w-full ${isMobile ? 'px-4 py-1' : 'px-2 py-2'} bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 pixel-border-thick shadow-lg`}
+    <nav className={`relative z-50 w-full ${isMobile ? 'px-4' : 'px-2 py-2'} bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 pixel-border-thick shadow-lg`}
       style={{ minHeight: isMobileLandscape ? 38 : isMobile ? 44 : 56 }}
     >
       <div className={`flex items-center justify-between w-full max-w-7xl mx-auto ${isMobileLandscape ? 'gap-1' : 'gap-8'}`}>
