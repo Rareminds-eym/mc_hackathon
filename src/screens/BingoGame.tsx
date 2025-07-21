@@ -23,8 +23,6 @@ const BingoGame: React.FC = () => {
     rowsSolved,
     gameComplete,
     toggleCell,
-    restartGame,
-    playAgain,
     closeAnswerModal,
     isInCompletedLine,
     timer,
@@ -32,6 +30,7 @@ const BingoGame: React.FC = () => {
     closeCompletedLineModal,
     startTimer,
     stopTimer,
+    playAgain,
   } = useBingoGame();
 
   const {
@@ -111,7 +110,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: isMobile ? '1rem 3.5rem 1rem 3.5rem' : '1rem', // top/right/left: 3rem, bottom: 1rem for mobile
+    padding: isMobile ? '0.3rem 3.5rem 1rem 3.5rem' : '1rem', // top/right/left: 3rem, bottom: 1rem for mobile
   };
   const gridStyle: React.CSSProperties = {
     width: '100%',
@@ -219,20 +218,12 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
     }
   };
 
-  // Play Again: Save attempt and start new game (for GameCompleteModal)
-  const handlePlayAgain = async () => {
-    await playAgain();
+  // Custom play again handler to reset game and instructions
+  const handlePlayAgain = () => {
+    playAgain(); // Call the hook's playAgain to reset game and log
     setInstructionsStep(undefined); // Start from the beginning of instructions
     setTutorialDone(false); // Show instructions/conversation again
     setResetCount(c => c + 1); // Force re-mount GameInstructions
-  };
-
-  // Restart: Just reset state, do NOT update attempt history (for Navbar)
-  const handleRestart = () => {
-    restartGame();
-    setInstructionsStep(undefined);
-    setTutorialDone(false);
-    setResetCount(c => c + 1);
   };
 
   if (loading) {
@@ -254,7 +245,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
           onHomeClick={handleHomeClick}
           onResetTutorial={resetTutorial}
           timer={timer}
-          onPlayAgain={handleRestart} // Use restart handler for Navbar
+          onPlayAgain={handlePlayAgain} // Use custom handler
           tutorialStep={currentStep?.id} // Pass tutorial step to Navbar
         />
         <motion.div
@@ -299,7 +290,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
                       alt="Bingo Logo"
                       style={{
                         display: 'block',
-                        height: '140px',
+                        height: '80px',
                         padding: '0.6rem 0 1rem 0',
                         marginLeft: '4rem',
                       }}
