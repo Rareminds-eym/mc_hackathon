@@ -172,22 +172,18 @@ export const Popup: React.FC<PopupProps> = ({
 };
 
 interface VictoryPopupProps {
-  open: boolean;
-  onClose: () => void;
-  score: number;
-  combo: number;
-  health: number;
-  showNext?: boolean;
-  showGoToModules?: boolean;
-  moduleId?: string;
+open: boolean;
+onClose: () => void;
+score: number;
+showNext?: boolean;
+showGoToModules?: boolean;
+moduleId?: string;
 }
 
 export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   open,
   onClose,
   score,
-  combo,
-  health,
   showNext = false,
   showGoToModules = true,
   moduleId,
@@ -332,7 +328,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
           Well Done!
         </motion.h2>
         
-        {/* Score, Combo, and Health Display */}
+        {/* Score Display Only */}
         <motion.div 
           className={`flex justify-center ${isMobileHorizontal ? "gap-2 mb-1" : "gap-6 mb-3"}`}
           initial={{ y: 20, opacity: 0 }}
@@ -348,18 +344,6 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Score</span>
             <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-green-600`}>
               {score} / 30
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Combo</span>
-            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-yellow-600`}>
-              {combo}
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Health</span>
-            <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-pink-600`}>
-              {health}
             </span>
           </div>
         </motion.div>
