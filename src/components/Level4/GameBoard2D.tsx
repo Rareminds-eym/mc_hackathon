@@ -1,7 +1,11 @@
+// Dynamically change module
+  const setModule = (num: number) => {
+    setGameState(prev => ({ ...prev, moduleNumber: num }));
+  };
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { GameState } from './types';
-import { cases } from './data/cases';
+import { casesByModule } from './data/cases';
 import { Product2D } from './Product2D';
 import { QuestionPanel } from './QuestionPanel';
 import { GameHeader } from './GameHeader';
@@ -21,8 +25,10 @@ import { saveLevel4Completion } from '../../services/level4GameService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui';
 import { Crown, Gamepad2 } from 'lucide-react';
+// ...existing code...
 
 type GamePhase = 'login' | 'reportView' | 'step1' | 'step2' | 'step3' | 'feedback';
+type GamePhaseExtended = GamePhase | 'productShowcase';
 
 // Avatar options for modal (copied from HomeScreen)
 const AVATAR_OPTIONS = [
@@ -37,12 +43,18 @@ const AVATAR_OPTIONS = [
 ];
 
 export const GameBoard2D: React.FC = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
+  // Debug: log useParams output to diagnose routing issues
+  const params = useParams();
+  // console.log("useParams output:", params);
   // All state hooks need to be at the top level of the component
+  const module = params.moduleId ?? params.module;
+  const level = params.level;
+  const { user } = useAuth();
+  const initialModuleNumber = module ? Number(module) : 1;
+  const levelNumber = level ? Number(level) : 4;
   const [gameState, setGameState] = useState<GameState>({
     currentCase: 0,
+    moduleNumber: initialModuleNumber,
     answers: {
       violation: null,
       rootCause: null,
@@ -54,10 +66,27 @@ export const GameBoard2D: React.FC = () => {
     gameComplete: false
   });
 
+  // Update gameState.moduleNumber whenever the module param changes
+  useEffect(() => {
+    if (module) {
+      setGameState(prev => ({
+        ...prev,
+        moduleNumber: Number(module),
+        currentCase: 0,
+        answers: { violation: null, rootCause: null, impact: null },
+        score: 0,
+        totalQuestions: 0,
+        showFeedback: false,
+        gameComplete: false
+      }));
+    }
+  }, [module]);
+
   // Track all component state at the top level
   // High score state is handled elsewhere now
   const [, setIsHighScore] = useState(false); // Keep setter for future use
-  const [currentPhase, setCurrentPhase] = useState<GamePhase>('login');
+  // Add new phase for ProductShowcase
+  const [currentPhase, setCurrentPhase] = useState<GamePhaseExtended>('productShowcase');
   const [canContinue, setCanContinue] = useState(true); // Login phase always allows continue
   const [timer, setTimer] = useState<number>(0); // Start from 0
   const [timerActive, setTimerActive] = useState<boolean>(false);
@@ -82,8 +111,13 @@ export const GameBoard2D: React.FC = () => {
   });
 
   // Derived state
-  const currentCase = cases[gameState.currentCase];
-  
+  // Dynamically select module number, always prefer URL param if available
+  const moduleNumber = module ? Number(module) : (gameState.moduleNumber || 1);
+  // Support both string and number keys in casesByModule (type assertion for TS)
+  const moduleCases = (casesByModule as any)[moduleNumber] || (casesByModule as any)[String(moduleNumber)] || [];
+  // console.log("👉 Selected moduleNumber:", moduleNumber);
+  const currentCase = moduleCases[gameState.currentCase];
+  // console.log("Params:", module, moduleNumber, (casesByModule as any)[moduleNumber], (casesByModule as any)[String(moduleNumber)]);
   // Add Supabase integration
   const { syncGameState, completeGame, checkHighScore } = useSupabaseSync();
 
@@ -206,12 +240,13 @@ export const GameBoard2D: React.FC = () => {
     }
     
     switch (currentPhase) {
+      case 'productShowcase':
+        setCurrentPhase('login');
+        setCanContinue(true);
+        break;
       case 'login':
         setCurrentPhase('reportView');
         setCanContinue(true);
-        // Log when starting a new case
-        console.log(`[Game] Starting case ${gameState.currentCase + 1} with accumulated score ${gameState.score}`);
-        // Loading state is handled differently now, so no need to set it
         break;
       case 'reportView':
         setCurrentPhase('step1');
@@ -243,7 +278,7 @@ export const GameBoard2D: React.FC = () => {
         const correctAnswers = getCorrectAnswers();
         if (correctAnswers === 3) {
           // Only continue if all answers are correct
-          if (gameState.currentCase < cases.length - 1) {
+          if (gameState.currentCase < moduleCases.length - 1) {
             // Move to next case - maintain the accumulated score
             // Important: We do NOT reset the score here as we want to keep accumulating it across cases
             const nextGameState = {
@@ -289,7 +324,7 @@ export const GameBoard2D: React.FC = () => {
               try {
                 await saveLevel4Completion({
                   userId: user.id,
-                  moduleId: 1, // Assuming module 1 for Level 4
+                  moduleId: moduleNumber, // Use dynamic module number
                   score: gameState.score,
                   time: timer,
                   violations: gameState.currentCase + 1, // Number of cases completed
@@ -338,11 +373,36 @@ export const GameBoard2D: React.FC = () => {
   };
 
   const handleBack = () => {
+    // Windows-style navigation logic for back button
+    // Returns the current module id, prioritizing URL param, then state, then fallback
+    const getCurrentModuleId = () => {
+      // 1. Use module param if available and valid
+      if (module && !isNaN(Number(module))) return module;
+      // 2. Use gameState.moduleNumber if available and valid
+      if (gameState.moduleNumber && !isNaN(Number(gameState.moduleNumber))) return String(gameState.moduleNumber);
+      // 3. Try to extract from URL as fallback
+      const match = window.location.pathname.match(/modules\/(\d+)/);
+      if (match && match[1]) return match[1];
+      // 4. Default fallback
+      return '1';
+    };
+    const resolvedModuleId = getCurrentModuleId();
+    console.log('[handleBack] Navigating to module:', {
+      resolvedModuleId,
+      routeParam: module,
+      gameStateModule: gameState.moduleNumber,
+      url: window.location.pathname
+    });
     switch (currentPhase) {
-      case 'login':
-        // Dynamic module navigation based on current case (SPA routing)
-        navigate(`/modules/${gameState.currentCase + 1}`);
+      case 'login': {
+        // More robust navigation: use replace and fallback reload
+        try {
+          window.location.replace('/modules');
+        } catch (e) {
+          window.location.href = '/modules';
+        }
         break;
+      }
       case 'reportView':
         setCurrentPhase('login');
         setCanContinue(true);
@@ -439,7 +499,7 @@ export const GameBoard2D: React.FC = () => {
   // Phase 1: Login
   const renderLogin = () => {
     // Filter for special cases with negative indices
-    const specialCases = cases.filter((c, idx) => idx === -1 || idx === -2);
+    const specialCases = moduleCases.filter((c, idx) => idx === -1 || idx === -2);
     // Determine played and current cases for highlighting (vertical stack)
     const caseCards = [0, 1].map(idx => {
       let brightness = '';
@@ -457,7 +517,7 @@ export const GameBoard2D: React.FC = () => {
           style={{ minWidth: 80, minHeight: 60 }}
         >
           <span className="font-bold text-md lg:text-lg text-white">Case {idx + 1}</span>
-          {/* <span className="text-xs text-cyan-200 mt-1">{cases[idx]?.title || ''}</span> */}
+          {/* <span className="text-xs text-cyan-200 mt-1">{moduleCases[idx]?.title || ''}</span> */}
         </div>
       );
     });
@@ -893,7 +953,7 @@ export const GameBoard2D: React.FC = () => {
         <div className="relative z-10 w-full h-full flex-1 flex flex-col overflow-hidden">
           <GameHeader
             currentCase={gameState.currentCase + 1}
-            totalCases={cases.length}
+            totalCases={moduleCases.length}
             score={gameState.score}
             totalQuestions={gameState.totalQuestions}
           />
@@ -1057,7 +1117,7 @@ export const GameBoard2D: React.FC = () => {
                 
                 <div className="border-t border-cyan-400/30 my-4 pt-4">
                   <h3 className="text-xl font-bold text-cyan-400 mb-4">Your Level 4 Performance</h3>
-                  <Level4ScoreBoard moduleId={1} />
+                  <Level4ScoreBoard moduleId={moduleNumber} />
                 </div>
                 
                 <div className="flex justify-end mt-6 space-x-4">
@@ -1093,6 +1153,7 @@ export const GameBoard2D: React.FC = () => {
     // Reset game state completely
     setGameState({
       currentCase: 0,
+      moduleNumber: module ? Number(module) : 1,
       answers: {
         violation: null,
         rootCause: null,
@@ -1194,8 +1255,8 @@ export const GameBoard2D: React.FC = () => {
       {/* Back button always top left, above timer/case label */}
       <button
         onClick={handleBack}
-        className="absolute top-2 lg:left-4 bg-red-600 hover:bg-red-700 text-white px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-[60] hover:shadow-xl"
-        style={{ minWidth: 64, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}
+        className="absolute top-2 lg:left-4 bg-red-600 hover:bg-red-700 text-white px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-[9999] hover:shadow-xl"
+        style={{ minWidth: 64, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)', pointerEvents: 'auto' }}
       >
         <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
         <span>BACK</span>
@@ -1297,6 +1358,8 @@ export const GameBoard2D: React.FC = () => {
       <div className="relative z-10">
         {(() => {
           switch (currentPhase) {
+            case 'productShowcase':
+              return renderLogin();
             case 'login':
               return renderLogin();
             case 'reportView':
@@ -1524,3 +1587,7 @@ export const GameBoard2D: React.FC = () => {
     </div>
   );
 };
+
+function setGameState(arg0: (prev: any) => any) {
+  throw new Error('Function not implemented.');
+}

@@ -6,9 +6,9 @@ import {
   updateCaseProgress, 
   completeLevel4,
   Level4Progress 
-} from '../services/supabaseService';
+} from '../services/level4';
 import { useAuth } from '../../../contexts/AuthContext';
-import { LoaderScreen } from '../../../screens/LoaderScreen';
+
 
 /**
  * This component wraps the GameBoard2D component and handles
