@@ -27,6 +27,7 @@ export interface Case {
 
 export interface GameState {
   currentCase: number;
+  moduleNumber: number; // Added for dynamic module support
   answers: {
     violation: number | null;
     rootCause: number | null;

@@ -4,7 +4,7 @@ import {
   updateHighScore,
   resetLevel4Progress,
   Level4Progress 
-} from '../services/supabaseService';
+} from '../services/level4';
 
 /**
  * Custom hook for managing high scores and game persistence

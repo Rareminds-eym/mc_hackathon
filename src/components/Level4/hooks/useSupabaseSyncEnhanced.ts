@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { GameState } from '../types';
-import { cases } from '../data/cases';
+import { casesByModule } from '../data/cases';
 import { saveLevel4Completion } from '../../../services/level4GameService';
 
 // Enable debug logging
@@ -15,7 +15,7 @@ const logDebug = (...args: any[]) => {
 
 // Function to determine if the game state has correct answers
 export const isGameStateCorrect = (gameState: GameState): boolean => {
-  const currentCase = cases[gameState.currentCase];
+  const currentCase = casesByModule.module1[gameState.currentCase];
   if (!currentCase) return false;
 
   const correctAnswers = 

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { GameState } from '../types';
-import { cases } from '../data/cases';
+import { casesByModule } from '../data/cases';
 
 // Enable debug logging
 const DEBUG = true;
@@ -905,7 +905,8 @@ export function useSupabaseSync() {
 
   // Helper function to determine if all answers are correct
   function isGameStateCorrect(gameState: GameState): boolean {
-    const currentCaseData = cases[gameState.currentCase];
+    // For module 1, use casesByModule.module1
+    const currentCaseData = casesByModule.module1[gameState.currentCase];
     if (!currentCaseData) return false;
 
     return (

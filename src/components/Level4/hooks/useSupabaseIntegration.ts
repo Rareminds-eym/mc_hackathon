@@ -6,9 +6,9 @@ import {
   updateCaseProgress, 
   completeLevel4,
   Level4Progress 
-} from '../services/supabaseService';
+} from '../services/level4';
 import { GameState } from '../types';
-import { cases } from '../data/cases';
+import { casesByModule } from '../data/cases';
 
 /**
  * Custom hook to integrate GameBoard2D with Supabase
@@ -67,7 +67,7 @@ export const useSupabaseIntegration = () => {
   ) => {
     if (!gameProgress?.id || !user) return;
     
-    const currentCase = cases[gameState.currentCase];
+    const currentCase = casesByModule.module1[gameState.currentCase];
     if (!currentCase) return;
     
     // Track attempts for this case
