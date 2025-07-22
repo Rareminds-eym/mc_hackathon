@@ -5,12 +5,14 @@ import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle } from 'lucide
 import { motion } from 'framer-motion';
 import { useDeviceLayout } from '../hooks/useOrientation';
 
+import { useNavigate } from 'react-router-dom';
+
 // Mock images for levels
 const levelImages = [
   "/backgrounds/Level1.png",
   "/backgrounds/Level2.png",
   "/backgrounds/Level3.png",
-  "/backgrounds/Level4.png",
+  "/backgrounds/Level4.webp",
   "/backgrounds/Level5.png",
   "/backgrounds/Level6.png",
 ];
@@ -23,7 +25,39 @@ const levels = [
     format: "Bingo / Taboo / Flashcard Race",
     interface: "Interactive Games",
     description: "Master essential GMP terminology through engaging memory games. Test your knowledge by matching definitions to terms and completing bingo patterns to advance your learning.",
-    icon: "🧠"
+    icon: "🧠",
+    features: [
+      {
+        icon: '🎯',
+        title: 'Game Objective',
+        color: 'blue',
+        border: 'border-blue-400',
+        text: 'Listen to definitions and click matching terms on your bingo grid to form lines and achieve BINGO!'
+      },
+      {
+        icon: '⏱️',
+        title: 'Time Challenge',
+        color: 'green',
+        border: 'border-green-400',
+        text: 'Race against the clock! Complete patterns quickly to earn bonus points and advance faster.'
+      },
+      {
+        icon: '🏆',
+        title: 'Scoring System',
+        color: 'purple',
+        border: 'border-purple-400',
+        text: 'Earn points for correct answers and completed lines. Form patterns to unlock higher scores!'
+      }
+    ],
+    controls: [
+      { icon: Clock, label: "Timer", tooltip: "Track your remaining time", gradient: "from-blue-400 to-blue-500" },
+      { icon: Trophy, label: "Score", tooltip: "Your current points", gradient: "from-amber-400 to-amber-500" },
+      { icon: Target, label: "Lines", tooltip: "Completed bingo lines", gradient: "from-green-400 to-emerald-500" },
+      { icon: Home, label: "Home", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" },
+      { icon: RotateCcw, label: "Restart", tooltip: "Start the game over", gradient: "from-yellow-400 to-yellow-500" },
+      { icon: HelpCircle, label: "Tutorial", tooltip: "Show game tutorial", gradient: "from-green-400 to-green-500" }
+    ],
+    youtube: ""
   },
   {
     title: "Level 2: Sorting Challenge",
@@ -32,7 +66,10 @@ const levels = [
     format: "Category Matching",
     interface: "Drag & Drop",
     description: "Test your comprehension by organizing terms into their proper categories. Think fast and sort accurately to unlock the next level!",
-    icon: "🗂️"
+    icon: "🗂️",
+    features: [],
+    controls: [],
+    youtube: ""
   },
   {
     title: "Level 3: Process Puzzle",
@@ -41,7 +78,10 @@ const levels = [
     format: "Flow Chart Builder",
     interface: "Jigsaw Puzzle",
     description: "Put processes in motion by arranging steps in the correct sequence. Solve the puzzle to demonstrate you can apply what you've learned.",
-    icon: "🧩"
+    icon: "🧩",
+    features: [],
+    controls: [],
+    youtube: ""
   },
   {
     title: "Level 4: Detective Mode",
@@ -50,7 +90,37 @@ const levels = [
     format: "Gap Identification",
     interface: "Document Review",
     description: "Put on your detective hat! Examine scenarios closely to identify what's missing or incorrect. Your sharp eyes will uncover hidden issues.",
-    icon: "🔍"
+    icon: "�️‍♂️",
+    features: [
+      {
+        icon: '🎯',
+        title: 'Game Objective',
+        color: 'blue',
+        border: 'border-blue-400',
+        text: 'Analyze realistic GMP deviation cases and answer questions to identify GMP violations, root causes, and consequences.'
+      },
+      {
+        icon: '⏱️',
+        title: 'Time Challenge',
+        color: 'green',
+        border: 'border-green-400',
+        text: 'The timer runs continuously until all cases are completed. Work efficiently to complete all questions within time.'
+      },
+      {
+        icon: '🏆',
+        title: 'Scoring System',
+        color: 'purple',
+        border: 'border-purple-400',
+        text: 'Each of the 6 questions (3 per case) is worth 5 points. Total max score is 30. No points are awarded if an answer is changed after submission.'
+      }
+    ],
+    controls: [
+      { icon: Clock, label: "Timer", tooltip: "Track your total level time", gradient: "from-blue-400 to-blue-500" },
+      { icon: Trophy, label: "Score", tooltip: "Your current score (Max: 30)", gradient: "from-amber-400 to-amber-500" },
+      // { icon: FileText, label: "Case", tooltip: "Current deviation case number", gradient: "from-purple-400 to-purple-500" },
+      { icon: Home, label: "Home", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" }
+    ],
+    youtube: ""
   },
   {
     title: "Level 5: Design Challenge",
@@ -94,6 +164,7 @@ const InstructionsPage: React.FC = () => {
   const [selected, setSelected] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
+  const navigate = useNavigate();
   // Detect mobile (simple check, can be improved)
   // Determine which levels to show
   const visibleLevels = showAdvanced ? levels.slice(3, 6) : levels.slice(0, 3);
@@ -106,15 +177,29 @@ const InstructionsPage: React.FC = () => {
     else setSelected(i);
   };
 
+  // Back Button (top left, always visible)
+  const BackButton = (
+    <button
+      className="fixed top-3 left-[6.5rem] md:left-[6.5rem] sm:left-16 left-16 z-30 flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-1 px-3 rounded-full shadow-lg backdrop-blur-md border-2 border-emerald-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+      onClick={() => navigate(-1)}
+      aria-label="Back"
+    >
+      <Icon icon="mdi:arrow-left" width={18} height={18} />
+      <span className="text-xs font-semibold">Back</span>
+    </button>
+  );
+
   // Landscape mode for mobile: use same layout as desktop but with smaller text
   if (isMobile && isHorizontal) {
     return (
-      <motion.div 
-        className="relative min-h-screen w-full text-white overflow-hidden p-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
+      <>
+        {BackButton}
+        <motion.div 
+          className="relative min-h-screen w-full text-white overflow-hidden p-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
         {/* Cosmic Planets & Stars Background from ModuleMap */}
         <div className="absolute inset-0 z-0">
           {/* Dark base gradient for space */}
@@ -294,29 +379,23 @@ const InstructionsPage: React.FC = () => {
                     <span className="font-semibold">Objective:</span> {levels[selected].objective}
                   </p>
                   <p className="text-[10px] text-slate-200 italic mb-2">{levels[selected].description}</p>
-                  {selected === 0 && (
+                  {levels[selected].features && levels[selected].features.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {/* Game Features */}
                       <div className="text-[10px] text-yellow-100 space-y-1">
-                        <div className="bg-white/10 rounded-lg p-2 border-l-2 border-blue-400">
-                          <span className="font-bold text-blue-200">🎯 Game Objective:</span>
-                          <p className="text-[10px] mt-1">Listen to definitions and click matching terms on your bingo grid to form lines and achieve BINGO!</p>
-                        </div>
-                        <div className="bg-white/10 rounded-lg p-2 border-l-2 border-green-400">
-                          <span className="font-bold text-green-200">⏱️ Time Challenge:</span>
-                          <p className="text-[10px] mt-1">Race against the clock! Complete patterns quickly to earn bonus points and advance faster.</p>
-                        </div>
-                        <div className="bg-white/10 rounded-lg p-2 border-l-2 border-purple-400">
-                          <span className="font-bold text-purple-200">🏆 Scoring System:</span>
-                          <p className="text-[10px] mt-1">Earn points for correct answers and completed lines. Form patterns to unlock higher scores!</p>
-                        </div>
+                        {levels[selected].features.map((feature, idx) => (
+                          <div key={feature.title} className={`bg-white/10 rounded-lg p-2 border-l-2 ${feature.border}`}>
+                            <span className={`font-bold text-${feature.color}-200`}>{feature.icon} {feature.title}:</span>
+                            <p className="text-[10px] mt-1">{feature.text}</p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
                 </motion.div>
 
                 {/* Game Navigation Icons - Vertical on Right */}
-                {selected === 0 && (
+                {levels[selected].controls && levels[selected].controls.length > 0 && (
                   <motion.div 
                     className="flex flex-col gap-1 bg-white/5 rounded-lg p-2 border border-white/20 shadow-lg backdrop-blur-md mt-1"
                     initial={{ x: 100, opacity: 0 }}
@@ -327,14 +406,7 @@ const InstructionsPage: React.FC = () => {
                       🎮 Controls
                     </h3>
                     <div className="flex flex-col gap-1">
-                      {[
-                        { icon: Clock, label: "Timer", tooltip: "Track your remaining time", gradient: "from-blue-400 to-blue-500" },
-                        { icon: Trophy, label: "Score", tooltip: "Your current points", gradient: "from-amber-400 to-amber-500" },
-                        { icon: Target, label: "Lines", tooltip: "Completed bingo lines", gradient: "from-green-400 to-emerald-500" },
-                        { icon: Home, label: "Home", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" },
-                        { icon: RotateCcw, label: "Restart", tooltip: "Start the game over", gradient: "from-yellow-400 to-yellow-500" },
-                        { icon: HelpCircle, label: "Tutorial", tooltip: "Show game tutorial", gradient: "from-green-400 to-green-500" }
-                      ].map((item, index) => (
+                      {levels[selected].controls.map((item, index) => (
                         <motion.div 
                           key={item.label}
                           className="group relative"
@@ -379,17 +451,20 @@ const InstructionsPage: React.FC = () => {
           .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
           .scrollbar-hide::-webkit-scrollbar { display: none; }
         `}</style>
-      </motion.div>
+        </motion.div>
+      </>
     );
   }
 
   return (
-    <motion.div 
-      className="relative min-h-screen w-full text-white overflow-hidden p-16"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8 }}
-    >
+    <>
+      {BackButton}
+      <motion.div 
+        className="relative min-h-screen w-full text-white overflow-hidden p-16"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
       {/* Cosmic Planets & Stars Background from ModuleMap */}
       <div className="absolute inset-0 z-0">
         {/* Dark base gradient for space */}
@@ -567,59 +642,47 @@ const InstructionsPage: React.FC = () => {
                 <span className="font-semibold">Objective:</span> {levels[selected].objective}
               </p>
               <p className="text-xs text-slate-200 italic mb-4">{levels[selected].description}</p>
-              {selected === 0 && (
+              {levels[selected].features && levels[selected].features.length > 0 && (
                 <div className="mt-4 space-y-4">
                   {/* Game Features */}
                   <div className="text-sm text-yellow-100 space-y-3">
-                    <div className="bg-white/10 rounded-lg p-4 border-l-4 border-blue-400">
-                      <span className="font-bold text-blue-200">🎯 Game Objective:</span>
-                      <p className="text-sm mt-2">Listen to definitions and click matching terms on your bingo grid to form lines and achieve BINGO!</p>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4 border-l-4 border-green-400">
-                      <span className="font-bold text-green-200">⏱️ Time Challenge:</span>
-                      <p className="text-sm mt-2">Race against the clock! Complete patterns quickly to earn bonus points and advance faster.</p>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4 border-l-4 border-purple-400">
-                      <span className="font-bold text-purple-200">🏆 Scoring System:</span>
-                      <p className="text-sm mt-2">Earn points for correct answers and completed lines. Form patterns to unlock higher scores!</p>
-                    </div>
+                    {levels[selected].features.map((feature, idx) => (
+                      <div key={feature.title} className={`bg-white/10 rounded-lg p-4 border-l-4 ${feature.border}`}>
+                        <span className={`font-bold text-${feature.color}-200`}>{feature.icon} {feature.title}:</span>
+                        <p className="text-sm mt-2">{feature.text}</p>
+                      </div>
+                    ))}
                   </div>
-                  
                   {/* Navbar Icons Section */}
-                  <div className="mt-6 bg-white/5 rounded-lg p-6 border border-white/20">
-                    <h3 className="text-lg font-bold text-yellow-200 mb-4 flex items-center gap-2">
-                      <span>🎮</span> Game Controls & Navigation
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      {[
-                        { icon: Clock, label: "Timer", tooltip: "Track your remaining time", gradient: "from-blue-400 to-blue-500" },
-                        { icon: Trophy, label: "Score", tooltip: "Your current points", gradient: "from-amber-400 to-amber-500" },
-                        { icon: Target, label: "Lines", tooltip: "Completed bingo lines", gradient: "from-green-400 to-emerald-500" },
-                        { icon: Home, label: "Home", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" },
-                        { icon: RotateCcw, label: "Restart", tooltip: "Start the game over", gradient: "from-yellow-400 to-yellow-500" },
-                        { icon: HelpCircle, label: "Tutorial", tooltip: "Show game tutorial", gradient: "from-green-400 to-green-500" }
-                      ].map((item, index) => (
-                        <motion.div 
-                          key={item.label}
-                          className="group relative"
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ duration: 0.3, delay: 1.2 + (index * 0.1) }}
-                          whileHover={{ scale: 1.05 }}
-                        >
-                          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200">
-                            <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r ${item.gradient}`}>
-                              <item.icon className="w-4 h-4 text-white" />
+                  {levels[selected].controls && levels[selected].controls.length > 0 && (
+                    <div className="mt-6 bg-white/5 rounded-lg p-6 border border-white/20">
+                      <h3 className="text-lg font-bold text-yellow-200 mb-4 flex items-center gap-2">
+                        <span>🎮</span> Game Controls & Navigation
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        {levels[selected].controls.map((item, index) => (
+                          <motion.div 
+                            key={item.label}
+                            className="group relative"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.3, delay: 1.2 + (index * 0.1) }}
+                            whileHover={{ scale: 1.05 }}
+                          >
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200">
+                              <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r ${item.gradient}`}>
+                                <item.icon className="w-4 h-4 text-white" />
+                              </div>
+                              <span className="text-white font-medium">{item.label}</span>
                             </div>
-                            <span className="text-white font-medium">{item.label}</span>
-                          </div>
-                          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                            {item.tooltip}
-                          </div>
-                        </motion.div>
-                      ))}
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                              {item.tooltip}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -643,7 +706,8 @@ const InstructionsPage: React.FC = () => {
         }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }        `}</style>
-    </motion.div>
+      </motion.div>
+    </>
   );
 };
 
