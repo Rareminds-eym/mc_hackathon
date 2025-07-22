@@ -272,7 +272,10 @@ const LevelList: React.FC = () => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: isMobileLandscape ? '60px' : '120px',
-          width: isMobileLandscape ? '80%' : '100%',
+          width: '100%',
+          maxWidth: isMobile ? '700px' : '1100px',
+          marginLeft: 'auto',
+          marginRight: 'auto',
           flex: 1
         }}>
           {/* Timeline Bar */}

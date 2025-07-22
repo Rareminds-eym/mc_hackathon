@@ -105,7 +105,14 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 pixel-perfect relative overflow-hidden">
+<div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 pixel-perfect relative overflow-hidden">
+  {/* Panel background image, slightly visible */}
+  <img
+    src="/backgrounds/background.jpeg"
+    alt="Panel Background"
+    className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
+    aria-hidden="true"
+  />
       <div className="bg-black/40 rounded-2xl shadow-xl flex flex-col w-full max-w-[98vw] lg:min-h-[70vh] mx-auto overflow-hidden  sm:text-xs sm:max-w-[400px] sm:min-h-0 lg:w-[900px] lg:max-w-[900px] xl:w-[1100px] xl:max-w-[1100px] transition-all duration-300 hover:scale-[1.01] pixel-border-thick">
         {/* QuestionPannelHeader */}
         <div className={`bg-gradient-to-r ${config.gradient} px-2 py-1 border-b-4 ${config.borderColor} landscape:px-2 landscape:py-2 sm:landscape:px-3 sm:landscape:py-2 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import logo from "../../public/logos/bulb.png";
 import { Icon } from '@iconify/react';
-import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle } from 'lucide-react';
+import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDeviceLayout } from '../hooks/useOrientation';
 
@@ -12,7 +12,7 @@ const levelImages = [
   "/backgrounds/Level1.png",
   "/backgrounds/Level2.png",
   "/backgrounds/Level3.png",
-  "/backgrounds/Level4.webp",
+  "/backgrounds/Level4.png",
   "/backgrounds/Level5.png",
   "/backgrounds/Level6.png",
 ];
@@ -59,30 +59,90 @@ const levels = [
     ],
     youtube: ""
   },
+ {
+  title: "Level 2: GMP vs Non-GMP Sort",
+  objective: "Understand and classify manufacturing activities",
+  bloom: "Understanding",
+  format: "Drag-and-Drop Sort",
+  interface: "Dual-Zone Sorting Game",
+  description: "Strengthen your knowledge of Good Manufacturing Practice by sorting items into GMP and Non-GMP categories. Learn to distinguish what is essential to quality compliance and what is not.",
+  icon: "🧩",
+  features: [
+    {
+      icon: '🎯',
+      title: 'Game Objective',
+      color: 'blue',
+      border: 'border-blue-400',
+      text: 'Sort items by dragging them into either the GMP or Non-GMP category. Focus on quality-related practices versus unrelated content.'
+    },
+    {
+      icon: '⏱️',
+      title: 'Time Challenge',
+      color: 'green',
+      border: 'border-green-400',
+      text: 'Complete the task as quickly as possible! Speed boosts your final score.'
+    },
+    {
+      icon: '🏆',
+      title: 'Scoring System',
+      color: 'purple',
+      border: 'border-purple-400',
+      text: '+5 points for each correctly sorted item. Reach the max score by accurately sorting all items.'
+    }
+  ],
+  controls: [
+    { icon: Clock, label: "Timer", tooltip: "Track your remaining time", gradient: "from-blue-400 to-blue-500" },
+    { icon: Hash, label: "Moves", tooltip: "Total drag-and-drop attempts", gradient: "from-pink-400 to-pink-500" },
+    { icon: Trophy, label: "Score", tooltip: "Your current points", gradient: "from-amber-400 to-amber-500" },
+    { icon: Award, label: "Total Score", tooltip: "Cumulative score across levels", gradient: "from-purple-400 to-purple-500" },
+    { icon: RotateCcw, label: "Restart", tooltip: "Start the game over", gradient: "from-yellow-400 to-yellow-500" },
+    { icon: Home, label: "Exit", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" }
+  ],
+  youtube: ""
+}
+,
   {
-    title: "Level 2: Sorting Challenge",
-    objective: "Group terms by function",
-    bloom: "Understanding",
-    format: "Category Matching",
-    interface: "Drag & Drop",
-    description: "Test your comprehension by organizing terms into their proper categories. Think fast and sort accurately to unlock the next level!",
-    icon: "🗂️",
-    features: [],
-    controls: [],
-    youtube: ""
-  },
-  {
-    title: "Level 3: Process Puzzle",
-    objective: "Arrange steps in order",
-    bloom: "Applying",
-    format: "Flow Chart Builder",
-    interface: "Jigsaw Puzzle",
-    description: "Put processes in motion by arranging steps in the correct sequence. Solve the puzzle to demonstrate you can apply what you've learned.",
-    icon: "🧩",
-    features: [],
-    controls: [],
-    youtube: ""
-  },
+  title: "Level 3: Jigsaw Mission",
+  objective: "Diagnose GMP breaches and apply corrective actions",
+  bloom: "Applying",
+  format: "Puzzle Drag-and-Drop",
+  interface: "Cause-and-Effect Strategy",
+  description: "Investigate real-world GMP breach scenarios. Drag pieces from your arsenal to resolve violations in the Security Vault and Action Hub. Build strategic thinking by applying GMP knowledge to simulated issues.",
+  icon: "🧩",
+  features: [
+    {
+      icon: '🎯',
+      title: 'Game Objective',
+      color: 'blue',
+      border: 'border-blue-400',
+      text: 'Analyze the case, then drag appropriate pieces to the correct drop zones (Security Vault / Action Hub) to resolve the GMP issue.'
+    },
+    {
+      icon: '❤️',
+      title: 'Health Reduction',
+      color: 'red',
+      border: 'border-red-400',
+      text: 'You start with 100 health. Each wrong attempt reduces your health by 10 points. Stay sharp!'
+    },
+    {
+      icon: '🔥',
+      title: 'Combo Bonus',
+      color: 'orange',
+      border: 'border-orange-400',
+      text: 'Get answers right in a row to build your combo. A wrong attempt resets your combo to 0. Aim for accuracy and momentum!'
+    }
+  ],
+  controls: [
+    { icon: Clock, label: "Timer", tooltip: "Track your remaining time", gradient: "from-blue-400 to-blue-500" },
+    { icon: Heart, label: "Health", tooltip: "Starts at 100, reduces with incorrect attempts", gradient: "from-red-400 to-rose-500" },
+    { icon: Flame, label: "Combo", tooltip: "Earned with consecutive correct attempts", gradient: "from-orange-400 to-yellow-500" },
+    { icon: Trophy, label: "Score", tooltip: "Your current score for this level", gradient: "from-amber-400 to-amber-500" },
+    { icon: RotateCcw, label: "Restart", tooltip: "Retry the mission from the beginning", gradient: "from-yellow-400 to-yellow-500" },
+    { icon: Home, label: "Back", tooltip: "Return to level menu", gradient: "from-blue-400 to-blue-500" }
+  ],
+  youtube: ""
+}
+,
   {
     title: "Level 4: Detective Mode",
     objective: "Spot problems in scenarios",

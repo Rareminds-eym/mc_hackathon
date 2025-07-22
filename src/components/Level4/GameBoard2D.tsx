@@ -30,17 +30,6 @@ import { Crown, Gamepad2 } from 'lucide-react';
 type GamePhase = 'login' | 'reportView' | 'step1' | 'step2' | 'step3' | 'feedback';
 type GamePhaseExtended = GamePhase | 'productShowcase';
 
-// Avatar options for modal (copied from HomeScreen)
-const AVATAR_OPTIONS = [
-  { label: "Arjun", src: "/characters/Intern1.png" },
-  { label: "Bharat", src: "/characters/Intern2.png" },
-  { label: "Hari", src: "/characters/Intern3.png" },
-  { label: "Pranav", src: "/characters/Intern4.png" },
-  { label: "Lakshya", src: "/characters/Intern5.png" },
-  { label: "Faisal", src: "/characters/Intern6.png" },
-  { label: "Lalit", src: "/characters/Intern7.png" },
-  { label: "Tejas", src: "/characters/Intern8.png" },
-];
 
 export const GameBoard2D: React.FC = () => {
   // Debug: log useParams output to diagnose routing issues
@@ -524,10 +513,17 @@ export const GameBoard2D: React.FC = () => {
     return (
       <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
         {/* Neon Animated SVG Background - only one layer */}
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
+<img
+  src="/backgrounds/background.jpeg"
+  alt="Background"
+  className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
+/>
+         {/* <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
           <Animation_manufacture />
-        </div>
+        </div> */}
+       
         {/* Main content with gradient overlay */}
+
         <div className="relative z-10 h-full w-full flex flex-col text-xs md:text-sm lg:text-base">
           {/* Case cards column below back button, left-aligned */}
           <div className="absolute left-2 top-16 z-40 flex flex-col items-center justify-start">
@@ -581,9 +577,16 @@ export const GameBoard2D: React.FC = () => {
 
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-col items-center justify-center flex-1 w-full h-auto lg:h-full mb-4 md:mb-0 lg:mt-2">
-            <div
-              className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl min-h-[3 40px] lg:max-h-[calc(100vh-120px)] lg:p-4 rounded-2xl border-2 border-cyan-400/40"
-            >
+<div
+  className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl min-h-[3 40px] lg:max-h-[calc(100vh-120px)] lg:p-4 rounded-2xl border-2 border-cyan-400/40 relative overflow-hidden"
+>
+  {/* Card background image, slightly visible */}
+  <img
+    src="/backgrounds/background.jpeg"
+    alt="Card Background"
+    className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
+    aria-hidden="true"
+  />
               {/* Header */}
               {/* <div className="flex flex-col items-center justify-center w-full mb-4">
                 <h1 className="text-xl md:text-2xl lg:text-4xl font-black text-cyan-300 tracking-wide">DEVIATION REPORT</h1>
@@ -648,9 +651,16 @@ export const GameBoard2D: React.FC = () => {
         className="fixed inset-0 h-[auto] w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
       >
         {/* Animated background layer */}
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 opacity-25">
+        {/* <div className="absolute inset-0 w-full h-full z-0 pointer-events-none bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 opacity-25">
           <Animation_manufacture />
-        </div>
+        </div> */}
+
+<img
+src="/backgrounds/background.jpeg"
+alt="Background"
+className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
+/>
+
         <div className="w-[100%] h-[100%] flex-1 flex flex-col relative z-10">
           {/* Header */}
           {/* <div className="text-center mb-[1vw] w-[100%]">
@@ -659,9 +669,16 @@ export const GameBoard2D: React.FC = () => {
           </div> */}
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-col items-center justify-center flex-1 w-full h-full lg:mb-4 lg:md:mb-0 mt-2">
-            <div
-              className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-lg lg:max-w-lg  lg:h-[60%] h-[100%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-80px)] p-4 rounded-2xl border-2 border-cyan-400/40"
-            >
+<div
+  className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-lg lg:max-w-lg  lg:h-[60%] h-[100%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-80px)] p-4 rounded-2xl border-2 border-cyan-400/40 relative overflow-hidden"
+>
+  {/* Card background image, slightly visible */}
+  <img
+    src="/backgrounds/background.jpeg"
+    alt="Card Background"
+    className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
+    aria-hidden="true"
+  />
               {/* Header */}
               <div className="flex flex-col items-center justify-center w-full lg:mb-4">
                 <h1 className="text-xl md:text-2xl lg:text-4xl font-black text-cyan-300 tracking-wide">DEVIATION REPORT</h1>
@@ -760,9 +777,14 @@ export const GameBoard2D: React.FC = () => {
         className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm"
         aria-hidden="true"
       >
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
+        <img
+src="/backgrounds/background.jpeg"
+alt="Background"
+className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
+/>
+        {/* <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
           <Animation_manufacture />
-        </div>
+        </div> */}
         <div className="relative w-[100%] h-[100%] flex-1 flex flex-col z-10">
           {/* Header */}
           {/* <div className="text-center mb-[1vw] w-[100%] animate-fade-in-down">
@@ -947,9 +969,15 @@ export const GameBoard2D: React.FC = () => {
       <div className="fixed inset-0 h-screen w-screen z-40 p-[1vw] flex flex-col text-xs md:text-sm overflow-hidden"
       
       >
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
+
+        <img
+src="/backgrounds/background.jpeg"
+alt="Background"
+className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
+/>
+        {/* <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25">
           <Animation_manufacture />
-        </div>
+        </div> */}
         <div className="relative z-10 w-full h-full flex-1 flex flex-col overflow-hidden">
           <GameHeader
             currentCase={gameState.currentCase + 1}
@@ -1001,6 +1029,13 @@ export const GameBoard2D: React.FC = () => {
               }
               style={{ minHeight: 0 }}
             >
+              {/* Card background image, slightly visible */}
+              <img
+                src="/backgrounds/background.jpeg"
+                alt="Card Background"
+                className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
+                aria-hidden="true"
+              />
               {/* Feedback Header */}
               <div className="flex flex-col items-start mb-1 sm:mb-2">
                 <span className="text-yellow-400 font-bold text-sm lg:text-xl xl:text-2xl leading-tight drop-shadow-sm">{isAllCorrect ? 'Excellent!' : 'Needs Improvement'}</span>
