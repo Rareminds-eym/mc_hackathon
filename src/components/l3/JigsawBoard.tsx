@@ -53,6 +53,7 @@ export const JigsawBoard: React.FC = () => {
   // Removed unused: user
   // State declarations (single set at top)
   const [showScenario, setShowScenario] = useState(true);
+  const [showBriefing, setShowBriefing] = useState(false);
   const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
     null
   );
@@ -403,6 +404,37 @@ export const JigsawBoard: React.FC = () => {
                   />
                 </div>
               </div>
+              {/* Mission Briefing Button */}
+              <div
+                className={`flex-shrink-0 flex items-center ml-2 ${
+                  !(isMobile && isHorizontal) && "hidden"
+                }`}
+              >
+                <button
+                  className={`pixel-border bg-yellow-700 hover:bg-yellow-600 text-black flex items-center font-bold transition-all duration-150 active:scale-95 ${
+                    isMobile && isHorizontal
+                      ? "gap-0.5 px-1 py-0.5 text-xs"
+                      : "gap-1 px-2 py-1"
+                  }`}
+                  style={{ borderRadius: 4 }}
+                  onClick={() => setShowBriefing(true)}
+                  aria-label="Show Mission Briefing"
+                >
+                  <Icon
+                    icon="mdi:message-bulleted"
+                    className={`${
+                      isMobile && isHorizontal ? "w-4 h-4" : "w-5 h-5"
+                    } text-yellow-300`}
+                  />
+                  <span
+                    className={`${
+                      isMobile && isHorizontal ? "hidden" : "hidden sm:inline"
+                    }`}
+                  >
+                    Mission Briefing
+                  </span>
+                </button>
+              </div>
               {/* Stats HUD - right aligned */}
               <div className="flex-shrink-0 flex items-center ml-auto">
                 <div
@@ -483,20 +515,34 @@ export const JigsawBoard: React.FC = () => {
         </nav>
 
         {/* Mission Briefing - Pixel/Retro style (dynamic) */}
-        {scenario?.description && (
-          <div
-            className={`w-full max-w-3xl mx-auto mb-2 md:mb-4 px-2 md:px-0${
-              isMobile && isHorizontal ? " hidden" : ""
-            }`}
-          >
-            <div className="pixel-border bg-gradient-to-r from-indigo-900 via-blue-900 to-fuchsia-900 text-cyan-100 px-3 py-2 md:py-3 text-xs md:text-sm font-mono tracking-wide shadow-lg text-center">
-              <span className="font-bold text-yellow-200">
-                MISSION BRIEFING:
-              </span>{" "}
-              {scenario.description}
-            </div>
-          </div>
-        )}
+        {/* Mission Briefing Popup */}
+        <AnimatePresence>
+          {showBriefing && scenario?.description && (
+            <motion.div
+              key="mission-briefing-popup"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            >
+              <div className="pixel-border-thick bg-gradient-to-r from-indigo-900 via-blue-900 to-fuchsia-900 text-cyan-100 px-6 py-6 text-base md:text-lg font-mono tracking-wide shadow-2xl text-center max-w-xl mx-auto relative">
+                <span className="font-bold text-yellow-200 text-lg block mb-2">
+                  MISSION BRIEFING
+                </span>
+                <div className="mb-4 text-cyan-100">{scenario.description}</div>
+                <button
+                  className="pixel-border bg-yellow-700 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded mt-2"
+                  onClick={() => setShowBriefing(false)}
+                  aria-label="Close Mission Briefing"
+                >
+                  Close
+                </button>
+                <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-0"></div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Game Area - Pixel/Retro style */}
         <main className="flex-1 flex flex-col h-full w-full max-w-6xl mx-auto relative z-10">
@@ -518,6 +564,22 @@ export const JigsawBoard: React.FC = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Mission Briefing - Pixel/Retro style (dynamic) */}
+          {scenario?.description && (
+            <div
+              className={`w-full max-w-3xl mx-auto mb-2 md:mb-4 px-2 md:px-0${
+                isMobile && isHorizontal ? " hidden" : ""
+              }`}
+            >
+              <div className="pixel-border bg-gradient-to-r from-indigo-900 via-blue-900 to-fuchsia-900 text-cyan-100 px-3 py-2 md:py-3 text-xs md:text-sm font-mono tracking-wide shadow-lg text-center">
+                <span className="font-bold text-yellow-200">
+                  MISSION BRIEFING:
+                </span>{" "}
+                {scenario.description}
+              </div>
+            </div>
+          )}
 
           {/* Main Game Area - Now using CSS Grid for layout, with pixel borders */}
           <div

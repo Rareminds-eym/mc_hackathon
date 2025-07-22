@@ -69,7 +69,7 @@ export const JigsawContainer: React.FC<JigsawContainerProps> = ({ type, pieces, 
   // Pixel/retro card style for container, inspired by HomePage.tsx
   return (
     <div className="w-full max-w-md mx-auto relative z-10">
-      <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-hidden"
+      <div className="pixel-border-thick bg-gray-800 p-4 relative overflow-x-hidden overflow-y-auto"
       style={{ height: isMobile ? 'calc(100vh - 70px)' : 'calc(100vh - 220px)' }}
       >
         {/* Background Pattern */}
