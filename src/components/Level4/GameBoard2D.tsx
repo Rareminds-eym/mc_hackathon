@@ -10,7 +10,8 @@ import { Product2D } from './Product2D';
 import { QuestionPanel } from './QuestionPanel';
 import { GameHeader } from './GameHeader';
 import Animation_manufacture from './animated_manufacture'
-import { useSupabaseSync } from './hooks/useSupabaseSync';
+import level4Service from './services';
+import { saveFinalScoreClean } from './utils/finalScoreSaver';
 import { 
   ChevronRight, 
   AlertTriangle, 
@@ -103,12 +104,123 @@ export const GameBoard2D: React.FC = () => {
   // Dynamically select module number, always prefer URL param if available
   const moduleNumber = module ? Number(module) : (gameState.moduleNumber || 1);
   // Support both string and number keys in casesByModule (type assertion for TS)
-  const moduleCases = (casesByModule as any)[moduleNumber] || (casesByModule as any)[String(moduleNumber)] || [];
+  // Only include cases with a valid questions object
+  const moduleCases = ((casesByModule as any)[moduleNumber] || (casesByModule as any)[String(moduleNumber)] || []).filter((c: any) => c && c.questions);
   // console.log("👉 Selected moduleNumber:", moduleNumber);
   const currentCase = moduleCases[gameState.currentCase];
   // console.log("Params:", module, moduleNumber, (casesByModule as any)[moduleNumber], (casesByModule as any)[String(moduleNumber)]);
-  // Add Supabase integration
-  const { syncGameState, completeGame, checkHighScore } = useSupabaseSync();
+  // Add Supabase integration using Level4Service
+  const syncGameState = async (gameState: GameState, timer: number) => {
+    if (!user) return;
+
+    try {
+      // Prepare cases data for the current game state
+      const casesData = {
+        currentCase: gameState.currentCase,
+        caseProgress: [{
+          id: gameState.currentCase + 1,
+          answers: gameState.answers,
+          isCorrect: false, // Will be determined by the service
+          attempts: 1,
+          timeSpent: timer
+        }],
+        scoredQuestions: {}
+      };
+
+      // IMPORTANT: Use simple upsert for progress saves to avoid adding to score history
+      // Only the final completion should manage score history
+      await level4Service.upsertGameData(
+        user.id,
+        gameState.moduleNumber || 1,
+        gameState.score,
+        false, // Not completed yet
+        timer,
+        casesData
+      );
+
+      console.log('🔄 Game progress synced to Supabase (no history update)');
+    } catch (error) {
+      console.error('❌ Failed to sync game state:', error);
+    }
+  };
+
+  const completeGame = async (gameState: GameState, timer: number, isSubmitButton: boolean = false) => {
+    if (!user) return;
+
+    try {
+      // Prepare final cases data
+      const casesData = {
+        currentCase: gameState.currentCase,
+        caseProgress: moduleCases.map((caseItem, index) => ({
+          id: caseItem.id,
+          answers: index <= gameState.currentCase ? gameState.answers : { violation: null, rootCause: null, impact: null },
+          isCorrect: index <= gameState.currentCase,
+          attempts: 1,
+          timeSpent: index === gameState.currentCase ? timer : 0
+        })),
+        scoredQuestions: {
+          [gameState.currentCase]: ["violation", "rootCause", "impact"]
+        }
+      };
+
+      let recordId;
+
+      if (isSubmitButton) {
+        // For Submit button, we need to ensure clean score history
+        // First, delete any existing data for this module to start fresh
+        try {
+          await level4Service.deleteModuleData(user.id, gameState.moduleNumber || 1);
+          console.log('🧹 Cleared existing data for clean score history');
+        } catch (error) {
+          console.log('ℹ️ No existing data to clear (this is normal for first play)');
+        }
+
+        // Now save the final score with history management
+        recordId = await level4Service.upsertGameDataWithHistory(
+          user.id,
+          gameState.moduleNumber || 1,
+          gameState.score,
+          true, // Game completed
+          timer,
+          casesData
+        );
+        console.log('✅ Final game data saved via Submit button with clean history:', recordId);
+      } else {
+        // For automatic completion, use simple upsert to avoid duplicate history entries
+        recordId = await level4Service.upsertGameData(
+          user.id,
+          gameState.moduleNumber || 1,
+          gameState.score,
+          true, // Game completed
+          timer,
+          casesData
+        );
+        console.log('✅ Game completed and saved to Supabase (no history):', recordId);
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to complete game:', error);
+      throw error; // Re-throw so the UI can handle it
+    }
+  };
+
+  const checkHighScore = async (newScore: number): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const existingData = await level4Service.getUserModuleData(user.id, gameState.moduleNumber || 1);
+      const isHighScore = !existingData || newScore > existingData.score;
+
+      if (isHighScore) {
+        console.log('🏆 New high score achieved!', { newScore, previousScore: existingData?.score || 0 });
+      }
+
+      return isHighScore;
+    } catch (error) {
+      console.error('❌ Failed to check high score:', error);
+      return false;
+    }
+  };
 
   // Save game state to localStorage for Supabase integration
   useEffect(() => {
@@ -164,15 +276,15 @@ export const GameBoard2D: React.FC = () => {
       }, 500);
       return () => clearTimeout(syncTimeout);
     }
-  }, [gameState.answers, gameState.score, gameState.showFeedback, gameState.totalQuestions, timer, syncGameState]);
-  
+  }, [gameState.answers, gameState.score, gameState.showFeedback, gameState.totalQuestions, timer, user]);
+
   // Handle game completion separately
   useEffect(() => {
     // Only trigger on actual completion state change
     if (gameState.gameComplete) {
       completeGame(gameState, timer);
     }
-  }, [gameState.gameComplete, gameState, timer, completeGame]);
+  }, [gameState.gameComplete, gameState, timer, user]);
 
   // Force animation refresh when phase changes
   useEffect(() => {
@@ -238,7 +350,12 @@ export const GameBoard2D: React.FC = () => {
         setCanContinue(true);
         break;
       case 'reportView':
-        setCurrentPhase('step1');
+        // Skip step1 if violation question doesn't exist
+        if (!currentCase.questions.violation) {
+          setCurrentPhase('step2');
+        } else {
+          setCurrentPhase('step1');
+        }
         setCanContinue(false);
         break;
       case 'step1':
@@ -265,60 +382,40 @@ export const GameBoard2D: React.FC = () => {
         break;
       case 'feedback':
         const correctAnswers = getCorrectAnswers();
-        if (correctAnswers === 3) {
+        const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
+        if (correctAnswers === totalQuestions) {
           // Only continue if all answers are correct
+          // Use moduleCases.length to determine if there are more cases
           if (gameState.currentCase < moduleCases.length - 1) {
             // Move to next case - maintain the accumulated score
-            // Important: We do NOT reset the score here as we want to keep accumulating it across cases
             const nextGameState = {
               ...gameState,
               currentCase: gameState.currentCase + 1,
               answers: { violation: null, rootCause: null, impact: null },
               showFeedback: false,
-              // score is maintained from previous case
-              // totalQuestions is maintained from previous case
             };
-            
-            // Log transition to next case with accumulated score
-            console.log(`[Game] Moving to case ${nextGameState.currentCase + 1} with accumulated score ${nextGameState.score}`);
-            
-            // IMPROVED: First sync the state transition to Supabase, keeping the accumulated score
-            // Then update the UI state to prevent race conditions
+            console.log(`[Game] Moving to case ${nextGameState.currentCase + 1} of ${moduleCases.length} with accumulated score ${nextGameState.score}`);
             await syncGameState(nextGameState, timer);
-            
-            // Now update the UI state
             setGameState(nextGameState);
             setCurrentPhase('login');
             setCanContinue(true);
           } else {
             // Game complete - mark as complete but keep the accumulated total score
             const completedGameState = { ...gameState, gameComplete: true };
-            
-            // Log final combined score
             console.log(`[Game] Game complete with final COMBINED score: ${completedGameState.score}`);
-            
-            // IMPROVED: First check if this is a high score
             const isNewHighScore = await checkHighScore(gameState.score);
-            
-            // IMPROVED: First complete the game in Supabase with the accumulated total score
-            // This ensures the data is saved before we update the UI
             await completeGame(completedGameState, timer);
-            
-            // ADDITIONAL: Also save to our new summary system
-            // Get count of correct answers
             const correctAnswers = getCorrectAnswers();
-            
-            // Only proceed if we have a valid user
             if (user) {
               try {
                 await saveLevel4Completion({
                   userId: user.id,
-                  moduleId: moduleNumber, // Use dynamic module number
+                  moduleId: moduleNumber,
                   score: gameState.score,
                   time: timer,
-                  violations: gameState.currentCase + 1, // Number of cases completed
+                  violations: gameState.currentCase + 1,
                   correctAnswers: correctAnswers,
-                  totalQuestions: 3 // violation, rootCause, impact
+                  totalQuestions: 3
                 });
                 console.log("[Game] Successfully saved to level_4_user_summary table");
               } catch (err) {
@@ -327,17 +424,13 @@ export const GameBoard2D: React.FC = () => {
             } else {
               console.error("[Game] Cannot save summary - user is not authenticated");
             }
-            
-            // Now update the UI state
             setGameState(completedGameState);
             setIsHighScore(isNewHighScore);
-            
-            // If it's a high score, show a popup
             if (isNewHighScore) {
               setShowHighScorePopup(true);
               setTimeout(() => {
                 setShowHighScorePopup(false);
-              }, 5000); // Auto-hide after 5 seconds
+              }, 5000);
             }
           }
         } else {
@@ -362,56 +455,63 @@ export const GameBoard2D: React.FC = () => {
   };
 
   const handleBack = () => {
-    // Windows-style navigation logic for back button
-    // Returns the current module id, prioritizing URL param, then state, then fallback
-    const getCurrentModuleId = () => {
-      // 1. Use module param if available and valid
-      if (module && !isNaN(Number(module))) return module;
-      // 2. Use gameState.moduleNumber if available and valid
-      if (gameState.moduleNumber && !isNaN(Number(gameState.moduleNumber))) return String(gameState.moduleNumber);
-      // 3. Try to extract from URL as fallback
-      const match = window.location.pathname.match(/modules\/(\d+)/);
-      if (match && match[1]) return match[1];
-      // 4. Default fallback
-      return '1';
-    };
-    const resolvedModuleId = getCurrentModuleId();
-    console.log('[handleBack] Navigating to module:', {
-      resolvedModuleId,
-      routeParam: module,
-      gameStateModule: gameState.moduleNumber,
-      url: window.location.pathname
-    });
-    switch (currentPhase) {
-      case 'login': {
-        // More robust navigation: use replace and fallback reload
-        try {
-          window.location.replace('/modules');
-        } catch (e) {
-          window.location.href = '/modules';
-        }
-        break;
+    try {
+      // Simple navigation logic for back button
+      const getCurrentModuleId = () => {
+        // 1. Use module param if available and valid
+        if (module && !isNaN(Number(module))) return module;
+        // 2. Use gameState.moduleNumber if available and valid
+        if (gameState.moduleNumber && !isNaN(Number(gameState.moduleNumber))) return String(gameState.moduleNumber);
+        // 3. Try to extract from URL as fallback
+        const match = window.location.pathname.match(/modules\/(\d+)/);
+        if (match && match[1]) return match[1];
+        // 4. Default fallback
+        return '1';
+      };
+
+      const resolvedModuleId = getCurrentModuleId();
+
+      if (currentPhase === 'login' || currentPhase === 'productShowcase') {
+        // Navigate back to the level listing page of the module
+        const backUrl = `/modules/${resolvedModuleId}`;
+        window.location.href = backUrl;
+        return;
       }
-      case 'reportView':
+
+      // Handle other phases
+      if (currentPhase === 'reportView') {
         setCurrentPhase('login');
         setCanContinue(true);
-        break;
-      case 'step1':
+      } else if (currentPhase === 'step1') {
         setCurrentPhase('reportView');
         setCanContinue(true);
-        break;
-      case 'step2':
-        setCurrentPhase('step1');
-        setCanContinue(gameState.answers.violation !== null);
-        break;
-      case 'step3':
+      } else if (currentPhase === 'step2') {
+        if (currentCase?.questions?.violation) {
+          setCurrentPhase('step1');
+          setCanContinue(gameState.answers.violation !== null);
+        } else {
+          setCurrentPhase('reportView');
+          setCanContinue(true);
+        }
+      } else if (currentPhase === 'step3') {
         setCurrentPhase('step2');
         setCanContinue(gameState.answers.rootCause !== null);
-        break;
-      case 'feedback':
+      } else if (currentPhase === 'feedback') {
         setCurrentPhase('step3');
         setCanContinue(gameState.answers.impact !== null);
-        break;
+      } else {
+        setCurrentPhase('login');
+        setCanContinue(true);
+      }
+
+    } catch (error) {
+      console.error('[handleBack] Error in handleBack function:', error);
+      // Fallback navigation
+      try {
+        window.location.href = '/modules/1';
+      } catch (fallbackError) {
+        console.error('[handleBack] Fallback navigation failed:', fallbackError);
+      }
     }
   };
 
@@ -424,12 +524,14 @@ export const GameBoard2D: React.FC = () => {
     let newQuestions = 0;
     const newScored = new Set(currentScored);
     
-    // Prepare question list with correct types
-    const questionList: Array<['violation' | 'rootCause' | 'impact', number | null, number]> = [
-      ['violation', gameState.answers.violation, currentCase.questions.violation.correct],
-      ['rootCause', gameState.answers.rootCause, currentCase.questions.rootCause.correct],
-      ['impact', gameState.answers.impact, currentCase.questions.impact.correct],
-    ];
+    // Prepare question list with correct types, only include questions that exist
+    const questionList: Array<['violation' | 'rootCause' | 'impact', number | null, number]> = [];
+
+    if (currentCase.questions.violation) {
+      questionList.push(['violation', gameState.answers.violation, currentCase.questions.violation.correct]);
+    }
+    questionList.push(['rootCause', gameState.answers.rootCause, currentCase.questions.rootCause.correct]);
+    questionList.push(['impact', gameState.answers.impact, currentCase.questions.impact.correct]);
     
     questionList.forEach(([type, userAns, correctAns]) => {
       if (!currentScored.has(type) && userAns !== null) {
@@ -443,7 +545,7 @@ export const GameBoard2D: React.FC = () => {
     
     // Check if all answers are correct at feedback time
     const allCorrect =
-      gameState.answers.violation === currentCase.questions.violation.correct &&
+      (!currentCase.questions.violation || gameState.answers.violation === currentCase.questions.violation.correct) &&
       gameState.answers.rootCause === currentCase.questions.rootCause.correct &&
       gameState.answers.impact === currentCase.questions.impact.correct;
     
@@ -478,7 +580,7 @@ export const GameBoard2D: React.FC = () => {
 
   const getCorrectAnswers = () => {
     let correct = 0;
-    if (gameState.answers.violation !== null && gameState.answers.violation === currentCase.questions.violation.correct) correct++;
+    if (currentCase.questions.violation && gameState.answers.violation !== null && gameState.answers.violation === currentCase.questions.violation.correct) correct++;
     if (gameState.answers.rootCause !== null && gameState.answers.rootCause === currentCase.questions.rootCause.correct) correct++;
     if (gameState.answers.impact !== null && gameState.answers.impact === currentCase.questions.impact.correct) correct++;
     return correct;
@@ -488,9 +590,9 @@ export const GameBoard2D: React.FC = () => {
   // Phase 1: Login
   const renderLogin = () => {
     // Filter for special cases with negative indices
-    const specialCases = moduleCases.filter((c, idx) => idx === -1 || idx === -2);
+    const specialCases = moduleCases.filter((c: any, idx: number) => idx === -1 || idx === -2);
     // Determine played and current cases for highlighting (vertical stack)
-    const caseCards = [0, 1].map(idx => {
+    const caseCards = moduleCases.map((c: any, idx: number) => {
       let brightness = '';
       if (gameState.currentCase === idx) {
         brightness = 'brightness-125 border-yellow-400 shadow-lg';
@@ -506,7 +608,7 @@ export const GameBoard2D: React.FC = () => {
           style={{ minWidth: 80, minHeight: 60 }}
         >
           <span className="font-bold text-md lg:text-lg text-white">Case {idx + 1}</span>
-          {/* <span className="text-xs text-cyan-200 mt-1">{moduleCases[idx]?.title || ''}</span> */}
+          {/* <span className="text-xs text-cyan-200 mt-1">{c?.title || ''}</span> */}
         </div>
       );
     });
@@ -557,7 +659,7 @@ export const GameBoard2D: React.FC = () => {
             <div className="flex flex-col items-center justify-center w-full mt-4">
               <h3 className="text-cyan-300 font-bold text-lg mb-2">Special Cases</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
-                {specialCases.map((c, idx) => (
+                {specialCases.map((c: any, idx: number) => (
                   <div key={idx} className="pixel-border bg-gradient-to-br from-gray-800 via-blue-900 to-purple-900 p-4 rounded-xl shadow-lg flex flex-col items-center">
                     <h4 className="text-yellow-300 font-bold text-base mb-1">{c.title || `Case ${idx - 2}`}</h4>
                     <p className="text-white text-xs mb-2">{c.scenario}</p>
@@ -765,11 +867,19 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
 
   // Phase 3-5: Investigation Steps
   const renderInvestigationStep = () => {
-    const stepTitles = {
-      'step1': 'Step 1: Identify GMP Violation',
-      'step2': 'Step 2: Root Cause Analysis',
-      'step3': 'Step 3: Impact Assessment'
-    };
+    // Dynamic step titles based on whether violation question exists
+    const hasViolation = currentCase.questions.violation !== undefined;
+    const stepTitles = hasViolation
+      ? {
+          'step1': 'Step 1: Identify GMP Violation',
+          'step2': 'Step 2: Root Cause Analysis',
+          'step3': 'Step 3: Impact Assessment'
+        }
+      : {
+          'step1': 'Step 1: Root Cause Analysis', // This won't be used since step1 is skipped
+          'step2': 'Step 1: Root Cause Analysis',
+          'step3': 'Step 2: Impact Assessment'
+        };
 
     return (
       <div 
@@ -815,7 +925,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                         onContinue={currentPhase === 'step1' ? handleContinue : undefined}
                       />
                       {/* Desktop only: Continue button for step1, step2, and step3, inside the panel, below options */}
-                      {((currentPhase === 'step1' && gameState.answers.violation !== null) ||
+                      {((currentPhase === 'step1' && currentCase.questions.violation && gameState.answers.violation !== null) ||
                         (currentPhase === 'step2' && gameState.answers.rootCause !== null) ||
                         (currentPhase === 'step3' && gameState.answers.impact !== null)) && (
                         <div className="hidden md:flex w-full justify-end mt-4">
@@ -833,7 +943,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                     </div>
                   </div>
                   {/* Mobile: absolutely bottom right button */}
-                  {((currentPhase === 'step1' && gameState.answers.violation !== null) ||
+                  {((currentPhase === 'step1' && currentCase.questions.violation && gameState.answers.violation !== null) ||
                     (currentPhase === 'step2' && gameState.answers.rootCause !== null) ||
                     (currentPhase === 'step3' && gameState.answers.impact !== null)) && (
                     <>
@@ -923,29 +1033,35 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
   const renderFeedback = () => {
     const correctAnswers = getCorrectAnswers();
     const isAllCorrect = allAnswersCorrectAtFeedback;
-    const caseAccuracy = Math.round((correctAnswers / 3) * 100);
+    const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
+    const caseAccuracy = Math.round((correctAnswers / totalQuestions) * 100);
     // Calculate performance for this case only based on score (out of 15)
     const caseIdx = gameState.currentCase;
     // Calculate score for current case: check which questions were scored for this case
-    // Use a typed array for question types
-    const questionTypes: Array<'violation' | 'rootCause' | 'impact'> = ['violation', 'rootCause', 'impact'];
+    // Use a typed array for question types, only include questions that exist
+    const questionTypes: Array<'violation' | 'rootCause' | 'impact'> = [];
+    if (currentCase.questions.violation) questionTypes.push('violation');
+    questionTypes.push('rootCause', 'impact');
+
     let caseScore = 0;
     if (scoredQuestions[caseIdx]) {
       questionTypes.forEach(type => {
         if (
           scoredQuestions[caseIdx].has(type) &&
+          currentCase.questions[type] &&
           gameState.answers[type] === currentCase.questions[type].correct
         ) {
           caseScore += 5;
         }
       });
     }
-    const performance = Math.round((caseScore / 15) * 100);
+    const maxCaseScore = questionTypes.length * 5;
+    const performance = Math.round((caseScore / maxCaseScore) * 100);
 
-    // Get correct and user answers for each question
-    const violationCorrect = currentCase.questions.violation.options[currentCase.questions.violation.correct];
-    const violationUser = gameState.answers.violation !== null ? currentCase.questions.violation.options[gameState.answers.violation] : null;
-    const violationIsCorrect = gameState.answers.violation === currentCase.questions.violation.correct;
+    // Get correct and user answers for each question (only if they exist)
+    const violationCorrect = currentCase.questions.violation ? currentCase.questions.violation.options[currentCase.questions.violation.correct] : null;
+    const violationUser = currentCase.questions.violation && gameState.answers.violation !== null ? currentCase.questions.violation.options[gameState.answers.violation] : null;
+    const violationIsCorrect = currentCase.questions.violation ? gameState.answers.violation === currentCase.questions.violation.correct : true;
 
     const rootCauseCorrect = currentCase.questions.rootCause.options[currentCase.questions.rootCause.correct];
     const rootCauseUser = gameState.answers.rootCause !== null ? currentCase.questions.rootCause.options[gameState.answers.rootCause] : null;
@@ -957,11 +1073,11 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
 
     // Only show Submit in feedback phase of case 2 if all answers are provided and all are correct
     const allAnswersProvided =
-      gameState.answers.violation !== null &&
+      (!currentCase.questions.violation || gameState.answers.violation !== null) &&
       gameState.answers.rootCause !== null &&
       gameState.answers.impact !== null;
     const allAnswersCorrect =
-      gameState.answers.violation === currentCase.questions.violation.correct &&
+      (!currentCase.questions.violation || gameState.answers.violation === currentCase.questions.violation.correct) &&
       gameState.answers.rootCause === currentCase.questions.rootCause.correct &&
       gameState.answers.impact === currentCase.questions.impact.correct;
 
@@ -995,7 +1111,8 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                     className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-bold shadow hover:bg-yellow-700 transition-colors"
                     onClick={() => {
                       setShowCorrectionMessage(false);
-                      setCurrentPhase('step1');
+                      // Go to step1 if violation exists, otherwise step2
+                      setCurrentPhase(currentCase.questions.violation ? 'step1' : 'step2');
                       setCanContinue(true);
                       setGameState(prev => ({
                         ...prev,
@@ -1056,14 +1173,16 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
               <div className="mt-1 lg:mt-2">
                 <span className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl text-cyan-300 leading-tight drop-shadow-sm">Detailed Analysis</span>
                 <div className="flex flex-col gap-2 sm:gap-3 mt-2 sm:mt-3">
-                  {/* Violation */}
-                  <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
-                    <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🔍 GMP Violation</span>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg gap-1 sm:gap-2">
-                      <span className="text-slate-700">Correct: <span className="text-green-700 font-semibold">{violationCorrect}</span></span>
-                      <span className={`font-semibold ${violationIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{violationUser || 'Not answered'}</span></span>
+                  {/* Violation - only show if violation question exists */}
+                  {currentCase.questions.violation && (
+                    <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
+                      <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🔍 GMP Violation</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg gap-1 sm:gap-2">
+                        <span className="text-slate-700">Correct: <span className="text-green-700 font-semibold">{violationCorrect}</span></span>
+                        <span className={`font-semibold ${violationIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{violationUser || 'Not answered'}</span></span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {/* Root Cause */}
                   <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
                     <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🎯 Root Cause</span>
@@ -1106,17 +1225,79 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
           {/* Navigation - fixed at bottom, full width, justify-between */}
           <div className="flex flex-row items-center justify-end w-full px-2 t-20 pb-1 pt-1  sm:px-4 sm:pt-2 fixed bottom-0 left-0 z-50 shadow-lg">
             <div className="flex w-auto justify-end">
-              {/* Show Submit only in feedback phase of case2 (index 1), all answers provided, and all correct */}
-              {currentPhase === 'feedback' && gameState.currentCase === 1 && allAnswersProvided && allAnswersCorrect && (
+              {/* Show 'Submit' only on last case, 'Next Case' on all others */}
+              {currentPhase === 'feedback' && gameState.currentCase === moduleCases.length - 1 && allAnswersProvided && allAnswersCorrect && (
                 <button
-                  onClick={() => setPopupOpen(true)}
+                  onClick={async () => {
+                    // Debug the submit click
+                    console.log('🚀 Submit button clicked', {
+                      gameState,
+                      timer,
+                      moduleNumber: gameState.moduleNumber,
+                      currentCase: gameState.currentCase,
+                      moduleCasesLength: moduleCases.length,
+                      finalScore: gameState.score
+                    });
+
+                    // Check existing data before saving
+                    if (user) {
+                      try {
+                        const existingData = await level4Service.getUserModuleData(user.id, gameState.moduleNumber || 1);
+                        console.log('📊 Existing data before save:', existingData);
+                      } catch (error) {
+                        console.log('📊 No existing data found (this is normal for first play)');
+                      }
+                    }
+
+                    // Save game data to Supabase before showing popup
+                    try {
+                      if (!user) {
+                        throw new Error('User not authenticated');
+                      }
+
+                      // Use clean save approach to ensure correct score history
+                      const result = await saveFinalScoreClean(
+                        user.id,
+                        { ...gameState, gameComplete: true },
+                        timer,
+                        moduleCases
+                      );
+
+                      if (result.success) {
+                        console.log('✅ Game data saved to Supabase successfully with clean score history');
+                      } else {
+                        throw new Error(result.error || 'Failed to save final score');
+                      }
+
+                      // Check data after saving to verify
+                      if (user) {
+                        const savedData = await level4Service.getUserModuleData(user.id, gameState.moduleNumber || 1);
+                        console.log('📊 Data after save:', {
+                          mainScore: savedData?.score,
+                          scoreHistory: savedData?.score_history,
+                          timeArray: savedData?.time,
+                          isCompleted: savedData?.is_completed
+                        });
+                      }
+                    } catch (error) {
+                      console.error('❌ Failed to save game data to Supabase:', error);
+                      console.error('Error details:', {
+                        error,
+                        gameState,
+                        timer,
+                        stack: error instanceof Error ? error.stack : 'No stack trace'
+                      });
+                    }
+                    // Show the popup after saving
+                    setPopupOpen(true);
+                  }}
                   className="w-full pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-6 py-3 font-black text-base sm:text-lg rounded-lg shadow-lg pixel-text transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2"
                 >
                   <span>Submit</span>
                   <ChevronRight className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
                 </button>
               )}
-              {isAllCorrect && gameState.currentCase !== 1 && (
+              {isAllCorrect && gameState.currentCase < moduleCases.length - 1 && (
                 <button
                   onClick={handleContinue}
                   className="pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-2 py-2 font-black text-xs pixel-text transition-all duration-300 flex items-center justify-center space-x-1"
@@ -1128,16 +1309,35 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
             </div>
           </div>
           {/* Feedback Popup - only for case2 feedback phase */}
-          {currentPhase === 'feedback' && gameState.currentCase === 1 && (
-            <FeedbackPopup
-              open={popupOpen}
-              onClose={() => setPopupOpen(false)}
-              onNext={handleContinue}
-              onBackToLevels={() => window.location.assign('/modules')}
-              onPlayAgain={handlePlayAgain}
-              score={gameState.score}
-              time={formatTimer(timer)}
-            />
+          {currentPhase === 'feedback' && gameState.currentCase === moduleCases.length - 1 && (
+            <>
+              {console.log('🎮 GameBoard2D passing to FeedbackPopup:', {
+                moduleNumber: gameState.moduleNumber,
+                score: gameState.score,
+                currentCase: gameState.currentCase,
+                moduleCasesLength: moduleCases.length
+              })}
+              <FeedbackPopup
+                open={popupOpen}
+                onClose={() => setPopupOpen(false)}
+                onNext={handleContinue}
+                onBackToLevels={() => {
+                  const getCurrentModuleId = () => {
+                    if (module && !isNaN(Number(module))) return module;
+                    if (gameState.moduleNumber && !isNaN(Number(gameState.moduleNumber))) return String(gameState.moduleNumber);
+                    const match = window.location.pathname.match(/modules\/(\d+)/);
+                    if (match && match[1]) return match[1];
+                    return '1';
+                  };
+                  const resolvedModuleId = getCurrentModuleId();
+                  window.location.assign(`/modules/${resolvedModuleId}`);
+                }}
+                onPlayAgain={handlePlayAgain}
+                score={gameState.score}
+                time={formatTimer(timer)}
+                moduleId={gameState.moduleNumber}
+              />
+            </>
           )}
           
           {/* Game Complete - Show score board on final feedback screen */}
@@ -1162,11 +1362,21 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                   >
                     Play Again
                   </button>
-                  <button 
-                    onClick={() => window.location.assign('/modules')}
+                  <button
+                    onClick={() => {
+                      const getCurrentModuleId = () => {
+                        if (module && !isNaN(Number(module))) return module;
+                        if (gameState.moduleNumber && !isNaN(Number(gameState.moduleNumber))) return String(gameState.moduleNumber);
+                        const match = window.location.pathname.match(/modules\/(\d+)/);
+                        if (match && match[1]) return match[1];
+                        return '1';
+                      };
+                      const resolvedModuleId = getCurrentModuleId();
+                      window.location.assign(`/modules/${resolvedModuleId}`);
+                    }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                   >
-                    Back to Modules
+                    Back to Levels
                   </button>
                 </div>
               </div>
@@ -1290,8 +1500,12 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
       {/* Back button always top left, above timer/case label */}
       <button
         onClick={handleBack}
-        className="absolute top-2 lg:left-4 bg-red-600 hover:bg-red-700 text-white px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-[9999] hover:shadow-xl"
-        style={{ minWidth: 64, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)', pointerEvents: 'auto' }}
+        className="absolute top-2 left-2 lg:left-4 bg-red-600 hover:bg-red-700 text-white px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-[9999] hover:shadow-xl"
+        style={{
+          minWidth: 64,
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          pointerEvents: 'auto'
+        }}
       >
         <ChevronLeft className="w-4 h-4 md:w-[0.7vw] md:h-[0.7vw] min-w-3 min-h-3 mr-1" />
         <span>BACK</span>

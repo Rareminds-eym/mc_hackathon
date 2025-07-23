@@ -1,4 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../../../lib/supabase';
 
 // =====================================================
 // TYPE DEFINITIONS
@@ -86,16 +87,11 @@ export interface Level4UpdateData {
 export class Level4Service {
   private supabase: SupabaseClient;
 
-  constructor(supabaseUrl: string, supabaseKey: string) {
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+  constructor(supabaseClient?: SupabaseClient) {
+    this.supabase = supabaseClient || supabase;
   }
 
-  /**
-   * Store score and time for a user and module (creates or updates)
-   */
-// ...existing code...
-// Move the closing brace to the end of the class
-// =====================================================
+  // =====================================================
   // READ OPERATIONS
   // =====================================================
 
@@ -290,7 +286,7 @@ export class Level4Service {
         p_module: module,
         p_new_score: score,
         p_is_completed: isCompleted,
-        p_new_time: time, // Send as single integer
+        p_new_time: time,
         p_cases: cases
       });
 
@@ -318,7 +314,7 @@ export class Level4Service {
         p_module: module,
         p_new_score: score,
         p_is_completed: isCompleted,
-        p_new_time: time, // Send as single integer
+        p_new_time: time,
         p_cases: cases
       });
 
@@ -352,7 +348,7 @@ export class Level4Service {
         p_module: module,
         p_score: updates.score || null,
         p_is_completed: updates.isCompleted ?? null,
-        p_time: updates.time !== undefined ? updates.time : null, // Send as single integer if present
+        p_time: updates.time || null,
         p_cases: updates.cases || null
       });
 
@@ -377,7 +373,7 @@ export class Level4Service {
         p_module: module,
         p_new_score: updates.score || null,
         p_is_completed: updates.isCompleted ?? null,
-        p_new_time: updates.time !== undefined ? updates.time : null, // Send as single integer if present
+        p_new_time: updates.time || null,
         p_cases: updates.cases || null,
         p_update_history: updates.updateHistory ?? true
       });
@@ -480,20 +476,28 @@ export class Level4Service {
 
     return data;
   }
+
+  /**
+   * Increment score by a certain amount
+   */
   async incrementScore(
     userId: string,
     module: number,
     scoreIncrement: number
   ): Promise<Level4GameData> {
     const currentData = await this.getUserModuleData(userId, module);
+    
     if (!currentData) {
       throw new Error(`No game data found for user ${userId} and module ${module}`);
     }
+
     const newScore = currentData.score + scoreIncrement;
+
     await this.updateGameDataWithHistory(userId, module, {
       score: newScore,
       updateHistory: true
     });
+
     return await this.getUserModuleData(userId, module) as Level4GameData;
   }
 
@@ -738,7 +742,22 @@ export class Level4Service {
     return data || [];
   }
 }
-// =====================================================
-
 
 // =====================================================
+// FACTORY FUNCTION & EXPORTS
+// =====================================================
+
+/**
+ * Factory function to create Level4Service instance
+ */
+export const createLevel4Service = (supabaseClient?: SupabaseClient): Level4Service => {
+  return new Level4Service(supabaseClient);
+};
+
+/**
+ * Default Level4Service instance using the shared Supabase client
+ */
+export const level4Service = new Level4Service();
+
+// Default export
+export default Level4Service;

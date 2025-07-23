@@ -5,6 +5,8 @@ import { useDeviceLayout } from '../../hooks/useOrientation';
 import { useAuth } from '../../contexts/AuthContext';
 import { Level2GameService } from '../Level2/services/level2GameService';
 import { Level2GameData } from '../../types/Level2/types';
+import { level4Service } from '../Level4/services/level4services';
+import { Level4GameData } from '../Level4/services/level4services';
 
 const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, onClose }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
@@ -15,6 +17,11 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
   const [level2Data, setLevel2Data] = useState<Level2GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
+
+  // State for level4_game_data
+  const [level4Data, setLevel4Data] = useState<Level4GameData | null>(null);
+  const [isLoadingLevel4Data, setIsLoadingLevel4Data] = useState(false);
+  const [level4DataError, setLevel4DataError] = useState<string | null>(null);
 
   // Fetch level2_game_data when modal opens for Module 1
   useEffect(() => {
@@ -40,6 +47,31 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
     };
 
     fetchLevel2Data();
+  }, [isOpen, module, user]);
+
+  // Fetch level4_game_data when modal opens for modules that support Level 4
+  useEffect(() => {
+    const fetchLevel4Data = async () => {
+      if (!isOpen || !module || !user) return;
+
+      // Level 4 is available for modules 1, 2, 3, 4 based on the cases data
+      const level4Modules = [1, 2, 3, 4];
+      if (!level4Modules.includes(module.id)) return;
+
+      setIsLoadingLevel4Data(true);
+      setLevel4DataError(null);
+
+      try {
+        const data = await level4Service.getUserModuleData(user.id, module.id);
+        setLevel4Data(data);
+      } catch (err) {
+        setLevel4DataError(err instanceof Error ? err.message : 'Failed to load Level 4 data');
+      } finally {
+        setIsLoadingLevel4Data(false);
+      }
+    };
+
+    fetchLevel4Data();
   }, [isOpen, module, user]);
 
   if (!isOpen || !module) return null;
@@ -221,6 +253,97 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Level 4 Game Data Section - Show for modules that support Level 4 */}
+          {[1, 2, 3, 4].includes(module.id) && (
+            <>
+              <div className={`mt-4 ${isMobileLandscape ? 'mt-3' : isMobile ? 'mt-4' : 'mt-6'}`}>
+                {/* <h3 className={`font-semibold text-gray-800 flex items-center mb-3 ${
+                  isMobileLandscape ? 'text-xs mb-2' : isMobile ? 'text-xs mb-3' : 'text-lg mb-4'
+                }`}>
+                  <Target size={isMobileLandscape ? 14 : isMobile ? 16 : 20} className="mr-2 text-purple-500" />
+                  Level 4 Progress
+                </h3> */}
+
+                {isLoadingLevel4Data ? (
+                  <div className={`flex items-center justify-center bg-white rounded-lg shadow-sm border border-purple-100 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+                    <span className={`ml-2 text-gray-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      Loading Level 4 data...
+                    </span>
+                  </div>
+                ) : level4DataError ? (
+                  <div className={`bg-red-50 rounded-lg shadow-sm border border-red-200 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <p className={`text-red-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      Error: {level4DataError}
+                    </p>
+                  </div>
+                ) : !level4Data ? (
+                  <div className={`bg-gray-50 rounded-lg shadow-sm border border-gray-200 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <p className={`text-gray-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      No Level 4 data found for Module {module.id}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={`bg-white rounded-lg shadow-sm border border-purple-100 hover:shadow-md transition-shadow duration-200 ${
+                    isMobileLandscape ? 'p-1.5' : isMobile ? 'p-2' : 'p-4'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className={`flex items-center ${
+                        isMobileLandscape ? 'space-x-1.5' : isMobile ? 'space-x-2' : 'space-x-3'
+                      }`}>
+                        {/* {getScoreIcon(level4Data.score)} */}
+                        <div>
+                          <h4 className={`font-medium text-gray-800 ${
+                            isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-base'
+                          }`}>
+                            {/* Module {level4Data.module} - Level {level4Data.level} */}
+                            Level {level4Data.level}
+                          </h4>
+                          <p className={`text-gray-500 ${
+                            isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                          }`}>
+                            {/* Case-based Learning */}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-bold ${level4Data.is_completed ? 'text-green-600' : 'text-gray-600'} ${
+                          isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-lg'
+                        }`}>
+                          {level4Data.is_completed ? 'Completed' : 'In Progress'}
+                        </div>
+                        <div className={`text-gray-500 ${
+                          isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                        }`}>
+                          Score: {level4Data.score}
+                        </div>
+                        {/* {level4Data.time > 0 && (
+                          <div className={`text-gray-500 ${
+                            isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                          }`}>
+                            Time: {Math.floor(level4Data.time / 60)}:{(level4Data.time % 60).toString().padStart(2, '0')}
+                          </div>
+                        )} */}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

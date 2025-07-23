@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { GameBoard2D } from '../GameBoard2D';
-import { 
-  getLevel4Progress, 
-  createLevel4Progress, 
-  updateCaseProgress, 
+import {
+  getLevel4Progress,
+  createLevel4Progress,
+  updateCaseProgress,
   completeLevel4,
-  Level4Progress 
+  Level4Progress
 } from '../services/level4';
 import { useAuth } from '../../../contexts/AuthContext';
+import Level4LoadingScreen from '../Level4LoadingScreen';
 
 
 /**
@@ -49,7 +50,7 @@ const GameBoard2DWithSupabase: React.FC = () => {
   
   // Don't render game until we have user and progress data
   if (loading) {
-    return <LoaderScreen />;
+    return <Level4LoadingScreen />;
   }
   
   // If no user, we can't save progress

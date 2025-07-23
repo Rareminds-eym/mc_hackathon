@@ -25,9 +25,10 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   isLastCase,
   onBack
 }) => {
-  const totalQuestions = 3;
+  // Calculate total questions based on what exists
+  const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
   const correctAnswers = [
-    answers.violation === currentCase.questions.violation.correct,
+    ...(currentCase.questions.violation ? [answers.violation === currentCase.questions.violation.correct] : []),
     answers.rootCause === currentCase.questions.rootCause.correct,
     answers.impact === currentCase.questions.impact.correct
   ];
@@ -172,35 +173,37 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
               <Target className="w-1.5 h-1.5 text-blue-500" />
               <span>Detailed Analysis</span>
             </h5>
-            {/* Violation Question */}
-            <div className={`flex items-start space-x-0.5 p-0.5 rounded-lg border ${correctAnswers[0] ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} text-[7px]`}> 
-              <div className="flex-shrink-0">
-                {correctAnswers[0] ? (
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-1 h-1 text-white" />
-                  </div>
-                ) : (
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex items-center justify-center">
-                    <XCircle className="w-1 h-1 text-white" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h6 className="font-bold text-gray-900 mb-0.5 text-[7px]">🔍 GMP Violation Identification</h6>
-                <p className="text-[7px] text-gray-700 font-medium mb-0.5">
-                  <strong>Correct:</strong> {currentCase.questions.violation.options[currentCase.questions.violation.correct]}
-                </p>
-                {!correctAnswers[0] && answers.violation !== null && (
-                  <p className="text-[7px] text-red-700 font-medium">
-                    <strong>Your answer:</strong> {currentCase.questions.violation.options[answers.violation]}
+            {/* Violation Question - only show if it exists */}
+            {currentCase.questions.violation && (
+              <div className={`flex items-start space-x-0.5 p-0.5 rounded-lg border ${correctAnswers[0] ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} text-[7px]`}>
+                <div className="flex-shrink-0">
+                  {correctAnswers[0] ? (
+                    <div className="w-2 h-2 bg-green-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-1 h-1 text-white" />
+                    </div>
+                  ) : (
+                    <div className="w-2 h-2 bg-red-500 rounded-full flex items-center justify-center">
+                      <XCircle className="w-1 h-1 text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h6 className="font-bold text-gray-900 mb-0.5 text-[7px]">🔍 Violation Identification</h6>
+                  <p className="text-[7px] text-gray-700 font-medium mb-0.5">
+                    <strong>Correct:</strong> {currentCase.questions.violation.options[currentCase.questions.violation.correct]}
                   </p>
-                )}
+                  {!correctAnswers[0] && answers.violation !== null && (
+                    <p className="text-[7px] text-red-700 font-medium">
+                      <strong>Your answer:</strong> {currentCase.questions.violation.options[answers.violation]}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             {/* Root Cause Question */}
-            <div className={`flex items-start space-x-0.5 p-0.5 rounded-lg border ${correctAnswers[1] ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} text-[7px]`}> 
+            <div className={`flex items-start space-x-0.5 p-0.5 rounded-lg border ${correctAnswers[currentCase.questions.violation ? 1 : 0] ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} text-[7px]`}>
               <div className="flex-shrink-0">
-                {correctAnswers[1] ? (
+                {correctAnswers[currentCase.questions.violation ? 1 : 0] ? (
                   <div className="w-2 h-2 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-1 h-1 text-white" />
                   </div>
@@ -215,7 +218,7 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
                 <p className="text-[7px] text-gray-700 font-medium mb-0.5">
                   <strong>Correct:</strong> {currentCase.questions.rootCause.options[currentCase.questions.rootCause.correct]}
                 </p>
-                {!correctAnswers[1] && answers.rootCause !== null && (
+                {!correctAnswers[currentCase.questions.violation ? 1 : 0] && answers.rootCause !== null && (
                   <p className="text-[7px] text-red-700 font-medium">
                     <strong>Your answer:</strong> {currentCase.questions.rootCause.options[answers.rootCause]}
                   </p>
@@ -223,9 +226,9 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
               </div>
             </div>
             {/* Impact Question */}
-            <div className={`flex items-start space-x-0.5 p-0.5 rounded-lg border ${correctAnswers[2] ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} text-[7px]`}> 
+            <div className={`flex items-start space-x-0.5 p-0.5 rounded-lg border ${correctAnswers[currentCase.questions.violation ? 2 : 1] ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} text-[7px]`}>
               <div className="flex-shrink-0">
-                {correctAnswers[2] ? (
+                {correctAnswers[currentCase.questions.violation ? 2 : 1] ? (
                   <div className="w-2 h-2 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-1 h-1 text-white" />
                   </div>
@@ -240,7 +243,7 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
                 <p className="text-[7px] text-gray-700 font-medium mb-0.5">
                   <strong>Correct:</strong> {currentCase.questions.impact.options[currentCase.questions.impact.correct]}
                 </p>
-                {!correctAnswers[2] && answers.impact !== null && (
+                {!correctAnswers[currentCase.questions.violation ? 2 : 1] && answers.impact !== null && (
                   <p className="text-[7px] text-red-700 font-medium">
                     <strong>Your answer:</strong> {currentCase.questions.impact.options[answers.impact]}
                   </p>

@@ -85,43 +85,31 @@ export const casesByModule: Record<number, Case[]> = {
       }
     }
   ],
-  4: [
+ 4: [
     {
       id: 1,
-      title: "Deviation in Batch Yield",
-      scenario: "Final yield of a batch was significantly lower than expected, with no clear documentation of losses.",
-      productName: "Iron Syrup",
-      batchNumber: "BATCH-301",
+      title: "Missing Calibration Logs",
+      scenario: "Calibration logs for pH meters are missing for the past three batches.",
+      productName: "General QC Batch",
+      batchNumber: "BATCH-401",
       imageSrc: "/Level4/product1.webp",
-      deviationType: "Yield Deviation",
+      deviationType: "Equipment Calibration",
       questions: {
-        violation: {
-          question: "Which GMP principle is violated?",
-          options: [
-            "Documentation",
-            "Quality Control",
-            "Equipment Calibration",
-            "Personnel Hygiene"
-          ],
-          correct: 0
-        },
         rootCause: {
-          question: "Most likely root cause?",
+          question: "Root Cause?",
           options: [
-            "Losses not recorded",
-            "Equipment malfunction",
-            "Operator error",
-            "Improper SOP"
+            "Poor adherence to equipment maintenance SOP",
+            "Power outage",
+            "Supplier error"
           ],
           correct: 0
         },
         impact: {
-          question: "Potential risk?",
+          question: "Potential consequence?",
           options: [
-            "Regulatory investigation",
-            "Supply chain delay",
-            "No impact",
-            "Labeling error"
+            "Invalid test results; product release may be impacted",
+            "Label mix-up",
+            "Regulatory delay due to artwork"
           ],
           correct: 0
         }
@@ -129,40 +117,86 @@ export const casesByModule: Record<number, Case[]> = {
     },
     {
       id: 2,
-      title: "Improper Personnel Hygiene",
-      scenario: "Operator entered production area without proper gowning, risking contamination of the batch.",
-      productName: "Calcium Syrup",
-      batchNumber: "BATCH-302",
+      title: "CAPA Audit Trail Issue",
+      scenario: "Audit trail reveals multiple CAPAs closed by the same person who raised them.",
+      productName: "Compliance Records",
+      batchNumber: "BATCH-402",
       imageSrc: "/Level4/product2.webp",
-      deviationType: "Personnel Hygiene",
+      deviationType: "QA Process Deviation",
       questions: {
-        violation: {
-          question: "What GMP aspect failed?",
-          options: [
-            "Personnel Hygiene",
-            "Equipment Calibration",
-            "Training",
-            "Documentation"
-          ],
-          correct: 0
-        },
         rootCause: {
-          question: "Likely root cause?",
+          question: "Root Cause?",
           options: [
-            "Operator negligence",
-            "Improper SOP",
-            "Missed training",
-            "Delayed batch release"
+            "Lack of segregation of duties in QA",
+            "Training non-compliance",
+            "Vendor error"
           ],
           correct: 0
         },
         impact: {
-          question: "Immediate impact?",
+          question: "Potential consequence?",
           options: [
-            "Product contamination",
-            "Wrong primary packaging",
-            "No impact",
-            "Missing artwork"
+            "Potential bias; non-objective audit closures",
+            "Poor environmental monitoring",
+            "Delayed batch manufacturing"
+          ],
+          correct: 0
+        }
+      }
+    },
+    {
+      id: 3,
+      title: "Cleaning Log Gaps at Night",
+      scenario: "Repeated cleaning log gaps during night shifts across departments.",
+      productName: "Facility Logs",
+      batchNumber: "BATCH-403",
+      imageSrc: "/Level4/product3.webp",
+      deviationType: "Documentation Deviation",
+      questions: {
+        rootCause: {
+          question: "Root Cause?",
+          options: [
+            "Lack of supervision during non-peak hours",
+            "Contaminated raw materials",
+            "Uncalibrated thermometers"
+          ],
+          correct: 0
+        },
+        impact: {
+          question: "Potential consequence?",
+          options: [
+            "Non-compliance risk; possible microbial contamination",
+            "Labeling issue",
+            "Excess stock holding"
+          ],
+          correct: 0
+        }
+      }
+    },
+    {
+      id: 4,
+      title: "Expired SOP Still in Use",
+      scenario: "Vendor audit reveals expired cleaning SOP still in active use.",
+      productName: "Cleaning Records",
+      batchNumber: "BATCH-404",
+      imageSrc: "/Level4/product4.webp",
+      deviationType: "SOP Deviation",
+      questions: {
+        rootCause: {
+          question: "Root Cause?",
+          options: [
+            "Ineffective SOP review process",
+            "QA short-staffing",
+            "Equipment overload"
+          ],
+          correct: 0
+        },
+        impact: {
+          question: "Potential consequence?",
+          options: [
+            "Audit failure; product risk due to outdated procedure",
+            "Missing training records",
+            "Pricing error"
           ],
           correct: 0
         }

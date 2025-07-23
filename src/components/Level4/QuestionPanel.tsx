@@ -25,6 +25,11 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   onContinue
 }) => {
   const question = currentCase.questions[currentQuestion];
+
+  // If violation question doesn't exist, skip it
+  if (!question) {
+    return null;
+  }
   
   // Get animation class based on current question type
   const getAnimationClass = (questionType: string) => {
@@ -37,8 +42,14 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   };
   
   const getQuestionConfig = (type: string) => {
+    // Determine step numbers based on whether violation question exists
+    const hasViolation = currentCase.questions.violation !== undefined;
+    const stepNumbers = hasViolation
+      ? { violation: 1, rootCause: 2, impact: 3 }
+      : { rootCause: 1, impact: 2 };
+
     switch (type) {
-      case 'violation': 
+      case 'violation':
         return {
           title: 'Step 1: Identify GMP Violation',
           icon: <AlertCircle className="w-6 h-6 text-red-500" />,
@@ -46,17 +57,17 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
           bgGradient: 'from-red-50 to-pink-50',
           borderColor: 'border-red-300'
         };
-      case 'rootCause': 
+      case 'rootCause':
         return {
-          title: 'Step 2: Root Cause Analysis',
+          title: `Step ${stepNumbers.rootCause}: Root Cause Analysis`,
           icon: <Target className="w-6 h-6 text-amber-500" />,
           gradient: 'from-amber-500 to-orange-600',
           bgGradient: 'from-amber-50 to-orange-50',
           borderColor: 'border-amber-300'
         };
-      case 'impact': 
+      case 'impact':
         return {
-          title: 'Step 3: Impact Assessment',
+          title: `Step ${stepNumbers.impact}: Impact Assessment`,
           icon: <TrendingDown className="w-6 h-6 text-blue-500" />,
           gradient: 'from-blue-500 to-indigo-600',
           bgGradient: 'from-blue-50 to-indigo-50',

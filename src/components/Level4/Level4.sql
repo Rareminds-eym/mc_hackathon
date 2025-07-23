@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS public.level_4 (
     module integer NOT NULL,
     level integer NOT NULL DEFAULT 4,
     score INTEGER NOT NULL,
-    time integer[] NOT NULL DEFAULT '{}'::integer[],
+    time integer NOT NULL DEFAULT 0,
+    time_history integer[] NOT NULL DEFAULT '{}'::integer[],
     score_history integer[] NOT NULL DEFAULT '{}'::integer[],
     cases jsonb NOT NULL,
     is_completed boolean NOT NULL DEFAULT false,
@@ -31,7 +32,8 @@ CREATE INDEX IF NOT EXISTS idx_level_4_module_level ON public.level_4 (module, l
 CREATE INDEX IF NOT EXISTS idx_level_4_completed ON public.level_4 (is_completed);
 CREATE INDEX IF NOT EXISTS idx_level_4_score ON public.level_4 (score);
 CREATE INDEX IF NOT EXISTS idx_level_4_score_history ON public.level_4 USING GIN (score_history);
-CREATE INDEX IF NOT EXISTS idx_level_4_time ON public.level_4 USING GIN (time);
+CREATE INDEX IF NOT EXISTS idx_level_4_time ON public.level_4 (time);
+CREATE INDEX IF NOT EXISTS idx_level_4_time_history ON public.level_4 USING GIN (time_history);
 CREATE INDEX IF NOT EXISTS idx_level_4_user_module_completed ON public.level_4 (user_id, module, is_completed);
 CREATE INDEX IF NOT EXISTS idx_level_4_created_at ON public.level_4 (created_at);
 CREATE INDEX IF NOT EXISTS idx_level_4_updated_at ON public.level_4 (updated_at);
@@ -83,7 +85,7 @@ CREATE TRIGGER update_level_4_updated_at
 -- READ FUNCTIONS
 -- =====================================================
 
--- Function to get the past 3 scores from score_history array
+-- Function to get the past 3 scores from score_history array with aligned times
 CREATE OR REPLACE FUNCTION get_level4_past_three_scores(
     p_user_id UUID,
     p_module INTEGER
@@ -99,12 +101,14 @@ RETURNS TABLE(
 BEGIN
     RETURN QUERY
     SELECT
+        -- Scores from score_history (already sorted by score DESC)
         COALESCE(score_history[1], 0) as current_score,
         COALESCE(score_history[2], 0) as previous_score,
         COALESCE(score_history[3], 0) as past_previous_score,
-        COALESCE(time[1], 0) as current_time_value,
-        COALESCE(time[2], 0) as previous_time,
-        COALESCE(time[3], 0) as past_previous_time
+        -- Times from time_history (aligned with score_history)
+        COALESCE(time_history[1], 0) as current_time_value,
+        COALESCE(time_history[2], 0) as previous_time,
+        COALESCE(time_history[3], 0) as past_previous_time
     FROM level_4
     WHERE user_id = p_user_id
       AND module = p_module;
@@ -139,7 +143,7 @@ DECLARE
     j INTEGER;
 BEGIN
     -- Get existing score_history and time history
-    SELECT score_history, time
+    SELECT score_history, time_history
     INTO existing_score_history, existing_times
     FROM level_4
     WHERE user_id = p_user_id
@@ -155,21 +159,25 @@ BEGIN
     combined_scores := existing_score_history || ARRAY[p_new_score];
     combined_times := existing_times || ARRAY[p_new_time];
 
-    -- Sort scores in descending order and keep corresponding times
-    temp_scores := combined_scores;
-    temp_times := combined_times;
-    
-    -- Simple bubble sort for small arrays (max 4 elements)
-    FOR i IN 1..array_length(temp_scores, 1) LOOP
-        FOR j IN 1..array_length(temp_scores, 1) - i LOOP
-            IF temp_scores[j] < temp_scores[j + 1] THEN
-                -- Swap scores
-                temp_scores := array_replace(array_replace(temp_scores, temp_scores[j], temp_scores[j + 1]), temp_scores[j + 1], temp_scores[j]);
-                -- Swap corresponding times
-                temp_times := array_replace(array_replace(temp_times, temp_times[j], temp_times[j + 1]), temp_times[j + 1], temp_times[j]);
-            END IF;
-        END LOOP;
-    END LOOP;
+    -- Sort scores and times together to maintain alignment
+    -- Use a simple approach: create pairs, sort, then separate
+    WITH score_time_pairs AS (
+        SELECT
+            unnest(combined_scores) as score,
+            unnest(combined_times) as time,
+            generate_subscripts(combined_scores, 1) as original_index
+    ),
+    sorted_pairs AS (
+        SELECT score, time
+        FROM score_time_pairs
+        ORDER BY score DESC, original_index ASC
+        LIMIT 3
+    )
+    SELECT
+        array_agg(score ORDER BY score DESC) as sorted_scores,
+        array_agg(time ORDER BY score DESC) as sorted_times
+    INTO temp_scores, temp_times
+    FROM sorted_pairs;
 
     -- Keep only top 3 scores and times
     new_score_history := temp_scores[1:3];
@@ -178,27 +186,25 @@ BEGIN
     -- Update or insert the main game data table
     INSERT INTO level_4 (
         user_id, module, level,
-        score, is_completed, time, cases,
+        score, is_completed, time, time_history, cases,
         score_history
     )
     VALUES (
         p_user_id, p_module, 4,
-        p_new_score, p_is_completed, ARRAY[p_new_time], p_cases,
+        -- Use the highest score and its corresponding time
+        new_score_history[1], p_is_completed, new_time_history[1], new_time_history, p_cases,
         new_score_history
     )
     ON CONFLICT (user_id, module)
     DO UPDATE SET
-        score = CASE
-            WHEN EXCLUDED.score > level_4.score THEN EXCLUDED.score
-            ELSE level_4.score
-        END,
+        -- Always use the highest score from the sorted history
+        score = new_score_history[1],
         is_completed = EXCLUDED.is_completed OR level_4.is_completed,
-        time = CASE
-            WHEN EXCLUDED.score > level_4.score THEN ARRAY[p_new_time]
-            ELSE level_4.time
-        END,
+        -- Always use the time corresponding to the highest score
+        time = new_time_history[1],
+        time_history = new_time_history,
         cases = CASE
-            WHEN EXCLUDED.score > level_4.score THEN EXCLUDED.cases
+            WHEN new_score_history[1] > level_4.score THEN EXCLUDED.cases
             ELSE level_4.cases
         END,
         score_history = new_score_history,
@@ -237,7 +243,7 @@ BEGIN
         4,
         p_new_score,
         p_is_completed,
-        ARRAY[p_new_time],
+        p_new_time,
         p_cases
     )
     ON CONFLICT (user_id, module)
@@ -285,10 +291,7 @@ BEGIN
     UPDATE level_4 SET
         score = COALESCE(p_score, score),
         is_completed = COALESCE(p_is_completed, is_completed),
-        time = CASE 
-            WHEN p_time IS NOT NULL THEN ARRAY[p_time]
-            ELSE time
-        END,
+        time = COALESCE(p_time, time),
         cases = COALESCE(p_cases, cases),
         updated_at = NOW()
     WHERE user_id = p_user_id AND module = p_module
@@ -338,47 +341,53 @@ BEGIN
         
         -- Add new time to existing time history (if provided)
         IF p_new_time IS NOT NULL THEN
-            combined_times := current_record.time || ARRAY[p_new_time];
+            combined_times := current_record.time_history || ARRAY[p_new_time];
         ELSE
-            combined_times := current_record.time;
+            combined_times := current_record.time_history;
         END IF;
         
-        -- Sort scores in descending order and keep corresponding times
-        temp_scores := combined_scores;
-        temp_times := combined_times;
-        
-        -- Simple sorting for small arrays
-        FOR i IN 1..array_length(temp_scores, 1) LOOP
-            FOR j IN 1..array_length(temp_scores, 1) - i LOOP
-                IF temp_scores[j] < temp_scores[j + 1] THEN
-                    -- Swap scores and times
-                    temp_scores := array_replace(array_replace(temp_scores, temp_scores[j], temp_scores[j + 1]), temp_scores[j + 1], temp_scores[j]);
-                    temp_times := array_replace(array_replace(temp_times, temp_times[j], temp_times[j + 1]), temp_times[j + 1], temp_times[j]);
-                END IF;
-            END LOOP;
-        END LOOP;
+        -- Sort scores and times together to maintain alignment
+        -- Use a simple approach: create pairs, sort, then separate
+        WITH score_time_pairs AS (
+            SELECT
+                unnest(combined_scores) as score,
+                unnest(combined_times) as time,
+                generate_subscripts(combined_scores, 1) as original_index
+        ),
+        sorted_pairs AS (
+            SELECT score, time
+            FROM score_time_pairs
+            ORDER BY score DESC, original_index ASC
+            LIMIT 3
+        )
+        SELECT
+            array_agg(score ORDER BY score DESC) as sorted_scores,
+            array_agg(time ORDER BY score DESC) as sorted_times
+        INTO temp_scores, temp_times
+        FROM sorted_pairs;
         
         -- Keep only top 3 scores and times
         new_score_history := temp_scores[1:3];
         new_time_history := temp_times[1:3];
     ELSE
         new_score_history := current_record.score_history;
-        new_time_history := current_record.time;
+        new_time_history := current_record.time_history;
     END IF;
     
     -- Update the record
     UPDATE level_4 SET
-        score = CASE 
-            WHEN p_new_score IS NOT NULL AND p_new_score > score THEN p_new_score
+        score = CASE
+            WHEN p_update_history AND array_length(new_score_history, 1) > 0 THEN new_score_history[1]
             WHEN p_new_score IS NOT NULL AND NOT p_update_history THEN p_new_score
             ELSE score
         END,
         is_completed = COALESCE(p_is_completed, is_completed),
-        time = CASE 
-            WHEN p_new_time IS NOT NULL AND p_new_score IS NOT NULL AND p_new_score > score THEN ARRAY[p_new_time]
-            WHEN p_new_time IS NOT NULL AND NOT p_update_history THEN ARRAY[p_new_time]
+        time = CASE
+            WHEN p_update_history AND array_length(new_time_history, 1) > 0 THEN new_time_history[1]
+            WHEN p_new_time IS NOT NULL AND NOT p_update_history THEN p_new_time
             ELSE time
         END,
+        time_history = new_time_history,
         cases = COALESCE(p_cases, cases),
         score_history = new_score_history,
         updated_at = NOW()
@@ -488,7 +497,7 @@ BEGIN
             AVG(score) as avg_score,
             MAX(score) as max_score,
             MIN(score) as min_score,
-            SUM(time[1]) as total_time
+            SUM(time) as total_time
         FROM level_4 
         WHERE user_id = p_user_id
     ),
@@ -548,7 +557,7 @@ DECLARE
     processed_count INTEGER := 0;
 BEGIN
     FOR rec IN 
-        SELECT user_id, module, score, time[1] as time_val
+        SELECT user_id, module, score, time as time_val
         FROM level_4 
         ORDER BY user_id, module, updated_at DESC
     LOOP
@@ -557,6 +566,61 @@ BEGIN
     END LOOP;
     
     RETURN processed_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- TEST FUNCTION FOR SCORE-TIME ALIGNMENT
+-- =====================================================
+
+-- Function to test score-time alignment (for development/testing)
+CREATE OR REPLACE FUNCTION test_level4_score_time_alignment(
+    p_user_id UUID,
+    p_module INTEGER
+)
+RETURNS TABLE(
+    test_description TEXT,
+    score_history_result INTEGER[],
+    time_history_result INTEGER[],
+    current_score INTEGER,
+    current_time_value INTEGER,
+    alignment_status TEXT
+) AS $$
+DECLARE
+    rec RECORD;
+BEGIN
+    -- Get the current data
+    SELECT score, time, score_history, time_history
+    INTO rec
+    FROM level_4
+    WHERE user_id = p_user_id AND module = p_module;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT
+            'No data found for user/module'::TEXT,
+            '{}'::INTEGER[],
+            '{}'::INTEGER[],
+            0::INTEGER,
+            0::INTEGER,
+            'ERROR: No data'::TEXT;
+        RETURN;
+    END IF;
+
+    -- Check alignment
+    RETURN QUERY SELECT
+        'Score-Time Alignment Test'::TEXT,
+        rec.score_history,
+        rec.time_history,
+        rec.score,
+        rec.time,
+        CASE
+            WHEN rec.score = rec.score_history[1] AND rec.time = rec.time_history[1] THEN
+                '✅ ALIGNED: Current score/time matches history[1]'
+            WHEN rec.score_history[1] IS NULL THEN
+                '⚠️ EMPTY: No score history available'
+            ELSE
+                '❌ MISALIGNED: Current score/time does not match history[1]'
+        END::TEXT;
 END;
 $$ LANGUAGE plpgsql;
 
