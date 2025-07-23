@@ -24,7 +24,6 @@ import Level2GameNavigator from './screens/Level2/GameNavigator';
 import Level3 from './screens/Level3/Index';
 import Level4 from './screens/Level4/Index';
 import InstructionsPage from './screens/InstructionsPage';
-import { GameBoard2D } from './components/Level4/GameBoard2D';
 import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
 import Score from './components/Scores/Score';
@@ -88,7 +87,7 @@ function App() {
         { path: '/modules/:moduleId/games', element: <ProtectedRoute><Level2GameNavigator /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/3', element: <ProtectedRoute><Level3 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
-        { path: '/modules/:moduleId/levels/4/gameboard2d', element: <ProtectedRoute><GameBoard2D /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/:moduleId/levels/4/gameboard2d', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/auth', element: <AuthPage />, errorElement: <RouteErrorBoundary /> },
         { path: '/instructions', element: <ProtectedRoute><InstructionsPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/scores', element: <ProtectedRoute><Score /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },

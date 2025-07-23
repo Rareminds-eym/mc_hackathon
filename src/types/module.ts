@@ -1,5 +1,5 @@
 export interface Module {
-  id: number;
+  id: string;
   status: 'completed' | 'available' | 'locked';
   title: string;
   progress?: number; // 0-100 for completed modules

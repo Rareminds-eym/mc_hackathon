@@ -157,7 +157,7 @@ const levels = [
         title: 'Game Objective',
         color: 'blue',
         border: 'border-blue-400',
-        text: 'Analyze realistic GMP deviation cases and answer questions to identify GMP violations, root causes, and consequences.'
+        text: 'Analyze realistic deviation cases and answer questions about root causes, impacts, and potential violations.'
       },
       {
         icon: '⏱️',
@@ -171,12 +171,12 @@ const levels = [
         title: 'Scoring System',
         color: 'purple',
         border: 'border-purple-400',
-        text: 'Each of the 6 questions (3 per case) is worth 5 points. Total max score is 30. No points are awarded if an answer is changed after submission.'
+        text: 'Each question is worth 5 points (3 questions per case). Total max score varies by module based on number of scenarios. No points are awarded if an answer is changed after submission.'
       }
     ],
     controls: [
       { icon: Clock, label: "Timer", tooltip: "Track your total level time", gradient: "from-blue-400 to-blue-500" },
-      { icon: Trophy, label: "Score", tooltip: "Your current score (Max: 30)", gradient: "from-amber-400 to-amber-500" },
+      { icon: Trophy, label: "Score", tooltip: "Your current score (Max varies by module)", gradient: "from-amber-400 to-amber-500" },
       // { icon: FileText, label: "Case", tooltip: "Current deviation case number", gradient: "from-purple-400 to-purple-500" },
       { icon: Home, label: "Home", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" }
     ],

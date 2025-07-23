@@ -1,8 +1,17 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { calculateMaxScore, calculateStars } from "./utils/scoreCalculator";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
+
+interface HighScoreEntry {
+  score: number;
+  time: number;
+  created_at: string;
+}
 
 interface PopupProps {
   open: boolean;
@@ -49,7 +58,7 @@ export const Popup: React.FC<PopupProps> = ({
           transition={{ duration: 0.25 }}
         >
           <motion.div
-            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 w-full flex flex-col ${isMobileHorizontal ? 'max-w-xs' : 'max-w-md'}`}
+            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl p-3 shadow-2xl border-4 border-cyan-200/60 w-full flex flex-col ${isMobileHorizontal ? 'max-w-xs' : 'max-w-md'}`}
             style={
               isMobileHorizontal
                 ? {
@@ -191,9 +200,11 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
-  // Calculate stars based on score (0-5 stars)
-  const maxScore = 30;
-  const stars = Math.round((score / maxScore) * 5);
+
+  // Calculate dynamic max score and stars based on module
+  const moduleNumber = moduleId ? parseInt(moduleId, 10) : 1;
+  const maxScore = calculateMaxScore(moduleNumber);
+  const stars = calculateStars(score, moduleNumber);
 
   // Handler for Go to Levels
   const handleGoToLevels = useCallback(() => {
@@ -282,7 +293,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
             return (
               <motion.span
                 key={i}
-                className={`absolute ${i < stars ? "text-yellow-400" : "text-gray-300"}${isMobileHorizontal ? " text-2xl" : " text-4xl"}`}
+                className={`absolute ${i < stars ? "text-yellow-400" : "text-gray-300"}${isMobileHorizontal ? " text-2xl" : "text-xl"}`}
                 style={{
                   left: isMobileHorizontal
                     ? `${x}px`
@@ -343,7 +354,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
           <div className="flex flex-col items-center">
             <span className={`${isMobileHorizontal ? "text-sm" : "text-lg"} font-bold text-blue-700`}>Score</span>
             <span className={`${isMobileHorizontal ? "text-lg" : "text-2xl"} font-extrabold text-green-600`}>
-              {score} / 30
+              {score} / {maxScore}
             </span>
           </div>
         </motion.div>
@@ -438,6 +449,7 @@ interface FeedbackPopupProps {
   onPlayAgain: () => void; // NEW: callback to reset to login
   score: number;
   time: string;
+  moduleId?: number; // NEW: optional module ID to override URL detection
 }
 
 export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
@@ -447,11 +459,104 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
   onPlayAgain, // NEW
   score,
   time,
+  moduleId, // NEW: optional module ID
   // onNext is not used as we're handling navigation directly
 }) => {
-  // Calculate stars: 0-5 based on score (max 30)
-  const maxScore = 30;
-  const stars = Math.round((score / maxScore) * 5);
+  console.log('🚀 UPDATED FeedbackPopup loaded! moduleId:', moduleId);
+
+  // State for high scores
+  const [highScores, setHighScores] = useState<HighScoreEntry[]>([]);
+  const [loadingScores, setLoadingScores] = useState(false);
+  const { user } = useAuth();
+  // Calculate stars: 0-5 based on score (maxScore depends on number of cases)
+  // Use passed moduleId first, then try to get from URL if not passed
+  let moduleIdNum: number | undefined = moduleId;
+
+  if (!moduleIdNum && typeof window !== 'undefined') {
+    // Try multiple regex patterns to catch different URL structures
+    let match = window.location.pathname.match(/modules\/(\d+)/);
+    if (!match) {
+      // Try alternative patterns
+      match = window.location.pathname.match(/module\/(\d+)/);
+    }
+    if (!match) {
+      // Try to find any number in the path that could be a module ID
+      match = window.location.pathname.match(/\/(\d+)/);
+    }
+
+    if (match && match[1]) moduleIdNum = Number(match[1]);
+
+
+  }
+  // Fallback to prop if available
+  if (!moduleIdNum && typeof (window as any).moduleId !== 'undefined') {
+    moduleIdNum = Number((window as any).moduleId);
+  }
+  // Default to 1 if not found
+  if (!moduleIdNum) {
+    moduleIdNum = 1;
+  }
+
+  // Use utility functions for dynamic calculation
+  const maxScore = calculateMaxScore(moduleIdNum);
+  const stars = calculateStars(score, moduleIdNum);
+
+  // Utility function to format time
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Utility function to format date
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Fetch high scores when popup opens
+  useEffect(() => {
+    const fetchHighScores = async () => {
+      if (!open || !user || !moduleIdNum) return;
+
+      setLoadingScores(true);
+      try {
+        const { data, error } = await supabase
+          .from('level_4')
+          .select('score, time, created_at')
+          .eq('user_id', user.id)
+          .eq('module', moduleIdNum)
+          .eq('is_completed', true)
+          .order('score', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          console.error('Error fetching high scores:', error);
+          return;
+        }
+
+        setHighScores(data || []);
+      } catch (error) {
+        console.error('Error fetching high scores:', error);
+      } finally {
+        setLoadingScores(false);
+      }
+    };
+
+    fetchHighScores();
+  }, [open, user, moduleIdNum]);
+
+  // Temporary debug logging
+  console.log('🔍 FeedbackPopup Final Values:', {
+    passedModuleId: moduleId,
+    finalModuleIdNum: moduleIdNum,
+    calculatedMaxScore: maxScore,
+    score: score,
+    stars: stars
+  });
   const isMobile = window.innerWidth <= 600;
   const popupHeight = isMobile ? 'auto' : 'auto';
   const popupMaxHeight = isMobile ? '80vh' : '90vh';
@@ -466,7 +571,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
           transition={{ duration: 0.25 }}
         >
           <motion.div
-            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl border-4 border-cyan-200/60 w-full overflow-visible ${isMobile ? 'max-w-xs p-2' : 'max-w-md p-6'}`}
+            className={`relative bg-white/20 backdrop-blur-2xl rounded-2xl p-2 shadow-2xl border-4 border-cyan-200/60 w-full overflow-visible ${isMobile ? 'max-w-xs p-2' : 'max-w-md lg:p-6'}`}
             style={
               isMobile
                 ? {
@@ -525,9 +630,9 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
                 </span>
               </span>
             </button>
-            {/* Stars in a curved arc */}
+            {/* ⭐ Stars */}
             <motion.div
-              className={`relative flex items-center justify-center w-full ${isMobile ? "w-[260px] h-8 mb-1 justify-center" : "h-14 mb-2"}`}
+              className={`relative flex items-center justify-center w-full ${isMobile ? "w-[120px] h-4 mb-0.5 justify-center" : "h-14 mb-2"}`}
               style={
                 isMobile
                   ? { marginLeft: 0, justifyContent: "center" }
@@ -545,22 +650,22 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
               {[0, 1, 2, 3, 4].map((i) => {
                 // Arc math: angle from 120deg to 60deg (flatter upside-down arc)
                 const angle = -(120 - i * 15) * (Math.PI / 180); // 120, 105, 90, 75, 60
-                const radius = isMobile ? 140 : 200;
-                const centerX = isMobile ? 130 : 300;
-                const centerY = isMobile ? 160 : 240;
+                const radius = isMobile ? 60 : 200;
+                const centerX = isMobile ? 60 : 300;
+                const centerY = isMobile ? 80 : 240;
                 const x =
                   centerX +
                   radius * Math.cos(angle) -
-                  (isMobile ? 12 : 20);
+                  (isMobile ? 6 : 20);
                 const y =
                   centerY +
                   radius * Math.sin(angle) -
-                  (isMobile ? 12 : 20);
+                  (isMobile ? 6 : 20);
                 // Show filled star if i < stars, else gray
                 return (
                   <motion.span
                     key={i}
-                    className={`absolute ${i < stars ? "text-yellow-400" : "text-gray-300"}${isMobile ? " text-2xl" : " text-4xl"}`}
+                    className={`absolute ${i < stars ? "text-yellow-400" : "text-gray-300"}${isMobile ? " text-sm" : " text-xl"}`}
                     style={{
                       left: isMobile
                         ? `${x}px`
@@ -585,16 +690,45 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
               })}
             </motion.div>
             {/* Well Done! */}
-            <h2 className="text-xl lg:text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] mb-2 mt-6 text-center">
+            <h2 className="text-md lg:text-3xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)] lg:mb-2 mt-6 text-center">
               Well Done!
             </h2>
-            {/* Score and Time + Character */}
+           
+
+            {/* High Scores Section */}
+            {highScores.length > 0 && (
+              <div className="lg:mt-4 lg:p-3 p-1 bg-black/30 backdrop-blur-md rounded-lg border border-cyan-400/30 w-full">
+                <h3 className="text-sm lg:text-lg font-bold text-cyan-400 lg:mb-3 text-center">🏆 Your Top Scores</h3>
+                <div className="space-y-2">
+                  {highScores.map((entry, index) => (
+                    <div key={index} className="flex items-center justify-between text-xs lg:text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className={`font-bold ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : 'text-orange-400'}`}>
+                          {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} {index + 1}.
+                        </span>
+                        <span className="text-white font-semibold">{entry.score} pts</span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-gray-300">
+                        <span>{formatTime(entry.time)}</span>
+                        <span className="text-xs">{formatDate(entry.created_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {loadingScores && (
+                  <div className="text-center text-cyan-400 text-xs">Loading scores...</div>
+                )}
+              </div>
+            )}
+
+
+             {/* Score and Time + Character */}
             <div className="flex items-center justify-center gap-4 lg:mb-4 w-full">
               {/* Left: Score and Time content */}
               <div className="flex flex-col items-start justify-center">
                 <div className="mb-2">
-                  <span className="text-sm lg:text-lg font-bold text-blue-700">Score</span>
-                  <span className="block text-sm lg:text-2xl font-extrabold text-green-600">{score} / 30</span>
+                  <span className="text-sm lg:text-lg font-bold text-blue-700">Current Score</span>
+                  <span className="block text-sm lg:text-2xl font-extrabold text-green-600">{score} / {maxScore} </span>
                 </div>
                 <div>
                   <span className="text-sm lg:text-lg font-bold text-blue-700">Time</span>
@@ -625,7 +759,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
               />
             </div> */}
             {/* Buttons */}
-            <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} justify-center ${isMobile ? 'gap-2' : 'gap-4'} mt-2 lg:mt-4 w-full px-2`}>
+            <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} justify-center ${isMobile ? 'gap-2' : 'gap-4'} mt-1 lg:mt-4 w-full px-2`}>
               <button
                 className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 ${isMobile ? 'py-1.5 text-sm' : 'py-2'} text-white font-black rounded-lg shadow-lg pixel-text ${isMobile ? 'w-full' : ''}`}
                 onClick={onBackToLevels}

@@ -7,7 +7,7 @@ export interface Case {
   imageSrc: string; // Image source for the product
   deviationType: string; // Type of deviation for this case
   questions: {
-    violation: {
+    violation?: {
       question: string;
       options: string[];
       correct: number;
