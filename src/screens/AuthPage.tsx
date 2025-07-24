@@ -30,11 +30,16 @@ const AuthPage: React.FC = () => {
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900">
       <BackgroundAnimation />
       
-      <div className={`relative z-10 min-h-screen flex items-center justify-center ${window.innerWidth > window.innerHeight ? 'p-1' : 'p-4'}`}>
-        <div className="w-full max-w-md">
+      <div
+        className={`relative z-10 min-h-screen flex items-center justify-center ${
+          window.innerWidth > window.innerHeight
+            ? (authMode === 'signup' ? 'px-16' : 'p-1')
+            : 'p-4'
+        }`}
+      >
+        <div className="w-full max-w-4xl">
           <AnimatedLogo />
           <AuthForm mode={authMode} onToggleMode={toggleAuthMode} />
-          
           {/* Footer */}
           <div className="text-center mt-8">
             <p className="text-sm text-gray-500">
