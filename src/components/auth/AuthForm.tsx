@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
 import { useDeviceLayout } from '../../hooks/useOrientation' // Add this import
 
 interface AuthFormProps {
@@ -9,11 +10,17 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
+  const teamMemberRefs = [React.createRef<HTMLInputElement>(), React.createRef<HTMLInputElement>(), React.createRef<HTMLInputElement>()];
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     fullName: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    phone: '',
+    teamName: '',
+    collegeCode: '',
+    teamLead: '',
+    teamMembers: ['', '', ''] // 3 members (excluding leader)
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -53,6 +60,41 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         setError('Please enter your full name')
         return false
       }
+      if (!formData.phone.trim()) {
+        setError('Please enter your phone number')
+        return false
+      }
+      if (!/^\d{10}$/.test(formData.phone.trim())) {
+        setError('Please enter a valid 10-digit phone number')
+        return false
+      }
+      if (!formData.teamName.trim()) {
+        setError('Please enter your team name')
+        return false
+      }
+      if (!formData.collegeCode.trim()) {
+        setError('Please enter your college code')
+        return false
+      }
+      if (!formData.teamLead.trim()) {
+        setError('Please enter the team leader name')
+        return false
+      }
+      // Team members validation
+      const members = [formData.teamLead, ...formData.teamMembers.filter(m => m.trim() !== '')]
+      if (members.length < 2) {
+        setError('Minimum 2 members required (including Team Leader)')
+        return false
+      }
+      if (members.length > 4) {
+        setError('Maximum 4 members allowed (including Team Leader)')
+        return false
+      }
+      // Team member names should not be empty strings
+      if (formData.teamMembers.some((m, i) => m.trim() === '' && i < members.length - 1)) {
+        setError('Please fill all team member names or leave unused fields empty at the end')
+        return false
+      }
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match')
         return false
@@ -78,15 +120,79 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           setError(error.message)
         }
       } else {
-        const { error } = await signUp(formData.email, formData.password, formData.fullName)
+        // Check if team name already exists
+        const { data: existingTeams, error: teamCheckError } = await supabase
+          .from('teams')
+          .select('team_name')
+          .ilike('team_name', formData.teamName);
+        if (teamCheckError) {
+          setError('Error checking team name. Please try again.');
+          console.error('[AuthForm] Team name check error:', teamCheckError);
+          return;
+        }
+        if (existingTeams && existingTeams.length > 0) {
+          setError('Team name already exists, try a different name');
+          return;
+        }
+        // Pass all signup fields to signUp
+        console.log('[AuthForm] Attempting signup with:', formData);
+        const { error } = await signUp(
+          formData.email,
+          formData.password,
+          formData.fullName,
+          {
+            phone: formData.phone,
+            teamName: formData.teamName,
+            collegeCode: formData.collegeCode,
+            teamLead: formData.teamLead,
+            teamMembers: formData.teamMembers
+          }
+        )
         if (error) {
           setError(error.message)
+          console.error('[AuthForm] Signup error:', error);
         } else {
-          setSuccess('Account created successfully! Please check your email to verify your account.')
+          // Insert into teams table immediately after signup
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          const { fullName, phone, teamName, collegeCode, teamLead, teamMembers, email } = formData;
+          let teamRow = {
+            email,
+            full_name: fullName,
+            phone,
+            team_name: teamName,
+            college_code: collegeCode,
+            team_lead: teamLead,
+            team_member_1: teamMembers[0] || null,
+            team_member_2: teamMembers[1] || null,
+            team_member_3: teamMembers[2] || null,
+          };
+          if (user && user.id) {
+            teamRow.user_id = user.id;
+          }
+          console.log('[AuthForm] Inserting into teams table:', teamRow);
+          const { error: insertError, data: insertData } = await supabase.from('teams').insert([teamRow]);
+          console.log('[AuthForm] Teams insert response:', { insertError, insertData });
+          if (insertError) {
+            if (
+              insertError.message &&
+              insertError.message.includes('duplicate key value violates unique constraint')
+            ) {
+              setError('Team Name is taken, use a different name');
+            } else {
+              setError('Team creation failed: ' + insertError.message);
+            }
+            console.error('[AuthForm] Insert error:', insertError);
+            return;
+          }
+          if (!insertData) {
+            console.warn('[AuthForm] Insert returned no data.');
+          }
+          setSuccess('Account created successfully! Please check your email to verify your account.');
         }
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
+      console.error('[AuthForm] Unexpected error:', err);
     } finally {
       setIsSubmitting(false)
     }
@@ -94,20 +200,24 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
   return (
     <div className={`w-full mx-auto ${
-      isMobileLandscape && mode === 'signup'
-        ? 'max-w-lg flex justify-center items-center'
-        : isMobileLandscape
-          ? 'max-w-xs'
-          : 'max-w-md'
+      mode === 'login'
+        ? 'max-w-md'
+        : (isMobileLandscape && mode === 'signup'
+            ? 'max-w-4xl flex justify-center items-center'
+            : isMobileLandscape
+              ? 'max-w-md'
+              : 'max-w-5xl')
     }`}>
       <div
         className={`bg-gray-800/60 rounded-lg shadow-2xl relative z-10 w-full mx-auto
         ${
-          isMobileLandscape && mode === 'signup'
-            ? 'p-6 max-w-lg flex flex-col justify-center items-center'
-            : isMobileLandscape
-              ? 'p-4 max-w-xs'
-              : 'p-8 max-w-md'
+          mode === 'login' && isMobile
+            ? 'p-8 max-w-sm'
+            : (isMobileLandscape && mode === 'signup'
+                ? 'p-6 max-w-4xl flex flex-col justify-center items-center'
+                : isMobileLandscape
+                  ? 'p-4 max-w-md'
+                  : 'p-8 max-w-5xl')
         }`}
       >
         {/* Form Header */}
@@ -122,182 +232,307 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             }
           </p>
         </div>
-
-        {/* Error/Success Messages */}
-        {error && (
-          <div className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 animate-shake`}>
-            <AlertCircle className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-red-500 flex-shrink-0`} />
-            <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-red-700`}>{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className={`mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2 animate-bounce-in`}>
-            <CheckCircle className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-green-500 flex-shrink-0`} />
-            <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-green-700`}>{success}</p>
-          </div>
-        )}
-
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className={`space-y-2 ${
-            isMobileLandscape && mode === 'signup'
-              ? 'grid grid-cols-2 gap-4'
-              : ''
-          }`}
-          style={
-            isMobileLandscape && mode === 'signup'
-              ? { width: '100%' }
-              : undefined
-          }
-        >
-          {/* Full Name (Signup only) */}
-          {mode === 'signup' && (
-            <div className={`${isMobileLandscape ? 'col-span-1 flex flex-col justify-end' : ''} space-y-2`}>
-              {!isMobileLandscape && (
-                <label className="block font-medium text-white mb-1 text-sm">
-                  Full Name
-                </label>
-              )}
-              <div className={`relative w-full ${isMobileLandscape ? '' : 'flex justify-center'}`}>
+        {mode === 'signup' ? (
+          <form
+            onSubmit={handleSubmit}
+            className={`grid grid-cols-1 md:grid-cols-3 ${isMobile ? 'gap-4' : 'gap-6'} w-full`}
+            style={{ width: '100%' }}
+          >
+            {/* Column 1 */}
+            <div className={`flex flex-col gap-4 ${isMobile ? 'text-xs' : ''}`}> 
+              {/* Full Name */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Full Name</label>
+                <div className="relative w-full">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-blue-300" />
+                  </div>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10`}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+              </React.Fragment>
+              {/* College Code */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>College Code</label>
+                <div className="relative w-full">
+                  <input
+                    id="collegeCode"
+                    name="collegeCode"
+                    type="text"
+                    value={formData.collegeCode}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
+                    placeholder="Enter college code"
+                  />
+                </div>
+              </React.Fragment>
+              {/* Phone Number */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Phone Number</label>
+                <div className="relative w-full">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-sm text-blue-300">+91</span>
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10`}
+                    placeholder="Enter 10-digit phone number"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                  />
+                </div>
+              </React.Fragment>
+            </div>
+            {/* Column 2 */}
+            <div className={`flex flex-col gap-4 ${isMobile ? 'text-xs' : ''}`}> 
+              {/* Team Name */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Name</label>
+                <div className="relative w-full">
+                  <input
+                    id="teamName"
+                    name="teamName"
+                    type="text"
+                    value={formData.teamName}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
+                    placeholder="Enter team name"
+                  />
+                </div>
+              </React.Fragment>
+              {/* Team Lead */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Leader Name</label>
+                <div className="relative w-full">
+                  <input
+                    id="teamLead"
+                    name="teamLead"
+                    type="text"
+                    value={formData.teamLead}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
+                    placeholder="Enter team leader name"
+                  />
+                </div>
+              </React.Fragment>
+              {/* Team Members (progressive fields) */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Members (up to 3)</label>
+                {[0, 1, 2].map((idx) => {
+                  // Only show the first empty field or all filled fields
+                  if (idx === 0 || (formData.teamMembers[idx - 1] && formData.teamMembers[idx - 1].trim() !== '')) {
+                    return (
+                      <div key={idx} className="relative w-full mb-2">
+                        <input
+                          ref={teamMemberRefs[idx]}
+                          id={`teamMember${idx+1}`}
+                          name={`teamMembers`}
+                          type="text"
+                          value={formData.teamMembers[idx]}
+                          onChange={e => {
+                            const value = e.target.value;
+                            setFormData(prev => {
+                              const updated = { ...prev, teamMembers: prev.teamMembers.map((m, i) => i === idx ? value : m) };
+                              // If filled, focus next field
+                              if (value.trim() && idx < 2 && !prev.teamMembers[idx + 1]) {
+                                setTimeout(() => {
+                                  teamMemberRefs[idx + 1].current?.focus();
+                                }, 100);
+                              }
+                              return updated;
+                            });
+                            setError('');
+                            setSuccess('');
+                          }}
+                          className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
+                          placeholder={`Team Member ${idx+1} Name`}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </React.Fragment>
+            </div>
+            {/* Column 3 */}
+            <div className={`flex flex-col gap-4 ${isMobile ? 'text-xs' : ''}`}> 
+              {/* Email */}
+              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Email Address</label>
+              <div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
+                  <Mail className="h-5 w-5 text-blue-300" />
                 </div>
                 <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  value={formData.fullName}
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 ${isMobileLandscape ? 'text-xs' : ''}`}
-                  placeholder="Enter your full name"
-                  style={
-                    isMobileLandscape && mode === 'signup'
-                      ? { minWidth: 0, width: '100%', alignSelf: 'flex-end' }
-                      : undefined
-                  }
+                  className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10`}
+                  placeholder="Enter your email"
                 />
               </div>
-            </div>
-          )}
-
-          {/* Email */}
-          <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-1' : ''} space-y-2`}>
-            {!isMobileLandscape && (
-              <label className="block font-medium text-white mb-1 text-sm">
-                Email Address
-              </label>
-            )}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
-              </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 ${isMobileLandscape ? 'text-xs' : ''}`}
-                placeholder="Enter your email"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-1' : ''} space-y-2`}>
-            {!isMobileLandscape && (
-              <label className="block font-medium text-white mb-1 text-sm">
-                Password
-              </label>
-            )}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300`} />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                className={`w-full px-4 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 pr-10 ${isMobileLandscape ? 'text-xs' : ''}`}
-                placeholder="Enter Password"
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
-                ) : (
-                  <Eye className={`${isMobileLandscape ? 'h-4 w-4' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Confirm Password (Signup only) */}
-          {mode === 'signup' && (
-            <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-1' : ''} space-y-2`}>
-              {!isMobileLandscape && (
-                <label className="block font-medium text-white mb-1 text-sm">
-                  Confirm Password
-                </label>
-              )}
-              <div className="relative">
+              {/* Password */}
+              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Password</label>
+              <div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`${isMobileLandscape ? 'h-5 w-5' : 'h-5 w-5'} text-blue-300`} />
+                  <Lock className="h-5 w-5 text-blue-300" />
                 </div>
                 <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-2 bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-8 pr-8 ${isMobileLandscape ? 'text-xs' : ''}`}
-                  placeholder="Confirm Password"
+                  className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 pr-10`}
+                  placeholder="Enter Password"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-2 flex items-center"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
                   ) : (
-                    <Eye className={`${isMobileLandscape ? 'h-3 w-3' : 'h-5 w-5'} text-blue-300 hover:text-blue-400`} />
+                    <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                  )}
+                </button>
+              </div>
+              {/* Confirm Password (Signup only) */}
+              <React.Fragment>
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Confirm Password</label>
+                <div className="relative w-full">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-blue-300" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 pr-10`}
+                    placeholder="Confirm Password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                    )}
+                  </button>
+                </div>
+              </React.Fragment>
+            </div>
+            {/* Submit Button */}
+            <div className="col-span-1 md:col-span-3 flex justify-center mt-6">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    {mode === 'login' ? 'Signing In...' : 'Creating Account...'}
+                  </>
+                ) : (
+                  mode === 'login' ? 'Sign In' : 'Create Account'
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 w-full">
+            <div className="space-y-2">
+              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Email Address</label>
+              <div className="relative w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-blue-300" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10`}
+                  placeholder="Enter your email"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Password</label>
+              <div className="relative w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-blue-300" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10 pr-10`}
+                  placeholder="Enter Password"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-blue-300 hover:text-blue-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-blue-300 hover:text-blue-400" />
                   )}
                 </button>
               </div>
             </div>
-          )}
-
-          {/* Submit Button */}
-          <div className={`${isMobileLandscape && mode === 'signup' ? 'col-span-2 flex justify-center' : ''}`}>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200
-                ${isMobileLandscape ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'}`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                  {mode === 'login' ? 'Signing In...' : 'Creating Account...'}
-                </>
-              ) : (
-                mode === 'login' ? 'Sign In' : 'Create Account'
-              )}
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-center mt-6">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    {'Signing In...'}
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Toggle Mode */}
         <div className="mt-4 text-center">
