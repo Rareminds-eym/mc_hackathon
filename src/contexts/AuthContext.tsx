@@ -2,11 +2,24 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+interface SignupExtraFields {
+  phone: string;
+  teamName: string;
+  collegeCode: string;
+  teamLead: string;
+  teamMembers: string[];
+}
+
 interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: AuthError | null }>
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    extraFields?: SignupExtraFields
+  ) => Promise<{ error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
@@ -60,7 +73,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    extraFields?: SignupExtraFields
+  ) => {
     try {
       setLoading(true)
       const { error } = await supabase.auth.signUp({
@@ -69,6 +87,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         options: {
           data: {
             full_name: fullName,
+            ...(extraFields ? {
+              phone: extraFields.phone,
+              team_name: extraFields.teamName,
+              college_code: extraFields.collegeCode,
+              team_lead: extraFields.teamLead,
+              team_members: extraFields.teamMembers,
+            } : {})
           }
         }
       })
