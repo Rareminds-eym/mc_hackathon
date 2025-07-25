@@ -28,6 +28,8 @@ import { GameBoard2D } from './components/Level4/GameBoard2D';
 import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
 import Score from './components/Scores/Score';
+import { InstallPrompt, OfflineIndicator } from './components/PWA';
+
 
 // Route Error Component
 function RouteErrorBoundary() {
@@ -105,6 +107,8 @@ function App() {
     <Provider store={store}>
       <AuthProvider>
         <RouterProvider router={router} />
+        <OfflineIndicator />
+        <InstallPrompt />
       </AuthProvider>
     </Provider>
   );
