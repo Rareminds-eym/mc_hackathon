@@ -13,7 +13,8 @@ export const pullFromSupabase = async () => {
     // Get current user to filter data
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      throw new Error('User not authenticated');
+      console.log('Pull from Supabase skipped: User not authenticated');
+      return { success: false, error: 'User not authenticated', skipped: true };
     }
 
     // Pull data from each table
@@ -68,7 +69,8 @@ export const pushToSupabase = async () => {
     // Get current user to ensure we only push user's data
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      throw new Error('User not authenticated');
+      console.log('Push to Supabase skipped: User not authenticated');
+      return { success: false, error: 'User not authenticated', skipped: true };
     }
 
     // Push data from each table
@@ -145,12 +147,20 @@ export const fullSync = async () => {
     // First pull latest data from server
     const pullResult = await pullFromSupabase();
     if (!pullResult.success) {
+      // If skipped due to authentication, return early with skipped status
+      if (pullResult.skipped) {
+        return { success: false, error: 'Sync skipped - user not authenticated', skipped: true };
+      }
       return { success: false, error: 'Pull failed', pullResult };
     }
 
     // Then push any local changes
     const pushResult = await pushToSupabase();
     if (!pushResult.success) {
+      // If skipped due to authentication, return early with skipped status
+      if (pushResult.skipped) {
+        return { success: false, error: 'Sync skipped - user not authenticated', skipped: true };
+      }
       return { success: false, error: 'Push failed', pullResult, pushResult };
     }
 
@@ -175,6 +185,7 @@ export const hasLocalChanges = async () => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.log('hasLocalChanges: User not authenticated, returning false');
       return false;
     }
 
