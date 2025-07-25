@@ -1,0 +1,28 @@
+// Level 1 questions for Module 2 (default)
+export const module2Level1Questions = [
+  { term: 'Quality Control (QC)', definition: 'Department responsible for ensuring the product meets its specifications.' },
+  { term: 'Batch Manufacturing Record (BMR)', definition: 'Document recording all steps followed in manufacturing a batch.' },
+  { term: 'Calibration', definition: 'Process to check the accuracy of instruments used in production and testing.' },
+  { term: 'Quality Assurance (QA)', definition: 'Department that approves SOPs before implementation and oversees compliance.' },
+  { term: 'Stability Testing', definition: 'Test performed to verify product stability over time.' },
+  { term: 'Material Movement Log', definition: 'Log recording the entry and exit of materials into the warehouse.' },
+  { term: 'Material Receipt Inspection', definition: 'Initial checking of raw materials upon receipt.' },
+  { term: 'Production Supervisor', definition: 'Person performing in-process quality checks during manufacturing.' },
+  { term: 'Standard Operating Procedure (SOP)', definition: 'Document providing step-by-step instructions for routine operations.' },
+  { term: 'QA Executive', definition: 'Role responsible for investigating product deviations.' },
+  { term: 'Market Complaint', definition: 'Labeling errors found after batch release.' },
+  { term: 'Production', definition: 'Function that manages cleaning and sanitation of manufacturing areas.' },
+  { term: 'Change Control System', definition: 'System tracking all approved changes in manufacturing processes.' },
+  { term: 'Equipment Cleaning Log', definition: 'Record verifying that equipment cleaning was completed.' },
+  { term: 'Out of Specification (OOS) Report', definition: 'Report documenting a product failing to meet specifications.' },
+  { term: 'Training Evaluation', definition: 'Process of verifying personnel skills and knowledge.' },
+  { term: 'Training Attendance Sheet', definition: 'Log confirming attendance in a GMP training session.' },
+  { term: 'Microbial Limit Test', definition: 'Test confirming a batch meets microbial safety requirements.' },
+  { term: 'QA Display Board', definition: 'Visual board used to track QA status in the production area.' },
+  { term: 'CDSCO', definition: 'India\'s regulatory agency for pharmaceutical manufacturing practices.' },
+  { term: 'Deviation Report', definition: 'Document reporting any deviation from standard procedures.' },
+  { term: 'Line Clearance', definition: 'Process to ensure production lines are clear of previous products and materials.' },
+  { term: 'Environmental Monitoring', definition: 'Routine checking of cleanroom conditions to maintain compliance.' },
+  { term: 'SOP Revision Log', definition: 'Record tracking changes and updates made to SOPs.' },
+  { term: 'Free Space', definition: 'A pre-filled space to aid Bingo progression.' }
+];
