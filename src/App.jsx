@@ -91,7 +91,12 @@ function App() {
           setLastSyncTime(now);
         }
       } else {
-        console.error('Auto-sync failed:', result.error);
+        // Don't log authentication errors as errors - they're expected when not logged in
+        if (result.skipped && result.error?.includes('not authenticated')) {
+          console.log('Auto-sync skipped - user not authenticated');
+        } else {
+          console.error('Auto-sync failed:', result.error);
+        }
       }
     } catch (error) {
       console.error('Error during auto-sync:', error);

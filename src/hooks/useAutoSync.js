@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { pushToSupabase } from '../db/sync';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Hook for automatic data synchronization
@@ -18,13 +19,15 @@ export const useAutoSync = (options = {}) => {
     syncOnVisibilityChange = true
   } = options;
 
+  const { user } = useAuth();
   const syncTimeoutRef = useRef(null);
   const lastSyncTimeRef = useRef(null);
   const isOnlineRef = useRef(navigator.onLine);
 
   // Debounced sync function
   const triggerSync = useCallback(async (immediate = false) => {
-    if (!enabled || !isOnlineRef.current) {
+    if (!enabled || !isOnlineRef.current || !user) {
+      console.log('Auto-sync: Skipping sync - not enabled, offline, or user not authenticated');
       return;
     }
 
@@ -37,12 +40,17 @@ export const useAutoSync = (options = {}) => {
       try {
         console.log('Auto-sync: Pushing local changes...');
         const result = await pushToSupabase();
-        
+
         if (result.success) {
           lastSyncTimeRef.current = Date.now();
           console.log('Auto-sync: Successfully pushed changes');
         } else {
-          console.error('Auto-sync: Failed to push changes:', result.error);
+          // Don't log authentication errors as errors - they're expected when not logged in
+          if (result.skipped && result.error?.includes('not authenticated')) {
+            console.log('Auto-sync: Skipped - user not authenticated');
+          } else {
+            console.error('Auto-sync: Failed to push changes:', result.error);
+          }
         }
       } catch (error) {
         console.error('Auto-sync: Error during sync:', error);
@@ -55,7 +63,7 @@ export const useAutoSync = (options = {}) => {
       // Debounce the sync
       syncTimeoutRef.current = setTimeout(performSync, debounceMs);
     }
-  }, [enabled, debounceMs]);
+  }, [enabled, debounceMs, user]);
 
   // Monitor online/offline status
   useEffect(() => {
