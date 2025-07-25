@@ -579,7 +579,7 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
                   <div className={`flex items-center justify-center ${
                     isMobile ? 'space-x-1' : 'space-x-2'
                   }`}>
-                    <span>{isBatchProcessing ? 'SAVING...' : 'CONTINUE'}</span>
+                    <span>{isBatchProcessing ? 'SAVING...' : 'NEXT LEVEL'}</span>
                     <ArrowRight className={isMobile ? "w-3 h-3" : "w-5 h-5"} />
                   </div>
                 </button>
