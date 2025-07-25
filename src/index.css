@@ -14,6 +14,20 @@ body {
   font-family: 'Orbitron', 'ui-sans-serif', 'system-ui', 'sans-serif';
 }
 
+/* Ensure proper rotation support for PWA */
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Fix for iOS PWA rotation issues */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    height: -webkit-fill-available;
+  }
+}
+
 @keyframes twinkle {
   0% {
     opacity: 0.1;

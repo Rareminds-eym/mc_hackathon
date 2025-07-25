@@ -31,13 +31,27 @@ export function useDeviceLayout() {
   const [layout, setLayout] = useState(getLayout);
 
   useEffect(() => {
-    const handleResize = () => setLayout(getLayout());
+    const handleResize = () => {
+      // Add a small delay to ensure the orientation change is complete
+      setTimeout(() => setLayout(getLayout()), 100);
+    };
+
+    // Listen to multiple events for better PWA support
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    // Modern orientation API
     if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
       window.screen.orientation.addEventListener('change', handleResize);
-      return () => window.screen.orientation.removeEventListener('change', handleResize);
     }
-    return () => window.removeEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      if (window.screen && window.screen.orientation && window.screen.orientation.removeEventListener) {
+        window.screen.orientation.removeEventListener('change', handleResize);
+      }
+    };
   }, []);
 
   return layout;
