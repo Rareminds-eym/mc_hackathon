@@ -5,7 +5,7 @@ import {
   createLevel4Progress,
   Level4Progress,
   cleanupDuplicateLevel4Records
-} from '../services/supabaseService';
+} from '../services/level4';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLevel4HighScore } from '../hooks/useLevel4HighScore';
 import { VictoryPopup } from '../../../components/ui/Popup';

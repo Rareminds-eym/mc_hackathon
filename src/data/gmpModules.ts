@@ -57,7 +57,7 @@ export const GMP_MODULES: Module[] = [
     color: "#059669",
     position: { x: 25, y: 60 },
     completed: false,
-    unlocked: false,
+    unlocked: true,
     levels: [
       {
         id: 1,
@@ -86,15 +86,15 @@ export const GMP_MODULES: Module[] = [
         taxonomy: "Apply",
         time: 25,
       },
-      {
-        id: 4,
-        name: "Pharma Functions Analysis",
-        description: "Analyze complex Pharma Functions scenarios and case studies.",
-        difficulty: "Expert",
-        stars: 4,
-        taxonomy: "Analyze",
-        time: 30,
-      },
+      // {
+      //   id: 4,
+      //   name: "Pharma Functions Analysis",
+      //   description: "Analyze complex Pharma Functions scenarios and case studies.",
+      //   difficulty: "Expert",
+      //   stars: 4,
+      //   taxonomy: "Analyze",
+      //   time: 30,
+      // },
     ],
   },
   {
@@ -105,7 +105,7 @@ export const GMP_MODULES: Module[] = [
     color: "#DC2626",
     position: { x: 45, y: 70 },
     completed: false,
-    unlocked: false,
+    unlocked: true,
     levels: [
       {
         id: 1,

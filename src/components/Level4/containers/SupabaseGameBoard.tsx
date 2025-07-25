@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard2D } from '../GameBoard2D';
 import { useSupabaseIntegration } from '../hooks/useSupabaseIntegration';
+import Level4LoadingScreen from '../Level4LoadingScreen';
 
 /**
  * This component wraps the GameBoard2D component to provide
@@ -43,7 +44,7 @@ const SupabaseGameBoard: React.FC = () => {
   
   // Don't render game until we have user data
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading your progress...</div>;
+    return <Level4LoadingScreen />;
   }
   
   // If no user, we can't save progress

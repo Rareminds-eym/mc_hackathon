@@ -14,9 +14,11 @@ import {
   useSensors,
   MeasuringStrategy,
 } from "@dnd-kit/core";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Crown, Gamepad2, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Internal Components and Hooks
 import { JigsawContainer } from "./JigsawContainer";
@@ -24,30 +26,18 @@ import { JigsawContainer } from "./JigsawContainer";
 import { ScenarioDialog } from "./ScenarioDialog";
 import { VictoryPopup } from "../ui/Popup";
 import { useDeviceLayout } from "../../hooks/useOrientation";
-import { useAuth } from "../../contexts/AuthContext";
 import { RootState } from "../../store/types";
-import { supabase } from "../../lib/supabase";
 
 // Extracted Components
-import {
-  GameHeader,
-  Arsenal,
-  FeedbackConsole,
-  DeviceRotationPrompt,
-  LoadingState,
-  DragPieceOverlay,
-} from "./components";
+import { Arsenal, DeviceRotationPrompt, DragPieceOverlay } from "./components";
 
 // Utilities and Hooks
-import {
-  BACKGROUND_IMAGE_URL,
-  preloadImage,
-  getModuleIdFromPath,
-} from "./utils/gameUtils";
+import { BACKGROUND_IMAGE_URL, preloadImage } from "./utils/gameUtils";
 
 // Types
 import type { PuzzlePiece } from "../../data/level3Scenarios";
-import { GameProgress } from "./types/gameTypes";
+import { getLevel3ScenariosByModule } from "../../data/level3Scenarios";
+import { setScenarios } from "../../store/slices/level3Slice";
 
 /**
  * JigsawBoard Component
@@ -55,14 +45,82 @@ import { GameProgress } from "./types/gameTypes";
  * A gamified drag-and-drop puzzle interface where users identify violations
  * and place appropriate actions to fix them.
  */
+
 export const JigsawBoard: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   // ===== HOOKS & CONTEXT =====
-  const { user } = useAuth();
+  // Removed unused: user
+  // State declarations (single set at top)
+  const [showScenario, setShowScenario] = useState(true);
+  const [showBriefing, setShowBriefing] = useState(false);
+  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
+    null
+  );
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [health, setHealth] = useState(100);
+  const [combo, setCombo] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [placedPieces, setPlacedPieces] = useState<{
+    violations: PuzzlePiece[];
+    actions: PuzzlePiece[];
+  }>({
+    violations: [],
+    actions: [],
+  });
   const { isMobile, isHorizontal } = useDeviceLayout();
   const arsenalRef = useRef<HTMLDivElement>(null);
+  // ===== UI STATE =====
+  // (all state declarations are below, do not redeclare)
 
-  // Redux state
+  // Auto-close feedback after 2.5 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timeout = setTimeout(() => setFeedback(""), 2500);
+      return () => clearTimeout(timeout);
+    }
+  }, [feedback]);
+
+  // Redux state (declare after state, so it's available for use)
   const scenarios = useSelector((state: RootState) => state.level3.scenarios);
+  const currentModule = useSelector(
+    (state: RootState) => state.game.currentModule
+  );
+
+  // Update scenarios when module changes
+  useEffect(() => {
+    let moduleId: number | undefined = undefined;
+    if (
+      typeof currentModule === "object" &&
+      currentModule !== null &&
+      "id" in currentModule
+    ) {
+      moduleId = currentModule.id;
+    } else if (typeof currentModule === "number") {
+      moduleId = currentModule;
+    }
+    if (moduleId === 1 || moduleId === 2) {
+      dispatch(setScenarios(getLevel3ScenariosByModule(moduleId)));
+    }
+  }, [currentModule, dispatch]);
+
+  // Auto-close feedback after 2.5 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timeout = setTimeout(() => setFeedback(""), 2500);
+      return () => clearTimeout(timeout);
+    }
+  }, [feedback]);
+
+  // Auto-close feedback after 2.5 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timeout = setTimeout(() => setFeedback(""), 2500);
+      return () => clearTimeout(timeout);
+    }
+  }, [feedback]);
 
   // ===== DND KIT SETUP =====
   const sensors = useSensors(
@@ -75,34 +133,12 @@ export const JigsawBoard: React.FC = () => {
     })
   );
 
-  // ===== UI STATE =====
-  const [showScenario, setShowScenario] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeDragPiece, setActiveDragPiece] = useState<PuzzlePiece | null>(
-    null
-  );
-
-  // ===== GAME STATE =====
-  const [scenarioIndex, setScenarioIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [currentScenarioPoints, setCurrentScenarioPoints] = useState(0);
-  const [health, setHealth] = useState(100);
-  const [combo, setCombo] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [placedPieces, setPlacedPieces] = useState<{
-    violations: PuzzlePiece[];
-    actions: PuzzlePiece[];
-  }>({
-    violations: [],
-    actions: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  // ===== UI STATE & GAME STATE =====
+  // const [isMenuOpen, setIsMenuOpen] = useState(false); // Unused
+  // (moved all state declarations to top for auto-close feedback)
 
   // ===== DERIVED STATE =====
-  const moduleId = getModuleIdFromPath();
-  const displayName = user?.user_metadata?.full_name || user?.email || "Player";
+  // Removed unused: moduleId, displayName
   const scenario = scenarios?.[scenarioIndex];
 
   const correctViolations = useMemo(
@@ -133,148 +169,20 @@ export const JigsawBoard: React.FC = () => {
 
   // ===== GAME LOGIC HANDLERS =====
 
-  /**
-   * Load game progress from database
-   */
-  const loadGameProgress = useCallback(async () => {
-    if (!user?.id || !moduleId) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("level3_progress")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("module_id", moduleId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error("Error loading progress:", error);
-        setIsLoading(false);
-        return;
-      }
-
-      // If we have saved progress, restore it
-      if (data && data.length > 0) {
-        const savedProgress = data[0] as GameProgress;
-
-        if (savedProgress.completed) {
-          // If the saved scenario is completed, advance to the next scenario
-          if (savedProgress.scenario_index < scenarios?.length - 1) {
-            // Move to the next scenario
-            setScenarioIndex(savedProgress.scenario_index + 1);
-            setScore(savedProgress.score); // Preserve the score
-            setCurrentScenarioPoints(0); // Reset points for the new scenario
-            setHealth(100); // Reset health for the new scenario
-            setCombo(0); // Reset combo for the new scenario
-            setPlacedPieces({ violations: [], actions: [] }); // Clear placed pieces
-            setInitialized(true);
-            setShowScenario(true); // Show scenario dialog for new scenario
-
-            // Show message about advancing to next scenario
-            setTimeout(() => {
-              setFeedback("🎮 Welcome back! Advancing to the next scenario.");
-            }, 1000);
-          } else {
-            // If all scenarios are completed, just restore the state
-            setScenarioIndex(savedProgress.scenario_index);
-            setScore(savedProgress.score);
-            // For completed scenarios, use the saved score directly
-            setCurrentScenarioPoints(100); // Completed scenarios always have full points
-            setHealth(savedProgress.health);
-            setCombo(savedProgress.combo);
-            setPlacedPieces(savedProgress.placed_pieces);
-            setInitialized(true);
-            setIsComplete(true); // Set completion flag to prevent re-triggering completion logic
-            setShowScenario(false);
-          }
-        } else {
-          // Restore in-progress scenario
-          setScenarioIndex(savedProgress.scenario_index);
-          setScore(savedProgress.score);
-          // Calculate current scenario points based on placed pieces
-          const totalCorrectPieces =
-            correctViolations.length + correctActions.length;
-          const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
-          const calculatedPoints = Math.min(
-            100,
-            (savedProgress.placed_pieces.violations.length +
-              savedProgress.placed_pieces.actions.length) *
-              pointsPerPiece
-          );
-          setCurrentScenarioPoints(calculatedPoints);
-          setHealth(savedProgress.health);
-          setCombo(savedProgress.combo);
-          setPlacedPieces(savedProgress.placed_pieces);
-          setInitialized(true);
-
-          // Don't show scenario dialog if user was in the middle of a scenario
-          if (
-            savedProgress.placed_pieces.violations.length > 0 ||
-            savedProgress.placed_pieces.actions.length > 0
-          ) {
-            setShowScenario(false);
-
-            // Show welcome back message using the feedback console
-            setTimeout(() => {
-              setFeedback("🔄 Welcome back! Your progress has been restored.");
-            }, 1000);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Unexpected error loading progress:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.id, moduleId]);
-
-  /**
-   * Reset game progress
-   */
-  const resetProgress = useCallback(async () => {
-    setScenarioIndex(0);
-    setScore(0);
-    setCurrentScenarioPoints(0);
-    setHealth(100);
-    setCombo(0);
-    setPlacedPieces({ violations: [], actions: [] });
-    setShowScenario(true);
-    setIsComplete(false);
-
-    // Show feedback message
-    setFeedback("🔄 Progress reset! Starting fresh.");
-
-    // Reset database record if user is logged in
-    if (user?.id && moduleId) {
-      try {
-        await supabase
-          .from("level3_progress")
-          .delete()
-          .match({ user_id: user.id, module_id: moduleId });
-      } catch (error) {
-        console.error("Error resetting progress:", error);
-      }
-    }
-  }, [user?.id, moduleId]);
+  // (Removed unused isValidUUID helper)
 
   /**
    * Handle piece drop on containers
    */
   const handleDrop = useCallback(
     (containerType: "violations" | "actions", piece: PuzzlePiece) => {
-      setInitialized(true);
-
       // Validate if the piece is being dropped in the right container type
       const isCorrectCategory =
         (containerType === "violations" && piece.category === "violation") ||
         (containerType === "actions" && piece.category === "action");
 
       if (!isCorrectCategory) {
-        setFeedback("⚠️ WRONG CATEGORY! Try the other container, Agent!");
+        setFeedback("WRONG CATEGORY! Try the other container, Agent!");
         setHealth((prev) => Math.max(0, prev - 10));
         setCombo(0);
         return { success: false };
@@ -286,35 +194,41 @@ export const JigsawBoard: React.FC = () => {
         placedPieces.actions.some((p) => p.id === piece.id);
 
       if (isAlreadyPlaced) {
-        setFeedback("⚠️ Already placed! Try another piece!");
+        setFeedback("Already placed! Try another piece!");
         return { success: false };
       }
 
       // Update state based on whether the piece is correct
       if (piece.isCorrect) {
-        setPlacedPieces((prev) => ({
-          ...prev,
-          [containerType]: [...prev[containerType], piece],
-        }));
-        setFeedback("🎯 CRITICAL HIT! Perfect placement!");
+        setPlacedPieces((prev) => {
+          const updated = {
+            ...prev,
+            [containerType]: [...prev[containerType], piece],
+          };
+          // Check for completion
+          const totalViolations = correctViolations.length;
+          const totalActions = correctActions.length;
+          if (
+            updated.violations.length === totalViolations &&
+            updated.actions.length === totalActions
+          ) {
+            setTimeout(() => setIsComplete(true), 400); // slight delay for UX
+          }
+          return updated;
+        });
+        setFeedback("CRITICAL HIT! Perfect placement!");
 
         // Calculate points per correct piece based on total correct pieces
         const totalCorrectPieces =
           correctViolations.length + correctActions.length;
         const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
 
-        // Update current scenario points and total score
-        setCurrentScenarioPoints((prev) => {
-          const newPoints = Math.min(100, prev + pointsPerPiece);
-          // Update total score with just the incremental points
-          setScore((prevScore) => prevScore + (newPoints - prev));
-          return newPoints;
-        });
-
+        // Update total score
+        setScore((prevScore) => prevScore + pointsPerPiece);
         setCombo((prev) => prev + 1);
         return { success: true };
       } else {
-        setFeedback("💥 MISS! Analyze the scenario more carefully!");
+        setFeedback("\uD83D\uDCA5 MISS! Analyze the scenario more carefully!");
         setHealth((prev) => Math.max(0, prev - 15));
         setCombo(0);
         return { success: false };
@@ -327,32 +241,6 @@ export const JigsawBoard: React.FC = () => {
    * Handle victory popup close and scenario transition
    */
   const handleVictoryClose = useCallback(async () => {
-    // First mark current scenario as completed and save it
-    if (isComplete && user?.id) {
-      // Construct the completed progress object for current scenario
-      const completedProgress: GameProgress = {
-        user_id: user.id,
-        module_id: moduleId,
-        scenario_index: scenarioIndex,
-        score,
-        health,
-        combo,
-        placed_pieces: placedPieces,
-        completed: true,
-        created_at: new Date().toISOString(),
-      };
-
-      try {
-        // Save the completed state
-        await supabase.from("level3_progress").upsert(completedProgress, {
-          onConflict: "user_id,scenario_index",
-          ignoreDuplicates: false,
-        });
-      } catch (error) {
-        console.error("Error saving completed state:", error);
-      }
-    }
-
     // Then proceed to next scenario or clear completion state
     if (scenarioIndex < scenarios?.length - 1) {
       setScenarioIndex((idx) => idx + 1);
@@ -360,7 +248,7 @@ export const JigsawBoard: React.FC = () => {
       setIsComplete(false);
       setCombo(0);
       setHealth(100);
-      setCurrentScenarioPoints(0); // Reset points for new scenario
+      // Removed unused: setCurrentScenarioPoints(0); // Reset points for new scenario
       setScore(0); // Reset score for each scenario
       setShowScenario(true);
     } else {
@@ -370,59 +258,10 @@ export const JigsawBoard: React.FC = () => {
     scenarioIndex,
     scenarios?.length,
     isComplete,
-    user?.id,
-    moduleId,
     score,
     health,
     combo,
     placedPieces,
-  ]);
-
-  /**
-   * Save game progress to database
-   */
-  const saveGameProgress = useCallback(async () => {
-    if (!user?.id) return;
-
-    try {
-      // Construct the progress object
-      const progress: GameProgress = {
-        user_id: user.id,
-        module_id: moduleId,
-        scenario_index: scenarioIndex,
-        score,
-        health,
-        combo,
-        placed_pieces: placedPieces,
-        completed: isComplete,
-        created_at: new Date().toISOString(),
-      };
-
-      // Use upsert operation (conflict only on user_id and scenario_index)
-      const { error } = await supabase
-        .from("level3_progress")
-        .upsert(progress, {
-          onConflict: "user_id,scenario_index",
-          ignoreDuplicates: false,
-        });
-
-      // Log any errors but don't disrupt gameplay
-      if (error) {
-        console.error("Error saving progress:", error);
-      }
-    } catch (error) {
-      // Capture and log any unexpected errors
-      console.error("Unexpected error saving progress:", error);
-    }
-  }, [
-    user?.id,
-    moduleId,
-    scenarioIndex,
-    score,
-    health,
-    combo,
-    placedPieces,
-    isComplete,
   ]);
 
   // ===== EFFECTS =====
@@ -432,72 +271,6 @@ export const JigsawBoard: React.FC = () => {
     preloadImage(BACKGROUND_IMAGE_URL);
   }, []);
 
-  // Load saved game progress on mount
-  useEffect(() => {
-    loadGameProgress();
-  }, [loadGameProgress]);
-
-  // Save game progress when game state changes
-  useEffect(() => {
-    if (initialized) saveGameProgress();
-  }, [
-    initialized,
-    saveGameProgress,
-    isComplete, // Make sure we save when completion status changes
-    placedPieces, // Save when pieces are placed
-    score, // Save when score changes
-  ]);
-
-  // Load game progress on user and moduleId change
-  useEffect(() => {
-    if (user && moduleId) {
-      loadGameProgress();
-    }
-  }, [user, moduleId, loadGameProgress]);
-
-  // Reset arsenal scroll position when scenario changes
-  useEffect(() => {
-    if (arsenalRef.current) arsenalRef.current.scrollTop = 0;
-  }, [scenarioIndex]);
-
-  // Check for game completion
-  useEffect(() => {
-    // Skip if already marked as complete to prevent re-adding points
-    if (isComplete) return;
-
-    const totalCorrect = correctViolations.length + correctActions.length;
-    const placedCorrect =
-      placedPieces.violations.length + placedPieces.actions.length;
-
-    if (placedCorrect === totalCorrect && totalCorrect > 0) {
-      setIsComplete(true);
-
-      // Make sure we give exactly 100 points total for the scenario
-      setCurrentScenarioPoints((prev) => {
-        const remainingPoints = 100 - prev;
-        if (remainingPoints > 0) {
-          setScore((prevScore) => prevScore + remainingPoints);
-          return 100;
-        }
-        return prev;
-      });
-
-      setFeedback("");
-    }
-  }, [
-    placedPieces,
-    isComplete,
-    correctViolations.length,
-    correctActions.length,
-  ]);
-
-  // Auto-dismiss feedback after timeout
-  useEffect(() => {
-    if (!feedback) return;
-    const timeout = setTimeout(() => setFeedback(""), 2500);
-    return () => clearTimeout(timeout);
-  }, [feedback]);
-
   // ===== CONDITIONAL RENDERING =====
 
   // Force landscape mode
@@ -505,80 +278,9 @@ export const JigsawBoard: React.FC = () => {
     return <DeviceRotationPrompt />;
   }
 
-  // Show loading screen if scenarios aren't loaded yet or we're loading saved progress
-  if (isLoading || !scenario) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-        {/* Animated SVG or Icon */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none select-none">
-          <svg
-            width="180"
-            height="180"
-            viewBox="0 0 100 100"
-            className="animate-spin-slow"
-          >
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              stroke="#22d3ee"
-              strokeWidth="8"
-              fill="none"
-              strokeDasharray="62.8 62.8"
-              strokeLinecap="round"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="28"
-              stroke="#fde68a"
-              strokeWidth="4"
-              fill="none"
-              strokeDasharray="44 44"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-        <div className="z-10 flex flex-col items-center gap-4">
-          <div className="text-4xl md:text-5xl font-extrabold text-cyan-200 drop-shadow-glow animate-gradient-move game-font tracking-widest text-center">
-            LEVEL 3
-          </div>
-          <div className="text-lg md:text-2xl font-bold text-yellow-200 animate-pulse text-center">
-            {isLoading && !scenario
-              ? "Loading scenarios..."
-              : "Loading your saved progress..."}
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            {/* Jigsaw: bounce */}
-            <Icon
-              icon="mdi:jigsaw-outline"
-              className="text-cyan-300 text-3xl md:text-4xl drop-shadow-glow animate-bounce"
-              style={{ animationDelay: "0s" }}
-            />
-            {/* Account-tie: bounce */}
-            <Icon
-              icon="mdi:account-tie-outline"
-              className="text-yellow-300 text-3xl md:text-4xl drop-shadow-glow animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            />
-            {/* Lightning: bounce */}
-            <Icon
-              icon="mdi:lightning-bolt-outline"
-              className="text-pink-300 text-3xl md:text-4xl drop-shadow-glow animate-bounce"
-              style={{ animationDelay: "0.3s" }}
-            />
-          </div>
-          <div className="mt-4 text-cyan-100 text-sm opacity-80 text-center">
-            {isLoading && !scenario
-              ? "Fetching game scenarios from the server. Please wait..."
-              : "Restoring your last game session. Hang tight!"}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ===== MAIN RENDER =====
+  // Remove loading screen and isLoading logic
+  // ===== MAIN RENDER - REDESIGNED =====
+  // ===== MAIN RENDER - PIXEL/RETRO STYLE =====
   return (
     <DndContext
       sensors={sensors}
@@ -588,11 +290,9 @@ export const JigsawBoard: React.FC = () => {
       }}
       onDragEnd={(event) => {
         setActiveDragPiece(null);
-
         if (event.over && event.active) {
           const containerType = event.over.id;
           const piece = availablePieces.find((p) => p.id === event.active.id);
-
           if (
             (containerType === "violations" || containerType === "actions") &&
             piece
@@ -603,159 +303,368 @@ export const JigsawBoard: React.FC = () => {
       }}
       onDragCancel={() => setActiveDragPiece(null)}
       autoScroll={true}
-      measuring={{
-        droppable: {
-          strategy: MeasuringStrategy.Always,
-        },
-      }}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
     >
       {/* DragPieceOverlay component */}
       <DragPieceOverlay activeDragPiece={activeDragPiece} isMobile={isMobile} />
 
-      {/* Main Game Container */}
+      {/* Animated Grid Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none select-none">
+        <img
+          src="/backgrounds/m1l3.webp"
+          alt="Level 3 Background"
+          className="w-full h-full object-cover object-center absolute inset-0 z-0"
+          style={{ filter: "brightness(0.7) contrast(1.1)" }}
+          draggable={false}
+        />
+        {/* Optional: dark overlay for readability */}
+        <div className="absolute inset-0 bg-black/60 z-10"></div>
+      </div>
+      <div className="absolute inset-0 opacity-20 pointer-events-none select-none z-20">
+        <div className="grid-pattern"></div>
+      </div>
+
+      {/* Main Game Layout */}
       <div
-        className="min-h-screen h-screen relative overflow-hidden flex flex-col justify-center items-center p-1"
-        style={{
-          backgroundImage: `url('${BACKGROUND_IMAGE_URL}')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          ...(isMobile && isHorizontal
-            ? {
-                width: "100vw",
-                height: "100vh",
-                minHeight: "100vh",
-                zIndex: 1000,
-              }
-            : {}),
-        }}
+        className={`relative z-10 h-screen flex flex-col items-center justify-center ${
+          isMobile ? "p-2" : "p-6"
+        }`}
       >
-        {/* Scenario Dialog */}
+        {/* Navbar - Pixel/Retro style, extra compact on mobile horizontal */}
+        <nav className="w-full mx-auto sticky top-0 z-10">
+          <div
+            className={`w-full flex flex-col md:flex-row items-center bg-gradient-to-r from-gray-900 via-indigo-900 to-blue-900 pixel-border-thick
+              ${isMobile && isHorizontal ? "p-1 mt-1 mb-2" : "p-2 mt-2 mb-4"}`}
+          >
+            <div className="flex w-full items-center justify-between">
+              {/* Back Button */}
+              <div className="flex-shrink-0 flex items-center">
+                <button
+                  className={`pixel-border bg-gray-800 hover:bg-gray-700 text-cyan-100 flex items-center ${
+                    isMobile && isHorizontal
+                      ? "gap-0.5 px-1 py-0.5 text-xs"
+                      : "gap-1 px-2 py-1"
+                  } font-bold transition-all duration-150 active:scale-95`}
+                  style={{ borderRadius: 4 }}
+                  onClick={() => navigate(-1)}
+                  aria-label="Back"
+                >
+                  <ArrowLeft
+                    className={`${
+                      isMobile && isHorizontal ? "w-4 h-4" : "w-5 h-5"
+                    }`}
+                  />
+                  <span
+                    className={`${
+                      isMobile && isHorizontal ? "hidden" : "hidden sm:inline"
+                    }`}
+                  >
+                    Back
+                  </span>
+                </button>
+              </div>
+              {/* Centered Game Title and Level Info - absolutely centered */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
+                <div
+                  className={`${
+                    isMobile && isHorizontal ? "w-6 h-6" : "w-8 h-8"
+                  } bg-indigo-700 pixel-border flex items-center justify-center`}
+                >
+                  <Crown
+                    className={`${
+                      isMobile && isHorizontal ? "w-3.5 h-3.5" : "w-4 h-4"
+                    } text-yellow-300`}
+                  />
+                </div>
+                <div className="text-center">
+                  <h1
+                    className={`pixel-text tracking-wider leading-none drop-shadow-glow font-black text-cyan-100 ${
+                      isMobile && isHorizontal ? "text-base" : "text-lg"
+                    }`}
+                  >
+                    GMP QUEST
+                  </h1>
+                  <div
+                    className={`text-blue-200 font-bold tracking-widest leading-none ${
+                      isMobile && isHorizontal ? "text-[10px]" : "text-xs"
+                    }`}
+                  >
+                    LEVEL 3: JIGSAW
+                  </div>
+                </div>
+                <div
+                  className={`${
+                    isMobile && isHorizontal ? "w-6 h-6" : "w-8 h-8"
+                  } bg-blue-700 pixel-border flex items-center justify-center`}
+                >
+                  <Gamepad2
+                    className={`${
+                      isMobile && isHorizontal ? "w-3.5 h-3.5" : "w-4 h-4"
+                    } text-cyan-200`}
+                  />
+                </div>
+              </div>
+              {/* Mission Briefing Button */}
+              <div
+                className={`flex-shrink-0 flex items-center ml-2 ${
+                  !(isMobile && isHorizontal) && "hidden"
+                }`}
+              >
+                <button
+                  className={`pixel-border bg-yellow-700 hover:bg-yellow-600 text-black flex items-center font-bold transition-all duration-150 active:scale-95 ${
+                    isMobile && isHorizontal
+                      ? "gap-0.5 px-1 py-0.5 text-xs"
+                      : "gap-1 px-2 py-1"
+                  }`}
+                  style={{ borderRadius: 4 }}
+                  onClick={() => setShowBriefing(true)}
+                  aria-label="Show Mission Briefing"
+                >
+                  <Icon
+                    icon="mdi:message-bulleted"
+                    className={`${
+                      isMobile && isHorizontal ? "w-4 h-4" : "w-5 h-5"
+                    } text-yellow-300`}
+                  />
+                  <span
+                    className={`${
+                      isMobile && isHorizontal ? "hidden" : "hidden sm:inline"
+                    }`}
+                  >
+                    Mission Briefing
+                  </span>
+                </button>
+              </div>
+              {/* Stats HUD - right aligned */}
+              <div className="flex-shrink-0 flex items-center ml-auto">
+                <div
+                  className={`flex flex-row justify-center items-center ${
+                    isMobile && isHorizontal ? "gap-1" : "gap-2 md:gap-4"
+                  }`}
+                >
+                  <div
+                    className={`pixel-border bg-blue-800/80 flex flex-col items-center ${
+                      isMobile && isHorizontal
+                        ? "px-1 py-0.5 min-w-[38px]"
+                        : "px-2 py-1 min-w-[60px]"
+                    }`}
+                  >
+                    <span
+                      className={`text-blue-200 font-bold leading-none ${
+                        isMobile && isHorizontal ? "text-[8px]" : "text-[10px]"
+                      }`}
+                    >
+                      SCORE
+                    </span>
+                    <span
+                      className={`text-cyan-100 font-black leading-none ${
+                        isMobile && isHorizontal ? "text-xs" : "text-base"
+                      }`}
+                    >
+                      {score.toString().padStart(4, "0")}
+                    </span>
+                  </div>
+                  <div
+                    className={`pixel-border bg-fuchsia-900/80 flex flex-col items-center ${
+                      isMobile && isHorizontal
+                        ? "px-1 py-0.5 min-w-[38px]"
+                        : "px-2 py-1 min-w-[60px]"
+                    }`}
+                  >
+                    <span
+                      className={`text-pink-200 font-bold leading-none ${
+                        isMobile && isHorizontal ? "text-[8px]" : "text-[10px]"
+                      }`}
+                    >
+                      HEALTH
+                    </span>
+                    <span
+                      className={`text-pink-100 font-black leading-none ${
+                        isMobile && isHorizontal ? "text-xs" : "text-base"
+                      }`}
+                    >
+                      {health}
+                    </span>
+                  </div>
+                  <div
+                    className={`pixel-border bg-yellow-700/80 flex flex-col items-center ${
+                      isMobile && isHorizontal
+                        ? "px-1 py-0.5 min-w-[38px]"
+                        : "px-2 py-1 min-w-[60px]"
+                    }`}
+                  >
+                    <span
+                      className={`text-yellow-200 font-bold leading-none ${
+                        isMobile && isHorizontal ? "text-[8px]" : "text-[10px]"
+                      }`}
+                    >
+                      COMBO
+                    </span>
+                    <span
+                      className={`text-yellow-100 font-black leading-none ${
+                        isMobile && isHorizontal ? "text-xs" : "text-base"
+                      }`}
+                    >
+                      {combo}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Mission Briefing - Pixel/Retro style (dynamic) */}
+        {/* Mission Briefing Popup */}
         <AnimatePresence>
-          {showScenario && (
+          {showBriefing && scenario?.description && (
             <motion.div
-              key="scenario-dialog"
-              initial={{ opacity: 0, scale: 1, y: 0 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 1, y: 0 }}
+              key="mission-briefing-popup"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.35, ease: "easeInOut" }}
-              style={{ position: "absolute", inset: 0, zIndex: 2000 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
             >
-              <ScenarioDialog
-                scenario={scenario}
-                onClose={() => setShowScenario(false)}
-              />
+              <div className="pixel-border-thick bg-gradient-to-r from-indigo-900 via-blue-900 to-fuchsia-900 text-cyan-100 px-6 py-6 text-base md:text-lg font-mono tracking-wide shadow-2xl text-center max-w-xl mx-auto relative">
+                <span className="font-bold text-yellow-200 text-lg block mb-2">
+                  MISSION BRIEFING
+                </span>
+                <div className="mb-4 text-cyan-100">{scenario.description}</div>
+                <button
+                  className="pixel-border bg-yellow-700 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded mt-2"
+                  onClick={() => setShowBriefing(false)}
+                  aria-label="Close Mission Briefing"
+                >
+                  Close
+                </button>
+                <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-0"></div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="w-full p-1 relative z-10 flex flex-col gap-1 h-full">
-          {/* Header with Menu */}
-          <GameHeader
-            isComplete={isComplete}
-            placedPieces={placedPieces}
-            correctViolations={correctViolations}
-            correctActions={correctActions}
-            isMenuOpen={isMenuOpen}
-            setIsMenuOpen={setIsMenuOpen}
-            displayName={displayName}
-            score={score}
-            health={health}
-            combo={combo}
-            setShowScenario={setShowScenario}
-            onResetProgress={resetProgress}
-            isMobile={isMobile}
-            isHorizontal={isHorizontal}
-          />
+        {/* Main Game Area - Pixel/Retro style */}
+        <main className="flex-1 flex flex-col h-full w-full max-w-6xl mx-auto relative z-10">
+          {/* Scenario Dialog Overlay */}
+          <AnimatePresence>
+            {showScenario && (
+              <motion.div
+                key="scenario-dialog"
+                initial={{ opacity: 0, scale: 1, y: 0 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              >
+                <ScenarioDialog
+                  scenario={scenario}
+                  onClose={() => setShowScenario(false)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Game Menu - Render this inside the GameHeader for proper dropdown positioning */}
-
-          {/* Main Game Area */}
-          <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch overflow-x-hidden">
-            <div className="flex flex-row gap-4 flex-1 min-h-0 h-full justify-center items-stretch w-full max-w-6xl mx-auto">
-              {/* Violations Container */}
-              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
-                <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <div
-                    className="w-full flex flex-col items-center justify-center"
-                    style={{
-                      maxHeight: "max-content",
-                      minHeight: "120px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <JigsawContainer
-                      type="violations"
-                      title="Violation Container"
-                      pieces={placedPieces.violations}
-                      maxPieces={correctViolations.length}
-                      onDrop={handleDrop}
-                    />
-                  </div>
-                </div>
+          {/* Mission Briefing - Pixel/Retro style (dynamic) */}
+          {scenario?.description && (
+            <div
+              className={`w-full max-w-3xl mx-auto mb-2 md:mb-4 px-2 md:px-0${
+                isMobile && isHorizontal ? " hidden" : ""
+              }`}
+            >
+              <div className="pixel-border bg-gradient-to-r from-indigo-900 via-blue-900 to-fuchsia-900 text-cyan-100 px-3 py-2 md:py-3 text-xs md:text-sm font-mono tracking-wide shadow-lg text-center">
+                <span className="font-bold text-yellow-200">
+                  MISSION BRIEFING:
+                </span>{" "}
+                {scenario.description}
               </div>
+            </div>
+          )}
 
-              {/* Arsenal (Middle) */}
+          {/* Main Game Area - Now using CSS Grid for layout, with pixel borders */}
+          <div
+            className="flex-1 flex flex-row gap-2 md:gap-4 items-stretch justify-center w-full"
+            style={{
+              maxHeight:
+                isHorizontal && !isMobile ? "calc(100vh - 64px)" : "100vh",
+              minHeight: 0,
+            }}
+          >
+            {/* Violations Container */}
+            <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
+              <JigsawContainer
+                type="violations"
+                pieces={placedPieces.violations}
+                maxPieces={correctViolations.length}
+              />
+              <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
+            </section>
+
+            {/* Arsenal */}
+            <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
               <Arsenal
                 availablePieces={availablePieces}
                 isMobile={isMobile}
                 isHorizontal={isHorizontal}
                 arsenalRef={arsenalRef}
               />
+              <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
+            </section>
 
-              {/* Actions Container */}
-              <div className="flex-1 flex flex-col min-h-0 items-stretch min-w-[180px] max-w-[420px] justify-center">
-                <div className="flex-1 flex items-center justify-center min-h-0 flex-col">
-                  <div
-                    className="w-full flex flex-col items-center justify-center"
-                    style={{
-                      maxHeight: "max-content",
-                      minHeight: "120px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <JigsawContainer
-                      type="actions"
-                      title="Action Container"
-                      pieces={placedPieces.actions}
-                      maxPieces={correctActions.length}
-                      onDrop={handleDrop}
-                    />
-                  </div>
+            {/* Actions Container */}
+            <section className="flex-1 min-w-[180px] max-w-[400px] h-full flex flex-col items-center justify-start">
+              <JigsawContainer
+                type="actions"
+                pieces={placedPieces.actions}
+                maxPieces={correctActions.length}
+              />
+              <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none"></div>
+            </section>
+          </div>
+
+          {/* Feedback Console - Pixel/Retro style */}
+          {feedback && (
+            <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+              <div className="pixel-border-thick bg-gradient-to-r from-cyan-700 via-blue-800 to-purple-800 shadow-2xl px-6 py-4 relative overflow-hidden min-w-[220px] max-w-[90vw] flex items-center justify-center animate-in fade-in slide-in-from-bottom-4">
+                {/* Scan Lines */}
+                <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-0"></div>
+                {/* Glow Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-purple-500 opacity-30 blur-lg pointer-events-none z-0"></div>
+                <div className="relative z-10 flex items-center gap-3">
+                  <Icon
+                    icon="mdi:message-bulleted"
+                    className="text-yellow-300 w-6 h-6 drop-shadow-glow animate-pulse"
+                  />
+                  <span className="text-white font-black text-base pixel-text tracking-wide drop-shadow-glow">
+                    {feedback}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Feedback Console */}
-          {feedback && (
-            <FeedbackConsole
-              feedback={feedback}
-              isMobile={isMobile}
-              isHorizontal={isHorizontal}
-              setFeedback={setFeedback}
-            />
           )}
 
-          {/* Victory Screen */}
-          <VictoryPopup
-            open={isComplete}
-            onClose={handleVictoryClose}
-            score={score}
-            combo={combo}
-            health={health}
-            isLevelCompleted={scenarioIndex >= scenarios.length - 1}
-            showReset={scenarioIndex >= scenarios.length - 1} // Only show reset on last scenario
-            onReset={resetProgress} // Pass the reset function
-            moduleId={moduleId}
-          />
-        </div>
+          {/* Victory Popup - Pixel/Retro style overlay */}
+          <AnimatePresence>
+            {isComplete && (
+              <motion.div
+                key="victory-popup"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              >
+                <VictoryPopup
+                  onClose={handleVictoryClose}
+                  score={score}
+                  health={health}
+                  combo={combo}
+                  open={true}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
       </div>
     </DndContext>
   );

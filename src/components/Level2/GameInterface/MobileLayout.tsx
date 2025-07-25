@@ -19,6 +19,8 @@ interface MobileLayoutProps {
   getTermsInCategory: (categoryId: string) => Term[];
   correctTerms: Set<string>;
   incorrectTerms: Set<string>;
+  moduleId: number;
+  type: number;
 }
 
 const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -36,6 +38,8 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({
   getTermsInCategory,
   correctTerms,
   incorrectTerms,
+  moduleId,
+  type,
 }) => {
   return (
     <div className="h-full flex flex-col">
@@ -60,6 +64,8 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({
           progress={progress}
           hasExecuted={hasExecuted}
           isMobile={true}
+          moduleId={moduleId}
+          type={type}
         />
 
         {/* Right Side - Drop Zones - HORIZONTAL LAYOUT */}

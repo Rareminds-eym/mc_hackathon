@@ -7,30 +7,39 @@ import DndProvider from '../DndProvider';
 import { soundManager, playDragSound, playCorrectSound, playIncorrectSound, playScoreSound } from '../../../utils/Level2/sounds';
 import MobileLayout from './MobileLayout';
 import DesktopLayout from './DesktopLayout';
-import ResultsModal from './ResultsModal';
+
 import '../index.css';
 
 interface GameInterfaceProps {
   gameMode: GameMode;
   moduleId: string;
   onBack: () => void;
-  onNextLevel?: () => void;
+  onNextLevel?: (score: number, currentScore: number, totalCorrect: number, terms: Term[], scoreHistory: number[], timeHistory: number[]) => void;
 }
 
 const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBack, onNextLevel }) => {
   const { isMobile } = useDeviceLayout();
-  const { 
-    isLoading: isGameLoading, 
-    saveGameData, 
-    markLevelCompleted
+  const {
+    isLoading: isGameLoading,
+    gameDataWithHistory
   } = useLevel2Game({ moduleId, gameModeId: gameMode.id });
   
   const [terms, setTerms] = useState<Term[]>(() =>
     gameMode.terms.map(term => ({ ...term, currentCategory: undefined }))
   );
-  const [showResults, setShowResults] = useState(false);
-  const [score, setScore] = useState(0);
-  const [totalCorrect, setTotalCorrect] = useState(0);
+
+  // Update terms when gameMode changes (when moduleId and type change)
+  useEffect(() => {
+    setTerms(gameMode.terms.map(term => ({ ...term, currentCategory: undefined })));
+    // Reset game state when gameMode changes
+    setTimeElapsed(0);
+    setGameStarted(false);
+    setMoves(0);
+    setCurrentScore(0);
+    setHasExecuted(false);
+  }, [gameMode]);
+
+
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [moves, setMoves] = useState(0);
@@ -60,13 +69,13 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
   // Timer Effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (gameStarted && !showResults) {
+    if (gameStarted && !hasExecuted) {
       interval = setInterval(() => {
         setTimeElapsed(prev => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [gameStarted, showResults]);
+  }, [gameStarted, hasExecuted]);
 
   // Start game on first move
   useEffect(() => {
@@ -92,32 +101,42 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
       }
     });
 
-    setTotalCorrect(correct);
-
     // Calculate percentage score based on correct items
     const percentageScore = Math.round((correct / terms.length) * 100);
-    setScore(percentageScore);
 
     // Update current score to reflect total points earned (5 points per correct item)
     const totalPointsEarned = correct * 5;
     setCurrentScore(totalPointsEarned);
 
-    // Save game data using the hook
-    await saveGameData({
-      score: totalPointsEarned,
-      isCompleted: true,
-      time: timeElapsed,
-      totalTerms: terms.length,
-      placedTerms: terms,
-    });
+    // NOTE: Database saving is now deferred to the ResultsModal for batch processing
+    // This allows all game types to be completed before any database operations occur
 
-    setShowResults(true);
-  }, [terms, timeElapsed, saveGameData, hasExecuted, isGameLoading]);
+    // Use existing data for history, since we're not saving to database yet
+    const updatedScoreHistory = gameDataWithHistory?.score_history || [];
+    const updatedTimeHistory = gameDataWithHistory?.time_history || [];
+
+    // Add current score and time to the history arrays for display purposes
+    const currentScoreHistory = [totalPointsEarned, ...updatedScoreHistory.slice(0, 2)];
+    const currentTimeHistory = [timeElapsed, ...updatedTimeHistory.slice(0, 2)];
+
+    // Instead of showing results modal directly, call the next level handler
+    // This will be handled by the GameNavigator based on the flow state
+    if (onNextLevel) {
+      onNextLevel(
+        percentageScore,
+        totalPointsEarned,
+        correct,
+        terms,
+        currentScoreHistory,
+        currentTimeHistory
+      );
+    }
+  }, [terms, timeElapsed, hasExecuted, isGameLoading, gameDataWithHistory, onNextLevel]);
 
   // Auto-execute when all items are placed (only if not already executed)
   useEffect(() => {
     const unassignedTerms = terms.filter(term => !term.currentCategory);
-    if (unassignedTerms.length === 0 && terms.length > 0 && !showResults && !hasExecuted && !isGameLoading) {
+    if (unassignedTerms.length === 0 && terms.length > 0 && !hasExecuted && !isGameLoading) {
       // Small delay to allow the last drop animation to complete
       const timeoutId = setTimeout(() => {
         // Double-check conditions before executing
@@ -126,11 +145,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
           checkAnswers();
         }
       }, 500);
-      
+
       // Cleanup timeout if component unmounts or dependencies change
       return () => clearTimeout(timeoutId);
     }
-  }, [terms, showResults, hasExecuted, checkAnswers, isGameLoading]);
+  }, [terms, hasExecuted, checkAnswers, isGameLoading]);
 
   const handleDragStart = () => {
     playDragSound();
@@ -171,7 +190,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             : term
         )
       );
-      setShowResults(false);
+
       setMoves(prev => prev + 1);
       
       // Reset hasExecuted when user makes a new move after seeing results
@@ -183,9 +202,6 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
 
   const resetGame = () => {
     setTerms(gameMode.terms.map(term => ({ ...term, currentCategory: undefined })));
-    setShowResults(false);
-    setScore(0);
-    setTotalCorrect(0);
     setTimeElapsed(0);
     setGameStarted(false);
     setMoves(0);
@@ -193,17 +209,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     setHasExecuted(false);
   };
 
-  const handleNextLevel = async () => {
-    // Mark the level as completed in the database
-    await markLevelCompleted();
-    
-    // Navigate to next level if handler is provided, otherwise go back
-    if (onNextLevel) {
-      onNextLevel();
-    } else {
-      onBack();
-    }
-  };
+
 
   const getTermsInCategory = (categoryId: string) => {
     return terms.filter(term => term.currentCategory === categoryId);
@@ -251,11 +257,25 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
     getTermsInCategory,
     correctTerms: getCorrectTerms(),
     incorrectTerms: getIncorrectTerms(),
+    moduleId: gameMode.moduleId,
+    type: gameMode.type,
   };
 
   return (
     <DndProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className={`min-h-screen ${isMobile ? 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900' : 'bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900'} pixel-perfect relative overflow-hidden`}>
+      <div className={`min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 bg-cover bg-center bg-no-repeat relative overflow-hidden pixel-perfect ${isMobile ? 'p-2' : 'p-6'}`}
+        style={{ backgroundImage: 'url("/Level2/level3bg.webp")' }}>
+        {/* Gamified Overlay - matches Level2 HomePage */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Slightly darkened base overlay for gamified look */}
+          <div className="absolute inset-0 bg-black opacity-40"></div>
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/30 via-purple-500/30 to-transparent opacity-80 pixel-glow"></div>
+          {/* Scan Lines Overlay */}
+          <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+          {/* Glow Overlay */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-purple-500 opacity-30 blur-lg"></div>
+        </div>
         {isGameLoading && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="text-white text-xl">Saving progress...</div>
@@ -268,19 +288,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
             <DesktopLayout {...layoutProps} />
           )}
 
-          <ResultsModal
-            showResults={showResults}
-            score={score}
-            currentScore={currentScore}
-            totalCorrect={totalCorrect}
-            terms={terms}
-            isMobile={isMobile}
-            onNextLevel={handleNextLevel}
-            onReset={resetGame}
-            onClose={() => setShowResults(false)}
-            moduleId={parseInt(moduleId)}
-            levelId={2}
-          />
+          {/* ResultsModal is now handled by GameNavigator based on flow state */}
         </div>
       </div>
     </DndProvider>

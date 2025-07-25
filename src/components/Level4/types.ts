@@ -7,7 +7,7 @@ export interface Case {
   imageSrc: string; // Image source for the product
   deviationType: string; // Type of deviation for this case
   questions: {
-    violation: {
+    violation?: {
       question: string;
       options: string[];
       correct: number;
@@ -27,6 +27,7 @@ export interface Case {
 
 export interface GameState {
   currentCase: number;
+  moduleNumber: number; // Added for dynamic module support
   answers: {
     violation: number | null;
     rootCause: number | null;

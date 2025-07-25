@@ -20,75 +20,79 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({ piece }) => {
     id: piece.id,
     data: piece,
   });
-
-  const arsenalGradient = 'from-blue-500 via-cyan-500 to-teal-500';
-  const arsenalBorder = 'border-cyan-400';
   const { isMobile: mobile } = useDeviceLayout();
-  //
+
+  // Styles from JigsawContainer for visual consistency
+  const borderColor = 'border-pink-400';
+  const bgGradient = 'from-fuchsia-900/90 via-indigo-900/80 to-blue-800/80';
+  const glassBg = 'bg-white/20 backdrop-blur-lg';
+  const iconBg = 'bg-gradient-to-br from-pink-500/80 to-fuchsia-400/80 shadow-lg';
+  let icon;
+  if (piece.category === 'violation') {
+    icon = <Zap className="w-4 h-4 text-pink-100 drop-shadow-glow animate-pulse" />;
+  } else if (piece.category === 'action') {
+    icon = <Target className="w-4 h-4 text-cyan-100 drop-shadow-glow animate-pulse" />;
+  } else {
+    icon = <Sparkles className="w-4 h-4 text-pink-100 drop-shadow-glow animate-pulse" />;
+  }
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`
-        group relative cursor-grab active:cursor-grabbing select-none
-        bg-gradient-to-br ${arsenalGradient} text-white p-4 font-bold text-center 
-        shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl 
-        border-2 ${arsenalBorder} transform hover:rotate-1 game-font overflow-hidden
-        ${isDragging ? 'opacity-50 scale-95 rotate-6' : 'opacity-100'}
-        ${mobile ? ' arsenal-piece-mobile-horizontal' : ''}
+      className={`group relative select-none flex flex-col items-center justify-center
+        bg-gradient-to-br ${bgGradient} text-white p-4 font-extrabold text-center pixel-text tracking-wider
+        shadow-[0_0_24px_4px_#f0f,0_2px_12px_0_#0008]
+        border-4 ${borderColor} pixel-border-thick overflow-hidden
+        ${glassBg}
+        transition-all duration-300 ease-out hover:translate-y-[-2px] hover:scale-[1.02] ${isDragging ? "animate-drop-in" : ""}
+        ${isDragging ? 'opacity-80 saturate-150 z-50' : ''}
+        ${mobile ? 'arsenal-piece-mobile-horizontal' : ''}
       `}
       style={{
-        minHeight: mobile ? '58px' : '80px',
-        height: mobile ? '58px' : undefined,
-        maxWidth: mobile ? '220px' : '260px',
-        filter: isDragging ? 'brightness(0.5) grayscale(0.5)' : 'brightness(1)',
+        minHeight: '58px',
+        maxWidth: '260px',
+        width: '100%',
+        filter: isDragging ? 'brightness(1.1) grayscale(0.05)' : 'brightness(1.05)',
         clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
-        borderRadius: '8px',
-        touchAction: 'none', // Required for DnD Kit mobile support
-        opacity: isDragging ? '0.3' : '1',
-        transform: isDragging ? 'scale(0.9)' : 'scale(1)',
-        transition: 'transform 0.2s, opacity 0.2s, filter 0.2s'
+        borderRadius: '12px',
+        touchAction: 'none',
+        boxShadow: isDragging
+          ? '0 0 0 4px #fff, 0 0 32px 8px #0f0, 0 0 12px 2px #fff, 0 0 0 2px #0f08'
+          : '0 2px 12px 0 #0008, 0 0 0 2px #fff4',
       }}
     >
-      {/* Animated Background Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/20 to-white/10 animate-pulse opacity-50" />
-      
+      {/* Neon Scanline/Glow Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-pink-400/5 via-fuchsia-400/5 to-blue-400/5 pointer-events-none z-10 mix-blend-lighten" />
+      <div className="absolute inset-0 bg-scan-lines opacity-10 pointer-events-none z-20" />
+      <div className="absolute -inset-1 bg-pink-400/10 blur-2xl pointer-events-none z-0" />
+
       {/* Category Icon */}
-      <div className="absolute top-2 left-2 opacity-20">
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center bg-cyan-600/80 border border-white/30`}>
-          <Target className="w-3 h-3 text-white" />
+      <div className="absolute top-2 left-2 opacity-90 z-30 drop-shadow-glow">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconBg} border-2 border-pink-200/40 shadow-lg`}>
+          {icon}
         </div>
       </div>
 
-      {/* Sparkle Effect */}
-      <div className="absolute top-2 right-2">
-        <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse group-hover:animate-spin" />
+      {/* Cyberpunk Sparkle/Retro Effect */}
+      <div className="absolute top-2 right-2 z-30 flex gap-1 items-center">
+        <Sparkles className="w-4 h-4 text-yellow-200 animate-pulse group-hover:animate-spin drop-shadow-glow" />
+        <Zap className="w-4 h-4 text-pink-300 animate-pulse group-hover:animate-spin drop-shadow-glow" />
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 pointer-events-none h-full flex items-center justify-center">
-        <div className="text-sm leading-tight">{piece.text}</div>
+      <div className="relative z-40 pointer-events-none h-full my-auto flex items-center justify-center text-center w-full">
+        <div className="w-full text-base leading-tight drop-shadow-glow flex items-center justify-center text-center px-1" style={{textShadow:'0 2px 8px #f0f8, 0 1px 0 #fff8'}}>
+          {piece.text}
+        </div>
       </div>
 
-      {/* Drag State Overlay */}
-      {isDragging && (
-        <div 
-          className="absolute inset-0 bg-black/30 flex items-center justify-center"
-          style={{
-            clipPath: 'polygon(0% 15%, 8% 15%, 12% 0%, 20% 0%, 25% 15%, 75% 15%, 80% 0%, 88% 0%, 92% 15%, 100% 15%, 100% 85%, 92% 85%, 88% 100%, 80% 100%, 75% 85%, 25% 85%, 20% 100%, 12% 100%, 8% 85%, 0% 85%)',
-            borderRadius: '8px'
-          }}
-        >
-          <Zap className="w-6 h-6 text-yellow-400 animate-bounce" />
-        </div>
-      )}
-
-      {/* Jigsaw Piece Connectors (Visual Enhancement) */}
-      <div className="absolute top-0 left-1/4 w-2 h-1 bg-white/30 rounded-b-full" />
-      <div className="absolute top-0 right-1/4 w-2 h-1 bg-white/30 rounded-b-full" />
-      <div className="absolute bottom-0 left-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
-      <div className="absolute bottom-0 right-1/4 w-2 h-1 bg-white/30 rounded-t-full" />
+      {/* Pixel Connectors (Visual Enhancement) */}
+      <div className="absolute top-0 left-1/4 w-2 h-1 bg-pink-200/40 rounded-b-full shadow-pink-400/30" />
+      <div className="absolute top-0 right-1/4 w-2 h-1 bg-pink-200/40 rounded-b-full shadow-pink-400/30" />
+      <div className="absolute bottom-0 left-1/4 w-2 h-1 bg-pink-200/40 rounded-t-full shadow-pink-400/30" />
+      <div className="absolute bottom-0 right-1/4 w-2 h-1 bg-pink-200/40 rounded-t-full shadow-pink-400/30" />
     </div>
   );
 };

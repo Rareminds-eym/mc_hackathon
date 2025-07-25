@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Level4Progress } from '../services/supabaseService';
+import { Level4Progress } from '../services/level4';
 
 const Level4ScoreBoard: React.FC = () => {
   const [scores, setScores] = useState<Level4Progress[]>([]);
