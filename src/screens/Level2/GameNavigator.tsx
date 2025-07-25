@@ -138,7 +138,6 @@ const Level2GameNavigatorInner: React.FC = () => {
         onContinue={handleContinueToNext}
         nextType={nextType || 1}
         moduleId={moduleIdNum}
-        isMobile={false}
       />
     );
   }
@@ -153,7 +152,6 @@ const Level2GameNavigatorInner: React.FC = () => {
           currentScore={gameCurrentScore}
           totalCorrect={gameTotalCorrect}
           terms={gameTerms}
-          isMobile={false}
           onNextLevel={handleResultsContinue}
           onReset={handleResultsReset}
           onClose={handleResultsClose}
