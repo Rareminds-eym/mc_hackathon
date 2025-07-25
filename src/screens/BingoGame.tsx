@@ -13,7 +13,13 @@ import LoaderScreen from './LoaderScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompletedLineModal from '../components/Level1/CompletedLineModal';
 
-const BingoGame: React.FC = () => {
+
+interface BingoGameProps {
+  questions?: any[];
+  moduleId?: string;
+}
+
+const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
   const {
     cells,
     completedLines,
@@ -31,7 +37,7 @@ const BingoGame: React.FC = () => {
     startTimer,
     stopTimer,
     playAgain,
-  } = useBingoGame();
+  } = useBingoGame({ questions, moduleId });
 
   const {
     isActive: tutorialActive,
