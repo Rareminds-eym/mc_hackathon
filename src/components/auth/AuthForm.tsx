@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { v4 as uuidv4 } from 'uuid';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -10,7 +11,7 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
-  const teamMemberRefs = [React.createRef<HTMLInputElement>(), React.createRef<HTMLInputElement>(), React.createRef<HTMLInputElement>()];
+  // Removed unused teamMemberRefs
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,8 +20,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     phone: '',
     teamName: '',
     collegeCode: '',
-    teamLead: '',
-    teamMembers: ['', '', ''] // 3 members (excluding leader)
+    isTeamLeader: null as null | boolean,
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -76,23 +76,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         setError('Please enter your college code')
         return false
       }
-      if (!formData.teamLead.trim()) {
-        setError('Please enter the team leader name')
-        return false
-      }
-      // Team members validation
-      const members = [formData.teamLead, ...formData.teamMembers.filter(m => m.trim() !== '')]
-      if (members.length < 2) {
-        setError('Minimum 2 members required (including Team Leader)')
-        return false
-      }
-      if (members.length > 4) {
-        setError('Maximum 4 members allowed (including Team Leader)')
-        return false
-      }
-      // Team member names should not be empty strings
-      if (formData.teamMembers.some((m, i) => m.trim() === '' && i < members.length - 1)) {
-        setError('Please fill all team member names or leave unused fields empty at the end')
+      if (formData.isTeamLeader === null) {
+        setError('Please specify if you are the team leader')
         return false
       }
       if (formData.password !== formData.confirmPassword) {
@@ -134,8 +119,29 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           setError('Team name already exists, try a different name');
           return;
         }
+        // Find or create session_id for this team/college
+        let sessionId: string | null = null;
+        const { data: sessionRows, error: sessionError } = await supabase
+          .from('teams')
+          .select('session_id')
+          .eq('team_name', formData.teamName)
+          .eq('college_code', formData.collegeCode)
+          .limit(1);
+        if (sessionError) {
+          setError('Error checking session. Please try again.');
+          console.error('[AuthForm] Session check error:', sessionError);
+          setIsSubmitting(false);
+          return;
+        }
+        if (sessionRows && sessionRows.length > 0 && sessionRows[0].session_id) {
+          sessionId = sessionRows[0].session_id;
+        } else {
+          sessionId = uuidv4();
+        }
+
         // Pass all signup fields to signUp
         console.log('[AuthForm] Attempting signup with:', formData);
+        // Only pass fields that are expected by signUp
         const { error } = await signUp(
           formData.email,
           formData.password,
@@ -144,8 +150,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             phone: formData.phone,
             teamName: formData.teamName,
             collegeCode: formData.collegeCode,
-            teamLead: formData.teamLead,
-            teamMembers: formData.teamMembers
+            sessionId: sessionId,
           }
         )
         if (error) {
@@ -153,18 +158,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           console.error('[AuthForm] Signup error:', error);
         } else {
           // Insert into teams table immediately after signup
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          const { fullName, phone, teamName, collegeCode, teamLead, teamMembers, email } = formData;
-          let teamRow = {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { fullName, phone, teamName, collegeCode, isTeamLeader, email } = formData;
+          const teamRow: any = {
             email,
             full_name: fullName,
             phone,
             team_name: teamName,
             college_code: collegeCode,
-            team_lead: teamLead,
-            team_member_1: teamMembers[0] || null,
-            team_member_2: teamMembers[1] || null,
-            team_member_3: teamMembers[2] || null,
+            is_team_leader: isTeamLeader,
+            session_id: sessionId,
           };
           if (user && user.id) {
             teamRow.user_id = user.id;
@@ -349,60 +352,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   />
                 </div>
               </React.Fragment>
-              {/* Team Lead */}
-              <React.Fragment>
-                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Leader Name</label>
-                <div className="relative w-full">
-                  <input
-                    id="teamLead"
-                    name="teamLead"
-                    type="text"
-                    value={formData.teamLead}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
-                    placeholder="Enter team leader name"
-                  />
-                </div>
-              </React.Fragment>
-              {/* Team Members (progressive fields) */}
-              <React.Fragment>
-                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Members (up to 3)</label>
-                {[0, 1, 2].map((idx) => {
-                  // Only show the first empty field or all filled fields
-                  if (idx === 0 || (formData.teamMembers[idx - 1] && formData.teamMembers[idx - 1].trim() !== '')) {
-                    return (
-                      <div key={idx} className="relative w-full mb-2">
-                        <input
-                          ref={teamMemberRefs[idx]}
-                          id={`teamMember${idx+1}`}
-                          name={`teamMembers`}
-                          type="text"
-                          value={formData.teamMembers[idx]}
-                          onChange={e => {
-                            const value = e.target.value;
-                            setFormData(prev => {
-                              const updated = { ...prev, teamMembers: prev.teamMembers.map((m, i) => i === idx ? value : m) };
-                              // If filled, focus next field
-                              if (value.trim() && idx < 2 && !prev.teamMembers[idx + 1]) {
-                                setTimeout(() => {
-                                  teamMemberRefs[idx + 1].current?.focus();
-                                }, 100);
-                              }
-                              return updated;
-                            });
-                            setError('');
-                            setSuccess('');
-                          }}
-                          className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
-                          placeholder={`Team Member ${idx+1} Name`}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </React.Fragment>
+            {/* Are you the team leader? Yes/No */}
+            <div className="flex flex-col gap-2">
+              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Are you the team leader?</label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  className={`px-4 py-2 rounded-md border font-medium focus:outline-none transition-colors duration-150 ${formData.isTeamLeader === true ? 'bg-blue-600 text-white border-blue-700' : 'bg-white/10 text-white border-slate-700/50 hover:bg-blue-700/30'}`}
+                  onClick={() => { setFormData(prev => ({ ...prev, isTeamLeader: true })); setError(''); setSuccess(''); }}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={`px-4 py-2 rounded-md border font-medium focus:outline-none transition-colors duration-150 ${formData.isTeamLeader === false ? 'bg-blue-600 text-white border-blue-700' : 'bg-white/10 text-white border-slate-700/50 hover:bg-blue-700/30'}`}
+                  onClick={() => { setFormData(prev => ({ ...prev, isTeamLeader: false })); setError(''); setSuccess(''); }}
+                >
+                  No
+                </button>
+              </div>
+            </div>
             </div>
             {/* Column 3 */}
             <div className={`flex flex-col gap-4 ${isMobile ? 'text-xs' : ''}`}> 
