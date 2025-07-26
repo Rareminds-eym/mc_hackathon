@@ -6,6 +6,13 @@ import { getModuleScore } from './modulesData';
 
 const ModuleStone: React.FC<ModuleStoneProps> = ({ module, position, onClick }) => {
   const { id, status } = module;
+
+  // Handle undefined position gracefully
+  if (!position) {
+    console.error(`ModuleStone: Position is undefined for module ${id}`);
+    return null;
+  }
+
   const { x, y } = position;
   const [isHovered, setIsHovered] = useState(false);
   const { isMobile } = useDeviceLayout();
