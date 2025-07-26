@@ -208,6 +208,40 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               ? 'max-w-md'
               : 'max-w-5xl')
     }`}>
+      {/* Error/Success Alerts: Toast for mobile, alert for desktop */}
+      {(error || success) && (
+        isMobile ? (
+          <div className="fixed top-4 left-1/2 z-50 transform -translate-x-1/2 w-[90vw] max-w-xs">
+            {error && (
+              <div className="flex items-center gap-2 bg-red-700/90 border border-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+                <AlertCircle className="h-5 w-5 text-red-300" />
+                <span className="font-medium">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="flex items-center gap-2 bg-green-700/90 border border-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+                <CheckCircle className="h-5 w-5 text-green-300" />
+                <span className="font-medium">{success}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="w-full flex justify-center mb-4">
+            {error && (
+              <div className="flex items-center gap-2 bg-red-700/80 border border-red-500 text-white px-4 py-2 rounded-md shadow-md animate-fade-in">
+                <AlertCircle className="h-5 w-5 text-red-300" />
+                <span className="font-medium">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="flex items-center gap-2 bg-green-700/80 border border-green-500 text-white px-4 py-2 rounded-md shadow-md animate-fade-in">
+                <CheckCircle className="h-5 w-5 text-green-300" />
+                <span className="font-medium">{success}</span>
+              </div>
+            )}
+          </div>
+        )
+      )}
       <div
         className={`bg-gray-800/60 rounded-lg shadow-2xl relative z-10 w-full mx-auto
         ${
