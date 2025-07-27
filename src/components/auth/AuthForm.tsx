@@ -21,7 +21,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     teamName: '',
     collegeCode: '',
     isTeamLeader: null as null | boolean,
+    joinCode: '', // For team members joining
   })
+  // For pre-filling team name and college code for team members
+  const [prefilledTeam, setPrefilledTeam] = useState<{ teamName: string; collegeCode: string } | null>(null);
+  // For displaying join code to team leader after signup
+  const [generatedJoinCode, setGeneratedJoinCode] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
@@ -68,14 +73,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         setError('Please enter a valid 10-digit phone number')
         return false
       }
-      if (!formData.teamName.trim()) {
-        setError('Please enter your team name')
-        return false
-      }
-      if (!formData.collegeCode.trim()) {
-        setError('Please enter your college code')
-        return false
-      }
       if (formData.isTeamLeader === null) {
         setError('Please specify if you are the team leader')
         return false
@@ -84,122 +81,232 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         setError('Passwords do not match')
         return false
       }
+      if (formData.isTeamLeader) {
+        // Team leader: must provide team name and college code
+        if (!formData.teamName.trim()) {
+          setError('Please enter your team name')
+          return false
+        }
+        if (!formData.collegeCode.trim()) {
+          setError('Please enter your college code')
+          return false
+        }
+      } else {
+        // Team member: must provide join code
+        if (!formData.joinCode.trim()) {
+          setError('Please enter the join code provided by your team leader')
+          return false
+        }
+      }
     }
 
     return true
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) return
+  const generateJoinCode = () => {
+    // 6-character alphanumeric code
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
 
-    setIsSubmitting(true)
-    setError('')
-    setSuccess('')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    setGeneratedJoinCode(null);
 
     try {
       if (mode === 'login') {
-        const { error } = await signIn(formData.email, formData.password)
+        const { error } = await signIn(formData.email, formData.password);
         if (error) {
-          setError(error.message)
+          setError(error.message);
         }
       } else {
-        // Check if team name already exists
-        const { data: existingTeams, error: teamCheckError } = await supabase
-          .from('teams')
-          .select('team_name')
-          .ilike('team_name', formData.teamName);
-        if (teamCheckError) {
-          setError('Error checking team name. Please try again.');
-          console.error('[AuthForm] Team name check error:', teamCheckError);
-          return;
-        }
-        if (existingTeams && existingTeams.length > 0) {
-          setError('Team name already exists, try a different name');
-          return;
-        }
-        // Find or create session_id for this team/college
-        let sessionId: string | null = null;
-        const { data: sessionRows, error: sessionError } = await supabase
-          .from('teams')
-          .select('session_id')
-          .eq('team_name', formData.teamName)
-          .eq('college_code', formData.collegeCode)
-          .limit(1);
-        if (sessionError) {
-          setError('Error checking session. Please try again.');
-          console.error('[AuthForm] Session check error:', sessionError);
-          setIsSubmitting(false);
-          return;
-        }
-        if (sessionRows && sessionRows.length > 0 && sessionRows[0].session_id) {
-          sessionId = sessionRows[0].session_id;
-        } else {
-          sessionId = uuidv4();
-        }
-
-        // Pass all signup fields to signUp
-        console.log('[AuthForm] Attempting signup with:', formData);
-        // Only pass fields that are expected by signUp
-        const { error } = await signUp(
-          formData.email,
-          formData.password,
-          formData.fullName,
-          {
-            phone: formData.phone,
-            teamName: formData.teamName,
-            collegeCode: formData.collegeCode,
-            sessionId: sessionId,
+        if (formData.isTeamLeader) {
+          // Team leader signup: create team, generate join code
+          // Check if team name already exists
+          const { data: existingTeams, error: teamCheckError } = await supabase
+            .from('teams')
+            .select('team_name')
+            .ilike('team_name', formData.teamName);
+          if (teamCheckError) {
+            setError('Error checking team name. Please try again.');
+            console.error('[AuthForm] Team name check error:', teamCheckError);
+            setIsSubmitting(false);
+            return;
           }
-        )
-        if (error) {
-          setError(error.message)
-          console.error('[AuthForm] Signup error:', error);
-        } else {
-          // Insert into teams table immediately after signup
+          if (existingTeams && existingTeams.length > 0) {
+            setError('Team name already exists, try a different name');
+            setIsSubmitting(false);
+            return;
+          }
+          // Generate join code (always 6 uppercase chars)
+          const joinCode = generateJoinCode().toUpperCase().trim();
+          // Create session id
+          const sessionId = uuidv4();
+          // Pass all signup fields to signUp
+          const { error } = await signUp(
+            formData.email,
+            formData.password,
+            formData.fullName,
+            {
+              phone: formData.phone,
+              teamName: formData.teamName,
+              collegeCode: formData.collegeCode,
+              teamLead: '', // Not used in this flow
+              teamMembers: [], // Not used in this flow
+            }
+          );
+          if (error) {
+            setError(error.message);
+            console.error('[AuthForm] Signup error:', error);
+            setIsSubmitting(false);
+            return;
+          }
+          // Insert into teams table
           const { data: { user } } = await supabase.auth.getUser();
-          const { fullName, phone, teamName, collegeCode, isTeamLeader, email } = formData;
-          const teamRow: any = {
+          const { fullName, phone, teamName, collegeCode, email } = formData;
+          const teamRow: {
+            email: string;
+            full_name: string;
+            phone: string;
+            team_name: string;
+            college_code: string;
+            is_team_leader: boolean;
+            session_id: string;
+            join_code: string;
+            user_id?: string;
+          } = {
             email,
             full_name: fullName,
             phone,
             team_name: teamName,
             college_code: collegeCode,
-            is_team_leader: isTeamLeader,
+            is_team_leader: true,
             session_id: sessionId,
+            join_code: joinCode, // always 6 chars
           };
           if (user && user.id) {
             teamRow.user_id = user.id;
           }
-          console.log('[AuthForm] Inserting into teams table:', teamRow);
-          const { error: insertError, data: insertData } = await supabase.from('teams').insert([teamRow]);
-          console.log('[AuthForm] Teams insert response:', { insertError, insertData });
+          const { error: insertError } = await supabase.from('teams').insert([teamRow]);
           if (insertError) {
-            if (
-              insertError.message &&
-              insertError.message.includes('duplicate key value violates unique constraint')
-            ) {
-              setError('Team Name is taken, use a different name');
-            } else {
-              setError('Team creation failed: ' + insertError.message);
-            }
-            console.error('[AuthForm] Insert error:', insertError);
+            setError('Team creation failed: ' + insertError.message);
+            setIsSubmitting(false);
             return;
           }
-          if (!insertData) {
-            console.warn('[AuthForm] Insert returned no data.');
+          setGeneratedJoinCode(joinCode);
+          setSuccess('Account created! Share this join code with your team: ' + joinCode.toUpperCase());
+          // Pre-fill team name and college code for team members
+          setPrefilledTeam({ teamName: formData.teamName, collegeCode: formData.collegeCode });
+        } else {
+          // Team member signup: join with code
+          // Find team by join code
+          const joinCodeInput = formData.joinCode.trim().toUpperCase();
+          console.log('[AuthForm] Member join code input:', joinCodeInput);
+          const { data: teamRows, error: teamError } = await supabase
+            .from('teams')
+            .select('*')
+            .eq('join_code', joinCodeInput);
+          console.log('[AuthForm] Query result for join_code', joinCodeInput, ':', teamRows, teamError);
+          if (teamError) {
+            setError('Error finding team. Please try again.');
+            setIsSubmitting(false);
+            return;
           }
-          setSuccess('Account created successfully! Please check your email to verify your account.');
+          if (!teamRows || teamRows.length === 0) {
+            console.log('[AuthForm] No team found for join code:', joinCodeInput);
+            setError('Invalid join code. Please check with your team leader.');
+            setIsSubmitting(false);
+            return;
+          } else {
+            // Log the join_code in the found team for comparison
+            console.log('[AuthForm] Found team join_code:', teamRows[0]?.join_code, 'Input:', joinCodeInput);
+          }
+          // Check team size (max 4)
+          const { data: teamMembers, error: countError } = await supabase
+            .from('teams')
+            .select('id', { count: 'exact', head: true })
+            .eq('join_code', joinCodeInput);
+          if (countError) {
+            setError('Error checking team size. Please try again.');
+            setIsSubmitting(false);
+            return;
+          }
+          if (teamMembers && teamMembers.length >= 4) {
+            setError('This team already has 4 members.');
+            setIsSubmitting(false);
+            return;
+          }
+          // Use session_id, team_name, college_code from found team
+          const team = teamRows[0];
+          // Pre-fill team name and college code for UI
+          setPrefilledTeam({ teamName: team.team_name, collegeCode: team.college_code });
+          const { error } = await signUp(
+            formData.email,
+            formData.password,
+            formData.fullName,
+            {
+              phone: formData.phone,
+              teamName: team.team_name,
+              collegeCode: team.college_code,
+              teamLead: '', // Not used in this flow
+              teamMembers: [], // Not used in this flow
+            }
+          );
+          if (error) {
+            setError(error.message);
+            setIsSubmitting(false);
+            return;
+          }
+          // Insert into teams table
+          const { data: { user } } = await supabase.auth.getUser();
+          const { fullName, phone, email } = formData;
+          const teamRow: {
+            email: string;
+            full_name: string;
+            phone: string;
+            team_name: string;
+            college_code: string;
+            is_team_leader: boolean;
+            session_id: string;
+            join_code: string;
+            user_id?: string;
+          } = {
+            email,
+            full_name: fullName,
+            phone,
+            team_name: team.team_name,
+            college_code: team.college_code,
+            is_team_leader: false,
+            session_id: team.session_id,
+            join_code: team.join_code,
+          };
+          if (user && user.id) {
+            teamRow.user_id = user.id;
+          }
+          const { error: insertError } = await supabase.from('teams').insert([teamRow]);
+          if (insertError) {
+            setError('Failed to join team: ' + insertError.message);
+            setIsSubmitting(false);
+            return;
+          }
+          setSuccess('Account created and joined team. Please go to email and verify your account.');
         }
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+      setError('An unexpected error occurred. Please try again.');
       console.error('[AuthForm] Unexpected error:', err);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className={`w-full mx-auto ${
@@ -296,22 +403,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                   />
                 </div>
               </React.Fragment>
-              {/* College Code */}
-              <React.Fragment>
-                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>College Code</label>
-                <div className="relative w-full">
-                  <input
-                    id="collegeCode"
-                    name="collegeCode"
-                    type="text"
-                    value={formData.collegeCode}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
-                    placeholder="Enter college code"
-                  />
-                </div>
-              </React.Fragment>
+              {/* College Code (only for team leader or prefilled for member) */}
+              {(formData.isTeamLeader || (prefilledTeam && !formData.isTeamLeader)) ? (
+                <React.Fragment>
+                  <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>College Code</label>
+                  <div className="relative w-full">
+                    <input
+                      id="collegeCode"
+                      name="collegeCode"
+                      type="text"
+                      value={formData.isTeamLeader ? formData.collegeCode : (prefilledTeam ? prefilledTeam.collegeCode : '')}
+                      onChange={formData.isTeamLeader ? handleInputChange : undefined}
+                      required={!!formData.isTeamLeader}
+                      className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white ${!formData.isTeamLeader && prefilledTeam ? 'bg-gray-700/40 cursor-not-allowed' : ''}`}
+                      placeholder="Enter college code"
+                      readOnly={!formData.isTeamLeader && prefilledTeam ? true : false}
+                    />
+                  </div>
+                </React.Fragment>
+              ) : null}
               {/* Phone Number */}
               <React.Fragment>
                 <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Phone Number</label>
@@ -336,42 +446,64 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             </div>
             {/* Column 2 */}
             <div className={`flex flex-col gap-4 ${isMobile ? 'text-xs' : ''}`}> 
-              {/* Team Name */}
-              <React.Fragment>
-                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Name</label>
-                <div className="relative w-full">
-                  <input
-                    id="teamName"
-                    name="teamName"
-                    type="text"
-                    value={formData.teamName}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
-                    placeholder="Enter team name"
-                  />
+              {/* Team Name (only for team leader or prefilled for member) */}
+              {formData.isTeamLeader || (prefilledTeam && !formData.isTeamLeader) ? (
+                <React.Fragment>
+                  <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Team Name</label>
+                  <div className="relative w-full">
+                    <input
+                      id="teamName"
+                      name="teamName"
+                      type="text"
+                      value={formData.isTeamLeader ? formData.teamName : (prefilledTeam ? prefilledTeam.teamName : '')}
+                      onChange={formData.isTeamLeader ? handleInputChange : undefined}
+                      required={!!formData.isTeamLeader}
+                      className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white ${!formData.isTeamLeader && prefilledTeam ? 'bg-gray-700/40 cursor-not-allowed' : ''}`}
+                      placeholder="Enter team name"
+                      readOnly={!formData.isTeamLeader && prefilledTeam ? true : false}
+                    />
+                  </div>
+                </React.Fragment>
+              ) : (
+                // Join code input for team members
+                <React.Fragment>
+                  <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Join Code</label>
+                  <div className="relative w-full">
+                    <input
+                      id="joinCode"
+                      name="joinCode"
+                      type="text"
+                      value={formData.joinCode}
+                      onChange={handleInputChange}
+                      required={!formData.isTeamLeader}
+                      className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white`}
+                      placeholder="Enter join code from team leader"
+                      maxLength={6}
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  </div>
+                </React.Fragment>
+              )}
+              {/* Are you the team leader? Yes/No */}
+              <div className="flex flex-col gap-2">
+                <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Are you the team leader?</label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-md border font-medium focus:outline-none transition-colors duration-150 ${formData.isTeamLeader === true ? 'bg-blue-600 text-white border-blue-700' : 'bg-white/10 text-white border-slate-700/50 hover:bg-blue-700/30'}`}
+                    onClick={() => { setFormData(prev => ({ ...prev, isTeamLeader: true, joinCode: '' })); setError(''); setSuccess(''); }}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-md border font-medium focus:outline-none transition-colors duration-150 ${formData.isTeamLeader === false ? 'bg-blue-600 text-white border-blue-700' : 'bg-white/10 text-white border-slate-700/50 hover:bg-blue-700/30'}`}
+                    onClick={() => { setFormData(prev => ({ ...prev, isTeamLeader: false, teamName: '', collegeCode: '' })); setError(''); setSuccess(''); }}
+                  >
+                    No
+                  </button>
                 </div>
-              </React.Fragment>
-            {/* Are you the team leader? Yes/No */}
-            <div className="flex flex-col gap-2">
-              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Are you the team leader?</label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-md border font-medium focus:outline-none transition-colors duration-150 ${formData.isTeamLeader === true ? 'bg-blue-600 text-white border-blue-700' : 'bg-white/10 text-white border-slate-700/50 hover:bg-blue-700/30'}`}
-                  onClick={() => { setFormData(prev => ({ ...prev, isTeamLeader: true })); setError(''); setSuccess(''); }}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-md border font-medium focus:outline-none transition-colors duration-150 ${formData.isTeamLeader === false ? 'bg-blue-600 text-white border-blue-700' : 'bg-white/10 text-white border-slate-700/50 hover:bg-blue-700/30'}`}
-                  onClick={() => { setFormData(prev => ({ ...prev, isTeamLeader: false })); setError(''); setSuccess(''); }}
-                >
-                  No
-                </button>
               </div>
-            </div>
             </div>
             {/* Column 3 */}
             <div className={`flex flex-col gap-4 ${isMobile ? 'text-xs' : ''}`}> 
@@ -468,6 +600,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 )}
               </button>
             </div>
+            {/* Show join code to team leader after signup */}
+            {generatedJoinCode && formData.isTeamLeader && (
+              <div className="col-span-1 md:col-span-3 flex flex-col items-center mt-4">
+                <div className="bg-blue-900/80 border border-blue-500 text-white px-4 py-2 rounded-lg shadow-md">
+                  <span className="font-bold">Share this join code with your team:</span>
+                  <span className="ml-2 text-2xl tracking-widest">{generatedJoinCode?.toUpperCase()}</span>
+                </div>
+              </div>
+            )}
           </form>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 w-full">
