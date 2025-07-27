@@ -258,6 +258,7 @@ const HomeScreen: React.FC = () => {
           teamMembers={user?.user_metadata?.team_members ?? []}
           email={user?.email || ""}
           collegeCode={user?.user_metadata?.college_code || ""}
+          joinCode={user?.user_metadata?.join_code || ""}
           onClose={() => setShowInfoModal(false)}
         />
       )}
