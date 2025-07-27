@@ -560,7 +560,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
             transition={{ duration: 0.3 }}
           >
 
-            <GameCompleteModal isVisible={gameComplete} onPlayAgain={handlePlayAgain} score={score} />
+            <GameCompleteModal isVisible={gameComplete} onPlayAgain={handlePlayAgain} score={score} moduleId={moduleId ? Number(moduleId) : 1} />
           </motion.div>
         )}
       </AnimatePresence>
