@@ -22,7 +22,7 @@ const levels = [
     title: "Level 1: Memory Challenge",
     objective: "Identify and recall key terms",
     bloom: "Remembering",
-    format: "Bingo / Taboo / Flashcard Race",
+    format: "Bingo",
     interface: "Interactive Games",
     description: "Master essential GMP terminology through engaging memory games. Test your knowledge by matching definitions to terms and completing bingo patterns to advance your learning.",
     icon: "🧠",
