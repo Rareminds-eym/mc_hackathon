@@ -93,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               college_code: extraFields.collegeCode,
               team_lead: extraFields.teamLead,
               team_members: extraFields.teamMembers,
+              join_code: (extraFields as any).joinCode,
             } : {})
           }
         }
