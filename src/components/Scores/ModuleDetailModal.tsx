@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { X, Trophy, Target } from 'lucide-react';
 import { ModuleDetailModalProps, Level } from './types/GameData';
 import { useDeviceLayout } from '../../hooks/useOrientation';
@@ -9,8 +10,61 @@ import { level4Service } from '../Level4/services/level4services';
 import { Level4GameData } from '../Level4/services/level4services';
 
 const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, onClose }) => {
-  const { isMobile, isHorizontal } = useDeviceLayout();
+  // State for Level 1 score (Modules 1-4)
+  const [level1Score, setLevel1Score] = useState<number | null>(null);
+  const [level1Timer, setLevel1Timer] = useState<number | null>(null);
+  const [level1Loading, setLevel1Loading] = useState(false);
+  const [level1Error, setLevel1Error] = useState<string | null>(null);
+
+  // Fetch Level 1 score for Modules 1-4
   const { user } = useAuth();
+  useEffect(() => {
+    const fetchLevel1Score = async () => {
+      if (!isOpen || !module || ![1,2,3,4].includes(module.id) || !user) return;
+      setLevel1Loading(true);
+      setLevel1Error(null);
+      try {
+        const { data, error } = await supabase
+          .from('level_1')
+          .select('score_history, timer_history')
+          .eq('user_id', user.id)
+          .eq('module_number', module.id)
+          .eq('level_number', 1)
+          .order('game_start_time', { ascending: false })
+          .limit(1);
+        if (!error && data && data.length > 0) {
+          const scores = data[0].score_history || [];
+          const timers = data[0].timer_history || [];
+          if (scores.length > 0) {
+            // Find best score and its timer (if multiple, pick lowest timer)
+            const maxScore = Math.max(...scores);
+            const bestIndexes = scores
+              .map((s: number, i: number) => ({ s, i }))
+              .filter(({ s }: { s: number; i: number }) => s === maxScore)
+              .map(({ i }: { s: number; i: number }) => i);
+            let minTimer: number | null = null;
+            if (bestIndexes.length > 0) {
+              minTimer = Math.min(...bestIndexes.map((idx: number) => timers[idx] ?? null).filter((t: number | null) => t !== null));
+            }
+            setLevel1Score(maxScore);
+            setLevel1Timer(minTimer);
+          } else {
+            setLevel1Score(0);
+            setLevel1Timer(null);
+          }
+        } else {
+          setLevel1Score(0);
+          setLevel1Timer(null);
+        }
+      } catch {
+        setLevel1Error('Failed to load Level 1 score');
+      } finally {
+        setLevel1Loading(false);
+      }
+    };
+    fetchLevel1Score();
+  }, [isOpen, module, user]);
+  const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileLandscape = isMobile && isHorizontal;
 
   // State for level2_game_data
@@ -141,6 +195,53 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
           </h3>
 
           <div className={isMobileLandscape ? 'space-y-1.5' : isMobile ? 'space-y-2' : 'space-y-3'}>
+            {/* Level 1 Score for Modules 1-4 */}
+            {[1,2,3,4].includes(module.id) && (
+              <div className={`flex items-center justify-between bg-white rounded-lg shadow-sm border border-orange-100 hover:shadow-md transition-shadow duration-200 ${
+                isMobileLandscape ? 'p-1.5' : isMobile ? 'p-2' : 'p-4'
+              }`}>
+                <div className={`flex items-center ${
+                  isMobileLandscape ? 'space-x-1.5' : isMobile ? 'space-x-2' : 'space-x-3'
+                }`}>
+                  {getScoreIcon(level1Score ?? 0)}
+                  <div>
+                    <h4 className={`font-medium text-gray-800 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-base'
+                    }`}>
+                      Level 1
+                    </h4>
+                    {/* Show time below Level 1 */}
+                    {level1Timer !== null && level1Score !== null && level1Score > 0 && (
+                      <p className={`text-gray-500 mt-0.5 ${isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'}`}>
+                        <span className="font-semibold">Time:</span> {Math.floor(level1Timer / 60)}:{(level1Timer % 60).toString().padStart(2, '0')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                  {level1Loading ? (
+                    <span className={`text-gray-400 ${isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'}`}>Loading...</span>
+                  ) : level1Error ? (
+                    <span className={`text-red-500 ${isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'}`}>{level1Error}</span>
+                  ) : (
+                    <>
+                      <div className={`font-bold ${
+                        level1Score && level1Score > 0 ? 'text-green-600' : 'text-red-500'
+                      } ${isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-lg'}`}>
+                        {level1Score && level1Score > 0 ? 'Completed' : 'Not started'}
+                      </div>
+                      {/* Show score below completed/not started */}
+                      {level1Score !== null && (
+                        <div className={`text-gray-700 mt-0.5 ${isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'}`}>
+                          <span className="font-semibold">Score:</span> {level1Score}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Other levels */}
             {module.levels?.map((level: Level) => (
               <div
                 key={level.id}
@@ -165,7 +266,6 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
                     </p>
                   </div>
                 </div>
-
                 <div className="text-right">
                   <div className={`font-bold text-gray-600 ${
                     isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-lg'
