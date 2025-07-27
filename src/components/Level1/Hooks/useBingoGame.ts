@@ -453,7 +453,19 @@ export const useBingoGame = (options: UseBingoGameOptions) => {
         setScoreState(loaded.score ?? 0);
         setRowsSolved(loaded.rows_solved ?? 0);
         setTimerState(loaded.total_time_seconds ?? 0);
-        setSelectedDefinitionState(loaded.current_definition ?? '');
+        const matchedCell = loadedCells.find(cell => cell.definition === loaded.current_definition);
+
+        // Only restore if the definition hasn’t been matched (selected = false)
+        if (matchedCell && !matchedCell.selected) {
+          setSelectedDefinitionState(loaded.current_definition);
+          dispatch(setSelectedDefinition(loaded.current_definition));
+        } else {
+          // Select a new definition if it was already matched
+          const newDef = selectRandomDefinitionFromCells(loadedCells);
+          setSelectedDefinitionState(newDef);
+          dispatch(setSelectedDefinition(newDef));
+        }
+
         setCompletedLines(loaded.completed_lines ?? []);
         setGameStartTime(loaded.game_start_time ?? '');
         setSessionId(loaded.session_id ?? generateSessionId());
@@ -486,7 +498,11 @@ export const useBingoGame = (options: UseBingoGameOptions) => {
     console.log("🎉 Running confetti because gameComplete = true");
     triggerGameCompleteConfetti();
     setShowGameCompleteModal(true);
-    setHasConfettiFired(true);
+    // Delay modal to ensure score is updated
+    const timeout = setTimeout(() => {
+      setShowGameCompleteModal(true);
+    }, 100); // 100ms delay is usually enough
+       return () => clearTimeout(timeout);
   }
 }, [gameComplete, hasConfettiFired,triggerGameCompleteConfetti]);
   // Timer control functions
