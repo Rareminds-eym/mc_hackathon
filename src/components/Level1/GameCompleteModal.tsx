@@ -7,6 +7,7 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { getSortedAttempts } from './Hooks/getSortedAttempts';
 import { Trophy, Star, RotateCcw } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
@@ -35,6 +36,7 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   const { user } = useAuth();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const isMobileLandscape = isMobile && isHorizontal;
+  const navigate = useNavigate();
 
   // State for attempt history
   const [attempts, setAttempts] = useState<{score: number, timer: number, attempt: number}[]>([]);
@@ -235,7 +237,7 @@ const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
               </div>
             </button>
             <button
-              onClick={() => window.location.href = '/level2'}
+              onClick={() => navigate(`/modules/${moduleId}/levels/2`)}
               className={`w-full pixel-border-thick bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black ${isMobileLandscape ? 'py-2 text-xs' : 'py-3 text-base'} pixel-text transition-all duration-300 hover:scale-105`}
             >
               <span>Continue to Level 2</span>
