@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import logo from "../../public/logos/bulb.png";
 import { Icon } from '@iconify/react';
-import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame } from 'lucide-react';
+import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDeviceLayout } from '../hooks/useOrientation';
 
@@ -50,12 +50,12 @@ const levels = [
       }
     ],
     controls: [
-      { icon: Clock, label: "Timer", tooltip: "Track your remaining time", gradient: "from-blue-400 to-blue-500" },
-      { icon: Trophy, label: "Score", tooltip: "Your current points", gradient: "from-amber-400 to-amber-500" },
-      { icon: Target, label: "Lines", tooltip: "Completed bingo lines", gradient: "from-green-400 to-emerald-500" },
-      { icon: Home, label: "Home", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" },
-      { icon: RotateCcw, label: "Restart", tooltip: "Start the game over", gradient: "from-yellow-400 to-yellow-500" },
-      { icon: HelpCircle, label: "Tutorial", tooltip: "Show game tutorial", gradient: "from-green-400 to-green-500" }
+      { icon: ArrowLeft, label: "Exit", tooltip: "Exit to levels screen", gradient: "from-red-400 to-red-600" },
+      { icon: Home, label: "Home", tooltip: "Go to home screen", gradient: "from-blue-400 to-blue-700" },
+      { icon: HelpCircle, label: "Tutorial", tooltip: "Show tutorial", gradient: "from-green-400 to-green-700" },
+      { icon: Clock, label: "Time", tooltip: "Evaluates time taken to solve entire grid", gradient: "from-blue-400 to-blue-900" },
+      { icon: Target, label: "Rows", tooltip: "Rows solved ( Bingo lines )", gradient: "from-green-400 to-green-900" },
+      { icon: Trophy, label: "Score", tooltip: "Your current score( 10 points per line )", gradient: "from-yellow-400 to-yellow-700" },
     ],
     youtube: ""
   },
