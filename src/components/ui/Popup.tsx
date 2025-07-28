@@ -177,7 +177,7 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
         {/* Right: Stats, Message, Buttons */}
         <div className="flex flex-col flex-1 items-center justify-center text-center py-2 px-2 gap-3 min-w-0">
           {/* Stats Section */}
-          <div className="flex flex-row items-end justify-center gap-6 w-full">
+          <div className="flex flex-row items-end justify-center gap-8 w-full">
             <div className="flex flex-col items-center min-w-[70px]">
               <span className="pixel-dot bg-yellow-400 w-4 h-4 inline-block rounded-sm mb-1" />
               <span className="font-black text-yellow-200 pixel-text text-base">Score</span>

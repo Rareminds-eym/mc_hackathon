@@ -20,6 +20,12 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
   const [step, setStep] = useState(0);
+
+  // Early return if scenario is not provided
+  if (!scenario) {
+    console.error('ScenarioDialog: scenario prop is undefined');
+    return null;
+  }
   // Each objective is a step after the briefing
   const objectives = useMemo(
     () => [
@@ -70,7 +76,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
   const [typedDescription, setTypedDescription] = useState("");
   const timeoutRef = useRef<number | null>(null);
   useEffect(() => {
-    if (step !== 0) {
+    if (step !== 0 || !scenario?.description) {
       setTypedDescription("");
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       return;
@@ -96,7 +102,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenario.description, step]);
+  }, [scenario?.description, step]);
 
   // Animated card effect
   return (
@@ -183,7 +189,7 @@ export const ScenarioDialog: React.FC<ScenarioDialogProps> = ({
                     style={{ minHeight: 32 }}
                   >
                     {typedDescription}
-                    <span className="inline-block w-2 h-5 align-middle animate-pulse bg-cyan-300 ml-1" style={{ borderRadius: 2, verticalAlign: 'middle', opacity: typedDescription.length < scenario.description.length ? 1 : 0 }} />
+                    <span className="inline-block w-2 h-5 align-middle animate-pulse bg-cyan-300 ml-1" style={{ borderRadius: 2, verticalAlign: 'middle', opacity: typedDescription.length < (scenario?.description?.length || 0) ? 1 : 0 }} />
                   </p>
                 </motion.div>
               ) : step > 0 && step <= objectives.length ? (

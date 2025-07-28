@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { modules as initialModules } from '../data/modules';
+import { useAvailableModules } from '../hooks/useAvailableModules';
 import ModuleMap from '../components/modules/ModuleMap';
 import { useDeviceLayout } from '../hooks/useOrientation';
-import type { Module } from '../types/module';
+import { useAuth } from '../contexts/AuthContext';
+// ...existing code...
 
 const ModuleMapScreen: React.FC = () => {
-  const [modules] = useState<Module[]>(initialModules); // Remove setModules since it's unused
+  const { user } = useAuth();
+  const userId = user?.id;
+  const { modules, loading, error } = useAvailableModules(userId ?? '');
   const [currentModuleId, setCurrentModuleId] = useState(1); // Current available module
   const { isHorizontal: isLandscape } = useDeviceLayout();
 
@@ -23,9 +26,11 @@ const ModuleMapScreen: React.FC = () => {
     }
   };
 
+  if (loading) return <div>Loading modules...</div>;
+  if (error) return <div>Error loading modules: {error.message}</div>;
+
   return (
     <div className="min-h-screen bg-gray-900 overflow-hidden">
-      {/* You can now use isMobile as needed */}
       {isLandscape && (
         <ModuleMap
           modules={modules}

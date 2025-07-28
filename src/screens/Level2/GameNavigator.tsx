@@ -107,20 +107,20 @@ const Level2GameNavigatorInner: React.FC = () => {
   };
 
   const handleBackToHome = () => {
-    navigate(`/modules/${moduleId}/levels/2`);
+    navigate(`/modules/${moduleId}`);
   };
 
   const handleResultsClose = () => {
     setShowResultsModal(false);
-    navigate(`/modules/${moduleId}/levels/2`);
+    navigate(`/modules/${moduleId}`);
   };
 
   const handleResultsContinue = () => {
     // Instead of navigating away and losing state, just close the modal
     // This keeps the user in the GameNavigator with all accumulated data intact
     setShowResultsModal(false);
-    // Navigate back to the level selection page since the flow is complete
-    navigate(`/modules/${moduleId}/levels/2`);
+    // Navigate to the module overview page since the flow is complete
+    navigate(`/modules/${moduleId}`);
   };
 
   const handleResultsReset = () => {
