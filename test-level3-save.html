@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 3 Database Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Level 3 Database Connection Test</h1>
+        
+        <div class="test-section info">
+            <h3>Instructions</h3>
+            <p>This page will test the Level 3 database connection and save functionality.</p>
+            <p>Make sure you're logged in to the application first.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Results</h3>
+            <div id="results"></div>
+        </div>
+
+        <button onclick="runTests()">Run Database Tests</button>
+        <button onclick="testSaveCompletion()">Test Save Game Completion</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <script type="module">
+        import { supabase } from './src/lib/supabase.js';
+        import Level3Service from './src/components/l3/services/level3Service.js';
+
+        window.supabase = supabase;
+        window.Level3Service = Level3Service;
+
+        window.runTests = async function() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+
+            try {
+                // Test 1: Authentication
+                addResult('Testing authentication...', 'info');
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                
+                if (authError || !authData.user) {
+                    addResult('❌ Authentication failed: ' + (authError?.message || 'No user'), 'error');
+                    return;
+                }
+                
+                addResult('✅ User authenticated: ' + authData.user.email, 'success');
+
+                // Test 2: Table access
+                addResult('Testing table access...', 'info');
+                const { data: tableData, error: tableError } = await supabase
+                    .from('level3_progress')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (tableError) {
+                    addResult('❌ Table access failed: ' + tableError.message, 'error');
+                    return;
+                }
+                
+                addResult('✅ Table accessible', 'success');
+
+                // Test 3: RPC function
+                addResult('Testing RPC function...', 'info');
+                const { data: rpcData, error: rpcError } = await supabase.rpc('upsert_level3_progress_with_history', {
+                    p_user_id: authData.user.id,
+                    p_module: 'test',
+                    p_level: 3,
+                    p_scenario_index: 0,
+                    p_score: 100,
+                    p_placed_pieces: { test: true },
+                    p_is_completed: true,
+                    p_time_taken: 60
+                });
+                
+                if (rpcError) {
+                    addResult('❌ RPC function failed: ' + rpcError.message, 'error');
+                    return;
+                }
+                
+                addResult('✅ RPC function works: ' + JSON.stringify(rpcData), 'success');
+
+                addResult('🎉 All tests passed!', 'success');
+
+            } catch (error) {
+                addResult('❌ Test failed: ' + error.message, 'error');
+            }
+        };
+
+        window.testSaveCompletion = async function() {
+            addResult('Testing Level3Service.saveGameCompletion...', 'info');
+            
+            try {
+                const testData = {
+                    userId: 'test-user-id', // This will be overridden by the service
+                    module: 'test-module',
+                    level: 3,
+                    scenario_index: 1,
+                    finalScore: 150,
+                    finalTime: 90,
+                    placedPieces: { 
+                        scenario: 1,
+                        pieces: ['piece1', 'piece2'],
+                        timestamp: new Date().toISOString()
+                    },
+                    isCompleted: true
+                };
+
+                const result = await Level3Service.saveGameCompletion(testData);
+                
+                if (result.error) {
+                    addResult('❌ Save failed: ' + result.error.message, 'error');
+                } else {
+                    addResult('✅ Save successful! New high score: ' + result.isNewHighScore, 'success');
+                    addResult('Data: ' + JSON.stringify(result.data), 'info');
+                }
+
+            } catch (error) {
+                addResult('❌ Save test failed: ' + error.message, 'error');
+            }
+        };
+
+        window.addResult = function(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'test-section ' + type;
+            div.innerHTML = '<pre>' + message + '</pre>';
+            resultsDiv.appendChild(div);
+        };
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+        };
+    </script>
+</body>
+</html>

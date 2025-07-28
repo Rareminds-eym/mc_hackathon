@@ -280,14 +280,21 @@ const Score: React.FC = () => {
 
 
           {/* Module stones */}
-          {modules.map((module: Module) => (
-            <ModuleStone
-              key={module.id}
-              module={module}
-              position={calculatedPositions[module.id - 1]}
-              onClick={() => handleModuleClick(module)}
-            />
-          ))}
+          {modules.map((module: Module, index: number) => {
+            const position = calculatedPositions[index];
+            if (!position) {
+              console.warn(`No position found for module ${module.id} at index ${index}`);
+              return null;
+            }
+            return (
+              <ModuleStone
+                key={module.id}
+                module={module}
+                position={position}
+                onClick={() => handleModuleClick(module)}
+              />
+            );
+          })}
         </svg>
 
         {/* Enhanced Game-Style Back Button */}

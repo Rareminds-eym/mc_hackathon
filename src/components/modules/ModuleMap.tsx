@@ -161,6 +161,11 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
   const totalWidth =
     modules.length * (PLATFORM_WIDTH + PLATFORM_SPACING) + PLATFORM_SPACING;
 
+  // Always sort modules by id before rendering
+  const sortedModules = Array.isArray(modules)
+    ? [...modules].sort((a, b) => Number(a.id) - Number(b.id))
+    : [];
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       {/* Gamified Back Button */}
@@ -367,7 +372,7 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                 );
               })()}
               {/* Module nodes */}
-              {modules.map((module, index) => {
+              {sortedModules.map((module, index) => {
                 // Use isMobile and isHorizontal from useDeviceLayout
                 const mobileYOffset = isMobile && isHorizontal ? 0 : 20;
                 const nodeTop = isMobile
