@@ -20,6 +20,11 @@ interface BingoGameProps {
 }
 
 const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
+  // Ensure moduleId is always provided to useBingoGame
+  const safeModuleId = moduleId ?? 1;
+  if (!moduleId && process.env.NODE_ENV !== 'production') {
+    console.warn('BingoGame: moduleId was not provided, defaulting to 1. This may cause data overlap between modules.');
+  }
   const {
     cells,
     completedLines,
@@ -37,7 +42,7 @@ const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
     startTimer,
     stopTimer,
     playAgain,
-  } = useBingoGame({ questions, moduleId });
+  } = useBingoGame({ questions, moduleId: safeModuleId });
 
   const {
     isActive: tutorialActive,
