@@ -412,5 +412,5 @@ const Score: React.FC = () => {
     </AnimatedBackground>
   );
 };
-
+// default export
 export default Score;
