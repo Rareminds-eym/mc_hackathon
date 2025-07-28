@@ -29,11 +29,11 @@ export const modules: Module[] = [
     status: 'completed'
   },
   {
-    id: 5,
+    id: "HL1",
     status: 'locked'
   },
   {
-    id: 6,
+    id: "HL2",
     status: 'locked'
   },
   {
