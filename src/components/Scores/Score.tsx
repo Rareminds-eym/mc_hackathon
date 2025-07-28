@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+// import { ArrowLeft } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { modules } from './modulesData';
 import ModuleStone from './ModuleStone';
 import ModuleDetailModal from './ModuleDetailModal';
@@ -44,20 +46,14 @@ const Score: React.FC = () => {
     navigate('/home');
   };
 
-  // Enhanced module positions for better desktop spacing and game roadmap feel
+  // Updated module positions for only 6 levels, spaced for a visually pleasing path
   const modulePositions = [
-    { x: 100, y: 480 },   // Module 1 - Start (bottom left)
-    { x: 250, y: 430 },   // Module 2 - First ascending curve
-    { x: 250, y: 300 },   // Module 3 - Continuing upward
-    { x: 190, y: 190 },   // Module 4 - Sharp switchback left
-    { x: 350, y: 100 },   // Module 5 - Peak of the mountain
-    { x: 450, y: 220 },   // Module 6 - Descending right
-    { x: 550, y: 300 },   // Module 7 - Mid-level curve
-    { x: 650, y: 200 },   // Module 8 - Lower right section
-    { x: 750, y: 290 },   // Module 9 - Dip down
-    { x: 900, y: 400 },   // Module 10 - Rising back up
-    { x: 980, y: 300 },   // Module 11 - Final ascent
-    { x: 1080, y: 200 },  // Module 12 - End destination (top right)
+    { x: 120, y: 500 },   // Level 1 - Start (bottom left)
+    { x: 300, y: 400 },   // Level 2 - Ascend left
+    { x: 400, y: 270 },   // Level 3 - Curve up
+    { x: 600, y: 200 },   // Level 4 - Mid right
+    { x: 850, y: 300 },   // Level 5 - Curve down right
+    { x: 1050, y: 150 },  // Level 6 - End (top right)
   ];
 
   // Generate the exact winding path style from the reference image
@@ -138,8 +134,72 @@ const Score: React.FC = () => {
           }}
         />
       </div>
-      <div className="relative w-full h-full flex items-center justify-center z-10">
-        <svg
+      {/* Responsive Scoreboard Header for landscape and portrait */}
+      {isMobile && window.innerWidth > window.innerHeight ? (
+        <div className="w-full flex flex-col items-center z-20 pt-2">
+          <motion.h1
+            className="relative text-lg font-extrabold text-white drop-shadow-lg text-center tracking-wide select-none mb-2"
+            initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.7, delay: 0.1, type: 'spring' }}
+          >
+            <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg mr-1">
+              <Icon icon="mdi:cube-outline" width={20} height={20} />
+            </span>
+            <span
+              className="bg-gradient-to-r from-green-300 via-emerald-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg shadow-green-200 px-1 rounded-lg border-b-2 border-green-400"
+              style={{
+                WebkitTextStroke: '1px #064e3b',
+                filter: 'drop-shadow(0 1px 2px #34d399)'
+              }}
+            >
+              Scoreboard
+            </span>
+            <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-1" style={{ animationDelay: '0.2s' }}>
+              <Icon icon="mdi:clipboard-check-outline" width={20} height={20} />
+            </span>
+            <span className="block text-xs font-semibold text-emerald-200 mt-1 tracking-normal animate-fade-in-slow">
+              Track your progress and achievements!
+            </span>
+          </motion.h1>
+        </div>
+      ) : (
+        <div className="w-full flex flex-col items-center z-20 pt-4">
+          <motion.h1
+            className={`relative text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none mb-10`}
+            initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.7, delay: 0.1, type: 'spring' }}
+          >
+            <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg mr-2">
+              <Icon icon="mdi:cube-outline" width={32} height={32} />
+            </span>
+            <span
+              className="bg-gradient-to-r from-green-300 via-emerald-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg shadow-green-200 px-2 rounded-lg border-b-4 border-green-400"
+              style={{
+                WebkitTextStroke: '2px #064e3b',
+                filter: 'drop-shadow(0 2px 4px #34d399)'
+              }}
+            >
+              Scoreboard
+            </span>
+            <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2" style={{ animationDelay: '0.2s' }}>
+              <Icon icon="mdi:clipboard-check-outline" width={32} height={32} />
+            </span>
+            <span className="block text-sm md:text-md font-semibold text-emerald-200 mt-6 tracking-normal animate-fade-in-slow">
+              Track your progress and achievements!
+            </span>
+          </motion.h1>
+        </div>
+      )}
+      <div
+        className="relative w-full h-full flex items-center justify-center z-10"
+        style={{ marginTop: isMobile ? '-3rem' : '-9rem' }}
+      >
+        <motion.svg
+          initial={{ opacity: 0, scale: 0.95, y: 40 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
           width={isMobile ? "100%" : "105%"}
           height={isMobile ? "100%" : "105%"}
           viewBox={scaledViewBox}
@@ -280,7 +340,7 @@ const Score: React.FC = () => {
 
 
           {/* Module stones */}
-          {modules.map((module: Module) => (
+          {modules.slice(0, 6).map((module: Module) => (
             <ModuleStone
               key={module.id}
               module={module}
@@ -288,95 +348,59 @@ const Score: React.FC = () => {
               onClick={() => handleModuleClick(module)}
             />
           ))}
-        </svg>
+        </motion.svg>
 
-        {/* Enhanced Game-Style Back Button */}
-        <div className="absolute top-0 left-2 landscape:top-1 landscape:left-3 md:top-6 md:left-6 z-20">
-          <button
-            onClick={handleBackToHome}
-            className="group relative bg-gradient-to-br from-slate-700/80 via-slate-600/70 to-slate-800/80 backdrop-blur-md hover:from-slate-600/90 hover:via-slate-500/80 hover:to-slate-700/90 text-white font-bold py-1 px-2 landscape:py-1.5 landscape:px-3 md:py-3 md:px-6 rounded landscape:rounded-lg md:rounded-xl shadow-lg md:shadow-xl transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:shadow-xl md:hover:shadow-2xl flex items-center space-x-1 landscape:space-x-2 md:space-x-3 border border-slate-500/50 md:border-2 text-xs landscape:text-sm md:text-lg overflow-hidden"
-            style={{
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-            }}
-          >
-            {/* Subtle inner glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-            {/* Button content */}
-            <div className="relative flex items-center space-x-1 landscape:space-x-2 md:space-x-3">
-              <ArrowLeft className="w-3 h-3 md:w-5 md:h-5 drop-shadow-sm" />
-              { !isMobile && <span className="hidden sm:inline drop-shadow-sm">Back to Home</span>}
-            </div>
-
-            {/* Decorative corner accents */}
-            <div className="absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 border-yellow-400/60 rounded-tl" />
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 border-yellow-400/60 rounded-br" />
-          </button>
-        </div>
-
-
-        {/* Enhanced Game-Style Progress Panel */}
-        <div
-          className="absolute top-1 right-2 landscape:top-2 landscape:right-4 md:top-8 md:right-8 z-10 rounded landscape:rounded-lg md:rounded-xl p-1.5 landscape:p-2 md:p-6 shadow-lg md:shadow-xl border border-slate-500/50 md:border-2 overflow-hidden"
-          style={{
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            background: 'linear-gradient(135deg, rgba(51, 65, 85, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%)',
-          }}
+        {/* Back Button from InstructionsPage (restored) */}
+        <button
+          className="fixed top-3 left-16 z-30 flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-1 px-3 rounded-full shadow-lg backdrop-blur-md border-2 border-emerald-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+          onClick={handleBackToHome}
+          aria-label="Back"
         >
-          {/* Decorative header accent */}
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400/60 to-transparent" />
+          <Icon icon="mdi:arrow-left" width={18} height={18} />
+          <span className="text-xs font-semibold">Back</span>
+        </button>
 
-          <div className="text-xs landscape:text-sm md:text-lg font-bold text-white mb-1 landscape:mb-1.5 md:mb-3 flex items-center">
-            <span className="drop-shadow-sm">Overall Progress</span>
-            <div className="ml-2 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          </div>
 
-          {!isMobile &&
-            <div className="flex space-x-0.5 landscape:space-x-1 md:space-x-2 mb-1 landscape:mb-1.5 md:mb-3">
-              {modules.map((module) => (
-                <div
-                  key={module.id}
-                  className={`relative w-1.5 h-1.5 landscape:w-2.5 landscape:h-2.5 md:w-4 md:h-4 rounded-full transition-all duration-300 ${
-                    module.status === 'completed'
-                      ? 'bg-emerald-500 shadow-sm md:shadow-lg shadow-emerald-200/50' :
-                    module.status === 'unlocked'
-                      ? 'bg-yellow-500 shadow-sm md:shadow-lg shadow-yellow-200/50 module-pulse-animation' :
-                      'bg-slate-400 shadow-sm md:shadow-md'
-                  }`}
-                  title={`Module ${module.id} - ${module.status}`}
-                >
-                  {/* Inner glow for completed modules */}
-                  {module.status === 'completed' && (
-                    <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse" />
-                  )}
-                </div>
+        {/* Enhanced Game-Style Progress Panel - moved to right bottom */}
+        {/* Redesigned Progress Modal */}
+        <motion.div
+          initial={{ opacity: 0, x: 60, y: 60 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
+          className="fixed bottom-6 right-6 z-40 flex flex-col items-end"
+        >
+          <div
+            className={`rounded-2xl shadow-2xl border-2 border-emerald-400 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex flex-col items-center relative ${isMobile ? 'p-2 min-w-[150px] max-w-[180px]' : 'p-5 min-w-[260px] max-w-xs'}`}
+          >
+            <div className={`flex items-center gap-2 mb-2 ${isMobile ? '' : ''}`}>
+              <Icon icon="mdi:chart-timeline-variant" width={isMobile ? 15 : 22} height={isMobile ? 15 : 22} className="text-emerald-300 drop-shadow" />
+              <span className={`${isMobile ? 'text-xs' : 'text-lg'} font-extrabold text-emerald-200 tracking-wide drop-shadow`}>Overall Progress</span>
+            </div>
+            <div className={`flex items-center gap-2 mb-3`}>
+              {[...Array(6)].map((_, i) => (
+                <span
+                  key={i}
+                  className={`${isMobile ? 'w-2.5 h-2.5' : 'w-4 h-4'} rounded-full border-2 ${modules[i]?.status === 'completed' ? 'bg-emerald-400 border-emerald-300 shadow-emerald-200/50 animate-pulse' : modules[i]?.status === 'unlocked' ? 'bg-yellow-400 border-yellow-300 animate-pulse' : 'bg-slate-600 border-slate-400'}`}
+                  title={modules[i]?.status === 'completed' ? 'Completed' : modules[i]?.status === 'unlocked' ? 'Unlocked' : 'Locked'}
+                />
               ))}
             </div>
-          }
-
-          <div className="text-xs landscape:text-xs md:text-sm text-white/90 font-medium drop-shadow-sm">
-            {modules.filter(m => m.status === 'completed').length} / {modules.length} completed
-          </div>
-
-          {/* Enhanced progress bar */}
-          <div className="w-full bg-slate-700/60 rounded-full h-0.5 landscape:h-1 md:h-2 mt-1 landscape:mt-1 md:mt-2 border border-slate-600/50 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 h-full rounded-full transition-all duration-500 relative"
-              style={{
-                width: `${(modules.filter(m => m.status === 'completed').length / modules.length) * 100}%`
-              }}
-            >
-              {/* Progress bar shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+            <div className={`flex items-center gap-2 mb-2`}>
+              <Icon icon="mdi:check-circle-outline" width={isMobile ? 12 : 18} height={isMobile ? 12 : 18} className="text-emerald-300" />
+              <span className={`${isMobile ? 'text-xs' : 'text-base'} font-bold text-white drop-shadow`}>{modules.slice(0, 6).filter(m => m.status === 'completed').length} / 6 completed</span>
+            </div>
+            <div className={`w-full bg-slate-700/60 rounded-full ${isMobile ? 'h-1' : 'h-2'} border border-slate-600/50 overflow-hidden mb-1`}>
+              <div
+                className={`bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 h-full rounded-full transition-all duration-500 relative`}
+                style={{
+                  width: `${(modules.slice(0, 6).filter(m => m.status === 'completed').length / 6) * 100}%`
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+              </div>
             </div>
           </div>
-
-          {/* Decorative corner accents */}
-          <div className="absolute top-1 left-1 w-1.5 h-1.5 border-l border-t border-yellow-400/40" />
-          <div className="absolute bottom-1 right-1 w-1.5 h-1.5 border-r border-b border-yellow-400/40" />
-        </div>
+        </motion.div>
       </div>
 
       {/* Modal */}
