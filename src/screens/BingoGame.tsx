@@ -12,8 +12,6 @@ import { Clock } from 'lucide-react';
 import LoaderScreen from './LoaderScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompletedLineModal from '../components/Level1/CompletedLineModal';
-import { useParams } from 'react-router-dom';
-
 
 
 interface BingoGameProps {
@@ -21,11 +19,13 @@ interface BingoGameProps {
   moduleId?: string;
 }
 
-const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId: propModuleId }) => {
-   const { moduleId: routeModuleId } = useParams<{ moduleId: string }>();
-  const moduleId = propModuleId || routeModuleId;
-
-  // Always call hooks unconditionally
+const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
+  // Always provide a valid moduleId to useBingoGame, fallback to 1 if missing
+  const safeModuleId = moduleId ?? 1;
+  // Debug: log incoming props
+  console.log('[BingoGame] Incoming questions:', questions);
+  console.log('[BingoGame] Incoming moduleId:', moduleId);
+  console.log('[BingoGame] Using safeModuleId:', safeModuleId);
   const {
     cells,
     completedLines,
@@ -43,7 +43,8 @@ const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId: propModuleId
     startTimer,
     stopTimer,
     playAgain,
-  } = useBingoGame({ questions, moduleId });
+  } = useBingoGame({ questions: questions ?? [], moduleId: safeModuleId });
+  console.log('[BingoGame] useBingoGame called with:', { questions: questions ?? [], moduleId: safeModuleId });
 
   const {
     isActive: tutorialActive,
@@ -54,14 +55,6 @@ const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId: propModuleId
     resetTutorial,
     waitingForInteraction
   } = useTutorial();
-
-  if (!moduleId) {
-    throw new Error("❌ BingoGame: moduleId is missing. Cannot proceed.");
-  }
-
-  if (!questions || questions.length === 0) {
-    return <div className="text-center text-red-500 font-semibold mt-8">❗ No questions available. Please try again later.</div>;
-  }
 
 
   // Timer state for this component
@@ -237,7 +230,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
       stopTimer();
     }
   };
-  
+
   // Custom play again handler to reset game and instructions
   const handlePlayAgain = () => {
     playAgain(); // Call the hook's playAgain to reset game and log
