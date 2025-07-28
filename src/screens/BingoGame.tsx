@@ -22,14 +22,10 @@ interface BingoGameProps {
 }
 
 const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId: propModuleId }) => {
-  const { moduleId: routeModuleId } = useParams<{ moduleId: string }>();
-
+   const { moduleId: routeModuleId } = useParams<{ moduleId: string }>();
   const moduleId = propModuleId || routeModuleId;
 
-  if (!moduleId) {
-    throw new Error("❌ BingoGame: moduleId is missing. Cannot proceed.");
-  }
-
+  // Always call hooks unconditionally
   const {
     cells,
     completedLines,
@@ -58,6 +54,14 @@ const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId: propModuleId
     resetTutorial,
     waitingForInteraction
   } = useTutorial();
+
+  if (!moduleId) {
+    throw new Error("❌ BingoGame: moduleId is missing. Cannot proceed.");
+  }
+
+  if (!questions || questions.length === 0) {
+    return <div className="text-center text-red-500 font-semibold mt-8">❗ No questions available. Please try again later.</div>;
+  }
 
 
   // Timer state for this component
