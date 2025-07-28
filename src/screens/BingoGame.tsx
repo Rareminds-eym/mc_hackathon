@@ -13,7 +13,13 @@ import LoaderScreen from './LoaderScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompletedLineModal from '../components/Level1/CompletedLineModal';
 
-const BingoGame: React.FC = () => {
+
+interface BingoGameProps {
+  questions?: any[];
+  moduleId?: string;
+}
+
+const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
   const {
     cells,
     completedLines,
@@ -31,7 +37,7 @@ const BingoGame: React.FC = () => {
     startTimer,
     stopTimer,
     playAgain,
-  } = useBingoGame();
+  } = useBingoGame({ questions, moduleId });
 
   const {
     isActive: tutorialActive,
@@ -554,7 +560,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
             transition={{ duration: 0.3 }}
           >
 
-            <GameCompleteModal isVisible={gameComplete} onPlayAgain={handlePlayAgain} score={score} />
+            <GameCompleteModal isVisible={gameComplete} onPlayAgain={handlePlayAgain} score={score} moduleId={moduleId ? Number(moduleId) : 1} />
           </motion.div>
         )}
       </AnimatePresence>

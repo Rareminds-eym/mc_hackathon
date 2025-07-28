@@ -1,0 +1,28 @@
+// Level 1 questions for Module 1 (default)
+export const module1Level1Questions = [
+  { term: 'GMP', definition: 'Regulations ensuring products are consistently produced and controlled to quality standards.' },
+  { term: 'SOP', definition: 'A document providing detailed instructions to carry out specific tasks consistently.' },
+  { term: 'CAPA', definition: 'A system used to correct and prevent issues in quality processes.' },
+  { term: 'Audit', definition: 'A formal examination of processes and records to ensure compliance with standards.' },
+  { term: 'Facility', definition: 'The physical premises where manufacturing or testing occurs.' },
+  { term: 'Cleanroom', definition: 'A controlled environment with low levels of contaminants for sterile manufacturing.' },
+  { term: 'OOS', definition: 'Abbreviation for results that fall outside specified acceptance criteria.' },
+  { term: 'Validation', definition: 'Documented evidence that a system or process consistently produces expected results.' },
+  { term: 'CDSCO', definition: 'India\'s national regulatory body for pharmaceuticals and medical devices.' },
+  { term: 'Hygiene', definition: 'Practices and conditions that help maintain health and prevent contamination.' },
+  { term: 'Contamination', definition: 'The unintended presence of harmful substances in products or environments.' },
+  { term: 'QA', definition: 'A department responsible for ensuring processes meet quality standards.' },
+  { term: 'Batch Record', definition: 'A document detailing the history of the production and testing of a batch.' },
+  { term: 'WHO', definition: 'An international public health organization setting global quality and safety standards.' },
+  { term: 'RCA', definition: 'A method used to identify the root cause of problems or failures.' },
+  { term: 'Equipment', definition: 'Machines or tools used in the manufacturing process.' },
+  { term: 'Documentation', definition: 'Written records that support every step of the manufacturing process.' },
+  { term: 'Gowning', definition: 'The procedure of wearing sterile protective clothing in clean areas.' },
+  { term: 'QA Head', definition: 'The person responsible for overseeing the Quality Assurance department.' },
+  { term: 'Inspection', definition: 'An official review by regulators to ensure compliance with GMP.' },
+  { term: 'Training', definition: 'Teaching employees to understand and follow GMP procedures.' },
+  { term: 'Logs', definition: 'Records of events or processes maintained for traceability.' },
+  { term: 'Process', definition: 'A series of actions or steps taken to manufacture a product.' },
+  { term: 'Raw Material', definition: 'The basic substance used in the production of goods.' },
+  { term: 'Free Space', definition: 'A pre-filled space to aid Bingo progression.' }
+];

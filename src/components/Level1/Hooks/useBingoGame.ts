@@ -1,4 +1,4 @@
- import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useDispatch, useSelector } from 'react-redux';
 import { setTimer, setSelectedCells, setSelectedDefinition, saveState } from '../../../store/slices/bingoSlice';
@@ -49,36 +49,30 @@ interface BingoState {
   rowsSolved: number;
 }
 
-const BINGO_DATA = [
-  { term: 'GMP', definition: 'Regulations ensuring products are consistently produced and controlled to quality standards.' },
-  { term: 'SOP', definition: 'A document providing detailed instructions to carry out specific tasks consistently.' },
-  { term: 'CAPA', definition: 'A system used to correct and prevent issues in quality processes.' },
-  { term: 'Audit', definition: 'A formal examination of processes and records to ensure compliance with standards.' },
-  { term: 'Facility', definition: 'The physical premises where manufacturing or testing occurs.' },
-  { term: 'Cleanroom', definition: 'A controlled environment with low levels of contaminants for sterile manufacturing.' },
-  { term: 'OOS', definition: 'Abbreviation for results that fall outside specified acceptance criteria.' },
-  { term: 'Validation', definition: 'Documented evidence that a system or process consistently produces expected results.' },
-  { term: 'CDSCO', definition: 'India\'s national regulatory body for pharmaceuticals and medical devices.' },
-  { term: 'Hygiene', definition: 'Practices and conditions that help maintain health and prevent contamination.' },
-  { term: 'Contamination', definition: 'The unintended presence of harmful substances in products or environments.' },
-  { term: 'QA', definition: 'A department responsible for ensuring processes meet quality standards.' },
-  { term: 'Batch Record', definition: 'A document detailing the history of the production and testing of a batch.' },
-  { term: 'WHO', definition: 'An international public health organization setting global quality and safety standards.' },
-  { term: 'RCA', definition: 'A method used to identify the root cause of problems or failures.' },
-  { term: 'Equipment', definition: 'Machines or tools used in the manufacturing process.' },
-  { term: 'Documentation', definition: 'Written records that support every step of the manufacturing process.' },
-  { term: 'Gowning', definition: 'The procedure of wearing sterile protective clothing in clean areas.' },
-  { term: 'QA Head', definition: 'The person responsible for overseeing the Quality Assurance department.' },
-  { term: 'Inspection', definition: 'An official review by regulators to ensure compliance with GMP.' },
-  { term: 'Training', definition: 'Teaching employees to understand and follow GMP procedures.' },
-  { term: 'Logs', definition: 'Records of events or processes maintained for traceability.' },
-  { term: 'Process', definition: 'A series of actions or steps taken to manufacture a product.' },
-  { term: 'Raw Material', definition: 'The basic substance used in the production of goods.' },
-  { term: 'Free Space', definition: 'A pre-filled space to aid Bingo progression.' }
-];
+interface UseBingoGameOptions {
+  questions: { term: string; definition: string }[];
+  moduleId: string | number;
+}
 
-export const useBingoGame = () => {
+export const useBingoGame = (options: UseBingoGameOptions) => {
+   if (!options.moduleId) {
+    throw new Error("❌ useBingoGame: Missing `moduleId`. Each module must pass its ID to isolate its game data.");
+  }
+
+  const moduleNumber = Number(options.moduleId);
+  // Track if last answer was correct
+  const [wasAnswerCorrect, setWasAnswerCorrect] = useState(false);
+  // Stateless random picker for definition
+  const selectRandomDefinitionFromCells = (cells: BingoCell[]) => {
+    const unselectedCells = cells.filter(cell => !cell.selected);
+    if (unselectedCells.length === 0) return '';
+    const randomIndex = Math.floor(Math.random() * unselectedCells.length);
+    return unselectedCells[randomIndex].definition;
+  };
   const { user } = useAuth();
+  // Log options.questions and moduleId on hook initialization
+  console.log('[BingoGame] useBingoGame options:', options);
+  console.log('🧩 Using module ID:', options.moduleId);
   const [cells, setCells] = useState<BingoCell[]>([]);
   const [isSaving, setIsSaving] = useState(false); // Loader for saving progress
   const [isRestarting, setIsRestarting] = useState(false); // Loader for restarting game
@@ -103,13 +97,22 @@ export const useBingoGame = () => {
   const [showGameCompleteModal, setShowGameCompleteModal] = useState(false); // NEW: persist modal state
   const [countdown, setCountdown] = useState<number | null>(null); // NEW: for Play Again countdown
   const dispatch = useDispatch();
-  const bingoRedux = useSelector((state: { bingo: BingoState }) => state.bingo);
+  const [hasConfettiFired, setHasConfettiFired] = useState(false);
+
+
+  // Helper to get active questions strictly from props
+  const getActiveQuestions = useCallback(() => {
+    console.log('[Hook] Incoming questions:', options.questions);
+    if (Array.isArray(options.questions) && options.questions.length > 0) {
+      return options.questions;
+    }
+    throw new Error('❌ No valid questions provided for this module!');
+  }, [options.questions]);
 
   // Generate unique session ID based on user ID
   const generateSessionId = () => {
     return user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
-
 
   // Save game progress to Supabase (does NOT update history unless told)
   const saveGameToDatabase = useCallback(async (gameData: Partial<Level1GameData>, opts?: { updateHistory?: boolean; resetHistory?: boolean }) => {
@@ -122,7 +125,7 @@ export const useBingoGame = () => {
         .from('level_1')
         .select('score_history, timer_history')
         .eq('user_id', user.id)
-        .eq('module_number', 1)
+        .eq('module_number', moduleNumber)
         .eq('level_number', 1)
         .order('game_start_time', { ascending: false })
         .limit(1);
@@ -197,7 +200,7 @@ export const useBingoGame = () => {
         is_completed: gameComplete,
         current_definition: selectedDefinition,
         game_start_time: gameStartTime,
-        module_number: 1, // Added for Level 1
+        module_number: moduleNumber, // Added for Level 1
         level_number: 1,  // Added for Level 1
         ...Object.fromEntries(Object.entries(gameData).filter(([k]) => k !== 'score' && k !== 'total_time_seconds'))
       };
@@ -207,7 +210,7 @@ export const useBingoGame = () => {
         .from('level_1')
         .update(dataToSave)
         .eq('user_id', user.id)
-        .eq('module_number', 1)
+        .eq('module_number', moduleNumber)
         .eq('level_number', 1)
         .select();
 
@@ -241,8 +244,6 @@ export const useBingoGame = () => {
     }
   }, [user, sessionId, timer, score, rowsSolved, cells, completedLines, gameComplete, selectedDefinition, gameStartTime]);
 
-  // ...existing code...
-
   // Load game progress from Supabase
   const loadGameFromDatabase = useCallback(async () => {
     if (!user) return null;
@@ -252,6 +253,8 @@ export const useBingoGame = () => {
         .from('level_1')
         .select('*')
         .eq('user_id', user.id)
+        .eq('module_number', moduleNumber)  // ✅ Filter by module!
+        .eq('level_number', 1)
         .order('game_start_time', { ascending: false })
         .limit(1);
 
@@ -275,7 +278,7 @@ export const useBingoGame = () => {
       console.warn('Error in loadGameFromDatabase (using Redux fallback):', error);
       return null; // Return null so game uses Redux fallback
     }
-  }, [user]);
+  }, [user, moduleNumber]);
 
   const triggerGameCompleteConfetti = useCallback(() => {
     // Multiple confetti bursts for game completion
@@ -320,13 +323,13 @@ export const useBingoGame = () => {
         score: typeof finalScore === 'number' ? finalScore : score,
         rows_solved: typeof finalRowsSolved === 'number' ? finalRowsSolved : rowsSolved,
         username: user.user_metadata?.full_name || user.email || 'Unknown User',
-        module_number: 1,
+        module_number: moduleNumber,
         level_number: 1,
       }, { updateHistory: true });
     } catch (error) {
       console.warn('Error in markGameCompleted (continuing without database):', error);
     }
-  }, [user, timer, score, rowsSolved, saveGameToDatabase, sessionId]);
+  }, [user, timer, score, rowsSolved, saveGameToDatabase, sessionId, moduleNumber]);
 
   const selectRandomDefinition = useCallback((currentCells: BingoCell[]) => {
     const unselectedCells = currentCells.filter(cell => !cell.selected);
@@ -349,23 +352,34 @@ export const useBingoGame = () => {
   }, [dispatch, triggerGameCompleteConfetti, markGameCompleted, user, sessionId, saveGameToDatabase, score, timer, rowsSolved]);
 
   const initializeGame = useCallback(() => {
-    const newSessionId = user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    const newCells = BINGO_DATA.map((item, index) => ({
-      id: index,
-      term: item.term,
-      definition: item.definition,
-      selected: index === 24 // Free Space is pre-selected
+    const newSessionId = generateSessionId();
+    let activeQuestions;
+    try {
+      activeQuestions = getActiveQuestions();
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+    console.log('[BingoGame] Using question source:', activeQuestions);
+    const newCells: BingoCell[] = activeQuestions.map((q, i) => ({
+      id: i,
+      term: q.term,
+      definition: q.definition,
+      selected: i === 24 // Free Space
     }));
     setCells(newCells);
     setCompletedLines([]);
     setRowsSolved(0);
     setScoreState(0);
     setGameComplete(false);
-    setTimerState(0); // Always start timer at 0 for new games
+    setTimerState(0);
     setGameStartTime(new Date().toISOString());
     setSessionId(newSessionId);
-    // Immediately update DB with score: 0 and timer: 0 for new session
+    // Pick fresh random definition immediately
+    const randomDef = selectRandomDefinitionFromCells(newCells);
+    setSelectedDefinitionState(randomDef);
+    dispatch(setSelectedDefinition(randomDef));
+    setIsInitialized(true);
     if (user) {
       supabase.from('level_1').update({
         score: 0,
@@ -382,106 +396,30 @@ export const useBingoGame = () => {
           [0,0,0,0,0],
           [0,0,0,0,0],
         ],
-        current_definition: '',
-        module_number: 1,
+        current_definition: randomDef, // always fresh one!
+        module_number: moduleNumber,
         level_number: 1,
         session_id: newSessionId,
         game_start_time: new Date().toISOString(),
         score_history: undefined,
         timer_history: undefined,
-      }).eq('user_id', user.id).eq('module_number', 1).eq('level_number', 1);
+      }).eq('user_id', user.id).eq('module_number', moduleNumber).eq('level_number', 1);
     }
-    // Use setTimeout to ensure cells are set before selecting definition
-    setTimeout(() => {
-      selectRandomDefinition(newCells);
-    }, 0);
-  }, [selectRandomDefinition, user]);
+  }, [user, options.moduleId, getActiveQuestions, generateSessionId, moduleNumber]);
 
-  // Restore state from Redux or Database on mount (only once)
+  // Restore state from Redux or Database on mount or when questions change
   useEffect(() => {
-    if (isInitialized) return; // Prevent re-initialization
-    setIsResuming(true);
-    const initializeGameState = async () => {
-      if (user) {
-        // Try to load from database first
-        const savedGame = await loadGameFromDatabase();
-        if (savedGame) {
-          // Restore from database
-          const restoredCells = BINGO_DATA.map((item, index) => ({
-            id: index,
-            term: item.term,
-            definition: item.definition,
-            selected: savedGame.cells_selected.includes(index)
-          }));
-          setCells(restoredCells);
-          setCompletedLines(savedGame.completed_lines || []);
-          setRowsSolved(savedGame.rows_solved || 0);
-          setScoreState(savedGame.score || 0);
-          setTimerState(savedGame.total_time_seconds || 0);
-          setGameStartTime(savedGame.game_start_time);
-          setSessionId(savedGame.session_id || (user ? `user_${user.id}_${Date.now()}` : `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`));
-          setGameComplete(!!savedGame.is_completed);
-          // If the game is completed, show the modal on resume
-          if (savedGame.is_completed) {
-            setShowGameCompleteModal(true);
-            setGameComplete(true);
-            console.log('✅ Resumed game marked complete — confetti triggered!');
-            setSelectedDefinitionState('');
-          } 
-          else if (savedGame.current_definition) {
-            // Only set the current definition if it is still unanswered
-            const isAnswered = restoredCells.some(cell => cell.definition === savedGame.current_definition && cell.selected);
-            if (!isAnswered) {
-              setSelectedDefinitionState(savedGame.current_definition);
-            } else {
-              setTimeout(() => {
-                selectRandomDefinition(restoredCells);
-              }, 0);
-            }
-          } else {
-            setTimeout(() => {
-              selectRandomDefinition(restoredCells);
-            }, 0);
-          }
-          console.log('Game restored from database');
-        } else if (bingoRedux && bingoRedux.selectedCells && bingoRedux.selectedCells.length > 0) {
-          const restoredCells = BINGO_DATA.map((item, index) => ({
-            id: index,
-            term: item.term,
-            definition: item.definition,
-            selected: bingoRedux.selectedCells.includes(index),
-          }));
-          setCells(restoredCells);
-          setCompletedLines(bingoRedux.completedLinesState || []); 
-          setRowsSolved(bingoRedux.rowsSolved || 0); 
-          setScoreState(bingoRedux.score || 0);
-          setGameComplete(false);
-          setTimerState(bingoRedux.timer || 0);
-          setGameStartTime(new Date().toISOString());
-          setSessionId(generateSessionId());
-          // Set the current definition or select a new one if none exists
-          if (bingoRedux.selectedDefinition) {
-            setSelectedDefinitionState(bingoRedux.selectedDefinition);
-          } else {
-            setTimeout(() => {
-              selectRandomDefinition(restoredCells);
-            }, 0);
-          }
-          console.log('Game restored from Redux');
-        } else {
-          initializeGame();
-          console.log('New game initialized');
-        }
-      } else {
-        initializeGame();
-        console.log('New game initialized (no user)');
-      }
-      setIsInitialized(true);
-      setIsResuming(false);
-    };
-    initializeGameState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // Only depend on user, not on the other values that change
+    if (!isInitialized && options.questions && options.questions.length > 0) {
+      initializeGame();
+    }
+  }, [options.questions, isInitialized, initializeGame]);
+
+  // Sanity check for questions
+  useEffect(() => {
+    if (!options.questions || options.questions.length !== 25) {
+      console.error('❌ Bingo Game: options.questions is missing or does not contain exactly 25 items.');
+    }
+  }, [options.questions]);
 
   // Timer logic (controlled internally)
   useEffect(() => {
@@ -492,13 +430,81 @@ export const useBingoGame = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, [gameComplete, timerActive, answerFeedback.isVisible, completedLineModal]);
+  useEffect(() => {
+  if (user && !isInitialized && options.moduleId) {
+    loadGameFromDatabase().then(loaded => {
+      if (loaded?.is_completed) {
+        console.log('🟢 Saved game is complete. Starting new fresh game.');
+        initializeGame();
+        return;
+      }
+      if (loaded && loaded.cells_selected?.length) {
+        console.log('🟢 Restoring unfinished game...');
+        const loadedCells = getActiveQuestions().map((q, i) => ({
+          id: i,
+          term: q.term,
+          definition: q.definition,
+          selected: loaded.cells_selected.includes(i)
+        }));
+
+        setCells(loadedCells);
+
+        // ✅ Restore score, timer, rows solved, etc.
+        setScoreState(loaded.score ?? 0);
+        setRowsSolved(loaded.rows_solved ?? 0);
+        setTimerState(loaded.total_time_seconds ?? 0);
+        const matchedCell = loadedCells.find(cell => cell.definition === loaded.current_definition);
+
+        // Only restore if the definition hasn’t been matched (selected = false)
+        if (matchedCell && !matchedCell.selected) {
+          setSelectedDefinitionState(loaded.current_definition);
+          dispatch(setSelectedDefinition(loaded.current_definition));
+        } else {
+          // Select a new definition if it was already matched
+          const newDef = selectRandomDefinitionFromCells(loadedCells);
+          setSelectedDefinitionState(newDef);
+          dispatch(setSelectedDefinition(newDef));
+        }
+
+        setCompletedLines(loaded.completed_lines ?? []);
+        setGameStartTime(loaded.game_start_time ?? '');
+        setSessionId(loaded.session_id ?? generateSessionId());
+
+        // ✅ Patch Redux store too
+        dispatch(saveState({
+          timer: loaded.total_time_seconds ?? 0,
+          score: loaded.score ?? 0,
+          completedLines: loaded.completed_lines?.length ?? 0,
+          completedLinesState: loaded.completed_lines ?? [],
+          rowsSolved: loaded.rows_solved ?? 0,
+          boardState: loaded.board_state ?? [],
+          selectedCells: loaded.cells_selected ?? [],
+          selectedDefinition: loaded.current_definition ?? '',
+          is_completed: loaded.is_completed ?? false,
+        }));
+
+        // ✅ Mark as initialized to avoid double init
+        setIsInitialized(true);
+      } else {
+        // ✅ If no saved game, start fresh
+        initializeGame();
+      }
+    });
+  }
+}, [user , isInitialized, options.moduleId , loadGameFromDatabase]);
+
    useEffect(() => {
-  if (gameComplete) {
+  if (gameComplete && !hasConfettiFired) {
     console.log("🎉 Running confetti because gameComplete = true");
     triggerGameCompleteConfetti();
     setShowGameCompleteModal(true);
+    // Delay modal to ensure score is updated
+    const timeout = setTimeout(() => {
+      setShowGameCompleteModal(true);
+    }, 100); // 100ms delay is usually enough
+       return () => clearTimeout(timeout);
   }
-}, [gameComplete, triggerGameCompleteConfetti]);
+}, [gameComplete, hasConfettiFired,triggerGameCompleteConfetti]);
   // Timer control functions
   const startTimer = useCallback(() => setTimerActive(true), []);
   const stopTimer = useCallback(() => setTimerActive(false), []);
@@ -544,7 +550,6 @@ export const useBingoGame = () => {
 
   const toggleCell = (id: number) => {
     if (gameComplete || answerFeedback.isVisible) return;
-    
     const clickedCell = cells.find(cell => cell.id === id);
     if (!clickedCell || clickedCell.selected) return;
 
@@ -552,25 +557,26 @@ export const useBingoGame = () => {
     console.log('Clicked cell:', clickedCell.term, '- Definition:', clickedCell.definition);
     console.log('Current definition shown:', selectedDefinition);
     console.log('Definition lengths:', clickedCell.definition.length, 'vs', selectedDefinition.length);
-    
+
     // More robust comparison that handles potential whitespace/encoding issues
     const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
     const cellDefNormalized = normalizeString(clickedCell.definition);
     const selectedDefNormalized = normalizeString(selectedDefinition);
-    
+
     console.log('Normalized cell definition:', cellDefNormalized);
     console.log('Normalized selected definition:', selectedDefNormalized);
-    
+
     // Show feedback modal
     const isCorrect = cellDefNormalized === selectedDefNormalized;
     console.log('Is correct match:', isCorrect);
-    
+
     setAnswerFeedback({
       isVisible: true,
       isCorrect,
       selectedTerm: clickedCell.term,
       correctDefinition: selectedDefinition
     });
+    setWasAnswerCorrect(isCorrect);
 
     // If correct, update the cell
     if (isCorrect) {
@@ -579,7 +585,7 @@ export const useBingoGame = () => {
       );
       setCells(newCells);
       dispatch(setSelectedCells(newCells.filter(cell => cell.selected).map(cell => cell.id)));
-      
+
       // Save game progress to database with updated cell data
       saveGameToDatabase({
         cells_selected: newCells.filter(cell => cell.selected).map(cell => cell.id),
@@ -591,7 +597,7 @@ export const useBingoGame = () => {
           newCells.map(cell => cell.selected ? 1 : 0).slice(20, 25),
         ]
       });
-      
+
       // Check for new lines after a short delay
       setTimeout(() => {
         checkForNewLines(newCells);
@@ -601,16 +607,10 @@ export const useBingoGame = () => {
 
   const closeAnswerModal = () => {
     setAnswerFeedback(prev => ({ ...prev, isVisible: false }));
-    
-    // If the answer was correct, select next definition after modal closes
-    if (answerFeedback.isCorrect) {
-      setTimeout(() => {
-        // Get the current updated cells state and select next definition
-        setCells(currentCells => {
-          selectRandomDefinition(currentCells);
-          return currentCells; // Return the same state, we just needed the current value
-        });
-      }, 300);
+    if (wasAnswerCorrect) {
+    setTimeout(() => {
+      selectRandomDefinition(cells);
+    }, 300);
     }
   };
 
@@ -730,7 +730,7 @@ export const useBingoGame = () => {
         score: completedScore,
         rows_solved: completedRowsSolved,
         username: user.user_metadata?.full_name || user.email || 'Unknown User',
-        module_number: 1,
+        module_number: moduleNumber,
         level_number: 1,
       }, { updateHistory: true });
     }
@@ -770,7 +770,7 @@ export const useBingoGame = () => {
             score: 0,
             rows_solved: 0,
             username: user.user_metadata?.full_name || user.email || 'Unknown User',
-            module_number: 1,
+            module_number: moduleNumber,
             level_number: 1,
             cells_selected: [24],
             completed_lines: [],
@@ -805,7 +805,7 @@ export const useBingoGame = () => {
         score: 0,
         rows_solved: 0,
         username: user.user_metadata?.full_name || user.email || 'Unknown User',
-        module_number: 1,
+        module_number: moduleNumber,
         level_number: 1,
         cells_selected: [24],
         completed_lines: [],
@@ -821,7 +821,7 @@ export const useBingoGame = () => {
         timer_history: undefined,
       });
     }
-  }, [sessionId]);
+  }, [sessionId , moduleNumber]);
 
   // Helper: get sorted attempts for modal (highest score, then lowest time)
   // (moved to bottom of file for export)
@@ -829,6 +829,8 @@ export const useBingoGame = () => {
   const isInCompletedLine = (cellId: number): boolean => {
     return completedLines.some((line: number[]) => line.includes(cellId));
   };
+
+
 
   return {
     cells,

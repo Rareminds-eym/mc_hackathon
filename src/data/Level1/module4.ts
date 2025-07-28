@@ -1,0 +1,28 @@
+// Level 1 questions for Module 4 (default)
+export const module4Level1Questions = [
+  { term: 'Self-Inspection', definition: 'Evaluation conducted to assess GMP compliance and identify improvement areas.' },
+  { term: 'Internal Audit Team', definition: 'Trained QA personnel or internal audit group who conduct self-inspections.' },
+  { term: 'Regulatory Audit', definition: 'Audit conducted by external regulatory agencies.' },
+  { term: 'Audit Report', definition: 'Document prepared after completing a self-inspection or audit.' },
+  { term: 'CAPA', definition: 'Corrective and Preventive Action issued to address non-conformances.' },
+  { term: 'Annual Self-Inspection', definition: 'Self-inspections must be conducted at least once every 12 months.' },
+  { term: 'Quality Assurance (QA)', definition: 'Department responsible for maintaining audit readiness.' },
+  { term: 'Audit Checklist', definition: 'List used by auditors to guide inspection activities and evaluations.' },
+  { term: 'Compliance Audit', definition: 'Formal review to confirm that systems operate as intended.' },
+  { term: 'Non-Conformities', definition: 'Deviations or issues identified during audits.' },
+  { term: 'Audit Response Plan', definition: 'Documented plan detailing responses and timelines to address findings.' },
+  { term: 'WHO', definition: 'Global organization that issues GMP audit guidelines.' },
+  { term: 'Vendor Audit', definition: 'Audit conducted on suppliers or contract manufacturers.' },
+  { term: 'CAPA Tracking System', definition: 'System used to monitor the implementation and closure of CAPAs.' },
+  { term: 'Master Documents and SOPs', definition: 'Reviewed before an audit to ensure completeness and accuracy of data.' },
+  { term: 'Surprise Audit', definition: 'An unannounced audit performed without prior notification.' },
+  { term: 'Follow-Up Audit', definition: 'Audit that checks the effectiveness of implemented CAPAs.' },
+  { term: 'Traceability', definition: 'Principle ensuring that audit documentation can be followed through clearly.' },
+  { term: 'Mock Audit', definition: 'Internally initiated audit to prepare for actual regulatory inspections.' },
+  { term: 'Audit Observation Form', definition: 'Form filled during or immediately after an audit visit to document findings.' },
+  { term: 'Audit Trail Review', definition: 'Examination of system-generated records to ensure data integrity during audits.' },
+  { term: 'Audit Closure', definition: 'Final step confirming that all audit findings have been addressed satisfactorily.' },
+  { term: 'Audit Schedule', definition: 'Planned timetable for conducting internal and external audits throughout the year.' },
+  { term: 'Third-Party Audit', definition: 'Audit conducted by an independent organization not affiliated with the regulatory body or company.' },
+  { term: 'Free Space', definition: 'A pre-filled space to aid Bingo progression.' }
+];

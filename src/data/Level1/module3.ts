@@ -1,0 +1,28 @@
+// Level 1 questions for Module 3 (default)
+export const module3Level1Questions = [
+  { term: 'GDocP', definition: 'Good Documentation Practices followed in GMP environments.' },
+  { term: 'ALCOA', definition: 'Attributable, Legible, Contemporaneous, Original, Accurate — principles of data integrity.' },
+  { term: 'Attributable', definition: 'Data can be traced to the individual who created or modified it.' },
+  { term: 'Permanent Ink', definition: 'Blue or black ink required for manual GMP entries.' },
+  { term: 'Correction Procedure', definition: 'Strike through the error with a single line, write correction with date and initials.' },
+  { term: '24-hour Time Format', definition: 'Standard format (e.g., 14:30) for recording time in GMP records.' },
+  { term: 'Contemporaneous', definition: 'Recording data at the time the activity occurs.' },
+  { term: 'Logbook', definition: 'Used to record routine operations and trace manufacturing activities.' },
+  { term: 'Quality Assurance (QA)', definition: 'Function that investigates and corrects documentation errors.' },
+  { term: 'Equipment Cleaning Log', definition: 'Document recording cleaning details after each equipment use.' },
+  { term: 'Legible', definition: 'Clear and readable writing as per GDocP.' },
+  { term: 'GMP Signature', definition: 'Handwritten with date and designation — considered valid.' },
+  { term: 'Original', definition: 'Unaltered first entry in a record, retained for accuracy and traceability.' },
+  { term: 'Accurate', definition: 'Free from errors, reflecting true and reliable data.' },
+  { term: 'User Access Control', definition: 'First step in ensuring data integrity in electronic systems.' },
+  { term: 'Data Retention', definition: 'Ensuring data is preserved and unaltered over time.' },
+  { term: 'Audit Trail', definition: 'Secure record of changes, edits, and deletions with timestamps.' },
+  { term: 'Data Integrity Breach', definition: 'Activity that compromises the reliability or trustworthiness of data.' },
+  { term: '21 CFR Part 11', definition: 'Regulation governing electronic records and signatures in the U.S.' },
+  { term: 'QA Reviewer', definition: 'Role responsible for reviewing and approving GMP documents.' },
+  { term: 'Metadata', definition: 'Information describing the content, context, and structure of data entries.' },
+  { term: 'Controlled Copy', definition: 'A tracked and authorized copy of a document used in GMP operations.' },
+  { term: 'Data Backup', definition: 'Routine process of securely saving electronic records for recovery.' },
+  { term: 'Document Control System', definition: 'System used to manage creation, revision, and access to GMP documents.' },
+  { term: 'Free Space', definition: 'A pre-filled space to aid Bingo progression.' }
+];

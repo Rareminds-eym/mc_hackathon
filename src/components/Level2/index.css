@@ -176,9 +176,81 @@
 /* Game Card Hover Effect */
 .game-card-hover:hover {
   transform: translateY(-4px) scale(1.02);
-  box-shadow: 
+  box-shadow:
     0 10px 25px rgba(0, 0, 0, 0.4),
     0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* Modern Gaming UI Animations for Continue Button */
+@keyframes gaming-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 20px rgba(6, 182, 212, 0.3),
+      0 0 40px rgba(6, 182, 212, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(6, 182, 212, 0.5),
+      0 0 60px rgba(6, 182, 212, 0.2);
+  }
+}
+
+@keyframes gaming-glow {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.1) saturate(1.2);
+  }
+}
+
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-20px) translateX(10px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gaming-button-glow {
+  animation: gaming-pulse 2s ease-in-out infinite;
+}
+
+.gaming-button-hover {
+  animation: gaming-glow 1.5s ease-in-out infinite;
+}
+
+.particle-effect {
+  animation: particle-drift 4s ease-in-out infinite;
+}
+
+.border-flow-effect {
+  background: linear-gradient(45deg,
+    rgba(6, 182, 212, 0.3) 0%,
+    rgba(139, 92, 246, 0.3) 25%,
+    rgba(6, 182, 212, 0.3) 50%,
+    rgba(139, 92, 246, 0.3) 75%,
+    rgba(6, 182, 212, 0.3) 100%);
+  background-size: 400% 400%;
+  animation: border-flow 3s ease-in-out infinite;
 }
 
 /* Ultra-simple touch manipulation for easy mobile drag and drop */
@@ -641,7 +713,7 @@
   .pixel-text {
     font-size: 0.8em;
   }
-  
+
   /* Reduce padding in landscape */
   .p-4 {
     padding: 0.5rem;
@@ -650,20 +722,156 @@
   .p-6 {
     padding: 0.75rem;
   }
-  
+
   /* Compact margins */
   .mb-4 {
     margin-bottom: 0.75rem;
   }
-  
+
   .mb-6 {
     margin-bottom: 1rem;
   }
-  
+
   /* Enhanced mobile drag indicators for small screens */
   .mobile-drag-indicator {
     font-size: 10px;
     padding: 4px 8px;
+  }
+}
+
+/* Continue Button Modal Optimizations for Mobile Landscape */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  /* Modal container adjustments */
+  .fixed.inset-0.bg-black.bg-opacity-90 {
+    padding: 0.5rem;
+  }
+
+  /* Continue modal specific sizing */
+  .continue-modal-container {
+    max-width: 280px !important;
+    max-height: 85vh !important;
+    width: 90% !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Compact text sizes for continue modal */
+  .continue-modal-container .text-2xl {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .continue-modal-container .text-lg {
+    font-size: 0.95rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .continue-modal-container .text-base {
+    font-size: 0.85rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .continue-modal-container .text-sm {
+    font-size: 0.75rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .continue-modal-container .text-xs {
+    font-size: 0.65rem !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Compact spacing for continue modal */
+  .continue-modal-container .mb-4 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .continue-modal-container .mb-6 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .continue-modal-container .mt-4 {
+    margin-top: 0.5rem !important;
+  }
+
+  .continue-modal-container .p-4 {
+    padding: 0.5rem !important;
+  }
+
+  /* Button adjustments */
+  .continue-modal-container button {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Icon sizing */
+  .continue-modal-container .w-5.h-5 {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  /* Progress indicator adjustments */
+  .continue-modal-container .w-3.h-3 {
+    width: 0.6rem !important;
+    height: 0.6rem !important;
+  }
+}
+
+/* Additional optimizations for very narrow landscape screens */
+@media screen and (max-height: 450px) and (orientation: landscape) {
+  .continue-modal-container {
+    max-width: 260px !important;
+    max-height: 90vh !important;
+    padding: 0.5rem !important;
+  }
+
+  .continue-modal-container .text-2xl {
+    font-size: 1.1rem !important;
+  }
+
+  .continue-modal-container .text-lg {
+    font-size: 0.9rem !important;
+  }
+
+  .continue-modal-container .mb-4,
+  .continue-modal-container .mb-6 {
+    margin-bottom: 0.4rem !important;
+  }
+}
+
+/* Results Modal specific optimizations for mobile landscape */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  /* Results modal scrollable content */
+  .continue-modal-container.overflow-y-auto {
+    max-height: 85vh !important;
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  .continue-modal-container.overflow-y-auto::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .continue-modal-container.overflow-y-auto::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+
+  .continue-modal-container.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 2px;
+  }
+
+  /* Compact close button */
+  .continue-modal-container .absolute.top-2.right-2 {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    top: 0.25rem !important;
+    right: 0.25rem !important;
+  }
+
+  .continue-modal-container .absolute.top-2.right-2 svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
   }
 }
 
@@ -695,4 +903,216 @@
 .mobile-drop-target {
   background: linear-gradient(45deg, rgba(0, 255, 255, 0.2), rgba(255, 255, 0, 0.2));
   animation: mobile-drag-glow 1s ease-in-out infinite;
+}
+
+/* Modern Game UI Animations for Enhanced Continue Button */
+@keyframes modernFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 0.8;
+  }
+}
+
+@keyframes energyFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.2;
+  }
+  33% {
+    transform: translateY(-15px) scale(1.2);
+    opacity: 0.6;
+  }
+  66% {
+    transform: translateY(-5px) scale(0.8);
+    opacity: 0.4;
+  }
+}
+
+@keyframes geometricFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translateY(-30px) rotate(180deg) scale(1.1);
+    opacity: 0.3;
+  }
+}
+
+@keyframes shimmerMove {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Enhanced grid pattern for modern UI */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Text shadow utility */
+.text-shadow-lg {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Modern modal container class */
+.modern-modal-container {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Modern floating animation for particles */
+@keyframes modernFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 0.5;
+  }
+}
+
+/* Modern shimmer effect */
+@keyframes modernShimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
+/* Modern pulse glow */
+@keyframes modernPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+  }
+}
+
+/* Modern scale bounce */
+@keyframes modernScaleBounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mobile-specific optimizations for Continue Button */
+@media screen and (max-width: 768px) {
+  .modern-modal-container {
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+  }
+
+  /* Compact text for mobile */
+  .modern-modal-container .text-2xl {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .modern-modal-container .text-xl {
+    font-size: 1.1rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .modern-modal-container .text-lg {
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .modern-modal-container .text-base {
+    font-size: 0.9rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .modern-modal-container .text-sm {
+    font-size: 0.8rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .modern-modal-container .text-xs {
+    font-size: 0.7rem !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* Mobile landscape specific optimizations */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .modern-modal-container {
+    max-width: 85vw !important;
+    max-height: 90vh !important;
+    padding: 0.5rem !important;
+  }
+
+  .modern-modal-container .text-lg {
+    font-size: 0.9rem !important;
+  }
+
+  .modern-modal-container .text-base {
+    font-size: 0.8rem !important;
+  }
+
+  .modern-modal-container .text-sm {
+    font-size: 0.75rem !important;
+  }
+
+  .modern-modal-container .text-xs {
+    font-size: 0.65rem !important;
+  }
+
+  /* Compact spacing for landscape */
+  .modern-modal-container .mb-10 {
+    margin-bottom: 1rem !important;
+  }
+
+  .modern-modal-container .mb-8 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .modern-modal-container .mb-6 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .modern-modal-container .mb-4 {
+    margin-bottom: 0.4rem !important;
+  }
+
+  .modern-modal-container .mt-10 {
+    margin-top: 0.75rem !important;
+  }
+
+  .modern-modal-container .mt-6 {
+    margin-top: 0.5rem !important;
+  }
+
+  .modern-modal-container .mt-4 {
+    margin-top: 0.4rem !important;
+  }
+
+  .modern-modal-container .mt-3 {
+    margin-top: 0.3rem !important;
+  }
+
+  .modern-modal-container .mt-2 {
+    margin-top: 0.25rem !important;
+  }
 }

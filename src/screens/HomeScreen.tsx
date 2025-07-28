@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import ProfileInfo from "../components/ProfileInfo";
 import { Icon } from '@iconify/react';
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
@@ -62,6 +63,10 @@ const HomeScreen: React.FC = () => {
     () => localStorage.getItem("selectedAvatar") || "/characters/Intern1.png"
   );
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  // Remove teamInfo state, only use user context
+  // Get collegeCode from user context if available
+  // (moved to below)
 
   useEffect(() => {
     localStorage.setItem("selectedAvatar", avatar);
@@ -96,6 +101,8 @@ const HomeScreen: React.FC = () => {
     }
     navigate("/auth", { replace: true });
   };
+
+  // Removed team info fetch logic, only using user context
 
   return (
     <div
@@ -224,6 +231,16 @@ const HomeScreen: React.FC = () => {
               >
                 Avatars
               </Button>
+              <Button
+                size="sm"
+                className="w-full mb-3"
+                onClick={() => {
+                  console.log('Information button clicked');
+                  setShowInfoModal(true);
+                }}
+              >
+                Information
+              </Button>
               <Button size="sm" variant="secondary" onClick={handleLogout}>
                 Logout
               </Button>
@@ -231,6 +248,20 @@ const HomeScreen: React.FC = () => {
           )}
         </div>
       </div>
+      {/* Profile Info Modal */}
+      {showInfoModal && (
+        <ProfileInfo
+          name={user?.user_metadata?.full_name || ""}
+          phone={user?.user_metadata?.phone || ""}
+          teamName={user?.user_metadata?.team_name || ""}
+          teamLeader={user?.user_metadata?.team_lead || ""}
+          teamMembers={user?.user_metadata?.team_members ?? []}
+          email={user?.email || ""}
+          collegeCode={user?.user_metadata?.college_code || ""}
+          joinCode={user?.user_metadata?.join_code || ""}
+          onClose={() => setShowInfoModal(false)}
+        />
+      )}
       {/* Lab game sound */}
       <audio ref={audioRef} src="/lab-game-sound.mp3" loop />
       {/* Title & Main content aligned */}
