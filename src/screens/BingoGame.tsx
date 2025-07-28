@@ -12,6 +12,8 @@ import { Clock } from 'lucide-react';
 import LoaderScreen from './LoaderScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompletedLineModal from '../components/Level1/CompletedLineModal';
+import { useParams } from 'react-router-dom';
+
 
 
 interface BingoGameProps {
@@ -19,12 +21,15 @@ interface BingoGameProps {
   moduleId?: string;
 }
 
-const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
-  // Ensure moduleId is always provided to useBingoGame
-  const safeModuleId = moduleId ?? 1;
-  if (!moduleId && process.env.NODE_ENV !== 'production') {
-    console.warn('BingoGame: moduleId was not provided, defaulting to 1. This may cause data overlap between modules.');
+const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId: propModuleId }) => {
+  const { moduleId: routeModuleId } = useParams<{ moduleId: string }>();
+
+  const moduleId = propModuleId || routeModuleId;
+
+  if (!moduleId) {
+    throw new Error("❌ BingoGame: moduleId is missing. Cannot proceed.");
   }
+
   const {
     cells,
     completedLines,
@@ -42,7 +47,7 @@ const BingoGame: React.FC<BingoGameProps> = ({ questions, moduleId }) => {
     startTimer,
     stopTimer,
     playAgain,
-  } = useBingoGame({ questions, moduleId: safeModuleId });
+  } = useBingoGame({ questions, moduleId });
 
   const {
     isActive: tutorialActive,
@@ -228,7 +233,7 @@ const conversationLength = 8; // Update if conversation array changes in GameIns
       stopTimer();
     }
   };
-
+  
   // Custom play again handler to reset game and instructions
   const handlePlayAgain = () => {
     playAgain(); // Call the hook's playAgain to reset game and log
