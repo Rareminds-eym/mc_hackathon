@@ -29,7 +29,7 @@ import { useDeviceLayout } from "../../hooks/useOrientation";
 import { RootState } from "../../store/types";
 
 // Level 3 Database Service
-import { useLevel3Service } from "./hooks/useLevel3Service";
+import useLevel3Service from "./hooks/useLevel3Service";
 
 // Debug Component (temporarily disabled)
 // import { Level3Debug } from "../Debug/Level3Debug";
@@ -69,12 +69,16 @@ interface FinalStatsPopupProps {
   scenarioResults: ScenarioResult[];
   overallStats: OverallStats;
   onClose: () => void;
+  currentModule?: string | number;
+  getTopThreeBestScores: (module: string) => Promise<any[] | null>;
 }
 
 const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
   scenarioResults,
   overallStats,
   onClose,
+  currentModule,
+  getTopThreeBestScores,
 }) => {
   // Calculate final score out of 100 based on weighted components
   const maxPossibleScore = scenarioResults.length * 100; // 100 points per scenario
@@ -89,6 +93,39 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
   const finalScore = Math.min(scorePart + comboPart + healthPart, 100);
 
   const { isMobile, isHorizontal } = useDeviceLayout();
+
+  // State for top 3 best scores
+  const [topScores, setTopScores] = useState<any[]>([]);
+  const [loadingTopScores, setLoadingTopScores] = useState(true);
+
+  // Fetch top 3 best scores when component mounts
+  useEffect(() => {
+    const fetchTopScores = async () => {
+      try {
+        setLoadingTopScores(true);
+
+        // Get module ID
+        let moduleId = "1"; // default
+        if (typeof currentModule === "object" && currentModule !== null && "id" in currentModule) {
+          moduleId = (currentModule as any).id.toString();
+        } else if (typeof currentModule === "number") {
+          moduleId = currentModule.toString();
+        } else if (typeof currentModule === "string") {
+          moduleId = currentModule;
+        }
+
+        const result = await getTopThreeBestScores(moduleId);
+        setTopScores(result || []);
+      } catch (error) {
+        console.error('Error fetching top scores:', error);
+        setTopScores([]);
+      } finally {
+        setLoadingTopScores(false);
+      }
+    };
+
+    fetchTopScores();
+  }, [currentModule, getTopThreeBestScores]);
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
 
@@ -170,50 +207,96 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
         </div> */}
       </div>
 
-      {/* Individual Scenario Results */}
+      {/* Top 3 Best Scores */}
       <div className={`relative z-10 ${isMobile ? "mb-3" : "mb-6"}`}>
         <h3 className={`pixel-text font-bold text-yellow-200 text-center ${
           isMobile ? "text-base mb-2" : "text-lg mb-3"
         }`}>
-          SCENARIO BREAKDOWN
+          BEST SCORES
         </h3>
         <div className={`space-y-1 overflow-y-auto ${
           isMobile ? "max-h-24" : "max-h-32"
         }`}>
-          {scenarioResults.map((result, index) => (
-            <div
-              key={index}
-              className={`pixel-border bg-gray-800/60 ${
-                isMobile
-                  ? "p-1.5 flex flex-col gap-1"
-                  : "p-2 flex items-center justify-between"
-              }`}
-            >
-              <div className={`flex items-center ${isMobile ? "gap-1" : "gap-2"}`}>
-                <Gamepad2 className={`text-cyan-300 ${isMobile ? "w-3 h-3" : "w-4 h-4"}`} />
-                <span className={`font-bold text-cyan-200 ${
-                  isMobile ? "text-xs" : "text-sm"
-                }`}>
-                  SCENARIO {index + 1}
-                </span>
-              </div>
-              <div className={`flex items-center ${
-                isMobile
-                  ? "gap-2 text-xs justify-between"
-                  : "gap-4 text-xs"
-              }`}>
-                <span className="text-blue-200">
-                  Score: <span className="font-bold text-blue-100">{result.score}</span>
-                </span>
-                <span className="text-yellow-200">
-                  Combo: <span className="font-bold text-yellow-100">{result.combo}</span>
-                </span>
-                <span className="text-pink-200">
-                  Health: <span className="font-bold text-pink-100">{result.health}</span>
-                </span>
-              </div>
+          {loadingTopScores ? (
+            <div className="text-center text-gray-400 py-4">
+              <div className="animate-spin w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+              Loading best scores...
             </div>
-          ))}
+          ) : topScores.length > 0 ? (
+            topScores.map((score, index) => {
+              // Extract combo and health from placed_pieces if available
+              let combo = 0;
+              let health = 100;
+
+              if (score.placed_pieces && typeof score.placed_pieces === 'object') {
+                if (score.placed_pieces.scenarioResults && Array.isArray(score.placed_pieces.scenarioResults)) {
+                  // Find the scenario result for this score
+                  const scenarioResult = score.placed_pieces.scenarioResults.find(
+                    (sr: any) => sr.scenarioIndex === score.scenario_index
+                  );
+                  if (scenarioResult) {
+                    combo = scenarioResult.combo || 0;
+                    health = scenarioResult.health || 100;
+                  }
+                }
+              }
+
+              return (
+                <div
+                  key={index}
+                  className={`pixel-border bg-gray-800/60 ${
+                    isMobile
+                      ? "p-1.5 flex flex-col gap-1"
+                      : "p-2 flex items-center justify-between"
+                  }`}
+                >
+                  <div className={`flex items-center ${isMobile ? "gap-1" : "gap-2"}`}>
+                    <div className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                      index === 0 ? "bg-yellow-500" :
+                      index === 1 ? "bg-gray-400" :
+                      "bg-orange-600"
+                    } text-black font-bold ${isMobile ? "text-xs" : "text-sm"}`}>
+                      {index + 1}
+                    </div>
+                    <span className={`font-bold text-cyan-200 ${
+                      isMobile ? "text-xs" : "text-sm"
+                    }`}>
+                      {score.best_score > 0 ? `${score.best_score}` : '--'}
+                    </span>
+                  </div>
+                  <div className={`flex items-center ${
+                    isMobile
+                      ? "gap-2 text-xs justify-between"
+                      : "gap-4 text-xs"
+                  }`}>
+                    {combo > 0 && (
+                      <span className="text-yellow-200">
+                        Combo: <span className="font-bold text-yellow-100">{combo}</span>
+                      </span>
+                    )}
+                    {health > 0 && health !== 100 && (
+                      <span className="text-pink-200">
+                        Health: <span className="font-bold text-pink-100">{health}</span>
+                      </span>
+                    )}
+                    {score.best_time > 0 && (
+                      <span className="text-green-200">
+                        Time: <span className="font-bold text-green-100">
+                          {Math.floor(score.best_time / 60)}:{(score.best_time % 60).toString().padStart(2, '0')}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center text-gray-400 py-4">
+              <span className={isMobile ? "text-xs" : "text-sm"}>
+                No previous scores found
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -256,12 +339,34 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
 export const JigsawBoard: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { saveGameCompletion, user, error: serviceError } = useLevel3Service();
+  const level3Service = useLevel3Service();
+  const { saveGameCompletion, user, error: serviceError, getTopThreeBestScores } = level3Service;
+
+  // Create a robust fallback function if getTopThreeBestScores is undefined
+  const safeGetTopThreeBestScores = React.useMemo(() => {
+    if (typeof getTopThreeBestScores === 'function') {
+      return getTopThreeBestScores;
+    }
+
+    // Fallback function that always returns empty array
+    return async (module: string) => {
+      console.warn('getTopThreeBestScores not available, returning empty array');
+      return [];
+    };
+  }, [getTopThreeBestScores]);
 
   // Debug logging
   console.log('🎮 JigsawBoard: User authentication status:', {
     user: user ? { id: user.id, email: user.email } : null,
     serviceError
+  });
+
+  // Debug logging for service methods
+  console.log('🎮 JigsawBoard: Level3Service methods:', {
+    saveGameCompletion: typeof saveGameCompletion,
+    getTopThreeBestScores: typeof getTopThreeBestScores,
+    safeGetTopThreeBestScores: typeof safeGetTopThreeBestScores,
+    availableMethods: Object.keys(level3Service)
   });
   // ===== HOOKS & CONTEXT =====
   // Removed unused: user
@@ -328,6 +433,23 @@ export const JigsawBoard: React.FC = () => {
     (state: RootState) => state.game.currentModule
   );
 
+  // Debug logging for scenarios
+  console.log('🎮 JigsawBoard: Scenarios state:', {
+    scenarios: scenarios?.length || 0,
+    scenarioIndex,
+    currentScenario: scenarios?.[scenarioIndex]?.title || 'undefined',
+    showScenario,
+    currentModule
+  });
+
+  // Initialize scenarios if they're empty (fallback)
+  useEffect(() => {
+    if (!scenarios || scenarios.length === 0) {
+      console.log('🎮 No scenarios found, loading default module 1 scenarios');
+      dispatch(setScenarios(getLevel3ScenariosByModule(1)));
+    }
+  }, [scenarios, dispatch]);
+
   // Update scenarios when module changes
   useEffect(() => {
     let moduleId: number | undefined = undefined;
@@ -340,8 +462,15 @@ export const JigsawBoard: React.FC = () => {
     } else if (typeof currentModule === "number") {
       moduleId = currentModule;
     }
-    if (moduleId === 1 || moduleId === 2) {
+
+    console.log('🎮 Loading scenarios for module:', moduleId);
+
+    if (moduleId >= 1 && moduleId <= 4) {
       dispatch(setScenarios(getLevel3ScenariosByModule(moduleId)));
+    } else {
+      // Fallback to module 1 scenarios if moduleId is invalid
+      console.warn('Invalid moduleId:', moduleId, 'falling back to module 1');
+      dispatch(setScenarios(getLevel3ScenariosByModule(1)));
     }
   }, [currentModule, dispatch]);
 
@@ -842,7 +971,7 @@ export const JigsawBoard: React.FC = () => {
         <main className="flex-1 flex flex-col h-full w-full max-w-6xl mx-auto relative z-10">
           {/* Scenario Dialog Overlay */}
           <AnimatePresence>
-            {showScenario && (
+            {showScenario && scenario && (
               <motion.div
                 key="scenario-dialog"
                 initial={{ opacity: 0, scale: 1, y: 0 }}
@@ -973,9 +1102,21 @@ export const JigsawBoard: React.FC = () => {
                 <FinalStatsPopup
                   scenarioResults={scenarioResults}
                   overallStats={calculateOverallStats(scenarioResults, timer)}
+                  currentModule={currentModule}
+                  getTopThreeBestScores={safeGetTopThreeBestScores}
                   onClose={async () => {
                     // Save game completion data to database
                     const overallStats = calculateOverallStats(scenarioResults, timer);
+
+                    // Calculate final score (same logic as in FinalStatsPopup)
+                    const maxPossibleScore = scenarioResults.length * 100;
+                    const maxPossibleCombo = scenarioResults.length * 5;
+                    const maxHealth = 100;
+                    const scorePart = Math.round((overallStats.totalScore / maxPossibleScore) * 70);
+                    const comboPart = Math.round((overallStats.totalCombo / maxPossibleCombo) * 20);
+                    const healthPart = Math.round((overallStats.avgHealth / maxHealth) * 10);
+                    const finalScore = Math.min(scorePart + comboPart + healthPart, 100);
+
                     try {
                       // Get module ID for saving
                       let moduleId: string = "1"; // default

@@ -397,6 +397,50 @@ export class Level3Service {
   }
 
   /**
+   * Get top 3 best scores for a module (for final statistics display)
+   */
+  static async getTopThreeBestScores(module: string): Promise<{
+    data: any[] | null;
+    error: Error | null;
+  }> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase.rpc('get_level3_top_scores', {
+        p_user_id: userData.user.id,
+        p_module: module,
+        p_level: this.LEVEL_NUMBER,
+        p_limit: 3
+      });
+
+      if (error) {
+        console.error('Level3Service: Error fetching top scores:', error);
+        throw new Error(`Error fetching top scores: ${error.message}`);
+      }
+
+      // Transform the data to match the expected format
+      const transformedData = data?.map((score: any) => ({
+        scenario_index: score.scenario_index,
+        best_score: score.best_score,
+        best_time: score.best_time,
+        total_attempts: score.total_attempts,
+        is_completed: score.is_completed,
+        placed_pieces: score.placed_pieces,
+        created_at: score.created_at
+      })) || [];
+
+      return { data: transformedData, error: null };
+
+    } catch (error) {
+      console.error('Level3Service: Error fetching top scores:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  /**
    * Test database connection and function availability
    */
   static async testDatabaseConnection(): Promise<{ success: boolean; error?: any }> {

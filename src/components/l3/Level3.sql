@@ -577,6 +577,43 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Function to get top N best scores for a user
+DROP FUNCTION IF EXISTS get_level3_top_scores(UUID, TEXT, INTEGER, INTEGER);
+CREATE OR REPLACE FUNCTION get_level3_top_scores(
+    p_user_id UUID,
+    p_module TEXT,
+    p_level INTEGER,
+    p_limit INTEGER DEFAULT 3
+)
+RETURNS TABLE(
+    best_score INTEGER,
+    best_time INTEGER,
+    total_attempts INTEGER,
+    is_completed BOOLEAN,
+    placed_pieces JSONB,
+    scenario_index INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        lp.current_score as best_score,
+        lp.time_taken as best_time,
+        lp.total_attempts,
+        lp.is_completed,
+        lp.placed_pieces,
+        lp.scenario_index,
+        lp.created_at
+    FROM level3_progress lp
+    WHERE lp.user_id = p_user_id
+      AND lp.module = p_module
+      AND lp.level = p_level
+      AND lp.is_completed = TRUE
+    ORDER BY lp.current_score DESC, lp.time_taken ASC
+    LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql;
+
 -- =====================================================
 -- MAINTENANCE FUNCTIONS (using Level 4 logic)
 -- =====================================================

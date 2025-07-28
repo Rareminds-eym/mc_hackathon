@@ -216,6 +216,38 @@ export const useLevel3Service = () => {
   }, [user]);
 
   /**
+   * Get top 3 best scores for a module (for final statistics display)
+   */
+  const getTopThreeBestScores = useCallback(async (module: string) => {
+    if (!user) {
+      setError('User not authenticated');
+      return null;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await Level3Service.getTopThreeBestScores(module);
+
+      if (result.error) {
+        setError(result.error.message);
+        return null;
+      }
+
+      return result.data;
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      console.error('Error fetching top scores:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  /**
    * Test database connection
    */
   const testConnection = useCallback(async () => {
@@ -224,7 +256,7 @@ export const useLevel3Service = () => {
 
     try {
       const result = await Level3Service.testDatabaseConnection();
-      
+
       if (!result.success) {
         setError(result.error?.message || 'Database connection failed');
         return false;
@@ -247,15 +279,16 @@ export const useLevel3Service = () => {
     loading,
     error,
     user,
-    
+
     // Methods
     saveGameCompletion,
     getBestScore,
     getGameStats,
     getScoreHistory,
+    getTopThreeBestScores,
     isScenarioCompleted,
     testConnection,
-    
+
     // Utility
     clearError: () => setError(null)
   };
