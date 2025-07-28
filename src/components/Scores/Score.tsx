@@ -339,15 +339,23 @@ const Score: React.FC = () => {
           />
 
 
-          {/* Module stones */}
-          {modules.slice(0, 6).map((module: Module) => (
-            <ModuleStone
-              key={module.id}
-              module={module}
-              position={calculatedPositions[module.id - 1]}
-              onClick={() => handleModuleClick(module)}
-            />
-          ))}
+          {/* Module stones: Always show 6 stones, even if some are locked or missing */}
+          {[...Array(6)].map((_, i) => {
+            const module = modules[i] || {
+              id: i + 1,
+              name: `Level ${i + 1}`,
+              status: 'locked',
+              // Add any other required fallback properties for ModuleStone
+            };
+            return (
+              <ModuleStone
+                key={module.id}
+                module={module}
+                position={calculatedPositions[i]}
+                onClick={() => handleModuleClick(module)}
+              />
+            );
+          })}
         </motion.svg>
 
         {/* Back Button from InstructionsPage (restored) */}
@@ -412,5 +420,5 @@ const Score: React.FC = () => {
     </AnimatedBackground>
   );
 };
-// default export
+
 export default Score;
