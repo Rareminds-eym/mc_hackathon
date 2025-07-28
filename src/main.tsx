@@ -8,8 +8,8 @@ import { PersistGate } from 'redux-persist/integration/react';
 
 // Import test function for debugging
 import { testLevel3Database } from './test-level3-db';
-// Register Service Worker for PWA functionality
-if ('serviceWorker' in navigator) {
+// Conditionally register Service Worker for PWA functionality only in production
+if (import.meta.env.MODE === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
