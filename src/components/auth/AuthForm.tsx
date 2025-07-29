@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { useDeviceLayout } from '../../hooks/useOrientation' // Add this import
+import { useDeviceLayout } from '../../hooks/useOrientation'
+import { collegeCodes as collegeCodeList } from '../../data/collegeCodes'
 
 interface AuthFormProps {
   mode: 'login' | 'signup'
@@ -25,6 +27,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   })
   // For pre-filling team name and college code for team members
   const [prefilledTeam, setPrefilledTeam] = useState<{ teamName: string; collegeCode: string } | null>(null);
+
+  // Use imported collegeCodes and map to dropdown structure
+  const collegeCodes = collegeCodeList.map(code => ({ code }));
+  const [collegeSearch, setCollegeSearch] = useState('');
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const collegeInputRef = useRef<HTMLInputElement>(null);
+  // Show suggestions as soon as user types, remove case sensitivity
+  const filteredColleges =
+    collegeSearch.trim() === ''
+      ? []
+      : collegeCodes.filter(c =>
+          c.code.toLowerCase().includes(collegeSearch.trim().toLowerCase())
+        );
   // For displaying join code to team leader after signup
   const [generatedJoinCode, setGeneratedJoinCode] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false)
@@ -32,6 +47,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const { signIn, signUp } = useAuth()
   const { isHorizontal, isMobile } = useDeviceLayout(); // Add this line
@@ -113,14 +129,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     return code;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // New: Confirm details modal logic
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setShowConfirmModal(true);
+  };
+
+  // Actual account creation logic
+  const handleConfirmCreateAccount = async () => {
     setIsSubmitting(true);
     setError('');
     setSuccess('');
     setGeneratedJoinCode(null);
-
+    setShowConfirmModal(false);
     try {
       if (mode === 'login') {
         const { error } = await signIn(formData.email, formData.password);
@@ -130,14 +152,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
       } else {
         if (formData.isTeamLeader) {
           // Team leader signup: create team, generate join code
-          // Check if team name already exists
           const { data: existingTeams, error: teamCheckError } = await supabase
             .from('teams')
             .select('team_name')
             .ilike('team_name', formData.teamName);
           if (teamCheckError) {
             setError('Error checking team name. Please try again.');
-            console.error('[AuthForm] Team name check error:', teamCheckError);
             setIsSubmitting(false);
             return;
           }
@@ -146,11 +166,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             setIsSubmitting(false);
             return;
           }
-          // Generate join code (always 6 uppercase chars)
           const joinCode = generateJoinCode().toUpperCase().trim();
-          // Create session id
           const sessionId = uuidv4();
-          // Pass all signup fields to signUp
           const { error } = await signUp(
             formData.email,
             formData.password,
@@ -159,17 +176,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               phone: formData.phone,
               teamName: formData.teamName,
               collegeCode: formData.collegeCode,
-              teamLead: '', // Not used in this flow
-              teamMembers: [], // Not used in this flow
+              teamLead: '',
+              teamMembers: [],
             }
           );
           if (error) {
             setError(error.message);
-            console.error('[AuthForm] Signup error:', error);
             setIsSubmitting(false);
             return;
           }
-          // Insert into teams table
           const { data: { user } } = await supabase.auth.getUser();
           const { fullName, phone, teamName, collegeCode, email } = formData;
           const teamRow: {
@@ -190,7 +205,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             college_code: collegeCode,
             is_team_leader: true,
             session_id: sessionId,
-            join_code: joinCode, // always 6 chars
+            join_code: joinCode,
           };
           if (user && user.id) {
             teamRow.user_id = user.id;
@@ -202,34 +217,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             return;
           }
           setGeneratedJoinCode(joinCode);
-          setSuccess('Account created! Share this join code with your team: ' + joinCode.toUpperCase());
-          // Pre-fill team name and college code for team members
+          setSuccess('Account created! Please verify your email. Share this join code with your team: ' + joinCode.toUpperCase());
           setPrefilledTeam({ teamName: formData.teamName, collegeCode: formData.collegeCode });
         } else {
           // Team member signup: join with code
-          // Find team by join code
           const joinCodeInput = formData.joinCode.trim().toUpperCase();
-          console.log('[AuthForm] Member join code input:', joinCodeInput);
           const { data: teamRows, error: teamError } = await supabase
             .from('teams')
             .select('*')
             .eq('join_code', joinCodeInput);
-          console.log('[AuthForm] Query result for join_code', joinCodeInput, ':', teamRows, teamError);
           if (teamError) {
             setError('Error finding team. Please try again.');
             setIsSubmitting(false);
             return;
           }
           if (!teamRows || teamRows.length === 0) {
-            console.log('[AuthForm] No team found for join code:', joinCodeInput);
             setError('Invalid join code. Please check with your team leader.');
             setIsSubmitting(false);
             return;
-          } else {
-            // Log the join_code in the found team for comparison
-            console.log('[AuthForm] Found team join_code:', teamRows[0]?.join_code, 'Input:', joinCodeInput);
           }
-          // Check team size (max 4)
           const { data: teamMembers, error: countError } = await supabase
             .from('teams')
             .select('id', { count: 'exact', head: true })
@@ -244,9 +250,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             setIsSubmitting(false);
             return;
           }
-          // Use session_id, team_name, college_code from found team
           const team = teamRows[0];
-          // Pre-fill team name and college code for UI
           setPrefilledTeam({ teamName: team.team_name, collegeCode: team.college_code });
           const { error } = await signUp(
             formData.email,
@@ -256,8 +260,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               phone: formData.phone,
               teamName: team.team_name,
               collegeCode: team.college_code,
-              teamLead: '', // Not used in this flow
-              teamMembers: [], // Not used in this flow
+              teamLead: '',
+              teamMembers: [],
             }
           );
           if (error) {
@@ -265,7 +269,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             setIsSubmitting(false);
             return;
           }
-          // Insert into teams table
           const { data: { user } } = await supabase.auth.getUser();
           const { fullName, phone, email } = formData;
           const teamRow: {
@@ -412,13 +415,40 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                       id="collegeCode"
                       name="collegeCode"
                       type="text"
-                      value={formData.isTeamLeader ? formData.collegeCode : (prefilledTeam ? prefilledTeam.collegeCode : '')}
-                      onChange={formData.isTeamLeader ? handleInputChange : undefined}
+                      ref={collegeInputRef}
+                      autoComplete="off"
+                      value={formData.isTeamLeader ? collegeSearch : (prefilledTeam ? prefilledTeam.collegeCode : '')}
+                      onChange={formData.isTeamLeader ? (e) => {
+                        setCollegeSearch(e.target.value);
+                        setShowCollegeDropdown(true);
+                        setFormData(prev => ({ ...prev, collegeCode: e.target.value }));
+                      } : undefined}
+                      onFocus={formData.isTeamLeader ? () => setShowCollegeDropdown(true) : undefined}
+                      onBlur={formData.isTeamLeader ? () => setTimeout(() => setShowCollegeDropdown(false), 150) : undefined}
                       required={!!formData.isTeamLeader}
                       className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white ${!formData.isTeamLeader && prefilledTeam ? 'bg-gray-700/40 cursor-not-allowed' : ''}`}
-                      placeholder="Enter college code"
+                      placeholder="Search college code or name"
                       readOnly={!formData.isTeamLeader && prefilledTeam ? true : false}
                     />
+                    {/* Dropdown list for college codes */}
+                    {formData.isTeamLeader && showCollegeDropdown && filteredColleges.length > 0 && (
+                      <ul className="absolute z-20 mt-1 w-full bg-gray-900 border border-slate-700/80 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        {filteredColleges.map(college => (
+                          <li
+                            key={college.code}
+                            className="px-3 py-2 cursor-pointer hover:bg-blue-700/40 text-white text-sm"
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, collegeCode: college.code }));
+                              setCollegeSearch(college.code);
+                              setShowCollegeDropdown(false);
+                              setTimeout(() => { collegeInputRef.current?.blur(); }, 100);
+                            }}
+                          >
+                            <span className="font-semibold">{college.code}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </React.Fragment>
               ) : null}
@@ -585,21 +615,81 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
             </div>
             {/* Submit Button */}
             <div className="col-span-1 md:col-span-3 flex justify-center mt-6">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                    {mode === 'login' ? 'Signing In...' : 'Creating Account...'}
-                  </>
-                ) : (
-                  mode === 'login' ? 'Sign In' : 'Create Account'
-                )}
-              </button>
+              {mode === 'signup' ? (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                      Confirming...
+                    </>
+                  ) : (
+                    'Confirm Details'
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                      Signing In...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+              )}
             </div>
+
+            {/* Confirm Details Modal */}
+            {showConfirmModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                <div className="bg-gray-900 rounded-lg shadow-2xl p-6 w-full max-w-md mx-auto">
+                  <h3 className="text-xl font-bold text-white mb-4">Confirm Your Details</h3>
+                  <ul className="text-white space-y-2 mb-4">
+                    <li><span className="font-semibold">Full Name:</span> {formData.fullName}</li>
+                    <li><span className="font-semibold">Phone:</span> {formData.phone}</li>
+                    {formData.isTeamLeader ? (
+                      <>
+                        <li><span className="font-semibold">Team Name:</span> {formData.teamName}</li>
+                        <li><span className="font-semibold">College Code:</span> {formData.collegeCode}</li>
+                        <li><span className="font-semibold">Role:</span> Team Leader</li>
+                      </>
+                    ) : (
+                      <>
+                        <li><span className="font-semibold">Join Code:</span> {formData.joinCode}</li>
+                        <li><span className="font-semibold">Role:</span> Team Member</li>
+                      </>
+                    )}
+                    <li><span className="font-semibold">Email:</span> {formData.email}</li>
+                  </ul>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600"
+                      onClick={() => setShowConfirmModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-semibold"
+                      onClick={handleConfirmCreateAccount}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Show join code to team leader after signup */}
             {generatedJoinCode && formData.isTeamLeader && (
               <div className="col-span-1 md:col-span-3 flex flex-col items-center mt-4">
