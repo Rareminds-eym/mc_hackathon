@@ -1,48 +1,28 @@
-import React from "react";
-import { 
-  ArrowLeftCircle, 
-  Menu, 
+import React, { useState } from "react";
+import {
+  ArrowLeftCircle,
+  Menu,
   X,
-  FileText 
+  FileText
 } from "lucide-react";
-import { PlacedPiecesState } from "../types/gameTypes";
+import { useLevel3UI, useLevel3Progress, useLevel3Game } from "../../../store/hooks";
+import { useDeviceLayout } from "../../../hooks/useOrientation";
 import { GameMenu } from "./GameMenu";
 
 interface GameHeaderProps {
-  isComplete: boolean;
-  placedPieces: PlacedPiecesState;
-  correctViolations: any[];
-  correctActions: any[];
-  isMenuOpen: boolean;
-  setIsMenuOpen: (isOpen: boolean) => void;
-  displayName: string;
-  score: number;
-  health: number;
-  combo: number;
-  setShowScenario: (show: boolean) => void;
-  onResetProgress?: () => void;
-  isMobile: boolean;
-  isHorizontal: boolean;
+  className?: string;
 }
 
-export const GameHeader: React.FC<GameHeaderProps> = ({
-  isComplete,
-  placedPieces,
-  correctViolations,
-  correctActions,
-  isMenuOpen,
-  setIsMenuOpen,
-  displayName,
-  score,
-  health,
-  combo,
-  setShowScenario,
-  onResetProgress,
-  isMobile,
-  isHorizontal
-}) => {
+export const GameHeader: React.FC<GameHeaderProps> = ({ className = '' }) => {
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Redux hooks
+  const { gameStats } = useLevel3Game();
+  const { isComplete, handleShowScenario } = useLevel3UI();
+  const { handleResetGame, currentScenarioProgress } = useLevel3Progress();
   return (
-    <header className="relative w-full flex flex-row items-center justify-between px-4 py-2 bg-gradient-to-r from-gray-900/90 to-blue-900/90 rounded-xl border border-cyan-500/50 shadow-lg backdrop-blur-sm z-50">
+    <header className={`relative w-full flex flex-row items-center justify-between px-4 py-2 bg-gradient-to-r from-gray-900/90 to-blue-900/90 rounded-xl border border-cyan-500/50 shadow-lg backdrop-blur-sm z-50 ${className}`}>
       {/* Left: Back Button */}
       <div className="flex items-center gap-3">
         <button
@@ -69,16 +49,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <div
             className="h-full bg-gradient-to-r from-green-400 to-cyan-400 transition-all duration-500"
             style={{
-              width: isComplete
-                ? "100%"
-                : `${Math.min(
-                    100,
-                    ((placedPieces.violations.length +
-                      placedPieces.actions.length) /
-                      (correctViolations.length +
-                        correctActions.length)) *
-                      100
-                  )}%`,
+              width: isComplete ? "100%" : `${currentScenarioProgress}%`,
             }}
           ></div>
         </div>
@@ -89,9 +60,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         {/* Mission Brief Button */}
         <div className="group relative">
           <button
-            onClick={() => {
-              setShowScenario(true);
-            }}
+            onClick={handleShowScenario}
             className="p-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-bold hover:brightness-110 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg border-2 border-yellow-300/50 flex items-center justify-center focus:outline-none game-font"
             aria-label="Mission Brief"
             style={{
@@ -133,16 +102,16 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         </div>
         
         {/* Menu Dropdown */}
-        <GameMenu 
-          displayName={displayName}
-          score={score}
-          health={health}
-          combo={combo}
+        <GameMenu
+          displayName="Agent"
+          score={gameStats.score}
+          health={gameStats.health}
+          combo={gameStats.combo}
           isMobile={isMobile}
           isHorizontal={isHorizontal}
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
-          onResetProgress={onResetProgress}
+          onResetProgress={handleResetGame}
         />
       </div>
     </header>

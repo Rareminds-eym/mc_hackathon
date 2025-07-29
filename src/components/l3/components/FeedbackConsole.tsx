@@ -1,27 +1,26 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { X } from "lucide-react";
+import { useLevel3Feedback } from "../../../store/hooks/index";
+import { useDeviceLayout } from "../../../hooks/useOrientation";
 
 interface FeedbackConsoleProps {
-  feedback: string;
-  setFeedback: (feedback: string) => void;
-  isMobile: boolean;
-  isHorizontal: boolean;
+  className?: string;
 }
 
-export const FeedbackConsole: React.FC<FeedbackConsoleProps> = ({ 
-  feedback, 
-  setFeedback,
-  isMobile,
-  isHorizontal
+export const FeedbackConsole: React.FC<FeedbackConsoleProps> = ({
+  className = ''
 }) => {
-  if (!feedback) return null;
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const { feedback, hasActiveFeedback, clearFeedbackMessage } = useLevel3Feedback();
+
+  if (!hasActiveFeedback) return null;
 
   return (
     <div
       className={`fixed bottom-5 right-5 z-[9999] flex justify-end w-auto pointer-events-none ${
         isMobile && isHorizontal ? "mobile-feedback" : ""
-      }`}
+      } ${className}`}
     >
       <div
         className={`flex items-center gap-4 px-6 py-4 rounded-3xl shadow-2xl border-2 max-w-xl w-full sm:w-auto
@@ -128,7 +127,7 @@ export const FeedbackConsole: React.FC<FeedbackConsoleProps> = ({
             className={`ml-2 p-2 rounded-full bg-gradient-to-br from-cyan-700 via-blue-700 to-teal-600 hover:from-cyan-500 hover:to-teal-400 transition-colors border-2 border-cyan-300/60 text-white focus:outline-none shadow-lg active:scale-95 animate-pop${
               isMobile && isHorizontal ? " p-1" : ""
             }`}
-            onClick={() => setFeedback("")}
+            onClick={clearFeedbackMessage}
             aria-label="Dismiss feedback"
           >
             <X

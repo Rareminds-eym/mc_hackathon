@@ -69,7 +69,7 @@ export interface Achievement {
 }
 
 // Root State Interface
-import type { Level3State } from './slices/level3Slice';
+import type { Level3State } from './types/level3Types';
 
 export interface RootState {
   game: GameState;

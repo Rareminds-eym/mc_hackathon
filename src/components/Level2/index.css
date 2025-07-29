@@ -952,6 +952,34 @@
   }
 }
 
+/* Shimmer animation for victory popup */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Pop scale animation for gaming elements */
+@keyframes pop-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-pop-scale {
+  animation: pop-scale 2s ease-in-out infinite;
+}
+
 /* Enhanced grid pattern for modern UI */
 .bg-grid-pattern {
   background-image:
