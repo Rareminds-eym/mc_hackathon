@@ -254,25 +254,6 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Score Breakdown */}
-        {/* <div className={`grid grid-cols-3 gap-2 mt-3 ${isMobile ? "text-xs" : "text-sm"}`}>
-          <div className="pixel-border bg-blue-700/60 text-center p-2">
-            <div className="text-blue-200 font-bold mb-1">SCORE (70%)</div>
-            <div className="text-blue-100 font-black">{scorePart}/70</div>
-            <div className="text-blue-300 text-xs mt-1">{overallStats.totalScore}/{maxPossibleScore}</div>
-          </div>
-          <div className="pixel-border bg-yellow-700/60 text-center p-2">
-            <div className="text-yellow-200 font-bold mb-1">COMBO (20%)</div>
-            <div className="text-yellow-100 font-black">{comboPart}/20</div>
-            <div className="text-yellow-300 text-xs mt-1">{overallStats.totalCombo}/{maxPossibleCombo}</div>
-          </div>
-          <div className="pixel-border bg-pink-700/60 text-center p-2">
-            <div className="text-pink-200 font-bold mb-1">HEALTH (10%)</div>
-            <div className="text-pink-100 font-black">{healthPart}/10</div>
-            <div className="text-pink-300 text-xs mt-1">{overallStats.avgHealth.toFixed(1)}/100</div>
-          </div>
-        </div> */}
       </div>
 
       {/* Top 3 Best Scores */}

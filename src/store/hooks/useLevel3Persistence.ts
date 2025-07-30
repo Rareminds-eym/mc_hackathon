@@ -102,34 +102,50 @@ export const useLevel3Persistence = (moduleId: string, userId: string) => {
   }, [dispatch, moduleId, userId, checkForSavedProgress]);
 
   /**
-   * Auto-save progress at regular intervals
+   * Save progress manually (called by user action or component)
    */
-  const enableAutoSave = useCallback((intervalMs = 30000) => {
-    let lastSaveTime = 0;
+  const saveProgressManually = useCallback(async (saveToServer = false) => {
+    // Only save if there's meaningful progress
+    if (progress.scenarioResults.length === 0 &&
+        progress.placedPieces.violations.length === 0 &&
+        progress.placedPieces.actions.length === 0) {
+      return { success: false, message: 'No progress to save' };
+    }
 
-    const interval = setInterval(async () => {
-      const now = Date.now();
+    try {
+      setIsLoading(true);
+      setError(null);
 
-      // Throttle saves to prevent excessive operations
-      if (now - lastSaveTime < intervalMs) {
-        return;
+      const result = await dispatch(persistGameProgress({
+        moduleId,
+        userId,
+        saveToServer,
+      }));
+
+      if (result.meta.requestStatus === 'fulfilled') {
+        // Update saved progress info
+        await checkForSavedProgress();
+        return result.payload;
+      } else {
+        throw new Error('Failed to save progress');
       }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save progress';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [dispatch, moduleId, userId, progress, checkForSavedProgress]);
 
-      // Only auto-save if there's meaningful progress
-      if (progress.scenarioResults.length > 0 ||
-          progress.placedPieces.violations.length > 0 ||
-          progress.placedPieces.actions.length > 0) {
-        try {
-          await saveProgress(false); // Don't save to server on auto-save
-          lastSaveTime = now;
-        } catch (error) {
-          console.warn('Auto-save failed:', error);
-        }
-      }
-    }, Math.max(intervalMs, 10000)); // Minimum 10 second interval
-
-    return () => clearInterval(interval);
-  }, [saveProgress]); // Removed progress dependency to prevent recreation
+  /**
+   * Auto-save is now handled by Redux middleware
+   * This function is kept for backward compatibility but does nothing
+   */
+  const enableAutoSave = useCallback(() => {
+    console.log('Auto-save is now handled by Redux middleware on user interactions');
+    return () => {}; // Return empty cleanup function
+  }, []);
 
   // ===== PROGRESS LOADING =====
 
@@ -294,10 +310,11 @@ export const useLevel3Persistence = (moduleId: string, userId: string) => {
     // Actions
     checkForSavedProgress,
     saveProgress,
+    saveProgressManually,
     loadProgress,
     continueFromSpecificScenario,
     clearProgress,
-    enableAutoSave,
+    enableAutoSave, // Deprecated - now handled by middleware
 
     // Utilities
     getProgressSummary,
@@ -312,6 +329,7 @@ export const useLevel3Persistence = (moduleId: string, userId: string) => {
     hasUnsavedChanges,
     checkForSavedProgress,
     saveProgress,
+    saveProgressManually,
     loadProgress,
     continueFromSpecificScenario,
     clearProgress,

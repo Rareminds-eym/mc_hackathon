@@ -99,7 +99,7 @@ level3Middleware.startListening({
 // ===== GAME STATE PERSISTENCE LISTENER =====
 
 /**
- * Save game state to localStorage on important changes
+ * Save game state to localStorage on important user interactions
  */
 level3Middleware.startListening({
   matcher: isAnyOf(dropPiece, completeScenario, resetGame),
@@ -107,21 +107,45 @@ level3Middleware.startListening({
     try {
       const state = listenerApi.getState() as RootState;
       const level3State = state.level3;
-      
+
       // Only save if there's meaningful progress
-      if (level3State.progress.scenarioResults.length > 0 || 
+      if (level3State.progress.scenarioResults.length > 0 ||
           level3State.progress.placedPieces.violations.length > 0 ||
           level3State.progress.placedPieces.actions.length > 0) {
-        
+
+        // Get user info from a global context or default to guest
+        const userId = 'guest'; // This should come from auth context
+        const moduleId = '1'; // This should come from current module
+
         const gameStateToSave = {
-          currentScenarioIndex: level3State.progress.currentScenarioIndex,
-          scenarioResults: level3State.progress.scenarioResults,
-          placedPieces: level3State.progress.placedPieces,
-          gameStats: level3State.gameStats,
+          moduleId,
+          userId,
           timestamp: Date.now(),
+          version: '1.0.0',
+          gameStats: level3State.gameStats,
+          progress: level3State.progress,
+          ui: {
+            showScenario: level3State.ui.showScenario,
+            feedback: level3State.ui.feedback,
+            isComplete: level3State.ui.isComplete,
+          },
+          scenarios: level3State.scenarios,
         };
-        
-        localStorage.setItem('level3_game_state', JSON.stringify(gameStateToSave));
+
+        const storageKey = `level3_progress_${moduleId}_${userId}`;
+        localStorage.setItem(storageKey, JSON.stringify(gameStateToSave));
+
+        // Dispatch save action to update Redux state
+        listenerApi.dispatch({
+          type: 'level3/saveGameProgress',
+          payload: {
+            moduleId,
+            userId,
+            timestamp: Date.now(),
+          },
+        });
+
+        console.log(`💾 Game progress saved after ${action.type}`);
       }
     } catch (error) {
       console.warn('Failed to save game state to localStorage:', error);

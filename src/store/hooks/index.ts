@@ -28,5 +28,12 @@ export {
 // Level 3 Persistence Hook
 export { useLevel3Persistence } from './useLevel3Persistence';
 
+// Level 3 Game Action Hooks (with auto-save)
+export {
+  useLevel3GameActions,
+  useLevel3ManualSave,
+  useLevel3SaveStatus
+} from './useLevel3GameActions';
+
 // Combined Level 3 Hook for convenience
 // export { useLevel3 } from './useLevel3'; // Temporarily disabled due to import issues
