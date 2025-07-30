@@ -133,7 +133,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setShowConfirmModal(true);
+    if (mode === 'signup') {
+      setShowConfirmModal(true);
+    } else {
+      // Directly login
+      handleConfirmCreateAccount();
+    }
   };
 
   // Actual account creation logic
@@ -152,6 +157,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
       } else {
         if (formData.isTeamLeader) {
           // Team leader signup: create team, generate join code
+          // 1. Check if email already exists in teams table
+          const { data: existingEmailRows, error: emailCheckError } = await supabase
+            .from('teams')
+            .select('email')
+            .eq('email', formData.email);
+          if (emailCheckError) {
+            setError('Error checking email. Please try again.');
+            setIsSubmitting(false);
+            return;
+          }
+          if (existingEmailRows && existingEmailRows.length > 0) {
+            setError('An account with this email already exists. Please use a different email.');
+            setIsSubmitting(false);
+            return;
+          }
+          // 2. Check if team name already exists
           const { data: existingTeams, error: teamCheckError } = await supabase
             .from('teams')
             .select('team_name')
