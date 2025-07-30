@@ -28,6 +28,9 @@ import { VictoryPopup } from "../ui/Popup";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { RootState } from "../../store/types";
 
+// Redux hooks for game persistence
+import { useLevel3Persistence } from "../../store/hooks/index";
+
 // Level 3 Database Service
 import useLevel3Service from "./hooks/useLevel3Service";
 
@@ -35,7 +38,12 @@ import useLevel3Service from "./hooks/useLevel3Service";
 // import { Level3Debug } from "../Debug/Level3Debug";
 
 // Extracted Components
-import { Arsenal, DeviceRotationPrompt, DragPieceOverlay } from "./components";
+import {
+  Arsenal,
+  DeviceRotationPrompt,
+  DragPieceOverlay,
+  PerformanceTest,
+} from "./components";
 
 // Utilities and Hooks
 import { BACKGROUND_IMAGE_URL, preloadImage } from "./utils/gameUtils";
@@ -86,8 +94,12 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
   const maxHealth = 100; // Health is always out of 100
 
   // Calculate weighted percentages
-  const scorePart = Math.round((overallStats.totalScore / maxPossibleScore) * 70);
-  const comboPart = Math.round((overallStats.totalCombo / maxPossibleCombo) * 20);
+  const scorePart = Math.round(
+    (overallStats.totalScore / maxPossibleScore) * 70
+  );
+  const comboPart = Math.round(
+    (overallStats.totalCombo / maxPossibleCombo) * 20
+  );
   const healthPart = Math.round((overallStats.avgHealth / maxHealth) * 10);
 
   const finalScore = Math.min(scorePart + comboPart + healthPart, 100);
@@ -106,7 +118,11 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
 
         // Get module ID
         let moduleId = "1"; // default
-        if (typeof currentModule === "object" && currentModule !== null && "id" in currentModule) {
+        if (
+          typeof currentModule === "object" &&
+          currentModule !== null &&
+          "id" in currentModule
+        ) {
           moduleId = (currentModule as any).id.toString();
         } else if (typeof currentModule === "number") {
           moduleId = currentModule.toString();
@@ -117,7 +133,7 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
         const result = await getTopThreeBestScores(moduleId);
         setTopScores(result || []);
       } catch (error) {
-        console.error('Error fetching top scores:', error);
+        console.error("Error fetching top scores:", error);
         setTopScores([]);
       } finally {
         setLoadingTopScores(false);
@@ -136,7 +152,9 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
@@ -154,15 +172,27 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
       <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-0"></div>
 
       {/* Header */}
-      <div className={`relative z-10 text-center ${isMobile ? "mb-3" : "mb-6"}`}>
-        <div className={`flex items-center justify-center gap-2 ${isMobile ? "mb-2" : "mb-3"}`}>
-          <Crown className={`text-yellow-300 ${isMobile ? "w-5 h-5" : "w-8 h-8"}`} />
-          <h2 className={`pixel-text font-black text-yellow-200 tracking-wider ${
-            isMobile ? "text-lg" : "text-2xl"
-          }`}>
+      <div
+        className={`relative z-10 text-center ${isMobile ? "mb-3" : "mb-6"}`}
+      >
+        <div
+          className={`flex items-center justify-center gap-2 ${
+            isMobile ? "mb-2" : "mb-3"
+          }`}
+        >
+          <Crown
+            className={`text-yellow-300 ${isMobile ? "w-5 h-5" : "w-8 h-8"}`}
+          />
+          <h2
+            className={`pixel-text font-black text-yellow-200 tracking-wider ${
+              isMobile ? "text-lg" : "text-2xl"
+            }`}
+          >
             LEVEL COMPLETE!
           </h2>
-          <Crown className={`text-yellow-300 ${isMobile ? "w-5 h-5" : "w-8 h-8"}`} />
+          <Crown
+            className={`text-yellow-300 ${isMobile ? "w-5 h-5" : "w-8 h-8"}`}
+          />
         </div>
         <p className={`text-cyan-200 font-bold ${isMobile ? "text-sm" : ""}`}>
           All scenarios completed successfully!
@@ -171,52 +201,75 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
 
       {/* Overall Stats */}
       <div className={`relative z-10 ${isMobile ? "mb-3" : "mb-6"}`}>
-        <h3 className={`pixel-text font-bold text-yellow-200 text-center ${
-          isMobile ? "text-base mb-2" : "text-lg mb-4"
-        }`}>
+        <h3
+          className={`pixel-text font-bold text-yellow-200 text-center ${
+            isMobile ? "text-base mb-2" : "text-lg mb-4"
+          }`}
+        >
           FINAL STATISTICS
         </h3>
-        <div className={`grid ${isMobile ? "grid-cols-2 gap-3 mb-3" : "grid-cols-2 gap-4 mb-4"}`}>
-          <div className={`pixel-border bg-purple-800/80 text-center ${isMobile ? "p-2" : "p-3"}`}>
-            <div className={`text-purple-200 font-bold mb-1 ${isMobile ? "text-xs" : "text-sm"}`}>FINAL SCORE</div>
-            <div className={`text-purple-100 font-black ${isMobile ? "text-lg" : "text-xl"}`}>{finalScore} / 100</div>
+        <div
+          className={`grid ${
+            isMobile ? "grid-cols-2 gap-3 mb-3" : "grid-cols-2 gap-4 mb-4"
+          }`}
+        >
+          <div
+            className={`pixel-border bg-purple-800/80 text-center ${
+              isMobile ? "p-2" : "p-3"
+            }`}
+          >
+            <div
+              className={`text-purple-200 font-bold mb-1 ${
+                isMobile ? "text-xs" : "text-sm"
+              }`}
+            >
+              FINAL SCORE
+            </div>
+            <div
+              className={`text-purple-100 font-black ${
+                isMobile ? "text-lg" : "text-xl"
+              }`}
+            >
+              {finalScore} / 100
+            </div>
           </div>
-          <div className={`pixel-border bg-green-800/80 text-center ${isMobile ? "p-2" : "p-3"}`}>
-            <div className={`text-green-200 font-bold mb-1 ${isMobile ? "text-xs" : "text-sm"}`}>TOTAL TIME</div>
-            <div className={`text-green-100 font-black ${isMobile ? "text-lg" : "text-xl"}`}>{formatTime(overallStats.totalTime)}</div>
+          <div
+            className={`pixel-border bg-green-800/80 text-center ${
+              isMobile ? "p-2" : "p-3"
+            }`}
+          >
+            <div
+              className={`text-green-200 font-bold mb-1 ${
+                isMobile ? "text-xs" : "text-sm"
+              }`}
+            >
+              TOTAL TIME
+            </div>
+            <div
+              className={`text-green-100 font-black ${
+                isMobile ? "text-lg" : "text-xl"
+              }`}
+            >
+              {formatTime(overallStats.totalTime)}
+            </div>
           </div>
         </div>
-
-        {/* Score Breakdown */}
-        {/* <div className={`grid grid-cols-3 gap-2 mt-3 ${isMobile ? "text-xs" : "text-sm"}`}>
-          <div className="pixel-border bg-blue-700/60 text-center p-2">
-            <div className="text-blue-200 font-bold mb-1">SCORE (70%)</div>
-            <div className="text-blue-100 font-black">{scorePart}/70</div>
-            <div className="text-blue-300 text-xs mt-1">{overallStats.totalScore}/{maxPossibleScore}</div>
-          </div>
-          <div className="pixel-border bg-yellow-700/60 text-center p-2">
-            <div className="text-yellow-200 font-bold mb-1">COMBO (20%)</div>
-            <div className="text-yellow-100 font-black">{comboPart}/20</div>
-            <div className="text-yellow-300 text-xs mt-1">{overallStats.totalCombo}/{maxPossibleCombo}</div>
-          </div>
-          <div className="pixel-border bg-pink-700/60 text-center p-2">
-            <div className="text-pink-200 font-bold mb-1">HEALTH (10%)</div>
-            <div className="text-pink-100 font-black">{healthPart}/10</div>
-            <div className="text-pink-300 text-xs mt-1">{overallStats.avgHealth.toFixed(1)}/100</div>
-          </div>
-        </div> */}
       </div>
 
       {/* Top 3 Best Scores */}
       <div className={`relative z-10 ${isMobile ? "mb-3" : "mb-6"}`}>
-        <h3 className={`pixel-text font-bold text-yellow-200 text-center ${
-          isMobile ? "text-base mb-2" : "text-lg mb-3"
-        }`}>
+        <h3
+          className={`pixel-text font-bold text-yellow-200 text-center ${
+            isMobile ? "text-base mb-2" : "text-lg mb-3"
+          }`}
+        >
           BEST SCORES
         </h3>
-        <div className={`space-y-1 overflow-y-auto ${
-          isMobile ? "max-h-24" : "max-h-32"
-        }`}>
+        <div
+          className={`space-y-1 overflow-y-auto ${
+            isMobile ? "max-h-24" : "max-h-32"
+          }`}
+        >
           {loadingTopScores ? (
             <div className="text-center text-gray-400 py-4">
               <div className="animate-spin w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto mb-2"></div>
@@ -228,12 +281,19 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
               let combo = 0;
               let health = 100;
 
-              if (score.placed_pieces && typeof score.placed_pieces === 'object') {
-                if (score.placed_pieces.scenarioResults && Array.isArray(score.placed_pieces.scenarioResults)) {
+              if (
+                score.placed_pieces &&
+                typeof score.placed_pieces === "object"
+              ) {
+                if (
+                  score.placed_pieces.scenarioResults &&
+                  Array.isArray(score.placed_pieces.scenarioResults)
+                ) {
                   // Find the scenario result for this score
-                  const scenarioResult = score.placed_pieces.scenarioResults.find(
-                    (sr: any) => sr.scenarioIndex === score.scenario_index
-                  );
+                  const scenarioResult =
+                    score.placed_pieces.scenarioResults.find(
+                      (sr: any) => sr.scenarioIndex === score.scenario_index
+                    );
                   if (scenarioResult) {
                     combo = scenarioResult.combo || 0;
                     health = scenarioResult.health || 100;
@@ -250,39 +310,61 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
                       : "p-2 flex items-center justify-between"
                   }`}
                 >
-                  <div className={`flex items-center ${isMobile ? "gap-1" : "gap-2"}`}>
-                    <div className={`flex items-center justify-center w-6 h-6 rounded-full ${
-                      index === 0 ? "bg-yellow-500" :
-                      index === 1 ? "bg-gray-400" :
-                      "bg-orange-600"
-                    } text-black font-bold ${isMobile ? "text-xs" : "text-sm"}`}>
+                  <div
+                    className={`flex items-center ${
+                      isMobile ? "gap-1" : "gap-2"
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                        index === 0
+                          ? "bg-yellow-500"
+                          : index === 1
+                          ? "bg-gray-400"
+                          : "bg-orange-600"
+                      } text-black font-bold ${
+                        isMobile ? "text-xs" : "text-sm"
+                      }`}
+                    >
                       {index + 1}
                     </div>
-                    <span className={`font-bold text-cyan-200 ${
-                      isMobile ? "text-xs" : "text-sm"
-                    }`}>
-                      {score.best_score > 0 ? `${score.best_score}` : '--'}
+                    <span
+                      className={`font-bold text-cyan-200 ${
+                        isMobile ? "text-xs" : "text-sm"
+                      }`}
+                    >
+                      {score.best_score > 0 ? `${score.best_score}` : "--"}
                     </span>
                   </div>
-                  <div className={`flex items-center ${
-                    isMobile
-                      ? "gap-2 text-xs justify-between"
-                      : "gap-4 text-xs"
-                  }`}>
+                  <div
+                    className={`flex items-center ${
+                      isMobile
+                        ? "gap-2 text-xs justify-between"
+                        : "gap-4 text-xs"
+                    }`}
+                  >
                     {combo > 0 && (
                       <span className="text-yellow-200">
-                        Combo: <span className="font-bold text-yellow-100">{combo}</span>
+                        Combo:{" "}
+                        <span className="font-bold text-yellow-100">
+                          {combo}
+                        </span>
                       </span>
                     )}
                     {health > 0 && health !== 100 && (
                       <span className="text-pink-200">
-                        Health: <span className="font-bold text-pink-100">{health}</span>
+                        Health:{" "}
+                        <span className="font-bold text-pink-100">
+                          {health}
+                        </span>
                       </span>
                     )}
                     {score.best_time > 0 && (
                       <span className="text-green-200">
-                        Time: <span className="font-bold text-green-100">
-                          {Math.floor(score.best_time / 60)}:{(score.best_time % 60).toString().padStart(2, '0')}
+                        Time:{" "}
+                        <span className="font-bold text-green-100">
+                          {Math.floor(score.best_time / 60)}:
+                          {(score.best_time % 60).toString().padStart(2, "0")}
                         </span>
                       </span>
                     )}
@@ -301,9 +383,11 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className={`relative z-10 flex gap-2 justify-center ${
-        isMobile ? "flex-col" : "flex-col sm:flex-row gap-3"
-      }`}>
+      <div
+        className={`relative z-10 flex gap-2 justify-center ${
+          isMobile ? "flex-col" : "flex-col sm:flex-row gap-3"
+        }`}
+      >
         <button
           className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-2 ${
             isMobile ? "px-4 py-2 text-sm" : "px-6 py-3"
@@ -311,7 +395,10 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
           onClick={handleGoToModules}
           aria-label="Back to Modules"
         >
-          <Icon icon="mdi:home-map-marker" className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
+          <Icon
+            icon="mdi:home-map-marker"
+            className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+          />
           Back to Modules
         </button>
         <button
@@ -321,7 +408,10 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
           onClick={onClose}
           aria-label="Play Again"
         >
-          <Icon icon="mdi:refresh" className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
+          <Icon
+            icon="mdi:refresh"
+            className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+          />
           Play Again
         </button>
       </div>
@@ -340,34 +430,51 @@ export const JigsawBoard: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const level3Service = useLevel3Service();
-  const { saveGameCompletion, user, error: serviceError, getTopThreeBestScores } = level3Service;
+  const {
+    saveGameCompletion,
+    user,
+    error: serviceError,
+    getTopThreeBestScores,
+  } = level3Service;
+
+  // Redux persistence hooks (temporarily disabled to debug performance)
+  // const moduleId = useMemo(() => "1", []); // This should come from route params or props
+  // const userId = useMemo(() => user?.id || "guest", [user?.id]);
+  // const persistence = useLevel3Persistence(moduleId, userId);
+
+  // Continue game dialog state
+  const [showContinueDialog, setShowContinueDialog] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [hasCheckedProgress, setHasCheckedProgress] = useState(false);
 
   // Create a robust fallback function if getTopThreeBestScores is undefined
   const safeGetTopThreeBestScores = React.useMemo(() => {
-    if (typeof getTopThreeBestScores === 'function') {
+    if (typeof getTopThreeBestScores === "function") {
       return getTopThreeBestScores;
     }
 
     // Fallback function that always returns empty array
     return async (module: string) => {
-      console.warn('getTopThreeBestScores not available, returning empty array');
+      console.warn(
+        "getTopThreeBestScores not available, returning empty array"
+      );
       return [];
     };
   }, [getTopThreeBestScores]);
 
-  // Debug logging
-  console.log('🎮 JigsawBoard: User authentication status:', {
-    user: user ? { id: user.id, email: user.email } : null,
-    serviceError
-  });
+  // Debug logging (disabled to prevent performance issues)
+  // console.log('🎮 JigsawBoard: User authentication status:', {
+  //   user: user ? { id: user.id, email: user.email } : null,
+  //   serviceError
+  // });
 
-  // Debug logging for service methods
-  console.log('🎮 JigsawBoard: Level3Service methods:', {
-    saveGameCompletion: typeof saveGameCompletion,
-    getTopThreeBestScores: typeof getTopThreeBestScores,
-    safeGetTopThreeBestScores: typeof safeGetTopThreeBestScores,
-    availableMethods: Object.keys(level3Service)
-  });
+  // Debug logging for service methods (disabled)
+  // console.log('🎮 JigsawBoard: Level3Service methods:', {
+  //   saveGameCompletion: typeof saveGameCompletion,
+  //   getTopThreeBestScores: typeof getTopThreeBestScores,
+  //   safeGetTopThreeBestScores: typeof safeGetTopThreeBestScores,
+  //   availableMethods: Object.keys(level3Service)
+  // });
   // ===== HOOKS & CONTEXT =====
   // Removed unused: user
   // State declarations (single set at top)
@@ -380,6 +487,8 @@ export const JigsawBoard: React.FC = () => {
   );
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [score, setScore] = useState(0);
+  // Track the order of correct placements for fair point distribution
+  const [correctPlacementIndex, setCorrectPlacementIndex] = useState(0);
   const [health, setHealth] = useState(100);
   const [combo, setCombo] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -433,62 +542,80 @@ export const JigsawBoard: React.FC = () => {
     (state: RootState) => state.game.currentModule
   );
 
-  // Debug logging for scenarios
-  console.log('🎮 JigsawBoard: Scenarios state:', {
-    scenarios: scenarios?.length || 0,
-    scenarioIndex,
-    currentScenario: scenarios?.[scenarioIndex]?.title || 'undefined',
-    showScenario,
-    currentModule
-  });
+  // Debug logging for scenarios (disabled to prevent performance issues)
+  // console.log('🎮 JigsawBoard: Scenarios state:', {
+  //   scenarios: scenarios?.length || 0,
+  //   scenarioIndex,
+  //   currentScenario: scenarios?.[scenarioIndex]?.title || 'undefined',
+  //   showScenario,
+  //   currentModule
+  // });
 
   // Initialize scenarios if they're empty (fallback)
   useEffect(() => {
     if (!scenarios || scenarios.length === 0) {
-      console.log('🎮 No scenarios found, loading default module 1 scenarios');
+      // console.log('🎮 No scenarios found, loading default module 1 scenarios');
       dispatch(setScenarios(getLevel3ScenariosByModule(1)));
     }
   }, [scenarios, dispatch]);
 
   // Update scenarios when module changes
   useEffect(() => {
-    let moduleId: number | undefined = undefined;
+    let moduleId: number = 1; // default fallback
     if (
       typeof currentModule === "object" &&
       currentModule !== null &&
       "id" in currentModule
     ) {
-      moduleId = currentModule.id;
+      moduleId = Number((currentModule as any).id) || 1;
     } else if (typeof currentModule === "number") {
       moduleId = currentModule;
     }
 
-    console.log('🎮 Loading scenarios for module:', moduleId);
+    // console.log('🎮 Loading scenarios for module:', moduleId);
 
     if (moduleId >= 1 && moduleId <= 4) {
       dispatch(setScenarios(getLevel3ScenariosByModule(moduleId)));
     } else {
       // Fallback to module 1 scenarios if moduleId is invalid
-      console.warn('Invalid moduleId:', moduleId, 'falling back to module 1');
+      console.warn("Invalid moduleId:", moduleId, "falling back to module 1");
       dispatch(setScenarios(getLevel3ScenariosByModule(1)));
     }
   }, [currentModule, dispatch]);
 
-  // Auto-close feedback after 2.5 seconds
-  useEffect(() => {
-    if (feedback) {
-      const timeout = setTimeout(() => setFeedback(""), 2500);
-      return () => clearTimeout(timeout);
-    }
-  }, [feedback]);
+  // Auto-close feedback after 2.5 seconds (duplicate removed)
 
-  // Auto-close feedback after 2.5 seconds
+  // ===== GAME PERSISTENCE INITIALIZATION (DISABLED) =====
   useEffect(() => {
-    if (feedback) {
-      const timeout = setTimeout(() => setFeedback(""), 2500);
-      return () => clearTimeout(timeout);
-    }
-  }, [feedback]);
+    // Temporarily disabled persistence to debug performance
+    setIsInitializing(false);
+  }, []);
+
+  // Auto-save progress periodically (temporarily disabled)
+  // useEffect(() => {
+  //   let cleanup: (() => void) | undefined;
+  //
+  //   if (!isInitializing && user) {
+  //     cleanup = persistence.enableAutoSave(30000); // Auto-save every 30 seconds
+  //   }
+  //
+  //   return () => {
+  //     if (cleanup) {
+  //       cleanup();
+  //     }
+  //   };
+  // }, [isInitializing, user]); // Removed persistence dependency
+
+  // ===== CONTINUE GAME HANDLERS (DISABLED) =====
+  const handleContinueGame = async () => {
+    setShowContinueDialog(false);
+    setIsInitializing(false);
+  };
+
+  const handleStartNewGame = async () => {
+    setShowContinueDialog(false);
+    setIsInitializing(false);
+  };
 
   // ===== DND KIT SETUP =====
   const sensors = useSensors(
@@ -540,30 +667,33 @@ export const JigsawBoard: React.FC = () => {
   /**
    * Calculate overall stats from scenario results
    */
-  const calculateOverallStats = useCallback((results: ScenarioResult[], totalTime: number): OverallStats => {
-    if (results.length === 0) {
-      return { totalScore: 0, totalCombo: 0, avgHealth: 0, totalTime: 0 };
-    }
+  const calculateOverallStats = useCallback(
+    (results: ScenarioResult[], totalTime: number): OverallStats => {
+      if (results.length === 0) {
+        return { totalScore: 0, totalCombo: 0, avgHealth: 0, totalTime: 0 };
+      }
 
-    let totalScore = 0;
-    let totalCombo = 0;
-    let totalHealth = 0;
+      let totalScore = 0;
+      let totalCombo = 0;
+      let totalHealth = 0;
 
-    results.forEach(result => {
-      totalScore += result.score;
-      totalCombo += result.combo;
-      totalHealth += result.health;
-    });
+      results.forEach((result) => {
+        totalScore += result.score;
+        totalCombo += result.combo;
+        totalHealth += result.health;
+      });
 
-    const avgHealth = parseFloat((totalHealth / results.length).toFixed(2));
+      const avgHealth = parseFloat((totalHealth / results.length).toFixed(2));
 
-    return {
-      totalScore,
-      totalCombo,
-      avgHealth,
-      totalTime
-    };
-  }, []);
+      return {
+        totalScore,
+        totalCombo,
+        avgHealth,
+        totalTime,
+      };
+    },
+    []
+  );
 
   // ===== GAME LOGIC HANDLERS =====
 
@@ -606,23 +736,37 @@ export const JigsawBoard: React.FC = () => {
           // Check for completion
           const totalViolations = correctViolations.length;
           const totalActions = correctActions.length;
-          if (
+          const totalCorrectPieces = totalViolations + totalActions;
+          const allPlaced =
             updated.violations.length === totalViolations &&
-            updated.actions.length === totalActions
-          ) {
-            setTimeout(() => setIsComplete(true), 400); // slight delay for UX
+            updated.actions.length === totalActions;
+          if (allPlaced) {
+            setTimeout(() => {
+              setIsComplete(true);
+            }, 400); // slight delay for UX
           }
           return updated;
         });
         setFeedback("CRITICAL HIT! Perfect placement!");
 
-        // Calculate points per correct piece based on total correct pieces
+        // Distribute points fairly: first (remainder) pieces get +1 point
         const totalCorrectPieces =
           correctViolations.length + correctActions.length;
-        const pointsPerPiece = Math.floor(100 / totalCorrectPieces);
+        const basePoints = Math.floor(100 / totalCorrectPieces);
+        const remainder = 100 % totalCorrectPieces;
 
-        // Update total score
-        setScore((prevScore) => prevScore + pointsPerPiece);
+        // Compute the points for this placement
+        let pointsForThisPlacement = basePoints;
+        if (correctPlacementIndex < remainder) {
+          pointsForThisPlacement += 1;
+        }
+
+        setScore((prevScore) => {
+          // Cap at 100
+          const newScore = prevScore + pointsForThisPlacement;
+          return newScore > 100 ? 100 : newScore;
+        });
+        setCorrectPlacementIndex((prev) => prev + 1);
         setCombo((prev) => prev + 1);
         return { success: true };
       } else {
@@ -644,7 +788,7 @@ export const JigsawBoard: React.FC = () => {
       score,
       combo,
       health,
-      scenarioIndex
+      scenarioIndex,
     };
 
     const updatedResults = [...scenarioResults, currentResult];
@@ -663,16 +807,14 @@ export const JigsawBoard: React.FC = () => {
       setCombo(0);
       setHealth(100);
       setScore(0); // Reset score for each scenario
+      setCorrectPlacementIndex(0); // Reset placement index for new scenario
       setShowScenario(true);
     }
-  }, [
-    scenarioIndex,
-    scenarios?.length,
-    score,
-    health,
-    combo,
-    scenarioResults,
-  ]);
+  }, [scenarioIndex, scenarios?.length, score, health, combo, scenarioResults]);
+
+  // ===== PROGRESS SAVING =====
+  // Temporarily disabled auto-save to prevent infinite re-renders
+  // Auto-save will be handled by the persistence hook's interval-based approach
 
   // ===== EFFECTS =====
 
@@ -688,8 +830,18 @@ export const JigsawBoard: React.FC = () => {
     return <DeviceRotationPrompt />;
   }
 
-  // Remove loading screen and isLoading logic
-  // ===== MAIN RENDER - REDESIGNED =====
+  // Show loading screen while initializing
+  if (isInitializing) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="text-cyan-100 font-bold">Loading Game...</div>
+        </div>
+      </div>
+    );
+  }
+
   // ===== MAIN RENDER - PIXEL/RETRO STYLE =====
   return (
     <DndContext
@@ -773,16 +925,26 @@ export const JigsawBoard: React.FC = () => {
                   </span>
                 </button>
                 {/* Timer Display */}
-                <div className={`pixel-border bg-gray-900 text-cyan-200 font-mono flex items-center gap-1 ${
-                  isMobile && isHorizontal
-                    ? "px-1 py-0.5 text-xs"
-                    : "px-2 py-1"
-                }`} style={{ borderRadius: 4 }}>
-                  <Icon icon="mdi:timer-outline" className={`text-cyan-300 ${
-                    isMobile && isHorizontal ? "w-3 h-3" : "w-4 h-4"
-                  }`} />
+                <div
+                  className={`pixel-border bg-gray-900 text-cyan-200 font-mono flex items-center gap-1 ${
+                    isMobile && isHorizontal
+                      ? "px-1 py-0.5 text-xs"
+                      : "px-2 py-1"
+                  }`}
+                  style={{ borderRadius: 4 }}
+                >
+                  <Icon
+                    icon="mdi:timer-outline"
+                    className={`text-cyan-300 ${
+                      isMobile && isHorizontal ? "w-3 h-3" : "w-4 h-4"
+                    }`}
+                  />
                   <span className={isMobile && isHorizontal ? "text-xs" : ""}>
-                    {`${Math.floor(timer / 60).toString().padStart(2, "0")}:${(timer % 60).toString().padStart(2, "0")}`}
+                    {`${Math.floor(timer / 60)
+                      .toString()
+                      .padStart(2, "0")}:${(timer % 60)
+                      .toString()
+                      .padStart(2, "0")}`}
                   </span>
                 </div>
               </div>
@@ -884,7 +1046,7 @@ export const JigsawBoard: React.FC = () => {
                         isMobile && isHorizontal ? "text-xs" : "text-base"
                       }`}
                     >
-                      {score.toString().padStart(4, "0")}
+                      {score}
                     </span>
                   </div>
                   <div
@@ -1079,7 +1241,7 @@ export const JigsawBoard: React.FC = () => {
               >
                 <VictoryPopup
                   onClose={handleVictoryClose}
-                  score={score}
+                  score={Number(score)}
                   health={health}
                   combo={combo}
                   open={true}
@@ -1102,31 +1264,53 @@ export const JigsawBoard: React.FC = () => {
                 <FinalStatsPopup
                   scenarioResults={scenarioResults}
                   overallStats={calculateOverallStats(scenarioResults, timer)}
-                  currentModule={currentModule}
+                  currentModule={
+                    typeof currentModule === "object" &&
+                    currentModule !== null &&
+                    "id" in currentModule
+                      ? (currentModule as any).id
+                      : currentModule
+                  }
                   getTopThreeBestScores={safeGetTopThreeBestScores}
                   onClose={async () => {
                     // Save game completion data to database
-                    const overallStats = calculateOverallStats(scenarioResults, timer);
+                    const overallStats = calculateOverallStats(
+                      scenarioResults,
+                      timer
+                    );
 
                     // Calculate final score (same logic as in FinalStatsPopup)
                     const maxPossibleScore = scenarioResults.length * 100;
                     const maxPossibleCombo = scenarioResults.length * 5;
                     const maxHealth = 100;
-                    const scorePart = Math.round((overallStats.totalScore / maxPossibleScore) * 70);
-                    const comboPart = Math.round((overallStats.totalCombo / maxPossibleCombo) * 20);
-                    const healthPart = Math.round((overallStats.avgHealth / maxHealth) * 10);
-                    const finalScore = Math.min(scorePart + comboPart + healthPart, 100);
+                    const scorePart = Math.round(
+                      (overallStats.totalScore / maxPossibleScore) * 70
+                    );
+                    const comboPart = Math.round(
+                      (overallStats.totalCombo / maxPossibleCombo) * 20
+                    );
+                    const healthPart = Math.round(
+                      (overallStats.avgHealth / maxHealth) * 10
+                    );
+                    const finalScore = Math.min(
+                      scorePart + comboPart + healthPart,
+                      100
+                    );
 
                     try {
                       // Get module ID for saving
                       let moduleId: string = "1"; // default
-                      if (typeof currentModule === "object" && currentModule !== null && "id" in currentModule) {
+                      if (
+                        typeof currentModule === "object" &&
+                        currentModule !== null &&
+                        "id" in currentModule
+                      ) {
                         moduleId = (currentModule as any).id.toString();
                       } else if (typeof currentModule === "number") {
                         moduleId = (currentModule as number).toString();
                       }
 
-                      console.log('🎯 Attempting to save Level 3 completion:', {
+                      console.log("🎯 Attempting to save Level 3 completion:", {
                         user: user ? { id: user.id, email: user.email } : null,
                         moduleId,
                         scenarioIndex: scenarioResults.length - 1,
@@ -1134,7 +1318,7 @@ export const JigsawBoard: React.FC = () => {
                         totalScore: overallStats.totalScore, // Raw total for reference
                         timer,
                         scenarioResults: scenarioResults.length,
-                        serviceError
+                        serviceError,
                       });
 
                       const result = await saveGameCompletion(
@@ -1146,25 +1330,31 @@ export const JigsawBoard: React.FC = () => {
                           scenarioResults,
                           rawTotalScore: overallStats.totalScore, // Keep raw score for reference
                           calculatedScore: finalScore,
-                          scoreParts: { scorePart, comboPart, healthPart }
+                          scoreParts: { scorePart, comboPart, healthPart },
                         }, // Enhanced placed pieces data
                         true // isCompleted
                       );
 
-                      console.log('💾 Save result:', result);
+                      console.log("💾 Save result:", result);
 
                       if (result.success) {
-                        console.log('✅ Game completion data saved successfully', {
-                          isNewHighScore: result.isNewHighScore,
-                          finalScore: finalScore, // Correct final score (90/100)
-                          rawTotalScore: overallStats.totalScore, // Raw total for reference
-                          totalTime: timer
-                        });
+                        console.log(
+                          "✅ Game completion data saved successfully",
+                          {
+                            isNewHighScore: result.isNewHighScore,
+                            finalScore: finalScore, // Correct final score (90/100)
+                            rawTotalScore: overallStats.totalScore, // Raw total for reference
+                            totalTime: timer,
+                          }
+                        );
                       } else {
-                        console.error('❌ Failed to save game completion data:', result);
+                        console.error(
+                          "❌ Failed to save game completion data:",
+                          result
+                        );
                       }
                     } catch (error) {
-                      console.error('💥 Exception during save:', error);
+                      console.error("💥 Exception during save:", error);
                     }
 
                     setShowFinalStats(false);
@@ -1184,6 +1374,27 @@ export const JigsawBoard: React.FC = () => {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Continue Game Dialog (temporarily disabled) */}
+      {/* <AnimatePresence>
+        {showContinueDialog && (
+          <ContinueGameDialog
+            isOpen={showContinueDialog}
+            onClose={() => setShowContinueDialog(false)}
+            onContinue={handleContinueGame}
+            onStartNew={handleStartNewGame}
+            progressSummary={null}
+            isLoading={false}
+          />
+        )}
+      </AnimatePresence> */}
+
+      {/* Performance Test - development only */}
+      {process.env.NODE_ENV === "development" && (
+        <>
+          {/* <PerformanceTest /> */}
+        </>
+      )}
 
       {/* Debug Component - temporarily disabled */}
       {/* {process.env.NODE_ENV === 'development' && <Level3Debug />} */}

@@ -7,73 +7,25 @@ import { useAuth } from "../../contexts/AuthContext";
 import { LevelProgressService } from "../../services/levelProgressService";
 import { useLevelProgress } from "../../hooks/useLevelProgress";
 
+// Unified Popup Component Interface
 interface PopupProps {
   open: boolean;
   onClose: () => void;
-  hideClose?: boolean;
-  children: React.ReactNode;
-}
 
-export const Popup: React.FC<PopupProps> = ({
-  open,
-  onClose,
-  hideClose = false,
-  children,
-}) => {
-  const { isMobile, isHorizontal } = useDeviceLayout();
-  const isMobileHorizontal = isMobile && isHorizontal;
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-        >
-          <div
-            className={`pixel-border-thick bg-gradient-to-br from-gray-900 to-gray-800 shadow-xl flex flex-col items-stretch relative ${
-              isMobileHorizontal
-                ? "w-[95vw] max-w-[360px] min-h-[120px] p-2"
-                : "w-[420px] max-w-[96vw] p-6"
-            }`}
-            style={{
-              borderRadius: 0,
-              maxWidth: isMobileHorizontal ? "95vw" : "420px",
-              minHeight: isMobileHorizontal ? "120px" : undefined,
-              boxShadow: "0 8px 32px 0 rgba(0,0,0,0.45)",
-            }}
-          >
-            {/* Close button, always top right, never overlaps content */}
-            {!hideClose && (
-              <button
-                onClick={onClose}
-                className="absolute top-2 right-2 z-10 pixel-border bg-red-700 hover:bg-red-600 text-white font-bold px-2 py-1 pixel-text text-xs transition-all duration-150 active:scale-95"
-                aria-label="Close"
-                style={{ borderRadius: 0 }}
-              >
-                <Icon icon="mdi:close" className="w-4 h-4" />
-              </button>
-            )}
-            {/* Main content, with consistent padding and spacing */}
-            <div className="flex flex-col items-center w-full px-2 py-1 sm:px-4 sm:py-2">
-              {children}
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
+  // Generic popup props
+  children?: React.ReactNode;
+  showNavigation?: boolean;
+  onBack?: () => void;
+  onContinue?: () => void;
+  continueText?: string;
+  backText?: string;
 
-interface VictoryPopupProps {
-  open: boolean;
-  onClose: () => void;
-  score: number;
-  combo: number;
-  health: number;
-  highScore?: number; // Add high score property
+  // Victory popup props
+  variant?: 'generic' | 'victory';
+  score?: number;
+  combo?: number;
+  health?: number;
+  highScore?: number;
   showNext?: boolean;
   isLevelCompleted?: boolean;
   showGoToModules?: boolean;
@@ -82,14 +34,24 @@ interface VictoryPopupProps {
   moduleId?: string;
 }
 
-export const VictoryPopup: React.FC<VictoryPopupProps> = ({
+// Unified Popup Component
+export const Popup: React.FC<PopupProps> = ({
   open,
   onClose,
-  score,
-  combo,
-  health,
-  highScore,
-  showNext = false,
+  children,
+  showNavigation = false,
+  onBack,
+  onContinue,
+  continueText = "Continue",
+  backText = "Back",
+
+  // Victory props
+  variant = 'generic',
+  score = 0,
+  combo = 0,
+  health = 0,
+  highScore: _highScore,
+  showNext: _showNext = false,
   isLevelCompleted = false,
   showGoToModules = true,
   showReset = false,
@@ -101,7 +63,9 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
-  const { refreshProgress } = useLevelProgress(moduleId ? parseInt(moduleId) : undefined);
+  const { refreshProgress } = useLevelProgress(
+    moduleId ? parseInt(moduleId) : undefined
+  );
 
   // Navigation handlers
   const handleGoToLevels = useCallback(() => {
@@ -116,128 +80,454 @@ export const VictoryPopup: React.FC<VictoryPopupProps> = ({
       navigate("/modules");
     }
   }, [moduleId, navigate]);
-  const handleNext = useCallback(() => { onClose(); }, [onClose]);
-  const handleReset = useCallback(() => { if (onReset) onReset(); }, [onReset]);
 
-  // Progress update effect
+  const handleNext = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const handleReset = useCallback(() => {
+    if (onReset) onReset();
+  }, [onReset]);
+
+  const handleBack = () => {
+    if (onBack) onBack();
+  };
+
+  const handleContinue = () => {
+    if (onContinue) onContinue();
+  };
+
+  // Progress update effect (only for victory variant)
   useEffect(() => {
     const updateLevelProgress = async () => {
-      if (!open || !user || !isLevelCompleted || !moduleId || isUpdatingProgress) return;
+      if (
+        variant !== 'victory' ||
+        !open ||
+        !user ||
+        !isLevelCompleted ||
+        !moduleId ||
+        isUpdatingProgress
+      )
+        return;
       setIsUpdatingProgress(true);
       try {
-        const { error } = await LevelProgressService.completeLevel(user.id, parseInt(moduleId), 3);
+        const { error } = await LevelProgressService.completeLevel(
+          user.id,
+          parseInt(moduleId),
+          3
+        );
         if (!error) await refreshProgress();
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error updating level progress:', error);
+        console.error("Error updating level progress:", error);
       } finally {
         setIsUpdatingProgress(false);
       }
     };
     updateLevelProgress();
-  }, [open, user, isLevelCompleted, moduleId, isUpdatingProgress, refreshProgress]);
-  useEffect(() => { if (!open) setIsUpdatingProgress(false); }, [open]);
+  }, [
+    variant,
+    open,
+    user,
+    isLevelCompleted,
+    moduleId,
+    isUpdatingProgress,
+    refreshProgress,
+  ]);
 
-  // --- Horizontal Layout ---
+  useEffect(() => {
+    if (!open) setIsUpdatingProgress(false);
+  }, [open]);
+
+  // Determine styling based on variant
+  const isVictory = variant === 'victory';
+
   return (
-    <Popup open={open} onClose={onClose} hideClose={showReset}>
-      <div
-        className={`flex flex-row items-center justify-center mx-auto text-white w-full ${isMobileHorizontal ? "scale-95 max-w-[370px] min-w-[320px] px-1" : "max-w-[600px] min-w-[420px] px-4"}`}
-        style={isMobileHorizontal ? { fontSize: "0.95rem", gap: "0.5rem" } : { gap: "1.5rem" }}
-      >
-        {/* Left: Character and Stars */}
-        <div className="flex flex-col items-center justify-center flex-shrink-0 py-2 px-2 min-w-[120px] max-w-[160px] h-full">
-          {/* Banner above character */}
-          <div className="relative flex flex-col items-center mb-2 w-full">
-            <span className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-pink-400 text-yellow-900 font-black px-4 py-1 rounded-md shadow-lg text-lg sm:text-xl tracking-wider animate-bounce-slow select-none">
-              {isLevelCompleted ? "LEVEL UP!" : "VICTORY!"}
-            </span>
-            <span className="absolute -top-7 left-1/2 -translate-x-1/2">
-              <Icon icon="mdi:trophy-variant-outline" className="text-yellow-400 drop-shadow-lg" width={isMobileHorizontal ? 28 : 36} height={isMobileHorizontal ? 28 : 36} />
-            </span>
-          </div>
-          {/* Pixel stars */}
-          <div className="flex flex-row items-end justify-center gap-1 w-full mb-1">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className={`inline-block pixel-dot ${i === 1 ? "bg-yellow-400" : "bg-blue-400"} rounded-sm shadow-lg`}
-                style={{ width: i === 1 ? 18 : 12, height: i === 1 ? 18 : 12, margin: 2 }}
-              />
-            ))}
-          </div>
-          <img
-            src="/characters/chara.webp"
-            alt="Worker Character"
-            className={`object-contain mx-auto pixel-border mt-1 ${isMobileHorizontal ? "w-[70px] h-[54px]" : "w-[100px] h-[80px]"}`}
-            style={{ borderRadius: "10px", background: "#232323" }}
-          />
-        </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+        >
+          <motion.div
+            className={`pixel-border-thick bg-gradient-to-br from-gray-900 via-indigo-900 to-blue-900 text-cyan-100 shadow-2xl relative overflow-hidden ${
+              isMobileHorizontal
+                ? "w-[98vw] max-w-[500px] p-2 max-h-[85vh] overflow-y-auto"
+                : isMobile
+                ? "w-[95vw] max-w-[380px] p-3 max-h-[90vh] overflow-y-auto"
+                : "w-[600px] max-w-[90vw] p-6"
+            }`}
+            style={{ borderRadius: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+          >
+            {/* Scan Lines Effect */}
+            <div className="absolute inset-0 bg-scan-lines opacity-20 pointer-events-none z-0"></div>
 
-        {/* Right: Stats, Message, Buttons */}
-        <div className="flex flex-col flex-1 items-center justify-center text-center py-2 px-2 gap-3 min-w-0">
-          {/* Stats Section */}
-          <div className="flex flex-row items-end justify-center gap-8 w-full">
-            <div className="flex flex-col items-center min-w-[70px]">
-              <span className="pixel-dot bg-yellow-400 w-4 h-4 inline-block rounded-sm mb-1" />
-              <span className="font-black text-yellow-200 pixel-text text-base">Score</span>
-              <span className="font-black text-yellow-100 text-lg pixel-border bg-gray-900 px-3 py-1 rounded-md mt-1">{score}</span>
-            </div>
-            <div className="flex flex-col items-center min-w-[70px]">
-              <span className="pixel-dot bg-blue-400 w-4 h-4 inline-block rounded-sm mb-1" />
-              <span className="font-black text-blue-200 pixel-text text-base">Combo</span>
-              <span className="font-black text-blue-100 text-lg pixel-border bg-gray-900 px-3 py-1 rounded-md mt-1">{combo}</span>
-            </div>
-            <div className="flex flex-col items-center min-w-[70px]">
-              <span className="pixel-dot bg-pink-400 w-4 h-4 inline-block rounded-sm mb-1" />
-              <span className="font-black text-pink-200 pixel-text text-base">Health</span>
-              <span className="font-black text-pink-100 text-lg pixel-border bg-gray-900 px-3 py-1 rounded-md mt-1">{health}</span>
-            </div>
-          </div>
+            {/* Victory-specific pixel effects */}
+            {isVictory && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* Grid Pattern */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
+                  <div className="grid-pattern"></div>
+                </div>
 
-
-
-          {/* Action Buttons */}
-          <div className="flex flex-row flex-wrap justify-center gap-3 w-full">
-            {showGoToModules && (
-              <button
-                className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black rounded flex items-center gap-2 px-5 py-2 pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px] shadow-lg"
-                onClick={handleGoToLevels}
-                aria-label="Back to Levels"
-                type="button"
-                style={{ fontSize: isMobileHorizontal ? 15 : 17 }}
-              >
-                <Icon icon="mdi:home-map-marker" className="w-5 h-5" />
-                Back to Levels
-              </button>
+                {/* Pixel Particles */}
+                {[...Array(8)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-cyan-400 pixel-dot opacity-60"
+                    style={{
+                      left: `${15 + i * 12}%`,
+                      top: `${15 + (i % 4) * 20}%`,
+                    }}
+                    animate={{
+                      y: [-8, 8, -8],
+                      opacity: [0.3, 0.8, 0.3],
+                      scale: [0.8, 1.2, 0.8],
+                    }}
+                    transition={{
+                      duration: 2 + i * 0.3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </div>
             )}
-            {!isLevelCompleted && (
-              <button
-                className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black rounded flex items-center gap-2 px-5 py-2 pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px] shadow-lg"
-                onClick={handleNext}
-                aria-label="Next"
-                type="button"
-                style={{ fontSize: isMobileHorizontal ? 15 : 17 }}
-              >
-                Next
-                <Icon icon="mdi:arrow-right-bold" className="w-5 h-5" />
-              </button>
-            )}
-            {showReset && onReset && (
-              <button
-                className="pixel-border-thick bg-gradient-to-r from-red-500 to-pink-500 text-white font-black rounded flex items-center gap-2 px-5 py-2 pixel-text hover:from-red-400 hover:to-pink-400 transition-all duration-200 active:translate-y-[2px] shadow-lg"
-                onClick={handleReset}
-                aria-label="Reset Level"
-                type="button"
-                style={{ fontSize: isMobileHorizontal ? 15 : 17 }}
-              >
-                <Icon icon="mdi:refresh" className="w-5 h-5" />
-                Reset Level
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </Popup>
+
+            {/* Close Button - Pixel Style */}
+            <button
+              onClick={e => { e.stopPropagation(); onClose(); }}
+              className={`fixed md:absolute top-2 right-2 z-50 pixel-border bg-gray-800 hover:bg-gray-700 text-cyan-100 flex items-center justify-center transition-all duration-150 active:scale-95 ${
+                isMobile ? "w-6 h-6" : "w-8 h-8"
+              }`}
+              style={{ borderRadius: 0 }}
+              aria-label="Close popup"
+            >
+              <Icon icon="mdi:close" className={`${isMobile ? "w-3 h-3" : "w-4 h-4"}`} />
+            </button>
+
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col h-full">
+              {isVictory ? (
+                /* Victory Content - Pixel/Retro Style */
+                <>
+                  {/* Header Section */}
+                  <motion.div
+                    className={`text-center ${isMobile ? "mb-3" : "mb-4"}`}
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    {/* Victory Icon - Pixel Style */}
+                    <motion.div
+                      className={`mx-auto mb-2 flex items-center justify-center ${
+                        isMobileHorizontal ? 'w-12 h-12' : isMobile ? 'w-16 h-16' : 'w-20 h-20'
+                      } pixel-border bg-yellow-600/20`}
+                      style={{ borderRadius: 0 }}
+                      animate={{
+                        scale: [1, 1.05, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <Icon
+                        icon="game-icons:trophy"
+                        className={`text-yellow-300 ${
+                          isMobileHorizontal ? 'w-8 h-8' : isMobile ? 'w-10 h-10' : 'w-12 h-12'
+                        }`}
+                        style={{
+                          filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.8))',
+                        }}
+                      />
+                    </motion.div>
+
+                    {/* Victory Title - Pixel Text */}
+                    <motion.h2
+                      className={`pixel-text font-black text-yellow-200 tracking-wider ${
+                        isMobileHorizontal ? 'text-lg' : isMobile ? 'text-xl' : 'text-2xl'
+                      }`}
+                      animate={{
+                        textShadow: [
+                          '0 0 10px rgba(251, 191, 36, 0.5)',
+                          '0 0 20px rgba(251, 191, 36, 0.8)',
+                          '0 0 10px rgba(251, 191, 36, 0.5)',
+                        ],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      MISSION COMPLETE!
+                    </motion.h2>
+
+                    {isLevelCompleted && (
+                      <motion.p
+                        className={`text-cyan-200 font-bold ${
+                          isMobileHorizontal ? 'text-xs' : isMobile ? 'text-sm' : 'text-base'
+                        }`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5, duration: 0.5 }}
+                      >
+                        Scenario Cleared Successfully!
+                      </motion.p>
+                    )}
+                  </motion.div>
+
+                  {/* Stats Section - Pixel Style */}
+                  <motion.div
+                    className={`flex-1 ${isMobile ? "space-y-2" : "space-y-3"}`}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                  >
+                    {/* Score Display - Pixel Borders */}
+                    <div className={`pixel-border bg-gray-800/60 ${isMobile ? "p-2" : "p-3"}`} style={{ borderRadius: 0 }}>
+                      <div className={`grid grid-cols-3 ${isMobile ? "gap-2" : "gap-4"} text-center`}>
+                        {/* Score */}
+                        <div className={`pixel-border bg-blue-800/80 ${isMobile ? "p-1.5" : "p-2"}`} style={{ borderRadius: 0 }}>
+                          <div className={`text-blue-200 font-bold mb-1 ${
+                            isMobileHorizontal ? 'text-[8px]' : isMobile ? 'text-xs' : 'text-sm'
+                          }`}>
+                            SCORE
+                          </div>
+                          <motion.div
+                            className={`text-blue-100 font-black pixel-text ${
+                              isMobileHorizontal ? 'text-sm' : isMobile ? 'text-base' : 'text-lg'
+                            }`}
+                            animate={{
+                              scale: [1, 1.05, 1],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          >
+                            {score}
+                          </motion.div>
+                        </div>
+
+                        {/* Combo */}
+                        <div className={`pixel-border bg-yellow-700/80 ${isMobile ? "p-1.5" : "p-2"}`} style={{ borderRadius: 0 }}>
+                          <div className={`text-yellow-200 font-bold mb-1 ${
+                            isMobileHorizontal ? 'text-[8px]' : isMobile ? 'text-xs' : 'text-sm'
+                          }`}>
+                            COMBO
+                          </div>
+                          <motion.div
+                            className={`text-yellow-100 font-black pixel-text ${
+                              isMobileHorizontal ? 'text-sm' : isMobile ? 'text-base' : 'text-lg'
+                            }`}
+                            animate={{
+                              scale: [1, 1.05, 1],
+                            }}
+                            transition={{
+                              duration: 2,
+                              delay: 0.2,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          >
+                            {combo}x
+                          </motion.div>
+                        </div>
+
+                        {/* Health */}
+                        <div className={`pixel-border bg-fuchsia-900/80 ${isMobile ? "p-1.5" : "p-2"}`} style={{ borderRadius: 0 }}>
+                          <div className={`text-pink-200 font-bold mb-1 ${
+                            isMobileHorizontal ? 'text-[8px]' : isMobile ? 'text-xs' : 'text-sm'
+                          }`}>
+                            HEALTH
+                          </div>
+                          <motion.div
+                            className={`text-pink-100 font-black pixel-text ${
+                              isMobileHorizontal ? 'text-sm' : isMobile ? 'text-base' : 'text-lg'
+                            }`}
+                            animate={{
+                              scale: [1, 1.05, 1],
+                            }}
+                            transition={{
+                              duration: 2,
+                              delay: 0.4,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          >
+                            {health}
+                          </motion.div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Achievement Badge - Pixel Style */}
+                    {isLevelCompleted && (
+                      <motion.div
+                        className={`pixel-border bg-purple-800/60 text-center ${isMobile ? "p-2" : "p-3"}`}
+                        style={{ borderRadius: 0 }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          delay: 0.8,
+                          type: "spring",
+                          stiffness: 200,
+                          damping: 15
+                        }}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <Icon
+                            icon="game-icons:achievement"
+                            className={`text-purple-300 ${
+                              isMobileHorizontal ? 'w-3 h-3' : isMobile ? 'w-4 h-4' : 'w-5 h-5'
+                            }`}
+                          />
+                          <span className={`text-purple-200 font-bold pixel-text ${
+                            isMobileHorizontal ? 'text-xs' : 'text-sm'
+                          }`}>
+                            SCENARIO MASTERED
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Progress Update Indicator - Pixel Style */}
+                    {isUpdatingProgress && (
+                      <motion.div
+                        className={`pixel-border bg-blue-800/60 text-center ${isMobile ? "p-2" : "p-3"}`}
+                        style={{ borderRadius: 0 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <motion.div
+                            className="w-4 h-4 border-2 border-blue-400 border-t-transparent pixel-dot"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          />
+                          <span className={`text-blue-300 font-semibold pixel-text ${
+                            isMobileHorizontal ? 'text-xs' : 'text-sm'
+                          }`}>
+                            UPDATING PROGRESS...
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+
+                  {/* Victory Action Buttons - Pixel Style */}
+                  <motion.div
+                    className={`${isMobile ? "space-y-2 mt-3" : "space-y-3 mt-4"}`}
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                  >
+                    {/* Primary Actions */}
+                    <div className="flex gap-2 flex-row justify-center">
+                      {/* Continue/Next Button */}
+                      <button
+                        className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-2 ${
+                          isMobile ? "px-4 py-2 text-sm" : "px-6 py-3"
+                        }`}
+                        style={{ borderRadius: 0 }}
+                        onClick={handleNext}
+                        aria-label="Continue"
+                      >
+                        <Icon icon="game-icons:play-button" className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
+                        CONTINUE
+                      </button>
+
+                      {/* Go to Levels Button */}
+                      {showGoToModules && (
+                        <button
+                          className={`pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-2 ${
+                            isMobile ? "px-4 py-2 text-sm" : "px-6 py-3"
+                          }`}
+                          style={{ borderRadius: 0 }}
+                          onClick={handleGoToLevels}
+                          aria-label="Go to Levels"
+                        >
+                          <Icon icon="mdi:home-map-marker" className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
+                          LEVELS
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Secondary Actions */}
+                    <div className="flex gap-2">
+                      {/* Reset Button */}
+                      {showReset && onReset && (
+                        <button
+                          className={`flex-1 pixel-border bg-red-700/80 hover:bg-red-600/80 text-white font-bold pixel-text transition-all duration-200 active:translate-y-[1px] flex items-center justify-center gap-2 ${
+                            isMobile ? "px-3 py-2 text-xs" : "px-4 py-2 text-sm"
+                          }`}
+                          style={{ borderRadius: 0 }}
+                          onClick={handleReset}
+                          aria-label="Reset"
+                        >
+                          <Icon icon="game-icons:restart" className="w-4 h-4" />
+                          RESET
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                </>
+              ) : (
+                /* Generic Content - Pixel Style */
+                <>
+                  <div className="flex-1 overflow-y-auto">
+                    {children}
+                  </div>
+
+                  {/* Generic Navigation Buttons - Pixel Style */}
+                  {showNavigation && (
+                    <div className={`flex gap-2 ${isMobile ? "mt-3 pt-3" : "mt-4 pt-4"} border-t border-cyan-400/30`}>
+                      {onBack && (
+                        <button
+                          onClick={handleBack}
+                          className={`flex-1 pixel-border bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold pixel-text transition-all duration-200 active:translate-y-[1px] ${
+                            isMobile ? "px-3 py-2 text-xs" : "px-4 py-2 text-sm"
+                          }`}
+                          style={{ borderRadius: 0 }}
+                        >
+                          {backText}
+                        </button>
+                      )}
+                      {onContinue && (
+                        <button
+                          onClick={handleContinue}
+                          className={`flex-1 pixel-border bg-blue-700/80 hover:bg-blue-600/80 text-white font-bold pixel-text transition-all duration-200 active:translate-y-[1px] ${
+                            isMobile ? "px-3 py-2 text-xs" : "px-4 py-2 text-sm"
+                          }`}
+                          style={{ borderRadius: 0 }}
+                        >
+                          {continueText}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
-}
+};
+
+// Export VictoryPopup as an alias for backward compatibility
+export const VictoryPopup: React.FC<PopupProps> = (props) => (
+  <Popup {...props} variant="victory" />
+);

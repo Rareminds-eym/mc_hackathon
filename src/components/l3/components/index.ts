@@ -5,3 +5,7 @@ export * from './Arsenal';
 export * from './FeedbackConsole';
 export * from './DeviceRotationPrompt';
 export * from './LoadingState';
+export * from './ContinueGameDialog';
+export * from './PerformanceMonitor';
+export * from './PerformanceTest';
+export * from './GameActionsDemo';
