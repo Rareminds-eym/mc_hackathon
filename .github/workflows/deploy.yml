@@ -35,10 +35,10 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "dist/*"
+          source: "dist/."
           target: "/home/ubuntu/gmp-temp"
 
-      - name: Move build to /var/www with sudo
+      - name: Move build to /var/www/gmp with sudo
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
