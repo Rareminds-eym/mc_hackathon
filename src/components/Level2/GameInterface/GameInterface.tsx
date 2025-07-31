@@ -406,23 +406,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ gameMode, moduleId, onBac
           </div>
         )}
         <div className={`relative z-10 ${isMobile ? 'h-screen flex flex-col p-1' : 'max-w-7xl mx-auto p-3 md:p-6'}`}>
-          {/* Data Restoration Notification */}
-          {dataRestored && (
-            <div className="mb-3 bg-green-800 border-2 border-green-400 text-green-100 px-4 py-2 pixel-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="font-bold pixel-text text-sm">
-                    📦 GAME PROGRESS RESTORED
-                  </span>
-                </div>
-                <div className="text-xs pixel-text">
-                  {restoredCount} placement{restoredCount !== 1 ? 's' : ''} restored
-                </div>
-              </div>
-            </div>
-          )}
-
+          
           {isMobile ? (
             <MobileLayout {...layoutProps} />
           ) : (
