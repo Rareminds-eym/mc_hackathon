@@ -29,22 +29,27 @@ jobs:
       - name: Build React app
         run: npm run build
 
-      - name: Upload build to EC2
+      - name: Archive build folder into tar
+        run: tar -czf build.tar.gz -C dist .
+
+      - name: Upload tar to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "dist/."
-          target: "/home/ubuntu/gmp-temp"
+          source: "build.tar.gz"
+          target: "/home/ubuntu"
 
-      - name: Move build to /var/www/gmp with sudo
+      - name: Extract and move files on EC2 with sudo
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            mkdir -p /home/ubuntu/gmp-temp
+            tar -xzf /home/ubuntu/build.tar.gz -C /home/ubuntu/gmp-temp
             sudo rm -rf /var/www/gmp/*
             sudo mv /home/ubuntu/gmp-temp/* /var/www/gmp/
-            sudo rm -rf /home/ubuntu/gmp-temp
+            rm -rf /home/ubuntu/build.tar.gz /home/ubuntu/gmp-temp
