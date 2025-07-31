@@ -1,0 +1,55 @@
+name: Deploy to EC2 on production branch push
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Create .env file
+        run: |
+          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env
+          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Archive build folder into tar
+        run: tar -czf build.tar.gz -C dist .
+
+      - name: Upload tar to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "build.tar.gz"
+          target: "/home/ubuntu"
+
+      - name: Extract and move files on EC2 with sudo
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            mkdir -p /home/ubuntu/gmp-temp
+            tar -xzf /home/ubuntu/build.tar.gz -C /home/ubuntu/gmp-temp
+            sudo rm -rf /var/www/gmp/*
+            sudo mv /home/ubuntu/gmp-temp/* /var/www/gmp/
+            rm -rf /home/ubuntu/build.tar.gz /home/ubuntu/gmp-temp
