@@ -29,11 +29,22 @@ jobs:
       - name: Build React app
         run: npm run build
 
-      - name: Deploy to EC2 via SCP
+      - name: Upload build to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "dist/"
-          target: "/var/www/gmp/"
+          target: "/home/ubuntu/gmp-temp"
+
+      - name: Move build to /var/www with sudo
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo rm -rf /var/www/gmp/*
+            sudo mv /home/ubuntu/gmp-temp/* /var/www/gmp/
+            sudo rm -rf /home/ubuntu/gmp-temp
