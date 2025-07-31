@@ -6,6 +6,7 @@ import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
 import { motion } from "framer-motion";
 import { useDeviceLayout } from "../hooks/useOrientation";
+import { useGameUnlock } from "../hooks/useGameUnlock";
 
 // Avatar options for modal
 const AVATAR_OPTIONS = [
@@ -57,6 +58,9 @@ const HomeScreen: React.FC = () => {
   const { user, logout } = useAuth(); // Get user and logout
   const [profileOpen, setProfileOpen] = useState(false);
   const layout = useDeviceLayout();
+
+  // Game unlock functionality
+  const { isGameLocked, isLoading } = useGameUnlock();
 
   // Avatar selection state, default to Intern 1, load from localStorage if available
   const [avatar, setAvatar] = useState<string>(
@@ -376,6 +380,65 @@ const HomeScreen: React.FC = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Game Lock Overlay */}
+      {!isLoading && isGameLocked && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div
+            className="text-center p-8 bg-white/10 rounded-2xl shadow-xl max-w-md mx-4 backdrop-blur-lg border border-white/20"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2, type: "spring" }}
+          >
+            <motion.div
+              className="mb-6"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.4, type: "spring", bounce: 0.6 }}
+            >
+              <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                <Icon
+                  icon="mdi:lock"
+                  className="w-12 h-12 text-white"
+                />
+              </div>
+              <motion.h1
+                className="text-3xl font-bold text-white mb-2 drop-shadow-lg"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+              >
+                Game Locked
+              </motion.h1>
+              <motion.p
+                className="text-white/90 text-lg"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+              >
+                The game is currently locked. Please wait for it to be unlocked.
+              </motion.p>
+            </motion.div>
+            <motion.div
+              className="space-y-4"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 1 }}
+            >
+              <div className="flex justify-center space-x-1">
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };
