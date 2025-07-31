@@ -8,6 +8,7 @@ import { GameTypeResult } from '../hooks/useScoreAccumulator';
 import { useLevel2Game } from '../hooks/useLevel2Game';
 import { getGameModesByModuleAndType } from '../data/gameModes';
 import { useDeviceLayout } from '../../../hooks/useOrientation';
+import { GameStorage } from '../../../utils/Level2/gameStorage';
 
 
 interface ResultsModalProps {
@@ -61,6 +62,39 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
     gameModeId: _gameModeId || 'default'
   });
 
+  // Clear localStorage immediately when ResultsModal becomes visible
+  useEffect(() => {
+    if (showResults) {
+      // List current localStorage keys before clearing
+      GameStorage.listAllRelevantKeys();
+
+      // Clear all saved game states for this module since data will be/is saved to Supabase
+      GameStorage.clearAllLevel2GameStatesForModule(moduleId.toString());
+
+      // Clear ALL term placement results for all games (as requested)
+      GameStorage.clearAllTermPlacementResults();
+
+      // Clear quest stats (as requested) with enhanced debugging
+      // First attempt with regular clear
+      GameStorage.clearQuestStats();
+
+      // Verify if the key was actually removed
+      const questStatsStillExists = localStorage.getItem('gmp-quest-stats') !== null;
+      if (questStatsStillExists) {
+        GameStorage.forceClearQuestStats();
+
+        // Final verification
+        const finalCheck = localStorage.getItem('gmp-quest-stats') !== null;
+        if (finalCheck) {
+          // Quest stats key still exists even after force clear
+        }
+      }
+
+      // List remaining keys after clearing
+      GameStorage.listAllRelevantKeys();
+    }
+  }, [showResults, moduleId]);
+
   // Batch process all accumulated results when modal becomes visible
   useEffect(() => {
     const batchProcessResults = async () => {
@@ -68,7 +102,6 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
         return;
       }
 
-      console.log('ResultsModal: Starting batch processing of accumulated results:', accumulatedResults);
       setHasBatchProcessed(true);
       setIsBatchProcessing(true);
 
@@ -86,8 +119,6 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
         // Check if all game types were completed
         const allCompleted = accumulatedResults.every(result => result.isCompleted);
 
-        console.log(`ResultsModal: Saving aggregated total - Score: ${totalScore}, Time: ${totalTime}, Terms: ${totalTerms}, Completed: ${allCompleted}`);
-
         // Save a single aggregated "Total" record instead of individual game type records
         await saveGameDataWithHistory({
           score: totalScore,
@@ -96,10 +127,8 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
           totalTerms: totalTerms,
           placedTerms: allPlacedTerms,
         });
-
-        console.log('ResultsModal: Batch processing completed successfully with aggregated total');
       } catch (error) {
-        console.error('ResultsModal: Error during batch processing:', error);
+        // Error during batch processing
       } finally {
         setIsBatchProcessing(false);
       }
@@ -119,48 +148,26 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
   // Update level progress when modal becomes visible and game is completed
   useEffect(() => {
     const updateLevelProgress = async () => {
-      console.log('ResultsModal: useEffect triggered', {
-        showResults,
-        user: user?.id,
-        moduleId,
-        levelId,
-        score,
-        hasUpdatedProgress
-      });
-
       if (!showResults || !user || hasUpdatedProgress) {
-        console.log('ResultsModal: Skipping update due to conditions:', {
-          showResults,
-          hasUser: !!user,
-          hasUpdatedProgress,
-          score
-        });
         return;
       }
 
-      console.log('ResultsModal: Starting level progress update...');
       setHasUpdatedProgress(true);
       try {
-        const { data, error } = await LevelProgressService.completeLevel(
+        const { error } = await LevelProgressService.completeLevel(
           user.id,
           moduleId,
           levelId
         );
 
         if (error) {
-          console.error('ResultsModal: Failed to update level progress:', error);
+          // Failed to update level progress
         } else {
-          console.log('ResultsModal: Successfully updated level progress:', {
-            moduleId,
-            levelId,
-            userId: user.id,
-            data
-          });
           // Refresh the level progress to update UI with newly unlocked levels
           await refreshProgress();
         }
       } catch (error) {
-        console.error('ResultsModal: Error updating level progress:', error);
+        // Error updating level progress
       }
     };
 
@@ -173,6 +180,9 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
       setHasUpdatedProgress(false);
     }
   }, [showResults]);
+
+  // Note: localStorage cleanup is now handled immediately when modal opens
+  // since the data is being saved to Supabase database at that point
 
 
 
@@ -254,7 +264,6 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
   const handleSafeNavigation = async (navigationCallback: () => void) => {
     // If batch processing is still in progress, wait for it to complete
     if (isBatchProcessing) {
-      console.log('ResultsModal: Waiting for batch processing to complete before navigation...');
       // Wait for batch processing to complete (with timeout)
       let attempts = 0;
       const maxAttempts = 50; // 5 seconds max wait
@@ -264,9 +273,7 @@ const ResultsModal: React.FC<ResultsModalProps> = ({
       }
 
       if (attempts >= maxAttempts) {
-        console.warn('ResultsModal: Batch processing timeout, proceeding with navigation anyway');
-      } else {
-        console.log('ResultsModal: Batch processing completed, proceeding with navigation');
+        // Batch processing timeout, proceeding with navigation anyway
       }
     }
 

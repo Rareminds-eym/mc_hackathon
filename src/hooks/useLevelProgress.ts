@@ -43,11 +43,7 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
           throw new Error(`Failed to fetch module progress: ${moduleError.message}`);
         }
 
-        console.log('useLevelProgress: Module progress data received:', {
-          moduleId,
-          moduleData,
-          dataLength: moduleData?.length || 0
-        });
+
 
         setModuleProgress(moduleData || []);
       }
@@ -65,7 +61,7 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch progress data';
       setError(errorMessage);
-      console.error('Error fetching progress:', errorMessage);
+
     } finally {
       setIsLoading(false);
     }
@@ -91,18 +87,11 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
 
   // Helper function to check if a level is unlocked (synchronous)
   const isLevelUnlocked = useCallback((checkModuleId: number, levelId: number): boolean => {
-    console.log('useLevelProgress: Checking if level is unlocked', {
-      checkModuleId,
-      levelId,
-      currentModuleId: moduleId,
-      moduleProgressLength: moduleProgress.length,
-      moduleProgress,
-      isLoading
-    });
+
 
     // Level 1 is always unlocked
     if (levelId === 1) {
-      console.log('useLevelProgress: Level 1 is always unlocked');
+
       return true;
     }
 
@@ -112,13 +101,6 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
       const previousLevelProgress = moduleProgress.find(progress => progress.level_id === levelId - 1);
       const isUnlocked = previousLevelProgress?.is_completed || false;
 
-      console.log('useLevelProgress: Level unlock result from module progress', {
-        checkModuleId,
-        levelId,
-        previousLevel: levelId - 1,
-        previousLevelProgress,
-        isUnlocked
-      });
 
       return isUnlocked;
     }
@@ -126,14 +108,7 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
     // For other modules or when moduleProgress is not loaded,
     // return false for levels > 1 to be safe, but allow level 1 for other modules
     const isUnlocked = levelId === 1;
-    console.log('useLevelProgress: Fallback unlock logic', {
-      checkModuleId,
-      levelId,
-      isUnlocked,
-      reason: 'Module progress not loaded or different module - only level 1 unlocked',
-      isLoading,
-      moduleProgressLength: moduleProgress.length
-    });
+
     return isUnlocked;
   }, [moduleId, moduleProgress]);
 
@@ -144,13 +119,13 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
     try {
       const { data, error } = await LevelProgressService.isLevelUnlocked(user.id, checkModuleId, levelId);
       if (error) {
-        console.error('Error checking level unlock status:', error);
+
         // Fallback to local logic if database call fails
         return isLevelUnlocked(checkModuleId, levelId);
       }
       return data || false;
     } catch (error) {
-      console.error('Error in isLevelUnlockedDB:', error);
+
       // Fallback to local logic if database call fails
       return isLevelUnlocked(checkModuleId, levelId);
     }
@@ -183,7 +158,7 @@ export const useLevelProgress = (moduleId?: number): UseLevelProgressReturn => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to complete level';
       setError(errorMessage);
-      console.error('Error completing level:', errorMessage);
+
       return false;
     } finally {
       setIsLoading(false);
