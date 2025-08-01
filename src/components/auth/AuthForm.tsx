@@ -107,6 +107,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           setError('Please enter your college code')
           return false
         }
+        // Validate college code against the list
+        const validCollegeCodes = collegeCodes.map(c => c.code.toLowerCase());
+        if (!validCollegeCodes.includes(formData.collegeCode.trim().toLowerCase())) {
+          setError('College code not found. Contact HelpDesk for assistance.');
+          return false;
+        }
       } else {
         // Team member: must provide join code
         if (!formData.joinCode.trim()) {
