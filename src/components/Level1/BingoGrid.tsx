@@ -159,7 +159,6 @@ const BingoGrid: React.FC<BingoGridProps> = ({
             className={`${getCellClasses(cell)} ${hoverClasses(cell)} pixel-border bg-gradient-to-br from-gray-200 to-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400`}
             onClick={() => onCellClick(cell.id)}
             disabled={gameComplete || cell.selected || disabled}
-            title={cell.definition}
             style={{ margin: 2 }}
           >
             <span className="text-center leading-tight w-full break-words font-black pixel-text">
