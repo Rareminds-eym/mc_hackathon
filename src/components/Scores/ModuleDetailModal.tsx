@@ -278,7 +278,7 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
           </div>
 
           {/* Level 2 Game Data Section - Only show for Module 1 */}
-          {module.id === 1 && (
+          {[1, 2, 3, 4].includes(module.id) && (
             <>
               <div className={`mt-4 ${isMobileLandscape ? 'mt-3' : isMobile ? 'mt-4' : 'mt-6'}`}>
                 {isLoadingData ? (
@@ -309,7 +309,7 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
                     <p className={`text-gray-600 ${
                       isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
                     }`}>
-                      No Level 2 game data found for Module 1
+                      No Level 2 data found for Module {module.id}
                     </p>
                   </div>
                 ) : (
