@@ -27,6 +27,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   })
   // For pre-filling team name and college code for team members
   const [prefilledTeam, setPrefilledTeam] = useState<{ teamName: string; collegeCode: string } | null>(null);
+  const [showResendLink, setShowResendLink] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
 
   // Use imported collegeCodes and map to dropdown structure
   const collegeCodes = collegeCodeList.map(code => ({ code }));
@@ -245,6 +247,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
           }
           setGeneratedJoinCode(joinCode);
           setSuccess('Account created! Please verify your email. Share this join code with your team: ' + joinCode.toUpperCase());
+          setShowResendLink(true);
           setPrefilledTeam({ teamName: formData.teamName, collegeCode: formData.collegeCode });
         } else {
           // Team member signup: join with code
@@ -338,6 +341,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     }
   };
 
+  // Resend verification email logic
+  const handleResendVerification = async () => {
+    setResendMessage('');
+    // For Supabase JS v2:
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: formData.email,
+    });
+    if (error) {
+      setResendMessage('Failed to resend email. Try again later.');
+    } else {
+      setResendMessage('Verification email resent successfully!');
+    }
+  };
+
+
   return (
     <div className={`w-full mx-auto ${
       mode === 'login'
@@ -351,7 +370,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
       {/* Error/Success Alerts: Toast for mobile, alert for desktop */}
       {(error || success) && (
         isMobile ? (
-          <div className="fixed top-4 left-1/2 z-50 transform -translate-x-1/2 w-[90vw] max-w-xs">
+          <div className="fixed top-4 left-1/2 z-50 transform -translate-x-1/2 w-[98vw] max-w-lg">
             {error && (
               <div className="flex items-center gap-2 bg-red-700/90 border border-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
                 <AlertCircle className="h-5 w-5 text-red-300" />
@@ -359,13 +378,31 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               </div>
             )}
             {success && (
-              <div className="flex items-center gap-2 bg-green-700/90 border border-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+             <div className="flex flex-col items-center gap-2 bg-green-700/90 border border-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in w-full">
+                <div className="flex items-center gap-2 w-full justify-center">
                 <CheckCircle className="h-5 w-5 text-green-300" />
                 <span className="font-medium">{success}</span>
               </div>
-            )}
+             {showResendLink && (
+                  <>
+                    <button
+                      onClick={handleResendVerification}
+                      className="text-cyan-100 hover:text-cyan-300 text-sm underline mt-2"
+                    >
+                      Didn’t receive the email? Resend verification link
+                    </button>
+                    {resendMessage && (
+                      <div className="text-green-200 mt-2 text-sm">
+                        {resendMessage}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )} 
           </div>
         ) : (
+          <>
           <div className="w-full flex justify-center mb-4">
             {error && (
               <div className="flex items-center gap-2 bg-red-700/80 border border-red-500 text-white px-4 py-2 rounded-md shadow-md animate-fade-in">
@@ -380,6 +417,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               </div>
             )}
           </div>
+          {/* Resend verification link UI for desktop */}
+            {showResendLink && success && (
+              <div className="w-full flex justify-center mb-2">
+                <div className="text-center">
+                  <button
+                    onClick={handleResendVerification}
+                    className="text-cyan-400 hover:text-cyan-300 text-sm underline"
+                  >
+                    Didn’t receive the email? Resend verification link
+                  </button>
+                  {resendMessage && (
+                    <div className="text-green-400 mt-2 text-sm">
+                      {resendMessage}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )
       )}
       <div
