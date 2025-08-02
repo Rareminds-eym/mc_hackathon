@@ -397,7 +397,7 @@ export class Level3Service {
   }
 
   /**
-   * Get top 3 best scores for a module (for final statistics display)
+   * Get top 3 best scores for a module (Frontend implementation)
    */
   static async getTopThreeBestScores(module: string): Promise<{
     data: any[] | null;
@@ -409,24 +409,31 @@ export class Level3Service {
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase.rpc('get_level3_top_scores', {
-        p_user_id: userData.user.id,
-        p_module: module,
-        p_level: this.LEVEL_NUMBER,
-        p_limit: 3
-      });
+      // Query the level3_progress table directly instead of using the database function
+      const { data, error } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .eq('module_id', module)
+        .eq('is_completed', true)
+        .order('final_score', { ascending: false })
+        .order('total_time', { ascending: true })
+        .limit(3);
 
       if (error) {
         console.error('Level3Service: Error fetching top scores:', error);
         throw new Error(`Error fetching top scores: ${error.message}`);
       }
 
-      // Transform the data to match the expected format
+      // Transform the data to match the expected format using correct column names
       const transformedData = data?.map((score: any) => ({
+        user_id: score.user_id,
         scenario_index: score.scenario_index,
-        best_score: score.best_score,
-        best_time: score.best_time,
-        total_attempts: score.total_attempts,
+        best_score: score.final_score || score.score || 0,
+        final_score: score.final_score || score.score || 0,
+        best_time: score.total_time || 0,
+        total_time: score.total_time || 0,
+        total_attempts: 1, // Simplified since we don't track attempts in current schema
         is_completed: score.is_completed,
         placed_pieces: score.placed_pieces,
         created_at: score.created_at
@@ -437,6 +444,168 @@ export class Level3Service {
     } catch (error) {
       console.error('Level3Service: Error fetching top scores:', error);
       return { data: null, error: error as Error };
+    }
+  }
+
+  /**
+   * Get last 3 module attempts for a user (using modified table structure)
+   */
+  static async getLast3Attempts(module: string): Promise<{
+    data: any[] | null;
+    error: Error | null;
+  }> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Query the modified level3_progress table for module completion records
+      const { data, error } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .eq('module_id', module)
+        .eq('is_module_complete', true)
+        .order('attempt_created_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error('Level3Service: Error fetching last 3 attempts:', error);
+        throw new Error(`Error fetching attempts: ${error.message}`);
+      }
+
+      // Transform data to match expected format
+      const transformedData = (data || []).map((attempt: any) => ({
+        id: attempt.id,
+        total_score: attempt.module_total_score,
+        total_time: attempt.module_total_time,
+        avg_health: attempt.module_avg_health,
+        total_combo: attempt.module_total_combo,
+        scenario_results: attempt.module_scenario_results,
+        created_at: attempt.attempt_created_at,
+        attempt_number: attempt.attempt_number,
+        is_top_performance: attempt.is_top_performance
+      }));
+
+      return {
+        data: transformedData,
+        error: null
+      };
+    } catch (error) {
+      console.error('Level3Service: Exception in getLast3Attempts:', error);
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  }
+
+  /**
+   * Get top performance for a user and module (using modified table structure)
+   */
+  static async getTopPerformance(module: string): Promise<{
+    data: any | null;
+    error: Error | null;
+  }> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Query the modified level3_progress table for top performance record
+      const { data, error } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .eq('module_id', module)
+        .eq('is_module_complete', true)
+        .eq('is_top_performance', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        console.error('Level3Service: Error fetching top performance:', error);
+        throw new Error(`Error fetching top performance: ${error.message}`);
+      }
+
+      if (!data) {
+        return { data: null, error: null };
+      }
+
+      // Transform data to match expected format
+      const transformedData = {
+        best_total_score: data.module_total_score,
+        best_total_time: data.module_total_time,
+        best_avg_health: data.module_avg_health,
+        best_total_combo: data.module_total_combo,
+        best_scenario_results: data.module_scenario_results,
+        achieved_at: data.attempt_created_at,
+        attempt_number: data.attempt_number
+      };
+
+      return {
+        data: transformedData,
+        error: null
+      };
+    } catch (error) {
+      console.error('Level3Service: Exception in getTopPerformance:', error);
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  }
+
+  /**
+   * Get module performance history (last 3 attempts with performance indicators)
+   */
+  static async getModulePerformanceHistory(module: string): Promise<{
+    data: any[] | null;
+    error: Error | null;
+  }> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Query the modified level3_progress table for all module completion records
+      const { data, error } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .eq('module_id', module)
+        .eq('is_module_complete', true)
+        .order('attempt_number', { ascending: true });
+
+      if (error) {
+        console.error('Level3Service: Error fetching performance history:', error);
+        throw new Error(`Error fetching performance history: ${error.message}`);
+      }
+
+      // Transform data to match expected format with attempt numbering
+      const transformedData = (data || []).map((attempt: any, index: number) => ({
+        attempt_number: attempt.attempt_number,
+        total_score: attempt.module_total_score,
+        total_time: attempt.module_total_time,
+        avg_health: attempt.module_avg_health,
+        total_combo: attempt.module_total_combo,
+        created_at: attempt.attempt_created_at,
+        is_top_performance: attempt.is_top_performance,
+        scenario_results: attempt.module_scenario_results
+      }));
+
+      return {
+        data: transformedData,
+        error: null
+      };
+    } catch (error) {
+      console.error('Level3Service: Exception in getModulePerformanceHistory:', error);
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
     }
   }
 

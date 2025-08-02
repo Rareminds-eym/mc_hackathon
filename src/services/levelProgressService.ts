@@ -165,22 +165,62 @@ export class LevelProgressService {
   }
 
   /**
-   * Get overall user progress summary
+   * Get overall user progress summary (Frontend implementation)
    */
   static async getUserProgressSummary(
     userId: string
   ): Promise<{ data: UserProgressSummary[] | null; error: any }> {
     try {
-      const { data, error } = await supabase.rpc('get_user_progress_summary', {
-        p_user_id: userId
-      });
+      // Query the level3_progress table directly instead of using the database function
+      const { data, error } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error getting user progress summary:', error);
         return { data: null, error };
       }
 
-      return { data: data || [], error: null };
+      if (!data || data.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Group data by module_id and calculate summary statistics
+      const moduleGroups = data.reduce((groups: any, record: any) => {
+        const moduleId = record.module_id || 'unknown';
+        if (!groups[moduleId]) {
+          groups[moduleId] = [];
+        }
+        groups[moduleId].push(record);
+        return groups;
+      }, {});
+
+      // Calculate summary for each module
+      const summaries: UserProgressSummary[] = Object.entries(moduleGroups).map(([moduleId, records]: [string, any[]]) => {
+        const totalScenarios = records.length;
+        const completedScenarios = records.filter(r => r.is_completed).length;
+        const bestScore = Math.max(...records.map(r => r.final_score || r.score || 0));
+        const totalTime = records.reduce((sum, r) => sum + (r.total_time || 0), 0);
+        const completionRate = totalScenarios > 0 ? (completedScenarios / totalScenarios) * 100 : 0;
+        const lastPlayed = records.reduce((latest, r) => {
+          const recordDate = new Date(r.created_at || 0);
+          return recordDate > latest ? recordDate : latest;
+        }, new Date(0));
+
+        return {
+          module_id: moduleId,
+          level_id: 3, // Level 3 is hardcoded since this is level3_progress table
+          total_scenarios: totalScenarios,
+          completed_scenarios: completedScenarios,
+          best_score: bestScore,
+          total_time: totalTime,
+          completion_rate: Math.round(completionRate * 100) / 100, // Round to 2 decimal places
+          last_played: lastPlayed.toISOString()
+        };
+      });
+
+      return { data: summaries, error: null };
     } catch (error) {
       console.error('Error in getUserProgressSummary:', error);
       return { data: null, error };
