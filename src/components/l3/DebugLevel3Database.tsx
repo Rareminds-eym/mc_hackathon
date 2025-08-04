@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import Level3Service from './services/level3Service';
+import { LevelProgressService } from '../../services/levelProgressService';
 
 interface TestResult {
   test: string;
@@ -139,7 +140,7 @@ export const DebugLevel3Database: React.FC = () => {
     }
 
     setIsRunning(true);
-    
+
     try {
       const testData = {
         userId: user.id,
@@ -157,17 +158,50 @@ export const DebugLevel3Database: React.FC = () => {
       };
 
       console.log('Testing game completion with data:', testData);
-      
+
       const result = await Level3Service.saveGameCompletion(testData);
-      
+
       if (result.error) {
         alert(`Save failed: ${result.error.message}`);
       } else {
         alert(`Save successful! New high score: ${result.isNewHighScore}`);
       }
-      
+
     } catch (error) {
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const testLevelCompletion = async () => {
+    if (!user) {
+      alert('Please log in first');
+      return;
+    }
+
+    setIsRunning(true);
+
+    try {
+      console.log('Testing level completion for Level 3, Module 1...');
+
+      const result = await LevelProgressService.completeLevel(
+        user.id,
+        1, // Module 1
+        3  // Level 3
+      );
+
+      if (result.error) {
+        alert(`Level completion failed: ${result.error.message}`);
+        console.error('Level completion error:', result.error);
+      } else {
+        alert('Level 3 marked as completed successfully!');
+        console.log('Level completion result:', result.data);
+      }
+
+    } catch (error) {
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Level completion exception:', error);
     } finally {
       setIsRunning(false);
     }
@@ -194,11 +228,12 @@ export const DebugLevel3Database: React.FC = () => {
           {isRunning ? 'Running Tests...' : 'Run Database Tests'}
         </button>
         
-        <button 
-          onClick={testGameCompletion} 
+        <button
+          onClick={testGameCompletion}
           disabled={isRunning}
-          style={{ 
+          style={{
             padding: '10px 20px',
+            marginRight: '10px',
             backgroundColor: '#28a745',
             color: 'white',
             border: 'none',
@@ -207,6 +242,21 @@ export const DebugLevel3Database: React.FC = () => {
           }}
         >
           Test Game Completion
+        </button>
+
+        <button
+          onClick={testLevelCompletion}
+          disabled={isRunning}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#ffc107',
+            color: 'black',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isRunning ? 'not-allowed' : 'pointer'
+          }}
+        >
+          Test Level Completion
         </button>
       </div>
 
