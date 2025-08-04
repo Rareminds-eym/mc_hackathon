@@ -27,6 +27,7 @@ import { ScenarioDialog } from "./ScenarioDialog";
 import { VictoryPopup } from "../ui/Popup";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { supabase } from '../../lib/supabase';
+import { LevelProgressService } from '../../services/levelProgressService';
 // Save progress to Supabase, including piece placements
 // Uses upsert to store one row per scenario (user_id + module_id + scenario_index combination)
 async function saveProgressToSupabase({
@@ -1861,10 +1862,35 @@ export const JigsawBoard: React.FC = () => {
                     currentPlacedPiecesRef.current = { violations: [], actions: [] };
                     currentScenarioIndexRef.current = 0;
 
-                    // First, save entire Level 3 data to history table
+                    // First, update the level_progress table to mark Level 3 as completed
+                    if (user?.id) {
+                      try {
+                        console.log('🎯 Updating level_progress table for Level 3 completion...', {
+                          userId: user.id,
+                          moduleId: parseInt(moduleId),
+                          levelId: 3
+                        });
+
+                        const { error: levelProgressError } = await LevelProgressService.completeLevel(
+                          user.id,
+                          parseInt(moduleId),
+                          3 // Level 3
+                        );
+
+                        if (levelProgressError) {
+                          console.error('❌ Failed to update level_progress:', levelProgressError);
+                        } else {
+                          console.log('✅ Level 3 marked as completed in level_progress table');
+                        }
+                      } catch (error) {
+                        console.error('❌ Exception updating level_progress:', error);
+                      }
+                    }
+
+                    // Then, save entire Level 3 data to history table
                     await saveLevel3DataToHistory(moduleId, scenarioResults, timer);
 
-                    // Then remove ALL existing records from database for completely fresh start
+                    // Finally, remove ALL existing records from database for completely fresh start
                     await clearModuleProgress(moduleId);
 
                     // Core game state
