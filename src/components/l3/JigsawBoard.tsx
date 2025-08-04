@@ -26,6 +26,102 @@ import { JigsawContainer } from "./JigsawContainer";
 import { ScenarioDialog } from "./ScenarioDialog";
 import { VictoryPopup } from "../ui/Popup";
 import { useDeviceLayout } from "../../hooks/useOrientation";
+import { supabase } from '../../lib/supabase';
+import { LevelProgressService } from '../../services/levelProgressService';
+// Save progress to Supabase, including piece placements
+// Uses upsert to store one row per scenario (user_id + module_id + scenario_index combination)
+async function saveProgressToSupabase({
+  userId,
+  moduleId,
+  scenarioIndex,
+  finalScore,
+  totalScore,
+  totalTime,
+  scenarioResults,
+  placedPieces,
+  isCompleted,
+  score,
+  health,
+  combo,
+}: {
+  userId: string | null;
+  moduleId: string;
+  scenarioIndex: number;
+  finalScore: number;
+  totalScore: number;
+  totalTime: number;
+  scenarioResults: any;
+  placedPieces: any;
+  isCompleted: boolean;
+  score?: number;
+  health?: number;
+  combo?: number;
+}) {
+  // Add detailed logging to track what's being saved
+  console.log('💾 saveProgressToSupabase called with:', {
+    userId: userId ? 'authenticated' : 'null',
+    moduleId,
+    scenarioIndex,
+    finalScore,
+    totalTime,
+    scenarioResultsCount: scenarioResults?.length || 0,
+    isCompleted,
+    score,
+    health,
+    combo,
+    stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n') // Show where this was called from
+  });
+
+  if (!userId) {
+    console.warn('Cannot save progress: user not authenticated');
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  const progressData = {
+    user_id: userId,
+    module_id: moduleId,
+    scenario_index: scenarioIndex,
+    final_score: finalScore,
+    total_score: totalScore,
+    total_time: totalTime,
+    scenario_results: scenarioResults,
+    placed_pieces: placedPieces,
+    is_completed: isCompleted,
+    score: typeof score !== 'undefined' ? score : null,
+    health: typeof health !== 'undefined' ? health : null,
+    combo: typeof combo !== 'undefined' ? combo : null,
+  };
+
+  // First, try to update existing record
+  const { data: updateData, error: updateError } = await supabase
+    .from('level3_progress')
+    .update(progressData)
+    .eq('user_id', userId)
+    .eq('module_id', moduleId)
+    .eq('scenario_index', scenarioIndex)
+    .select();
+
+  if (updateError) {
+    console.error('Supabase update error:', updateError);
+    return { success: false, error: updateError };
+  }
+
+  // If no rows were updated, insert a new record
+  if (!updateData || updateData.length === 0) {
+    const { data: insertData, error: insertError } = await supabase
+      .from('level3_progress')
+      .insert([progressData])
+      .select();
+
+    if (insertError) {
+      console.error('Supabase insert error:', insertError);
+      return { success: false, error: insertError };
+    }
+    return { success: true, data: insertData };
+  }
+
+  return { success: true, data: updateData };
+}
 import { RootState } from "../../store/types";
 
 // Redux hooks for game persistence
@@ -88,65 +184,18 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
   currentModule,
   getTopThreeBestScores,
 }) => {
-  // Calculate final score out of 100 based on weighted components
-  const maxPossibleScore = scenarioResults.length * 100; // 100 points per scenario
-  const maxPossibleCombo = scenarioResults.length * 5; // Assume max 5 combo per scenario (more realistic)
-  const maxHealth = 100; // Health is always out of 100
-
-  // Calculate weighted percentages
-  const scorePart = Math.round(
-    (overallStats.totalScore / maxPossibleScore) * 70
-  );
-  const comboPart = Math.round(
-    (overallStats.totalCombo / maxPossibleCombo) * 20
-  );
-  const healthPart = Math.round((overallStats.avgHealth / maxHealth) * 10);
-
-  const finalScore = Math.min(scorePart + comboPart + healthPart, 100);
+  // Calculate mission summary metrics
+  const totalScenarios = scenarioResults.length;
+  const completedScenarios = scenarioResults.filter(r => r.score > 0).length;
+  const avgScorePerScenario = totalScenarios > 0 ? Math.round(overallStats.totalScore / totalScenarios) : 0;
+  // Removed avgComboPerScenario
 
   const { isMobile, isHorizontal } = useDeviceLayout();
-
-  // State for top 3 best scores
-  const [topScores, setTopScores] = useState<any[]>([]);
-  const [loadingTopScores, setLoadingTopScores] = useState(true);
-
-  // Fetch top 3 best scores when component mounts
-  useEffect(() => {
-    const fetchTopScores = async () => {
-      try {
-        setLoadingTopScores(true);
-
-        // Get module ID
-        let moduleId = "1"; // default
-        if (
-          typeof currentModule === "object" &&
-          currentModule !== null &&
-          "id" in currentModule
-        ) {
-          moduleId = (currentModule as any).id.toString();
-        } else if (typeof currentModule === "number") {
-          moduleId = currentModule.toString();
-        } else if (typeof currentModule === "string") {
-          moduleId = currentModule;
-        }
-
-        const result = await getTopThreeBestScores(moduleId);
-        setTopScores(result || []);
-      } catch (error) {
-        console.error("Error fetching top scores:", error);
-        setTopScores([]);
-      } finally {
-        setLoadingTopScores(false);
-      }
-    };
-
-    fetchTopScores();
-  }, [currentModule, getTopThreeBestScores]);
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
 
-  const handleGoToModules = () => {
-    navigate("/modules");
+  const handleGoToLevels = () => {
+    navigate(`/modules/${currentModule}`); // If the route should be /levels, change here
   };
 
   const formatTime = (seconds: number) => {
@@ -199,220 +248,70 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
         </p>
       </div>
 
-      {/* Overall Stats */}
-      <div className={`relative z-10 ${isMobile ? "mb-3" : "mb-6"}`}>
-        <h3
-          className={`pixel-text font-bold text-yellow-200 text-center ${
-            isMobile ? "text-base mb-2" : "text-lg mb-4"
-          }`}
-        >
-          FINAL STATISTICS
-        </h3>
-        <div
-          className={`grid ${
-            isMobile ? "grid-cols-2 gap-3 mb-3" : "grid-cols-2 gap-4 mb-4"
-          }`}
-        >
-          <div
-            className={`pixel-border bg-purple-800/80 text-center ${
-              isMobile ? "p-2" : "p-3"
-            }`}
-          >
-            <div
-              className={`text-purple-200 font-bold mb-1 ${
-                isMobile ? "text-xs" : "text-sm"
-              }`}
-            >
-              FINAL SCORE
-            </div>
-            <div
-              className={`text-purple-100 font-black ${
-                isMobile ? "text-lg" : "text-xl"
-              }`}
-            >
-              {finalScore} / 100
-            </div>
-          </div>
-          <div
-            className={`pixel-border bg-green-800/80 text-center ${
-              isMobile ? "p-2" : "p-3"
-            }`}
-          >
-            <div
-              className={`text-green-200 font-bold mb-1 ${
-                isMobile ? "text-xs" : "text-sm"
-              }`}
-            >
-              TOTAL TIME
-            </div>
-            <div
-              className={`text-green-100 font-black ${
-                isMobile ? "text-lg" : "text-xl"
-              }`}
-            >
-              {formatTime(overallStats.totalTime)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Top 3 Best Scores */}
-      <div className={`relative z-10 ${isMobile ? "mb-3" : "mb-6"}`}>
+      {/* Overall Stats Grid */}
+      <div className={`relative z-10 ${isMobile ? "mb-3" : "mb-4"}`}>
         <h3
           className={`pixel-text font-bold text-yellow-200 text-center ${
             isMobile ? "text-base mb-2" : "text-lg mb-3"
-          }`}
+          } ${isMobile && isHorizontal ? "hidden" : ""}`}
         >
-          BEST SCORES
+          MISSION SUMMARY
         </h3>
         <div
-          className={`space-y-1 overflow-y-auto ${
-            isMobile ? "max-h-24" : "max-h-32"
-          }`}
+          className={`grid grid-cols-3 gap-3 mb-4`}
         >
-          {loadingTopScores ? (
-            <div className="text-center text-gray-400 py-4">
-              <div className="animate-spin w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto mb-2"></div>
-              Loading best scores...
-            </div>
-          ) : topScores.length > 0 ? (
-            topScores.map((score, index) => {
-              // Extract combo and health from placed_pieces if available
-              let combo = 0;
-              let health = 100;
-
-              if (
-                score.placed_pieces &&
-                typeof score.placed_pieces === "object"
-              ) {
-                if (
-                  score.placed_pieces.scenarioResults &&
-                  Array.isArray(score.placed_pieces.scenarioResults)
-                ) {
-                  // Find the scenario result for this score
-                  const scenarioResult =
-                    score.placed_pieces.scenarioResults.find(
-                      (sr: any) => sr.scenarioIndex === score.scenario_index
-                    );
-                  if (scenarioResult) {
-                    combo = scenarioResult.combo || 0;
-                    health = scenarioResult.health || 100;
-                  }
-                }
-              }
-
-              return (
-                <div
-                  key={index}
-                  className={`pixel-border bg-gray-800/60 ${
-                    isMobile
-                      ? "p-1.5 flex flex-col gap-1"
-                      : "p-2 flex items-center justify-between"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center ${
-                      isMobile ? "gap-1" : "gap-2"
-                    }`}
-                  >
-                    <div
-                      className={`flex items-center justify-center w-6 h-6 rounded-full ${
-                        index === 0
-                          ? "bg-yellow-500"
-                          : index === 1
-                          ? "bg-gray-400"
-                          : "bg-orange-600"
-                      } text-black font-bold ${
-                        isMobile ? "text-xs" : "text-sm"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <span
-                      className={`font-bold text-cyan-200 ${
-                        isMobile ? "text-xs" : "text-sm"
-                      }`}
-                    >
-                      {score.best_score > 0 ? `${score.best_score}` : "--"}
-                    </span>
-                  </div>
-                  <div
-                    className={`flex items-center ${
-                      isMobile
-                        ? "gap-2 text-xs justify-between"
-                        : "gap-4 text-xs"
-                    }`}
-                  >
-                    {combo > 0 && (
-                      <span className="text-yellow-200">
-                        Combo:{" "}
-                        <span className="font-bold text-yellow-100">
-                          {combo}
-                        </span>
-                      </span>
-                    )}
-                    {health > 0 && health !== 100 && (
-                      <span className="text-pink-200">
-                        Health:{" "}
-                        <span className="font-bold text-pink-100">
-                          {health}
-                        </span>
-                      </span>
-                    )}
-                    {score.best_time > 0 && (
-                      <span className="text-green-200">
-                        Time:{" "}
-                        <span className="font-bold text-green-100">
-                          {Math.floor(score.best_time / 60)}:
-                          {(score.best_time % 60).toString().padStart(2, "0")}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center text-gray-400 py-4">
-              <span className={isMobile ? "text-xs" : "text-sm"}>
-                No previous scores found
-              </span>
-            </div>
-          )}
+          <div
+            className="pixel-border bg-blue-800/80 text-center p-2 flex flex-col justify-center items-center"
+          >
+            <div className="text-blue-200 font-bold mb-1 text-xs">SCENARIOS</div>
+            <div className="text-blue-100 font-black text-base">{completedScenarios}/{totalScenarios}</div>
+          </div>
+          <div
+            className="pixel-border bg-purple-800/80 text-center p-2 flex flex-col justify-center items-center"
+          >
+            <div className="text-purple-200 font-bold mb-1 text-xs">AVG SCORE</div>
+            <div className="text-purple-100 font-black text-base">{avgScorePerScenario}</div>
+          </div>
+          <div
+            className="pixel-border bg-green-800/80 text-center p-2 flex flex-col justify-center items-center"
+          >
+            <div className="text-green-200 font-bold mb-1 text-xs">TOTAL TIME</div>
+            <div className="text-green-100 font-black text-base">{formatTime(overallStats.totalTime)}</div>
+          </div>
         </div>
       </div>
 
       {/* Action Buttons */}
       <div
-        className={`relative z-10 flex gap-2 justify-center ${
-          isMobile ? "flex-col" : "flex-col sm:flex-row gap-3"
+        className={`relative z-10 flex flex-row gap-2 justify-center ${
+          isMobile ? "gap-2" : "gap-3"
         }`}
       >
         <button
-          className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-2 ${
-            isMobile ? "px-4 py-2 text-sm" : "px-6 py-3"
+          className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-1 flex-1 ${
+            isMobile ? "px-3 py-2 text-xs" : "px-6 py-3 gap-2"
           }`}
-          onClick={handleGoToModules}
-          aria-label="Back to Modules"
+          onClick={handleGoToLevels}
+          aria-label="Back to Levels"
         >
           <Icon
             icon="mdi:home-map-marker"
-            className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+            className={isMobile ? "w-3 h-3" : "w-5 h-5"}
           />
-          Back to Modules
+          {isMobile ? "Levels" : "Back to Levels"}
         </button>
         <button
-          className={`pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-2 ${
-            isMobile ? "px-4 py-2 text-sm" : "px-6 py-3"
+          className={`pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-1 flex-1 ${
+            isMobile ? "px-3 py-2 text-xs" : "px-6 py-3 gap-2"
           }`}
           onClick={onClose}
           aria-label="Play Again"
         >
           <Icon
             icon="mdi:refresh"
-            className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+            className={isMobile ? "w-3 h-3" : "w-5 h-5"}
           />
-          Play Again
+          {isMobile ? "Replay" : "Play Again"}
         </button>
       </div>
     </div>
@@ -446,6 +345,15 @@ export const JigsawBoard: React.FC = () => {
   const [showContinueDialog, setShowContinueDialog] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [hasCheckedProgress, setHasCheckedProgress] = useState(false);
+  const [isReplayMode, setIsReplayMode] = useState(false);
+  const [userClosedScenario, setUserClosedScenario] = useState(false);
+
+  // Enhanced scoring state
+  const [incorrectAttempts, setIncorrectAttempts] = useState(0);
+  const [scenarioStartTime, setScenarioStartTime] = useState<number>(0);
+
+  // Ref to track if we're currently resetting for replay (prevents stale data saves)
+  const isResettingForReplayRef = useRef(false);
 
   // Create a robust fallback function if getTopThreeBestScores is undefined
   const safeGetTopThreeBestScores = React.useMemo(() => {
@@ -507,26 +415,7 @@ export const JigsawBoard: React.FC = () => {
   // ===== UI STATE =====
   // (all state declarations are below, do not redeclare)
 
-  // Timer effect: start when first scenario starts, stop when all scenarios complete
-  useEffect(() => {
-    // Start timer only once when component mounts
-    if (!timerRef.current) {
-      timerRef.current = setInterval(() => {
-        setTimer((prev) => prev + 1);
-      }, 1000);
-    }
-    // Stop timer when final stats are shown
-    if (showFinalStats && timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [showFinalStats]);
+  // Timer effect will be moved after scenarios declaration to avoid initialization error
 
   // Auto-close feedback after 2.5 seconds
   useEffect(() => {
@@ -541,6 +430,127 @@ export const JigsawBoard: React.FC = () => {
   const currentModule = useSelector(
     (state: RootState) => state.game.currentModule
   );
+
+  // Timer effect: start when gameplay begins (scenario closed), stop when all scenarios complete
+  useEffect(() => {
+    // Start timer only when user is actively playing (scenario dialog closed and not showing final stats)
+    const shouldRunTimer = !showScenario && !showFinalStats && !isComplete && scenarios && scenarios.length > 0;
+
+    if (shouldRunTimer && !timerRef.current) {
+      console.log('⏱️ Starting gameplay timer');
+      timerRef.current = setInterval(() => {
+        setTimer((prev) => prev + 1);
+      }, 1000);
+    }
+
+    // Stop timer when scenario dialog is open, final stats are shown, or scenario is complete
+    if ((!shouldRunTimer || showFinalStats) && timerRef.current) {
+      console.log('⏱️ Stopping gameplay timer');
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [showScenario, showFinalStats, isComplete, scenarios]);
+
+  // Refs to store current values for periodic updates
+  const currentTimerRef = useRef(timer);
+  const currentScoreRef = useRef(score);
+  const currentHealthRef = useRef(health);
+  const currentComboRef = useRef(combo);
+  const currentScenarioResultsRef = useRef(scenarioResults);
+  const currentPlacedPiecesRef = useRef(placedPieces);
+  const currentScenarioIndexRef = useRef(scenarioIndex);
+
+  // Update refs when values change
+  useEffect(() => {
+    currentTimerRef.current = timer;
+    currentScoreRef.current = score;
+    currentHealthRef.current = health;
+    currentComboRef.current = combo;
+    currentScenarioResultsRef.current = scenarioResults;
+    currentPlacedPiecesRef.current = placedPieces;
+    currentScenarioIndexRef.current = scenarioIndex;
+  }, [timer, score, health, combo, scenarioResults, placedPieces, scenarioIndex]);
+
+  // Periodically update timer in database (every 30 seconds)
+  useEffect(() => {
+    if (!user?.id || !currentModule || showFinalStats) return;
+
+    console.log('🕐 Setting up periodic timer update interval');
+
+    const updateTimerInterval = setInterval(async () => {
+      try {
+        const currentTimer = currentTimerRef.current;
+        const currentScenarioResults = currentScenarioResultsRef.current;
+        const isResetting = isResettingForReplayRef.current;
+        console.log('🕐 Periodic timer update triggered:', {
+          timer: currentTimer,
+          scenarioResultsCount: currentScenarioResults.length,
+          isResetting: isResetting,
+          showFinalStats: showFinalStats
+        });
+
+        // Get module ID for saving
+        let moduleId: string = "1";
+        if (
+          typeof currentModule === "object" &&
+          currentModule !== null &&
+          "id" in currentModule
+        ) {
+          moduleId = (currentModule as any).id.toString();
+        } else if (typeof currentModule === "number") {
+          moduleId = (currentModule as number).toString();
+        }
+
+        // Only update if there's meaningful progress (timer > 10 seconds)
+        // AND we have scenario results (indicating this is not a fresh restart)
+        // AND we're not currently resetting for replay
+        if (currentTimer > 10 && currentScenarioResults.length > 0 && !isResettingForReplayRef.current) {
+          console.log('🕐 Updating timer in database:', {
+            timer: currentTimer,
+            moduleId,
+            scenarioIndex: currentScenarioIndexRef.current,
+            scenarioResultsCount: currentScenarioResults.length
+          });
+
+          const result = await saveProgressToSupabase({
+            userId: user.id,
+            moduleId,
+            scenarioIndex: currentScenarioIndexRef.current,
+            finalScore: currentScoreRef.current,
+            totalScore: currentScoreRef.current,
+            totalTime: currentTimer,
+            scenarioResults: currentScenarioResults,
+            placedPieces: currentPlacedPiecesRef.current,
+            isCompleted: false, // Still in progress
+            score: currentScoreRef.current,
+            health: currentHealthRef.current,
+            combo: currentComboRef.current,
+          });
+
+          console.log('🕐 Timer update result:', result);
+        } else {
+          console.log('🕐 Skipping timer update - insufficient progress or resetting:', {
+            timer: currentTimer,
+            scenarioResultsCount: currentScenarioResults.length,
+            isResetting: isResettingForReplayRef.current
+          });
+        }
+      } catch (err) {
+        console.error('🕐 Error updating timer in database:', err);
+      }
+    }, 30000); // Update every 30 seconds
+
+    return () => {
+      console.log('🕐 Clearing periodic timer update interval');
+      clearInterval(updateTimerInterval);
+    };
+  }, [user?.id, currentModule, showFinalStats]); // Minimal dependencies
 
   // Debug logging for scenarios (disabled to prevent performance issues)
   // console.log('🎮 JigsawBoard: Scenarios state:', {
@@ -583,13 +593,197 @@ export const JigsawBoard: React.FC = () => {
     }
   }, [currentModule, dispatch]);
 
+  // Show scenario when scenarios are loaded and no scenario is currently showing
+  useEffect(() => {
+    // Auto-show scenario in these cases:
+    // 1. After replay reset (isReplayMode = true)
+    // 2. After page refresh when initialization is complete and no scenario is showing
+    // BUT NOT if user has manually closed the scenario
+    if (scenarios && scenarios.length > 0 && !showScenario && !showFinalStats && !isInitializing && !isComplete && !userClosedScenario) {
+      if (isReplayMode) {
+        console.log("🎯 Auto-showing first scenario after replay reset");
+        setShowScenario(true);
+        setIsReplayMode(false); // Reset replay mode flag
+      } else if (!hasCheckedProgress) {
+        // This handles the case where page was refreshed and we need to show a scenario
+        // but progress restoration hasn't run yet or didn't show a scenario
+        console.log("🎯 Auto-showing scenario after page refresh/initialization");
+        setShowScenario(true);
+      }
+    }
+  }, [scenarios, scenarioIndex, showScenario, showFinalStats, isInitializing, isComplete, isReplayMode, hasCheckedProgress, userClosedScenario]);
+
   // Auto-close feedback after 2.5 seconds (duplicate removed)
 
-  // ===== GAME PERSISTENCE INITIALIZATION (DISABLED) =====
+  // Set scenario start time when scenario dialog is shown
   useEffect(() => {
-    // Temporarily disabled persistence to debug performance
-    setIsInitializing(false);
-  }, []);
+    if (showScenario && scenarioStartTime === 0) {
+      setScenarioStartTime(Date.now());
+      console.log('⏱️ Scenario start time set for scoring calculations');
+    }
+  }, [showScenario, scenarioStartTime]);
+
+  // ===== GAME PROGRESS RESTORE FROM SUPABASE =====
+  useEffect(() => {
+    async function restoreProgress() {
+      // Skip progress restoration if we're in replay mode or have already checked progress
+      if (!user?.id || !currentModule) {
+        setIsInitializing(false);
+        return;
+      }
+
+      if (isReplayMode) {
+        console.log("🔄 Skipping progress restoration - in replay mode");
+        setIsInitializing(false);
+        return;
+      }
+
+      if (hasCheckedProgress) {
+        console.log("🔄 Skipping progress restoration - already checked");
+        setIsInitializing(false);
+        return;
+      }
+      let moduleId: string = "1";
+      if (
+        typeof currentModule === "object" &&
+        currentModule !== null &&
+        "id" in currentModule
+      ) {
+        moduleId = (currentModule as any).id.toString();
+      } else if (typeof currentModule === "number") {
+        moduleId = (currentModule as number).toString();
+      } else if (typeof currentModule === "string") {
+        moduleId = currentModule;
+      }
+      try {
+        // Get all progress records for this user and module to determine the current state
+        const { data, error } = await supabase
+          .from('level3_progress')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('module_id', moduleId)
+          .order('scenario_index', { ascending: true });
+
+        if (error) {
+          console.error('Error restoring progress:', error);
+          setIsInitializing(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Find the highest completed scenario or the current scenario in progress
+          let currentScenarioIndex = 0;
+          let allScenarioResults: any[] = [];
+          let hasIncompleteScenario = false;
+          let maxTotalTime = 0;
+
+          // Collect all completed scenario results and find incomplete scenarios
+          data.forEach(progress => {
+            // Track the maximum total_time across all records
+            if (progress.total_time && progress.total_time > maxTotalTime) {
+              maxTotalTime = progress.total_time;
+            }
+
+            if (progress.is_completed) {
+              allScenarioResults.push({
+                score: progress.score || 0,
+                combo: progress.combo || 0,
+                health: progress.health || 100,
+                scenarioIndex: progress.scenario_index
+              });
+              // Move to next scenario after completed ones
+              currentScenarioIndex = Math.max(currentScenarioIndex, progress.scenario_index + 1);
+            } else {
+              // If there's an incomplete scenario, prioritize it
+              if (!hasIncompleteScenario || progress.scenario_index < currentScenarioIndex) {
+                hasIncompleteScenario = true;
+                currentScenarioIndex = progress.scenario_index;
+                // Restore the incomplete scenario state
+                setPlacedPieces(progress.placed_pieces || { violations: [], actions: [] });
+                setScore(progress.score ?? 0);
+                setHealth(progress.health ?? 100);
+                setCombo(progress.combo ?? 0);
+              }
+            }
+          });
+
+          // Restore the timer with the maximum total_time found
+          if (maxTotalTime > 0) {
+            setTimer(maxTotalTime);
+          }
+
+          // If no incomplete scenarios, reset state for the next scenario
+          if (!hasIncompleteScenario) {
+            setPlacedPieces({ violations: [], actions: [] });
+            setScore(0);
+            setHealth(100);
+            setCombo(0);
+
+            // Reset enhanced scoring state for new scenario
+            setIncorrectAttempts(0);
+            setScenarioStartTime(Date.now());
+          }
+
+          setScenarioIndex(currentScenarioIndex);
+          setScenarioResults(allScenarioResults);
+
+          // Check if all scenarios are completed and show FinalStatsPopup
+          const totalScenariosInModule = scenarios?.length ?? 0;
+          const allScenariosCompleted = allScenarioResults.length === totalScenariosInModule &&
+                                       totalScenariosInModule > 0 &&
+                                       !hasIncompleteScenario;
+
+          if (allScenariosCompleted) {
+            // All scenarios completed - show final stats
+            setShowFinalStats(true);
+          } else {
+            // Not all scenarios completed - show current scenario
+            console.log("📋 Showing scenario after progress restoration:", currentScenarioIndex);
+            setShowScenario(true);
+          }
+        } else {
+          // No progress data found - start fresh
+          console.log('📊 No progress found, starting fresh from first scenario');
+          setScenarioIndex(0);
+          setScenarioResults([]);
+          setScore(0);
+          setHealth(100);
+          setCombo(0);
+          setTimer(0);
+          setPlacedPieces({ violations: [], actions: [] });
+          setCorrectPlacementIndex(0);
+
+          // Reset enhanced scoring state
+          setIncorrectAttempts(0);
+          setScenarioStartTime(Date.now());
+
+          // Show first scenario when starting fresh
+          console.log("📋 Showing first scenario for fresh start");
+          setShowScenario(true);
+        }
+      } catch (err) {
+        console.error('Exception restoring progress:', err);
+        // On error, also start fresh
+        console.log('📊 Error during restoration, starting fresh from first scenario');
+        setScenarioIndex(0);
+        setScenarioResults([]);
+        setScore(0);
+        setHealth(100);
+        setCombo(0);
+        setTimer(0);
+        setPlacedPieces({ violations: [], actions: [] });
+        setCorrectPlacementIndex(0);
+
+        // Reset enhanced scoring state
+        setIncorrectAttempts(0);
+        setScenarioStartTime(Date.now());
+
+        setShowScenario(true);
+      }
+      setIsInitializing(false);
+    }
+    restoreProgress();
+  }, [user?.id, currentModule, scenarios?.length, isReplayMode, hasCheckedProgress]);
 
   // Auto-save progress periodically (temporarily disabled)
   // useEffect(() => {
@@ -665,6 +859,93 @@ export const JigsawBoard: React.FC = () => {
   // ===== STATS CALCULATION FUNCTIONS =====
 
   /**
+   * Calculate comprehensive scenario score based on placement, health, and combo
+   * Enhanced scoring system with multiple factors and bonuses
+   */
+  const calculateScenarioScore = useCallback((
+    correctPlacements: number,
+    totalPieces: number,
+    currentHealth: number,
+    currentCombo: number,
+    maxCombo: number,
+    incorrectAttempts: number = 0,
+    timeBonus: number = 0
+  ): number => {
+    // 1. BASE PLACEMENT SCORE (40% weight) - Core gameplay performance
+    const placementPercentage = totalPieces > 0 ? correctPlacements / totalPieces : 0;
+    const baseScore = placementPercentage * 40;
+
+    // 2. HEALTH SCORE (25% weight) - Reward maintaining high health
+    // Progressive health scoring: higher health = exponentially better score
+    const healthPercentage = currentHealth / 100;
+    const healthScore = Math.pow(healthPercentage, 0.8) * 25; // Slight curve to reward high health
+
+    // 3. COMBO SCORE (20% weight) - Reward consistent correct placements
+    let comboScore = 0;
+    if (maxCombo > 0 && currentCombo > 0) {
+      const comboPercentage = currentCombo / maxCombo;
+      // Bonus for maintaining combo streaks
+      const comboMultiplier = currentCombo >= maxCombo ? 1.2 : 1.0; // Perfect combo bonus
+      comboScore = comboPercentage * 20 * comboMultiplier;
+    }
+
+    // 4. EFFICIENCY BONUS (10% weight) - Reward fewer incorrect attempts
+    let efficiencyScore = 10;
+    if (incorrectAttempts > 0) {
+      // Penalty for incorrect attempts: -2 points per mistake, minimum 0
+      efficiencyScore = Math.max(0, 10 - (incorrectAttempts * 2));
+    }
+
+    // 5. SPEED BONUS (5% weight) - Optional time-based bonus
+    const speedScore = Math.min(timeBonus, 5); // Cap at 5 points
+
+    // 6. PERFECT PERFORMANCE BONUSES
+    let perfectBonus = 0;
+
+    // Perfect placement bonus (all pieces correct)
+    if (placementPercentage === 1.0) {
+      perfectBonus += 5;
+    }
+
+    // Perfect health bonus (no health lost)
+    if (currentHealth === 100) {
+      perfectBonus += 3;
+    }
+
+    // Perfect combo bonus (maintained full combo)
+    if (currentCombo === maxCombo && maxCombo > 0) {
+      perfectBonus += 2;
+    }
+
+    // 7. CALCULATE FINAL SCORE
+    const rawScore = baseScore + healthScore + comboScore + efficiencyScore + speedScore + perfectBonus;
+
+    // Round to nearest integer and cap at 100
+    const finalScore = Math.min(Math.round(rawScore), 100);
+
+    // Debug logging for score breakdown (can be removed in production)
+    console.log('🎯 Score Calculation Breakdown:', {
+      correctPlacements,
+      totalPieces,
+      placementPercentage: Math.round(placementPercentage * 100) + '%',
+      baseScore: Math.round(baseScore),
+      healthScore: Math.round(healthScore),
+      comboScore: Math.round(comboScore),
+      efficiencyScore: Math.round(efficiencyScore),
+      speedScore: Math.round(speedScore),
+      perfectBonus,
+      rawScore: Math.round(rawScore),
+      finalScore,
+      currentHealth,
+      currentCombo,
+      maxCombo,
+      incorrectAttempts
+    });
+
+    return finalScore;
+  }, []);
+
+  /**
    * Calculate overall stats from scenario results
    */
   const calculateOverallStats = useCallback(
@@ -695,6 +976,160 @@ export const JigsawBoard: React.FC = () => {
     []
   );
 
+  /**
+   * Save entire Level 3 data to history table before clearing
+   * Uses simple INSERT operations without database functions
+   */
+  const saveLevel3DataToHistory = useCallback(async (moduleId: string, scenarioResults: ScenarioResult[], timer: number) => {
+    if (!user?.id) return;
+
+    try {
+      console.log('💾 Saving entire Level 3 data to history table...', { moduleId });
+
+      // Get all current Level 3 data for this user and module
+      const { data: currentData, error: fetchError } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId);
+
+      if (fetchError) {
+        console.error('Error fetching current Level 3 data:', fetchError);
+        return;
+      }
+
+      if (!currentData || currentData.length === 0) {
+        console.log('No current data to save to history');
+        return;
+      }
+
+      // Calculate overall stats for this completed session
+      const overallStats = calculateOverallStats(scenarioResults, timer);
+
+      // Create a comprehensive history record using simple data structure
+      const historyRecord = {
+        user_id: user.id,
+        module_id: moduleId,
+        session_completed_at: new Date().toISOString(),
+        total_scenarios: scenarioResults.length,
+        total_score: overallStats.totalScore,
+        total_time: overallStats.totalTime,
+        avg_health: overallStats.avgHealth,
+        total_combo: overallStats.totalCombo,
+        scenario_results: JSON.stringify(scenarioResults), // Convert to JSON string
+        detailed_progress: JSON.stringify(currentData), // Convert to JSON string
+        session_summary: JSON.stringify({
+          completedScenarios: scenarioResults.length,
+          avgScorePerScenario: scenarioResults.length > 0 ? Math.round(overallStats.totalScore / scenarioResults.length) : 0,
+          totalTimeFormatted: `${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}`,
+          finalStats: overallStats
+        })
+      };
+
+      // Simple INSERT operation to level3_history table
+      const { error: insertError } = await supabase
+        .from('level3_history')
+        .insert([historyRecord]);
+
+      if (insertError) {
+        console.error('Error saving Level 3 data to history:', insertError);
+        return;
+      }
+
+      console.log('✅ Level 3 data saved to history successfully', {
+        totalRecords: currentData.length,
+        totalScenarios: scenarioResults.length,
+        totalScore: overallStats.totalScore,
+        totalTime: timer
+      });
+
+    } catch (error) {
+      console.error('Exception saving Level 3 data to history:', error);
+    }
+  }, [user?.id, calculateOverallStats]);
+
+  /**
+   * Get Level 3 history for a user and module (optional utility function)
+   * Parses JSON strings back to objects for easy use
+   */
+  const getLevel3History = useCallback(async (moduleId: string, limit: number = 10) => {
+    if (!user?.id) return null;
+
+    try {
+      console.log('📊 Fetching Level 3 history...', { moduleId, limit });
+
+      const { data, error } = await supabase
+        .from('level3_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId)
+        .order('session_completed_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching Level 3 history:', error);
+        return null;
+      }
+
+      // Parse JSON strings back to objects for easier use
+      const parsedData = data?.map(record => ({
+        ...record,
+        scenario_results: record.scenario_results ? JSON.parse(record.scenario_results) : null,
+        detailed_progress: record.detailed_progress ? JSON.parse(record.detailed_progress) : null,
+        session_summary: record.session_summary ? JSON.parse(record.session_summary) : null,
+      }));
+
+      console.log('📊 Level 3 history fetched:', parsedData?.length || 0, 'records');
+      return parsedData;
+
+    } catch (error) {
+      console.error('Exception fetching Level 3 history:', error);
+      return null;
+    }
+  }, [user?.id]);
+
+  /**
+   * Clear ALL existing records for a module when starting replay
+   * This completely removes all records to ensure a fresh start
+   */
+  const clearModuleProgress = useCallback(async (moduleId: string) => {
+    if (!user?.id) return;
+
+    try {
+      console.log('🗑️ Removing ALL existing records for replay...', { moduleId });
+
+      // Delete ALL records for this user and module (including completed attempts)
+      // This ensures a completely fresh start with no existing data
+      const { error } = await supabase
+        .from('level3_progress')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId);
+
+      if (error) {
+        console.error('Error removing existing records:', error);
+        return;
+      }
+
+      console.log('✅ ALL existing records removed successfully');
+
+      // Verify the removal by checking what remains
+      const { data: remainingData } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId);
+
+      console.log('🔍 Records remaining after removal:', remainingData?.length || 0);
+    } catch (error) {
+      console.error('Exception removing existing records:', error);
+    }
+  }, [user?.id]);
+
+
+
+
+
   // ===== GAME LOGIC HANDLERS =====
 
   // (Removed unused isValidUUID helper)
@@ -703,7 +1138,7 @@ export const JigsawBoard: React.FC = () => {
    * Handle piece drop on containers
    */
   const handleDrop = useCallback(
-    (containerType: "violations" | "actions", piece: PuzzlePiece) => {
+    async (containerType: "violations" | "actions", piece: PuzzlePiece) => {
       // Validate if the piece is being dropped in the right container type
       const isCorrectCategory =
         (containerType === "violations" && piece.category === "violation") ||
@@ -728,55 +1163,127 @@ export const JigsawBoard: React.FC = () => {
 
       // Update state based on whether the piece is correct
       if (piece.isCorrect) {
-        setPlacedPieces((prev) => {
-          const updated = {
-            ...prev,
-            [containerType]: [...prev[containerType], piece],
-          };
-          // Check for completion
-          const totalViolations = correctViolations.length;
-          const totalActions = correctActions.length;
-          const totalCorrectPieces = totalViolations + totalActions;
-          const allPlaced =
-            updated.violations.length === totalViolations &&
-            updated.actions.length === totalActions;
-          if (allPlaced) {
-            setTimeout(() => {
-              setIsComplete(true);
-            }, 400); // slight delay for UX
-          }
-          return updated;
-        });
-        setFeedback("CRITICAL HIT! Perfect placement!");
+        // Calculate the updated placed pieces
+        const updatedPlacedPieces = {
+          ...placedPieces,
+          [containerType]: [...placedPieces[containerType], piece],
+        };
 
-        // Distribute points fairly: first (remainder) pieces get +1 point
-        const totalCorrectPieces =
-          correctViolations.length + correctActions.length;
-        const basePoints = Math.floor(100 / totalCorrectPieces);
-        const remainder = 100 % totalCorrectPieces;
+        // Check for completion before updating state
+        const totalViolations = correctViolations.length;
+        const totalActions = correctActions.length;
+        const isScenarioComplete =
+          updatedPlacedPieces.violations.length === totalViolations &&
+          updatedPlacedPieces.actions.length === totalActions;
 
-        // Compute the points for this placement
-        let pointsForThisPlacement = basePoints;
-        if (correctPlacementIndex < remainder) {
-          pointsForThisPlacement += 1;
+        // Update placed pieces state
+        setPlacedPieces(updatedPlacedPieces);
+
+        // Set completion state with delay for UX
+        if (isScenarioComplete) {
+          setTimeout(() => {
+            setIsComplete(true);
+          }, 400);
         }
 
-        setScore((prevScore) => {
-          // Cap at 100
-          const newScore = prevScore + pointsForThisPlacement;
-          return newScore > 100 ? 100 : newScore;
-        });
-        setCorrectPlacementIndex((prev) => prev + 1);
-        setCombo((prev) => prev + 1);
+        setFeedback("CRITICAL HIT! Perfect placement!");
+
+        // Update placement tracking and combo
+        const newCorrectPlacements = correctPlacementIndex + 1;
+        const newCombo = combo + 1;
+        const totalCorrectPieces = correctViolations.length + correctActions.length;
+
+        // Calculate comprehensive score based on placement, health, and combo
+        const maxPossibleCombo = totalCorrectPieces; // Maximum combo is total pieces
+
+        // Calculate time bonus for quick placements (optional)
+        const currentTime = Date.now();
+        const timeSinceScenarioStart = scenarioStartTime > 0 ? (currentTime - scenarioStartTime) / 1000 : 0;
+        const avgTimePerPiece = timeSinceScenarioStart / Math.max(newCorrectPlacements, 1);
+        const timeBonus = avgTimePerPiece < 10 ? Math.max(0, 5 - avgTimePerPiece / 2) : 0; // Bonus for quick placements
+
+        const newScore = calculateScenarioScore(
+          newCorrectPlacements,
+          totalCorrectPieces,
+          health,
+          newCombo,
+          maxPossibleCombo,
+          incorrectAttempts,
+          timeBonus
+        );
+
+        // Update state
+        setScore(newScore);
+        setCorrectPlacementIndex(newCorrectPlacements);
+        setCombo(newCombo);
+
+        // Save progress to Supabase after every successful placement
+        try {
+          // Get module ID for saving
+          let moduleId: string = "1";
+          if (
+            typeof currentModule === "object" &&
+            currentModule !== null &&
+            "id" in currentModule
+          ) {
+            moduleId = (currentModule as any).id.toString();
+          } else if (typeof currentModule === "number") {
+            moduleId = (currentModule as number).toString();
+          }
+
+          await saveProgressToSupabase({
+            userId: user?.id || null,
+            moduleId,
+            scenarioIndex,
+            finalScore: newScore,
+            totalScore: newScore,
+            totalTime: timer,
+            scenarioResults,
+            placedPieces: updatedPlacedPieces,
+            isCompleted: isScenarioComplete, // Set to true when last piece is placed
+            score: newScore,
+            health,
+            combo: newCombo,
+          });
+        } catch (err) {
+          console.error('Error saving progress on drag-and-drop:', err);
+        }
+
         return { success: true };
       } else {
         setFeedback("\uD83D\uDCA5 MISS! Analyze the scenario more carefully!");
-        setHealth((prev) => Math.max(0, prev - 15));
-        setCombo(0);
+        const newHealth = Math.max(0, health - 15);
+        const newCombo = 0; // Reset combo on incorrect placement
+        const newIncorrectAttempts = incorrectAttempts + 1; // Track incorrect attempts
+
+        // Recalculate score with reduced health, reset combo, and penalty for incorrect attempts
+        const totalCorrectPieces = correctViolations.length + correctActions.length;
+        const maxPossibleCombo = totalCorrectPieces;
+
+        // Calculate time penalty for incorrect placement (optional)
+        const currentTime = Date.now();
+        const timeSinceScenarioStart = scenarioStartTime > 0 ? (currentTime - scenarioStartTime) / 1000 : 0;
+        const avgTimePerPiece = timeSinceScenarioStart / Math.max(correctPlacementIndex + 1, 1);
+        const timeBonus = avgTimePerPiece < 10 ? Math.max(0, 5 - avgTimePerPiece / 2) : 0;
+
+        const recalculatedScore = calculateScenarioScore(
+          correctPlacementIndex,
+          totalCorrectPieces,
+          newHealth,
+          newCombo,
+          maxPossibleCombo,
+          newIncorrectAttempts,
+          timeBonus
+        );
+
+        setHealth(newHealth);
+        setCombo(newCombo);
+        setScore(recalculatedScore);
+        setIncorrectAttempts(newIncorrectAttempts);
         return { success: false };
       }
     },
-    [placedPieces, combo, correctViolations.length, correctActions.length]
+    [placedPieces, combo, correctViolations.length, correctActions.length, currentModule, user?.id, scenarioIndex, score, timer, scenarioResults, health, correctPlacementIndex, calculateScenarioScore, incorrectAttempts, scenarioStartTime]
   );
 
   /**
@@ -794,13 +1301,48 @@ export const JigsawBoard: React.FC = () => {
     const updatedResults = [...scenarioResults, currentResult];
     setScenarioResults(updatedResults);
 
+    // Scenario was already saved as completed when the last piece was placed
+    // Just update the scenario results in the database for reference
+    try {
+      let moduleId: string = "1";
+      if (
+        typeof currentModule === "object" &&
+        currentModule !== null &&
+        "id" in currentModule
+      ) {
+        moduleId = (currentModule as any).id.toString();
+      } else if (typeof currentModule === "number") {
+        moduleId = (currentModule as number).toString();
+      }
+
+      // Update with the complete scenario results array
+      await saveProgressToSupabase({
+        userId: user?.id || null,
+        moduleId,
+        scenarioIndex,
+        finalScore: score,
+        totalScore: score,
+        totalTime: timer,
+        scenarioResults: updatedResults, // Updated results array
+        placedPieces,
+        isCompleted: true, // Already completed
+        score,
+        health,
+        combo,
+      });
+    } catch (err) {
+      console.error('Error updating scenario results:', err);
+    }
+
     // Check if this was the last scenario
-    if (scenarioIndex >= (scenarios?.length ?? 0) - 1) {
+    const isLastScenario = scenarioIndex >= (scenarios?.length ?? 0) - 1;
+
+    if (isLastScenario) {
       // All scenarios completed - show final stats
       setIsComplete(false);
       setShowFinalStats(true);
     } else {
-      // Move to next scenario (timer continues running)
+      // Move to next scenario (timer continues running - no timer reset)
       setScenarioIndex((idx) => idx + 1);
       setPlacedPieces({ violations: [], actions: [] });
       setIsComplete(false);
@@ -808,9 +1350,15 @@ export const JigsawBoard: React.FC = () => {
       setHealth(100);
       setScore(0); // Reset score for each scenario
       setCorrectPlacementIndex(0); // Reset placement index for new scenario
+      setUserClosedScenario(false); // Reset user close flag for new scenario
+
+      // Reset enhanced scoring state for new scenario
+      setIncorrectAttempts(0);
+      setScenarioStartTime(Date.now()); // Set start time for new scenario
+
       setShowScenario(true);
     }
-  }, [scenarioIndex, scenarios?.length, score, health, combo, scenarioResults]);
+  }, [scenarioIndex, scenarios?.length, score, health, combo, scenarioResults, currentModule, user?.id, timer, placedPieces]);
 
   // ===== PROGRESS SAVING =====
   // Temporarily disabled auto-save to prevent infinite re-renders
@@ -850,7 +1398,7 @@ export const JigsawBoard: React.FC = () => {
         const piece = availablePieces.find((p) => p.id === event.active.id);
         setActiveDragPiece(piece || null);
       }}
-      onDragEnd={(event) => {
+      onDragEnd={async (event) => {
         setActiveDragPiece(null);
         if (event.over && event.active) {
           const containerType = event.over.id;
@@ -859,7 +1407,7 @@ export const JigsawBoard: React.FC = () => {
             (containerType === "violations" || containerType === "actions") &&
             piece
           ) {
-            handleDrop(containerType, piece);
+            await handleDrop(containerType, piece);
           }
         }
       }}
@@ -1144,7 +1692,11 @@ export const JigsawBoard: React.FC = () => {
               >
                 <ScenarioDialog
                   scenario={scenario}
-                  onClose={() => setShowScenario(false)}
+                  onClose={() => {
+                    console.log("👤 User manually closed scenario dialog");
+                    setShowScenario(false);
+                    setUserClosedScenario(true);
+                  }}
                 />
               </motion.div>
             )}
@@ -1273,92 +1825,76 @@ export const JigsawBoard: React.FC = () => {
                   }
                   getTopThreeBestScores={safeGetTopThreeBestScores}
                   onClose={async () => {
-                    // Save game completion data to database
-                    const overallStats = calculateOverallStats(
-                      scenarioResults,
-                      timer
-                    );
+                    console.log("🎯 Level 3 module completed! Saving module attempt...");
+                    console.log("🎯 Current state before play again:", {
+                      timer,
+                      scenarioResultsCount: scenarioResults.length,
+                      score,
+                      health,
+                      combo,
+                      scenarioIndex
+                    });
 
-                    // Calculate final score (same logic as in FinalStatsPopup)
-                    const maxPossibleScore = scenarioResults.length * 100;
-                    const maxPossibleCombo = scenarioResults.length * 5;
-                    const maxHealth = 100;
-                    const scorePart = Math.round(
-                      (overallStats.totalScore / maxPossibleScore) * 70
-                    );
-                    const comboPart = Math.round(
-                      (overallStats.totalCombo / maxPossibleCombo) * 20
-                    );
-                    const healthPart = Math.round(
-                      (overallStats.avgHealth / maxHealth) * 10
-                    );
-                    const finalScore = Math.min(
-                      scorePart + comboPart + healthPart,
-                      100
-                    );
-
-                    try {
-                      // Get module ID for saving
-                      let moduleId: string = "1"; // default
-                      if (
-                        typeof currentModule === "object" &&
-                        currentModule !== null &&
-                        "id" in currentModule
-                      ) {
-                        moduleId = (currentModule as any).id.toString();
-                      } else if (typeof currentModule === "number") {
-                        moduleId = (currentModule as number).toString();
-                      }
-
-                      console.log("🎯 Attempting to save Level 3 completion:", {
-                        user: user ? { id: user.id, email: user.email } : null,
-                        moduleId,
-                        scenarioIndex: scenarioResults.length - 1,
-                        finalScore: finalScore, // Using calculated final score (90/100)
-                        totalScore: overallStats.totalScore, // Raw total for reference
-                        timer,
-                        scenarioResults: scenarioResults.length,
-                        serviceError,
-                      });
-
-                      const result = await saveGameCompletion(
-                        moduleId,
-                        scenarioResults.length - 1, // Last scenario index
-                        finalScore, // Use the calculated final score (90/100) instead of raw total
-                        timer,
-                        {
-                          scenarioResults,
-                          rawTotalScore: overallStats.totalScore, // Keep raw score for reference
-                          calculatedScore: finalScore,
-                          scoreParts: { scorePart, comboPart, healthPart },
-                        }, // Enhanced placed pieces data
-                        true // isCompleted
-                      );
-
-                      console.log("💾 Save result:", result);
-
-                      if (result.success) {
-                        console.log(
-                          "✅ Game completion data saved successfully",
-                          {
-                            isNewHighScore: result.isNewHighScore,
-                            finalScore: finalScore, // Correct final score (90/100)
-                            rawTotalScore: overallStats.totalScore, // Raw total for reference
-                            totalTime: timer,
-                          }
-                        );
-                      } else {
-                        console.error(
-                          "❌ Failed to save game completion data:",
-                          result
-                        );
-                      }
-                    } catch (error) {
-                      console.error("💥 Exception during save:", error);
+                    // Get module ID for clearing
+                    let moduleId: string = "1";
+                    if (
+                      typeof currentModule === "object" &&
+                      currentModule !== null &&
+                      "id" in currentModule
+                    ) {
+                      moduleId = (currentModule as any).id.toString();
+                    } else if (typeof currentModule === "number") {
+                      moduleId = (currentModule as number).toString();
                     }
 
+                    // Reset ALL game state variables for complete replay
+                    console.log("🔄 Resetting all game state for replay...");
+
+                    // Set flag to prevent stale data saves during reset
+                    isResettingForReplayRef.current = true;
+
+                    // Immediately clear refs to prevent any stale data saves
+                    currentTimerRef.current = 0;
+                    currentScoreRef.current = 0;
+                    currentHealthRef.current = 100;
+                    currentComboRef.current = 0;
+                    currentScenarioResultsRef.current = [];
+                    currentPlacedPiecesRef.current = { violations: [], actions: [] };
+                    currentScenarioIndexRef.current = 0;
+
+                    // First, update the level_progress table to mark Level 3 as completed
+                    if (user?.id) {
+                      try {
+                        console.log('🎯 Updating level_progress table for Level 3 completion...', {
+                          userId: user.id,
+                          moduleId: parseInt(moduleId),
+                          levelId: 3
+                        });
+
+                        const { error: levelProgressError } = await LevelProgressService.completeLevel(
+                          user.id,
+                          parseInt(moduleId),
+                          3 // Level 3
+                        );
+
+                        if (levelProgressError) {
+                          console.error('❌ Failed to update level_progress:', levelProgressError);
+                        } else {
+                          console.log('✅ Level 3 marked as completed in level_progress table');
+                        }
+                      } catch (error) {
+                        console.error('❌ Exception updating level_progress:', error);
+                      }
+                    }
+
+                    // Then, save entire Level 3 data to history table
+                    await saveLevel3DataToHistory(moduleId, scenarioResults, timer);
+
+                    // Finally, remove ALL existing records from database for completely fresh start
+                    await clearModuleProgress(moduleId);
+
+                    // Core game state
                     setShowFinalStats(false);
-                    // Reset the game state for potential replay
                     setScenarioIndex(0);
                     setScenarioResults([]);
                     setScore(0);
@@ -1366,7 +1902,52 @@ export const JigsawBoard: React.FC = () => {
                     setCombo(0);
                     setTimer(0);
                     setPlacedPieces({ violations: [], actions: [] });
-                    setShowScenario(true);
+                    setCorrectPlacementIndex(0);
+
+                    // Reset enhanced scoring state
+                    setIncorrectAttempts(0);
+                    setScenarioStartTime(0); // Will be set when first scenario starts
+
+                    // UI state - initially hide scenario dialog
+                    setShowScenario(false);
+                    setShowBriefing(false);
+                    setIsComplete(false);
+                    setFeedback("");
+                    setActiveDragPiece(null);
+
+                    // Initialization state
+                    setShowContinueDialog(false);
+                    setIsInitializing(false); // Don't trigger initialization
+                    setHasCheckedProgress(true); // Skip progress check
+                    setIsReplayMode(true); // Enable replay mode for auto-show
+                    setUserClosedScenario(false); // Reset user close flag for replay
+
+                    // Clear timer interval if running and restart it
+                    if (timerRef.current) {
+                      clearInterval(timerRef.current);
+                      timerRef.current = null;
+                    }
+
+                    // Show first scenario after state reset (timer will start when scenario is closed)
+                    setTimeout(() => {
+                      // Don't start timer here - it will start automatically when user closes scenario dialog
+                      console.log("⏱️ Timer will start when user closes scenario dialog and begins playing");
+
+                      // Ensure scenarios are loaded and show first scenario dialog
+                      if (scenarios && scenarios.length > 0) {
+                        console.log("🎯 Showing first scenario for replay...", scenarios[0]?.title);
+                        setShowScenario(true);
+                        setIsReplayMode(false); // Reset replay mode since we're showing manually
+                      } else {
+                        console.log("⚠️ Scenarios not loaded yet, will show when available via useEffect");
+                        // Scenarios will be loaded by the useEffect and showScenario will be triggered
+                      }
+
+                      // Clear the reset flag after state is fully reset
+                      isResettingForReplayRef.current = false;
+                    }, 200); // Delay to ensure state is fully reset
+
+                    console.log("✅ Complete game reset for replay finished");
                   }}
                 />
               </motion.div>
