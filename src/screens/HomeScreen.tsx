@@ -259,9 +259,7 @@ const HomeScreen: React.FC = () => {
               >
                 Information
               </Button>
-              <Button size="sm" variant="secondary" onClick={handleLogout}>
-                Logout
-              </Button>
+              {/* Logout button removed from profile dropdown */}
             </div>
           )}
         </div>
@@ -346,8 +344,8 @@ const HomeScreen: React.FC = () => {
               { label: "View Scores", onClick: viewScores, shouldDisable: true },
               { label: "Instructions", onClick: viewInstructions, shouldDisable: false },
               {
-                label: "Quit Game",
-                onClick: quitGame,
+                label: "Logout",
+                onClick: handleLogout,
                 variant: "danger" as const,
                 shouldDisable: false,
               },

@@ -853,12 +853,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
 
         {/* Toggle Mode */}
         <div className="mt-4 text-center">
-          <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-gray-600`}>
+          <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-gray-200`}>
             {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
             <button
               type="button"
               onClick={onToggleMode}
-              className="ml-1 font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+              className="ml-1 font-medium text-white hover:text-blue-400 transition-colors duration-200"
             >
               {mode === 'login' ? 'Sign up' : 'Sign in'}
             </button>
