@@ -9,11 +9,19 @@ export interface GameUnlockStatus {
 export class GameUnlockService {
   /**
    * Check if the game is locked by querying the game_unlock table
+   * Special case: user_id "5c4e1afc-35af-46fb-8f90-d77170f5ac9a" is always unlocked
+   * @param userId - Optional user ID to check for special unlock conditions
    * @returns Promise<boolean> - true if game is locked, false if unlocked
    */
-  static async isGameLocked(): Promise<boolean> {
+  static async isGameLocked(userId?: string): Promise<boolean> {
     try {
-      console.log('🔍 Checking game unlock status...');
+      console.log('🔍 Checking game unlock status...', { userId });
+      
+      // Special case: unlock for specific user_id
+      if (userId === "5c4e1afc-35af-46fb-8f90-d77170f5ac9a") {
+        console.log('🔓 Special unlock for user:', userId);
+        return false;
+      }
       
       const { data, error } = await supabase
         .from('game_unlock')
