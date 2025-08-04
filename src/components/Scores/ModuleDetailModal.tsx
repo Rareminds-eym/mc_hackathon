@@ -9,6 +9,24 @@ import { Level2GameData } from '../../types/Level2/types';
 import { level4Service } from '../Level4/services/level4services';
 import { Level4GameData } from '../Level4/services/level4services';
 
+// Interface for Level 3 data from level3_history table
+interface Level3HistoryData {
+  id: number;
+  user_id: string;
+  module_id: string;
+  session_completed_at: string;
+  total_scenarios: number;
+  total_score: number;
+  total_time: number;
+  avg_health: number;
+  total_combo: number;
+  scenario_results?: string;
+  detailed_progress?: string;
+  session_summary?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, onClose }) => {
   // State for Level 1 score (Modules 1-4)
   const [level1Score, setLevel1Score] = useState<number | null>(null);
@@ -77,6 +95,11 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
   const [isLoadingLevel4Data, setIsLoadingLevel4Data] = useState(false);
   const [level4DataError, setLevel4DataError] = useState<string | null>(null);
 
+  // State for level3_game_data
+  const [level3Data, setLevel3Data] = useState<Level3HistoryData | null>(null);
+  const [isLoadingLevel3Data, setIsLoadingLevel3Data] = useState(false);
+  const [level3DataError, setLevel3DataError] = useState<string | null>(null);
+
   // Fetch level2_game_data when modal opens for Module 1
   useEffect(() => {
     const fetchLevel2Data = async () => {
@@ -126,6 +149,47 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
     };
 
     fetchLevel4Data();
+  }, [isOpen, module, user]);
+
+  // Fetch level3_game_data when modal opens for modules that support Level 3
+  useEffect(() => {
+    const fetchLevel3Data = async () => {
+      if (!isOpen || !module || !user) return;
+
+      // Level 3 is available for modules 1, 2, 3, 4 (jigsaw game)
+      const level3Modules = [1, 2, 3, 4];
+      if (!level3Modules.includes(module.id)) return;
+
+      setIsLoadingLevel3Data(true);
+      setLevel3DataError(null);
+
+      try {
+        // Query level3_history table to get the best completed session for the module
+        const { data, error } = await supabase
+          .from('level3_history')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('module_id', module.id.toString())
+          .order('total_score', { ascending: false })
+          .order('session_completed_at', { ascending: false })
+          .limit(1);
+
+        if (error) {
+          setLevel3DataError(error.message);
+        } else if (data && data.length > 0) {
+          // Use the best session data directly
+          setLevel3Data(data[0]);
+        } else {
+          setLevel3Data(null);
+        }
+      } catch (err) {
+        setLevel3DataError(err instanceof Error ? err.message : 'Failed to load Level 3 data');
+      } finally {
+        setIsLoadingLevel3Data(false);
+      }
+    };
+
+    fetchLevel3Data();
   }, [isOpen, module, user]);
 
   if (!isOpen || !module) return null;
@@ -353,6 +417,81 @@ const ModuleDetailModal: React.FC<ModuleDetailModalProps> = ({ isOpen, module, o
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Level 3 Game Data Section - Show for modules that support Level 3 */}
+          {[1, 2, 3, 4].includes(module.id) && (
+            <>
+              <div className={`mt-4 ${isMobileLandscape ? 'mt-3' : isMobile ? 'mt-4' : 'mt-6'}`}>
+                {isLoadingLevel3Data ? (
+                  <div className={`flex items-center justify-center bg-white rounded-lg shadow-sm border border-green-100 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
+                    <span className={`ml-2 text-gray-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      Loading Level 3 data...
+                    </span>
+                  </div>
+                ) : level3DataError ? (
+                  <div className={`bg-red-50 rounded-lg shadow-sm border border-red-200 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <p className={`text-red-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      Error: {level3DataError}
+                    </p>
+                  </div>
+                ) : !level3Data ? (
+                  <div className={`bg-gray-50 rounded-lg shadow-sm border border-gray-200 ${
+                    isMobileLandscape ? 'p-2' : isMobile ? 'p-3' : 'p-4'
+                  }`}>
+                    <p className={`text-gray-600 ${
+                      isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
+                      No Level 3 data found for Module {module.id}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={`bg-white rounded-lg shadow-sm border border-green-100 hover:shadow-md transition-shadow duration-200 ${
+                    isMobileLandscape ? 'p-1.5' : isMobile ? 'p-2' : 'p-4'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className={`flex items-center ${
+                        isMobileLandscape ? 'space-x-1.5' : isMobile ? 'space-x-2' : 'space-x-3'
+                      }`}>
+                        <div>
+                          <h4 className={`font-medium text-gray-800 ${
+                            isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-base'
+                          }`}>
+                            Level 3
+                          </h4>
+                          <div className={`text-gray-500 ${
+                          isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                        }`}>
+                          Time: {Math.floor(level3Data.total_time / 60)}:{(level3Data.total_time % 60).toString().padStart(2, '0')}
+                        </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-bold text-green-600 ${
+                          isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-lg'
+                        }`}>
+                          Completed
+                        </div>
+                        <div className={`text-gray-500 ${
+                          isMobileLandscape ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'
+                        }`}>
+                          Score: {level3Data.total_score}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
