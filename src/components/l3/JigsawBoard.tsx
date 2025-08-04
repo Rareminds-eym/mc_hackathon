@@ -193,8 +193,8 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
   const isMobileHorizontal = isMobile && isHorizontal;
   const navigate = useNavigate();
 
-  const handleGoToModules = () => {
-    navigate("/modules");
+  const handleGoToLevels = () => {
+    navigate(`/modules/${currentModule}`); // If the route should be /levels, change here
   };
 
   const formatTime = (seconds: number) => {
@@ -290,14 +290,14 @@ const FinalStatsPopup: React.FC<FinalStatsPopupProps> = ({
           className={`pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 text-white font-black pixel-text hover:from-green-400 hover:to-blue-500 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-1 flex-1 ${
             isMobile ? "px-3 py-2 text-xs" : "px-6 py-3 gap-2"
           }`}
-          onClick={handleGoToModules}
-          aria-label="Back to Modules"
+          onClick={handleGoToLevels}
+          aria-label="Back to Levels"
         >
           <Icon
             icon="mdi:home-map-marker"
             className={isMobile ? "w-3 h-3" : "w-5 h-5"}
           />
-          {isMobile ? "Modules" : "Back to Modules"}
+          {isMobile ? "Levels" : "Back to Levels"}
         </button>
         <button
           className={`pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-900 font-black pixel-text hover:from-yellow-300 hover:to-orange-400 transition-all duration-200 active:translate-y-[2px] shadow-lg flex items-center justify-center gap-1 flex-1 ${
@@ -1341,7 +1341,7 @@ export const JigsawBoard: React.FC = () => {
       setIsComplete(false);
       setShowFinalStats(true);
     } else {
-      // Move to next scenario (timer continues running)
+      // Move to next scenario (timer continues running - no timer reset)
       setScenarioIndex((idx) => idx + 1);
       setPlacedPieces({ violations: [], actions: [] });
       setIsComplete(false);
