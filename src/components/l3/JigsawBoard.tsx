@@ -56,6 +56,21 @@ async function saveProgressToSupabase({
   health?: number;
   combo?: number;
 }) {
+  // Add detailed logging to track what's being saved
+  console.log('💾 saveProgressToSupabase called with:', {
+    userId: userId ? 'authenticated' : 'null',
+    moduleId,
+    scenarioIndex,
+    finalScore,
+    totalTime,
+    scenarioResultsCount: scenarioResults?.length || 0,
+    isCompleted,
+    score,
+    health,
+    combo,
+    stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n') // Show where this was called from
+  });
+
   if (!userId) {
     console.warn('Cannot save progress: user not authenticated');
     return { success: false, error: 'User not authenticated' };
@@ -332,6 +347,13 @@ export const JigsawBoard: React.FC = () => {
   const [isReplayMode, setIsReplayMode] = useState(false);
   const [userClosedScenario, setUserClosedScenario] = useState(false);
 
+  // Enhanced scoring state
+  const [incorrectAttempts, setIncorrectAttempts] = useState(0);
+  const [scenarioStartTime, setScenarioStartTime] = useState<number>(0);
+
+  // Ref to track if we're currently resetting for replay (prevents stale data saves)
+  const isResettingForReplayRef = useRef(false);
+
   // Create a robust fallback function if getTopThreeBestScores is undefined
   const safeGetTopThreeBestScores = React.useMemo(() => {
     if (typeof getTopThreeBestScores === "function") {
@@ -463,7 +485,14 @@ export const JigsawBoard: React.FC = () => {
     const updateTimerInterval = setInterval(async () => {
       try {
         const currentTimer = currentTimerRef.current;
-        console.log('🕐 Periodic timer update triggered, timer:', currentTimer);
+        const currentScenarioResults = currentScenarioResultsRef.current;
+        const isResetting = isResettingForReplayRef.current;
+        console.log('🕐 Periodic timer update triggered:', {
+          timer: currentTimer,
+          scenarioResultsCount: currentScenarioResults.length,
+          isResetting: isResetting,
+          showFinalStats: showFinalStats
+        });
 
         // Get module ID for saving
         let moduleId: string = "1";
@@ -478,11 +507,14 @@ export const JigsawBoard: React.FC = () => {
         }
 
         // Only update if there's meaningful progress (timer > 10 seconds)
-        if (currentTimer > 10) {
+        // AND we have scenario results (indicating this is not a fresh restart)
+        // AND we're not currently resetting for replay
+        if (currentTimer > 10 && currentScenarioResults.length > 0 && !isResettingForReplayRef.current) {
           console.log('🕐 Updating timer in database:', {
             timer: currentTimer,
             moduleId,
-            scenarioIndex: currentScenarioIndexRef.current
+            scenarioIndex: currentScenarioIndexRef.current,
+            scenarioResultsCount: currentScenarioResults.length
           });
 
           const result = await saveProgressToSupabase({
@@ -492,7 +524,7 @@ export const JigsawBoard: React.FC = () => {
             finalScore: currentScoreRef.current,
             totalScore: currentScoreRef.current,
             totalTime: currentTimer,
-            scenarioResults: currentScenarioResultsRef.current,
+            scenarioResults: currentScenarioResults,
             placedPieces: currentPlacedPiecesRef.current,
             isCompleted: false, // Still in progress
             score: currentScoreRef.current,
@@ -502,7 +534,11 @@ export const JigsawBoard: React.FC = () => {
 
           console.log('🕐 Timer update result:', result);
         } else {
-          console.log('🕐 Timer too low for update:', currentTimer);
+          console.log('🕐 Skipping timer update - insufficient progress or resetting:', {
+            timer: currentTimer,
+            scenarioResultsCount: currentScenarioResults.length,
+            isResetting: isResettingForReplayRef.current
+          });
         }
       } catch (err) {
         console.error('🕐 Error updating timer in database:', err);
@@ -577,6 +613,14 @@ export const JigsawBoard: React.FC = () => {
   }, [scenarios, scenarioIndex, showScenario, showFinalStats, isInitializing, isComplete, isReplayMode, hasCheckedProgress, userClosedScenario]);
 
   // Auto-close feedback after 2.5 seconds (duplicate removed)
+
+  // Set scenario start time when scenario dialog is shown
+  useEffect(() => {
+    if (showScenario && scenarioStartTime === 0) {
+      setScenarioStartTime(Date.now());
+      console.log('⏱️ Scenario start time set for scoring calculations');
+    }
+  }, [showScenario, scenarioStartTime]);
 
   // ===== GAME PROGRESS RESTORE FROM SUPABASE =====
   useEffect(() => {
@@ -673,6 +717,10 @@ export const JigsawBoard: React.FC = () => {
             setScore(0);
             setHealth(100);
             setCombo(0);
+
+            // Reset enhanced scoring state for new scenario
+            setIncorrectAttempts(0);
+            setScenarioStartTime(Date.now());
           }
 
           setScenarioIndex(currentScenarioIndex);
@@ -703,6 +751,11 @@ export const JigsawBoard: React.FC = () => {
           setTimer(0);
           setPlacedPieces({ violations: [], actions: [] });
           setCorrectPlacementIndex(0);
+
+          // Reset enhanced scoring state
+          setIncorrectAttempts(0);
+          setScenarioStartTime(Date.now());
+
           // Show first scenario when starting fresh
           console.log("📋 Showing first scenario for fresh start");
           setShowScenario(true);
@@ -719,6 +772,11 @@ export const JigsawBoard: React.FC = () => {
         setTimer(0);
         setPlacedPieces({ violations: [], actions: [] });
         setCorrectPlacementIndex(0);
+
+        // Reset enhanced scoring state
+        setIncorrectAttempts(0);
+        setScenarioStartTime(Date.now());
+
         setShowScenario(true);
       }
       setIsInitializing(false);
@@ -801,233 +859,90 @@ export const JigsawBoard: React.FC = () => {
 
   /**
    * Calculate comprehensive scenario score based on placement, health, and combo
+   * Enhanced scoring system with multiple factors and bonuses
    */
   const calculateScenarioScore = useCallback((
     correctPlacements: number,
     totalPieces: number,
     currentHealth: number,
     currentCombo: number,
-    maxCombo: number
+    maxCombo: number,
+    incorrectAttempts: number = 0,
+    timeBonus: number = 0
   ): number => {
-    // Base score from correct placements (60% weight)
-    const placementScore = totalPieces > 0 ? (correctPlacements / totalPieces) * 60 : 0;
+    // 1. BASE PLACEMENT SCORE (40% weight) - Core gameplay performance
+    const placementPercentage = totalPieces > 0 ? correctPlacements / totalPieces : 0;
+    const baseScore = placementPercentage * 40;
 
-    // Health bonus (25% weight) - reward maintaining high health
-    const healthScore = (currentHealth / 100) * 25;
+    // 2. HEALTH SCORE (25% weight) - Reward maintaining high health
+    // Progressive health scoring: higher health = exponentially better score
+    const healthPercentage = currentHealth / 100;
+    const healthScore = Math.pow(healthPercentage, 0.8) * 25; // Slight curve to reward high health
 
-    // Combo bonus (15% weight) - reward consistent performance
-    const comboScore = maxCombo > 0 ? (currentCombo / maxCombo) * 15 : 0;
+    // 3. COMBO SCORE (20% weight) - Reward consistent correct placements
+    let comboScore = 0;
+    if (maxCombo > 0 && currentCombo > 0) {
+      const comboPercentage = currentCombo / maxCombo;
+      // Bonus for maintaining combo streaks
+      const comboMultiplier = currentCombo >= maxCombo ? 1.2 : 1.0; // Perfect combo bonus
+      comboScore = comboPercentage * 20 * comboMultiplier;
+    }
 
-    // Calculate final score and round to nearest integer
-    const finalScore = Math.round(placementScore + healthScore + comboScore);
+    // 4. EFFICIENCY BONUS (10% weight) - Reward fewer incorrect attempts
+    let efficiencyScore = 10;
+    if (incorrectAttempts > 0) {
+      // Penalty for incorrect attempts: -2 points per mistake, minimum 0
+      efficiencyScore = Math.max(0, 10 - (incorrectAttempts * 2));
+    }
 
-    // Cap at 100 points maximum
-    return Math.min(finalScore, 100);
+    // 5. SPEED BONUS (5% weight) - Optional time-based bonus
+    const speedScore = Math.min(timeBonus, 5); // Cap at 5 points
+
+    // 6. PERFECT PERFORMANCE BONUSES
+    let perfectBonus = 0;
+
+    // Perfect placement bonus (all pieces correct)
+    if (placementPercentage === 1.0) {
+      perfectBonus += 5;
+    }
+
+    // Perfect health bonus (no health lost)
+    if (currentHealth === 100) {
+      perfectBonus += 3;
+    }
+
+    // Perfect combo bonus (maintained full combo)
+    if (currentCombo === maxCombo && maxCombo > 0) {
+      perfectBonus += 2;
+    }
+
+    // 7. CALCULATE FINAL SCORE
+    const rawScore = baseScore + healthScore + comboScore + efficiencyScore + speedScore + perfectBonus;
+
+    // Round to nearest integer and cap at 100
+    const finalScore = Math.min(Math.round(rawScore), 100);
+
+    // Debug logging for score breakdown (can be removed in production)
+    console.log('🎯 Score Calculation Breakdown:', {
+      correctPlacements,
+      totalPieces,
+      placementPercentage: Math.round(placementPercentage * 100) + '%',
+      baseScore: Math.round(baseScore),
+      healthScore: Math.round(healthScore),
+      comboScore: Math.round(comboScore),
+      efficiencyScore: Math.round(efficiencyScore),
+      speedScore: Math.round(speedScore),
+      perfectBonus,
+      rawScore: Math.round(rawScore),
+      finalScore,
+      currentHealth,
+      currentCombo,
+      maxCombo,
+      incorrectAttempts
+    });
+
+    return finalScore;
   }, []);
-
-  /**
-   * Clear current session progress data for a module (used when starting replay)
-   * This clears incomplete scenarios but preserves completed module attempts for "last 3 tries"
-   */
-  const clearModuleProgress = useCallback(async (moduleId: string) => {
-    if (!user?.id) return;
-
-    try {
-      console.log('🗑️ Clearing current session progress for replay...', { moduleId });
-
-      // Delete incomplete scenario progress (not module completion records)
-      // This allows users to start fresh while preserving their attempt history
-      const { error } = await supabase
-        .from('level3_progress')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('module_id', moduleId)
-        .eq('is_completed', false); // Only delete incomplete scenarios
-
-      if (error) {
-        console.error('Error clearing current session progress:', error);
-        return;
-      }
-
-      // Also delete any incomplete module completion records (is_module_complete = true but scenarios not all done)
-      const { error: moduleError } = await supabase
-        .from('level3_progress')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('module_id', moduleId)
-        .eq('is_module_complete', true)
-        .is('final_score', null); // Delete module records without final scores (incomplete)
-
-      if (moduleError) {
-        console.error('Error clearing incomplete module records:', moduleError);
-      }
-
-      console.log('✅ Current session progress cleared successfully');
-    } catch (error) {
-      console.error('Exception clearing current session progress:', error);
-    }
-  }, [user?.id]);
-
-  /**
-   * Save module completion attempt with last 3 tries tracking using existing table
-   */
-  const saveModuleAttempt = useCallback(async (
-    moduleId: string,
-    totalScore: number,
-    totalTime: number,
-    avgHealth: number,
-    totalCombo: number,
-    scenarioResults: ScenarioResult[]
-  ) => {
-    if (!user?.id) return;
-
-    try {
-      console.log('💾 Saving module attempt...', { moduleId, totalScore, totalTime });
-
-      // Get existing module completion attempts for this user and module
-      const { data: existingAttempts, error: fetchError } = await supabase
-        .from('level3_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('module_id', moduleId)
-        .eq('is_module_complete', true)
-        .order('attempt_number', { ascending: true }); // Order by attempt_number for easier processing
-
-      if (fetchError) {
-        console.error('Error fetching existing attempts:', fetchError);
-        return;
-      }
-
-      console.log('📊 Found existing attempts:', existingAttempts?.length || 0);
-      if (existingAttempts && existingAttempts.length > 0) {
-        console.log('📊 Existing attempt details:', existingAttempts.map(a => ({
-          attempt_number: a.attempt_number,
-          score: a.module_total_score,
-          created_at: a.attempt_created_at
-        })));
-      }
-
-      // Determine if this is a new top performance
-      const isTopPerformance = !existingAttempts || existingAttempts.length === 0 ||
-        totalScore > Math.max(...existingAttempts.map(a => a.module_total_score || 0));
-
-      // Calculate next attempt number based on existing attempts
-      let nextAttemptNumber = 1;
-
-      if (existingAttempts && existingAttempts.length > 0) {
-        // Sort attempts by attempt_number to ensure correct ordering
-        const sortedAttempts = existingAttempts.sort((a, b) => a.attempt_number - b.attempt_number);
-        console.log('📊 Existing attempts:', sortedAttempts.map(a => ({ attempt_number: a.attempt_number, score: a.module_total_score })));
-
-        if (sortedAttempts.length >= 3) {
-          // We have 3 attempts, need to remove oldest and shift
-          console.log('🔄 Managing last 3 attempts constraint...');
-
-          // Delete the oldest attempt (lowest attempt_number)
-          const oldestAttempt = sortedAttempts[0];
-          await supabase
-            .from('level3_progress')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('module_id', moduleId)
-            .eq('attempt_number', oldestAttempt.attempt_number);
-
-          console.log('🗑️ Deleted oldest attempt:', oldestAttempt.attempt_number);
-
-          // Shift remaining attempts down by 1
-          for (let i = 1; i < sortedAttempts.length; i++) {
-            const attempt = sortedAttempts[i];
-            const newAttemptNumber = attempt.attempt_number - 1;
-
-            await supabase
-              .from('level3_progress')
-              .update({ attempt_number: newAttemptNumber })
-              .eq('user_id', user.id)
-              .eq('module_id', moduleId)
-              .eq('attempt_number', attempt.attempt_number);
-
-            console.log(`🔄 Shifted attempt ${attempt.attempt_number} → ${newAttemptNumber}`);
-          }
-
-          nextAttemptNumber = 3; // New attempt becomes #3
-        } else {
-          // Less than 3 attempts, just increment
-          const maxAttemptNumber = Math.max(...sortedAttempts.map(a => a.attempt_number));
-          nextAttemptNumber = maxAttemptNumber + 1;
-        }
-      }
-
-      console.log('🎯 Next attempt number will be:', nextAttemptNumber);
-
-      // Clear any existing top performance flags if this is a new top performance
-      if (isTopPerformance) {
-        await supabase
-          .from('level3_progress')
-          .update({ is_top_performance: false })
-          .eq('user_id', user.id)
-          .eq('module_id', moduleId)
-          .eq('is_top_performance', true);
-      }
-
-      // Insert module completion summary record
-      const moduleCompletionRecord = {
-        user_id: user.id,
-        module_id: moduleId,
-        scenario_index: -1, // Special value to indicate this is a module summary
-        final_score: totalScore,
-        total_score: totalScore,
-        total_time: totalTime,
-        scenario_results: scenarioResults,
-        placed_pieces: null,
-        is_completed: true,
-        score: totalScore,
-        health: Math.round(avgHealth),
-        combo: totalCombo,
-        attempt_number: nextAttemptNumber,
-        is_module_complete: true,
-        module_total_score: totalScore,
-        module_total_time: totalTime,
-        module_avg_health: avgHealth,
-        module_total_combo: totalCombo,
-        module_scenario_results: scenarioResults,
-        is_top_performance: isTopPerformance,
-        attempt_created_at: new Date().toISOString()
-      };
-
-      const { error: insertError } = await supabase
-        .from('level3_progress')
-        .insert([moduleCompletionRecord]);
-
-      if (insertError) {
-        console.error('Error saving module attempt:', insertError);
-        return;
-      }
-
-      if (isTopPerformance) {
-        console.log('🏆 New top performance recorded!');
-      }
-
-      console.log('✅ Module attempt saved successfully', {
-        attemptNumber: nextAttemptNumber,
-        isTopPerformance,
-        totalScore,
-        moduleId
-      });
-
-      // Verify the save by querying the attempts again
-      const { data: verifyAttempts } = await supabase
-        .from('level3_progress')
-        .select('attempt_number, module_total_score, is_top_performance')
-        .eq('user_id', user.id)
-        .eq('module_id', moduleId)
-        .eq('is_module_complete', true)
-        .order('attempt_number', { ascending: true });
-
-      console.log('🔍 Verification - All attempts after save:', verifyAttempts);
-    } catch (error) {
-      console.error('Exception saving module attempt:', error);
-    }
-  }, [user?.id]);
 
   /**
    * Calculate overall stats from scenario results
@@ -1059,6 +974,160 @@ export const JigsawBoard: React.FC = () => {
     },
     []
   );
+
+  /**
+   * Save entire Level 3 data to history table before clearing
+   * Uses simple INSERT operations without database functions
+   */
+  const saveLevel3DataToHistory = useCallback(async (moduleId: string, scenarioResults: ScenarioResult[], timer: number) => {
+    if (!user?.id) return;
+
+    try {
+      console.log('💾 Saving entire Level 3 data to history table...', { moduleId });
+
+      // Get all current Level 3 data for this user and module
+      const { data: currentData, error: fetchError } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId);
+
+      if (fetchError) {
+        console.error('Error fetching current Level 3 data:', fetchError);
+        return;
+      }
+
+      if (!currentData || currentData.length === 0) {
+        console.log('No current data to save to history');
+        return;
+      }
+
+      // Calculate overall stats for this completed session
+      const overallStats = calculateOverallStats(scenarioResults, timer);
+
+      // Create a comprehensive history record using simple data structure
+      const historyRecord = {
+        user_id: user.id,
+        module_id: moduleId,
+        session_completed_at: new Date().toISOString(),
+        total_scenarios: scenarioResults.length,
+        total_score: overallStats.totalScore,
+        total_time: overallStats.totalTime,
+        avg_health: overallStats.avgHealth,
+        total_combo: overallStats.totalCombo,
+        scenario_results: JSON.stringify(scenarioResults), // Convert to JSON string
+        detailed_progress: JSON.stringify(currentData), // Convert to JSON string
+        session_summary: JSON.stringify({
+          completedScenarios: scenarioResults.length,
+          avgScorePerScenario: scenarioResults.length > 0 ? Math.round(overallStats.totalScore / scenarioResults.length) : 0,
+          totalTimeFormatted: `${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}`,
+          finalStats: overallStats
+        })
+      };
+
+      // Simple INSERT operation to level3_history table
+      const { error: insertError } = await supabase
+        .from('level3_history')
+        .insert([historyRecord]);
+
+      if (insertError) {
+        console.error('Error saving Level 3 data to history:', insertError);
+        return;
+      }
+
+      console.log('✅ Level 3 data saved to history successfully', {
+        totalRecords: currentData.length,
+        totalScenarios: scenarioResults.length,
+        totalScore: overallStats.totalScore,
+        totalTime: timer
+      });
+
+    } catch (error) {
+      console.error('Exception saving Level 3 data to history:', error);
+    }
+  }, [user?.id, calculateOverallStats]);
+
+  /**
+   * Get Level 3 history for a user and module (optional utility function)
+   * Parses JSON strings back to objects for easy use
+   */
+  const getLevel3History = useCallback(async (moduleId: string, limit: number = 10) => {
+    if (!user?.id) return null;
+
+    try {
+      console.log('📊 Fetching Level 3 history...', { moduleId, limit });
+
+      const { data, error } = await supabase
+        .from('level3_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId)
+        .order('session_completed_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching Level 3 history:', error);
+        return null;
+      }
+
+      // Parse JSON strings back to objects for easier use
+      const parsedData = data?.map(record => ({
+        ...record,
+        scenario_results: record.scenario_results ? JSON.parse(record.scenario_results) : null,
+        detailed_progress: record.detailed_progress ? JSON.parse(record.detailed_progress) : null,
+        session_summary: record.session_summary ? JSON.parse(record.session_summary) : null,
+      }));
+
+      console.log('📊 Level 3 history fetched:', parsedData?.length || 0, 'records');
+      return parsedData;
+
+    } catch (error) {
+      console.error('Exception fetching Level 3 history:', error);
+      return null;
+    }
+  }, [user?.id]);
+
+  /**
+   * Clear ALL existing records for a module when starting replay
+   * This completely removes all records to ensure a fresh start
+   */
+  const clearModuleProgress = useCallback(async (moduleId: string) => {
+    if (!user?.id) return;
+
+    try {
+      console.log('🗑️ Removing ALL existing records for replay...', { moduleId });
+
+      // Delete ALL records for this user and module (including completed attempts)
+      // This ensures a completely fresh start with no existing data
+      const { error } = await supabase
+        .from('level3_progress')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId);
+
+      if (error) {
+        console.error('Error removing existing records:', error);
+        return;
+      }
+
+      console.log('✅ ALL existing records removed successfully');
+
+      // Verify the removal by checking what remains
+      const { data: remainingData } = await supabase
+        .from('level3_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId);
+
+      console.log('🔍 Records remaining after removal:', remainingData?.length || 0);
+    } catch (error) {
+      console.error('Exception removing existing records:', error);
+    }
+  }, [user?.id]);
+
+
+
+
 
   // ===== GAME LOGIC HANDLERS =====
 
@@ -1125,12 +1194,21 @@ export const JigsawBoard: React.FC = () => {
 
         // Calculate comprehensive score based on placement, health, and combo
         const maxPossibleCombo = totalCorrectPieces; // Maximum combo is total pieces
+
+        // Calculate time bonus for quick placements (optional)
+        const currentTime = Date.now();
+        const timeSinceScenarioStart = scenarioStartTime > 0 ? (currentTime - scenarioStartTime) / 1000 : 0;
+        const avgTimePerPiece = timeSinceScenarioStart / Math.max(newCorrectPlacements, 1);
+        const timeBonus = avgTimePerPiece < 10 ? Math.max(0, 5 - avgTimePerPiece / 2) : 0; // Bonus for quick placements
+
         const newScore = calculateScenarioScore(
           newCorrectPlacements,
           totalCorrectPieces,
           health,
           newCombo,
-          maxPossibleCombo
+          maxPossibleCombo,
+          incorrectAttempts,
+          timeBonus
         );
 
         // Update state
@@ -1175,25 +1253,36 @@ export const JigsawBoard: React.FC = () => {
         setFeedback("\uD83D\uDCA5 MISS! Analyze the scenario more carefully!");
         const newHealth = Math.max(0, health - 15);
         const newCombo = 0; // Reset combo on incorrect placement
+        const newIncorrectAttempts = incorrectAttempts + 1; // Track incorrect attempts
 
-        // Recalculate score with reduced health and reset combo
+        // Recalculate score with reduced health, reset combo, and penalty for incorrect attempts
         const totalCorrectPieces = correctViolations.length + correctActions.length;
         const maxPossibleCombo = totalCorrectPieces;
+
+        // Calculate time penalty for incorrect placement (optional)
+        const currentTime = Date.now();
+        const timeSinceScenarioStart = scenarioStartTime > 0 ? (currentTime - scenarioStartTime) / 1000 : 0;
+        const avgTimePerPiece = timeSinceScenarioStart / Math.max(correctPlacementIndex + 1, 1);
+        const timeBonus = avgTimePerPiece < 10 ? Math.max(0, 5 - avgTimePerPiece / 2) : 0;
+
         const recalculatedScore = calculateScenarioScore(
           correctPlacementIndex,
           totalCorrectPieces,
           newHealth,
           newCombo,
-          maxPossibleCombo
+          maxPossibleCombo,
+          newIncorrectAttempts,
+          timeBonus
         );
 
         setHealth(newHealth);
         setCombo(newCombo);
         setScore(recalculatedScore);
+        setIncorrectAttempts(newIncorrectAttempts);
         return { success: false };
       }
     },
-    [placedPieces, combo, correctViolations.length, correctActions.length, currentModule, user?.id, scenarioIndex, score, timer, scenarioResults, health, correctPlacementIndex, calculateScenarioScore]
+    [placedPieces, combo, correctViolations.length, correctActions.length, currentModule, user?.id, scenarioIndex, score, timer, scenarioResults, health, correctPlacementIndex, calculateScenarioScore, incorrectAttempts, scenarioStartTime]
   );
 
   /**
@@ -1261,6 +1350,11 @@ export const JigsawBoard: React.FC = () => {
       setScore(0); // Reset score for each scenario
       setCorrectPlacementIndex(0); // Reset placement index for new scenario
       setUserClosedScenario(false); // Reset user close flag for new scenario
+
+      // Reset enhanced scoring state for new scenario
+      setIncorrectAttempts(0);
+      setScenarioStartTime(Date.now()); // Set start time for new scenario
+
       setShowScenario(true);
     }
   }, [scenarioIndex, scenarios?.length, score, health, combo, scenarioResults, currentModule, user?.id, timer, placedPieces]);
@@ -1731,11 +1825,16 @@ export const JigsawBoard: React.FC = () => {
                   getTopThreeBestScores={safeGetTopThreeBestScores}
                   onClose={async () => {
                     console.log("🎯 Level 3 module completed! Saving module attempt...");
+                    console.log("🎯 Current state before play again:", {
+                      timer,
+                      scenarioResultsCount: scenarioResults.length,
+                      score,
+                      health,
+                      combo,
+                      scenarioIndex
+                    });
 
-                    // Calculate overall stats for this module attempt
-                    const overallStats = calculateOverallStats(scenarioResults, timer);
-
-                    // Get module ID for saving
+                    // Get module ID for clearing
                     let moduleId: string = "1";
                     if (
                       typeof currentModule === "object" &&
@@ -1747,21 +1846,25 @@ export const JigsawBoard: React.FC = () => {
                       moduleId = (currentModule as number).toString();
                     }
 
-                    // Save this module attempt with last 3 tries tracking
-                    await saveModuleAttempt(
-                      moduleId,
-                      overallStats.totalScore,
-                      overallStats.totalTime,
-                      overallStats.avgHealth,
-                      overallStats.totalCombo,
-                      scenarioResults
-                    );
-
                     // Reset ALL game state variables for complete replay
                     console.log("🔄 Resetting all game state for replay...");
 
-                    // Note: Module attempt was already saved in the saveModuleAttempt call above
-                    // Now clear current session progress for clean replay (but preserve completed attempts)
+                    // Set flag to prevent stale data saves during reset
+                    isResettingForReplayRef.current = true;
+
+                    // Immediately clear refs to prevent any stale data saves
+                    currentTimerRef.current = 0;
+                    currentScoreRef.current = 0;
+                    currentHealthRef.current = 100;
+                    currentComboRef.current = 0;
+                    currentScenarioResultsRef.current = [];
+                    currentPlacedPiecesRef.current = { violations: [], actions: [] };
+                    currentScenarioIndexRef.current = 0;
+
+                    // First, save entire Level 3 data to history table
+                    await saveLevel3DataToHistory(moduleId, scenarioResults, timer);
+
+                    // Then remove ALL existing records from database for completely fresh start
                     await clearModuleProgress(moduleId);
 
                     // Core game state
@@ -1774,6 +1877,10 @@ export const JigsawBoard: React.FC = () => {
                     setTimer(0);
                     setPlacedPieces({ violations: [], actions: [] });
                     setCorrectPlacementIndex(0);
+
+                    // Reset enhanced scoring state
+                    setIncorrectAttempts(0);
+                    setScenarioStartTime(0); // Will be set when first scenario starts
 
                     // UI state - initially hide scenario dialog
                     setShowScenario(false);
@@ -1809,6 +1916,9 @@ export const JigsawBoard: React.FC = () => {
                         console.log("⚠️ Scenarios not loaded yet, will show when available via useEffect");
                         // Scenarios will be loaded by the useEffect and showScenario will be triggered
                       }
+
+                      // Clear the reset flag after state is fully reset
+                      isResettingForReplayRef.current = false;
                     }, 200); // Delay to ensure state is fully reset
 
                     console.log("✅ Complete game reset for replay finished");
