@@ -1187,6 +1187,45 @@ export const JigsawBoard: React.FC = () => {
           setTimeout(() => {
             setIsComplete(true);
           }, 400);
+
+          // Check if this is the last scenario and mark level as complete
+          const isLastScenario = scenarioIndex >= (scenarios?.length ?? 0) - 1;
+          if (isLastScenario) {
+            // This is the last scenario's last piece - mark Level 3 as completed
+            setTimeout(async () => {
+              try {
+                // Get module ID for level completion
+                let moduleIdForCompletion: number = 1;
+                if (
+                  typeof currentModule === "object" &&
+                  currentModule !== null &&
+                  "id" in currentModule
+                ) {
+                  moduleIdForCompletion = Number((currentModule as any).id) || 1;
+                } else if (typeof currentModule === "number") {
+                  moduleIdForCompletion = currentModule;
+                }
+
+                // Mark Level 3 as completed in the level_progress table
+                if (user?.id) {
+                  console.log('🏆 Last scenario completed! Marking Level 3 as completed for module:', moduleIdForCompletion);
+                  const levelCompletionResult = await LevelProgressService.completeLevel(
+                    user.id,
+                    moduleIdForCompletion,
+                    3 // Level 3 (jigsaw game)
+                  );
+
+                  if (levelCompletionResult.error) {
+                    console.error('Error marking level as complete:', levelCompletionResult.error);
+                  } else {
+                    console.log('✅ Level 3 marked as completed successfully after last puzzle piece placement');
+                  }
+                }
+              } catch (error) {
+                console.error('Exception marking level as complete:', error);
+              }
+            }, 500); // Slight delay to ensure UI updates first
+          }
         }
 
         setFeedback("CRITICAL HIT! Perfect placement!");
@@ -1341,39 +1380,8 @@ export const JigsawBoard: React.FC = () => {
     const isLastScenario = scenarioIndex >= (scenarios?.length ?? 0) - 1;
 
     if (isLastScenario) {
-      // All scenarios completed - mark level as complete in database and show final stats
-      try {
-        // Get module ID for level completion
-        let moduleIdForCompletion: number = 1;
-        if (
-          typeof currentModule === "object" &&
-          currentModule !== null &&
-          "id" in currentModule
-        ) {
-          moduleIdForCompletion = Number((currentModule as any).id) || 1;
-        } else if (typeof currentModule === "number") {
-          moduleIdForCompletion = currentModule;
-        }
-
-        // Mark Level 3 as completed in the level_progress table
-        if (user?.id) {
-          console.log('🏆 Marking Level 3 as completed for module:', moduleIdForCompletion);
-          const levelCompletionResult = await LevelProgressService.completeLevel(
-            user.id,
-            moduleIdForCompletion,
-            3 // Level 3 (jigsaw game)
-          );
-
-          if (levelCompletionResult.error) {
-            console.error('Error marking level as complete:', levelCompletionResult.error);
-          } else {
-            console.log('✅ Level 3 marked as completed successfully');
-          }
-        }
-      } catch (error) {
-        console.error('Exception marking level as complete:', error);
-      }
-
+      // All scenarios completed - show final stats
+      // Note: Level completion already happened when the last piece was placed in handleDrop
       setIsComplete(false);
       setShowFinalStats(true);
     } else {
