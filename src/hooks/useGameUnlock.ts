@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GameUnlockService } from '../services/gameUnlockService';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface UseGameUnlockReturn {
   isGameLocked: boolean;
@@ -16,13 +17,14 @@ export const useGameUnlock = (): UseGameUnlockReturn => {
   const [isGameLocked, setIsGameLocked] = useState<boolean>(true); // Default to locked
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const checkGameUnlockStatus = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const isLocked = await GameUnlockService.isGameLocked();
+      const isLocked = await GameUnlockService.isGameLocked(user?.id);
       setIsGameLocked(isLocked);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to check game unlock status';
@@ -36,7 +38,7 @@ export const useGameUnlock = (): UseGameUnlockReturn => {
 
   useEffect(() => {
     checkGameUnlockStatus();
-  }, []);
+  }, [user?.id]);
 
   const refetch = async () => {
     await checkGameUnlockStatus();
