@@ -130,6 +130,9 @@ import { useLevel3Persistence } from "../../store/hooks/index";
 // Level 3 Database Service
 import useLevel3Service from "./hooks/useLevel3Service";
 
+// Level Progress Service for level completion
+import { LevelProgressService } from "../../services/levelProgressService";
+
 // Debug Component (temporarily disabled)
 // import { Level3Debug } from "../Debug/Level3Debug";
 
@@ -1338,7 +1341,39 @@ export const JigsawBoard: React.FC = () => {
     const isLastScenario = scenarioIndex >= (scenarios?.length ?? 0) - 1;
 
     if (isLastScenario) {
-      // All scenarios completed - show final stats
+      // All scenarios completed - mark level as complete in database and show final stats
+      try {
+        // Get module ID for level completion
+        let moduleIdForCompletion: number = 1;
+        if (
+          typeof currentModule === "object" &&
+          currentModule !== null &&
+          "id" in currentModule
+        ) {
+          moduleIdForCompletion = Number((currentModule as any).id) || 1;
+        } else if (typeof currentModule === "number") {
+          moduleIdForCompletion = currentModule;
+        }
+
+        // Mark Level 3 as completed in the level_progress table
+        if (user?.id) {
+          console.log('🏆 Marking Level 3 as completed for module:', moduleIdForCompletion);
+          const levelCompletionResult = await LevelProgressService.completeLevel(
+            user.id,
+            moduleIdForCompletion,
+            3 // Level 3 (jigsaw game)
+          );
+
+          if (levelCompletionResult.error) {
+            console.error('Error marking level as complete:', levelCompletionResult.error);
+          } else {
+            console.log('✅ Level 3 marked as completed successfully');
+          }
+        }
+      } catch (error) {
+        console.error('Exception marking level as complete:', error);
+      }
+
       setIsComplete(false);
       setShowFinalStats(true);
     } else {
