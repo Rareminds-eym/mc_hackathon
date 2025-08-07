@@ -24,7 +24,7 @@ export const useGameUnlock = (): UseGameUnlockReturn => {
       setIsLoading(true);
       setError(null);
       
-      const isLocked = await GameUnlockService.isGameLocked(user?.id);
+      const isLocked = await GameUnlockService.isGameLocked(user?.email);
       setIsGameLocked(isLocked);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to check game unlock status';
@@ -38,7 +38,7 @@ export const useGameUnlock = (): UseGameUnlockReturn => {
 
   useEffect(() => {
     checkGameUnlockStatus();
-  }, [user?.id]);
+  }, [user?.email]);
 
   const refetch = async () => {
     await checkGameUnlockStatus();

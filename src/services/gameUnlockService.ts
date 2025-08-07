@@ -9,17 +9,17 @@ export interface GameUnlockStatus {
 export class GameUnlockService {
   /**
    * Check if the game is locked by querying the game_unlock table
-   * Special case: user_id "5c4e1afc-35af-46fb-8f90-d77170f5ac9a" is always unlocked
-   * @param userId - Optional user ID to check for special unlock conditions
+   * Special case: users with email ending in "@rareminds.in" are always unlocked
+   * @param userEmail - Optional user email to check for special unlock conditions
    * @returns Promise<boolean> - true if game is locked, false if unlocked
    */
-  static async isGameLocked(userId?: string): Promise<boolean> {
+  static async isGameLocked(userEmail?: string): Promise<boolean> {
     try {
-      console.log('🔍 Checking game unlock status...', { userId });
+      console.log('🔍 Checking game unlock status...', { userEmail });
       
-      // Special case: unlock for specific user_id
-      if (userId === "5c4e1afc-35af-46fb-8f90-d77170f5ac9a") {
-        console.log('🔓 Special unlock for user:', userId);
+      // Special case: unlock for users with @rareminds.in email
+      if (userEmail && userEmail.endsWith("@rareminds.in")) {
+        console.log('🔓 Special unlock for user:', userEmail);
         return false;
       }
       
