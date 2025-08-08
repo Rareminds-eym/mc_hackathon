@@ -35,5 +35,5 @@ export const collegeCodes = [
   "bdu528", "bdu78", "anm202", "bdu595", "mku332", "BDU774", "msu318", "bruah", "bruab",
   "per208", "brubd", "bru3d", "per218", "bru4y", "bru4q", "bruaj", "bru36", "bru4z",
   "bru4j", "per131", "bru12", "bru4x", "bru5b", "bru34", "per132", "bru28", "per148",
-  "bru3j", "bruaa", "BRU31", "per204", "per189", "per220",
+  "bru3j", "bruaa", "BRU31", "per204", "per189", "per220", "msu105",
 ];
