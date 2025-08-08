@@ -10,6 +10,7 @@ import Level1Index from './screens/Level1';
 import AuthPage from './screens/AuthPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ResetPassword from './components/auth/ResetPassword';
 // import ErrorBoundary from './components/ErrorBoundary';
 import ErrorFallback from './components/ErrorFallback';
 import {
@@ -93,6 +94,7 @@ function App() {
         { path: '/modules/:moduleId/levels/4', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4/gameboard2d', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/auth', element: <AuthPage />, errorElement: <RouteErrorBoundary /> },
+        { path: '/reset-password', element: <ResetPassword />, errorElement: <RouteErrorBoundary /> },
         { path: '/instructions', element: <ProtectedRoute><InstructionsPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/scores', element: <ProtectedRoute><Score /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '*', element: <Navigate to="/" replace />, errorElement: <RouteErrorBoundary /> },
