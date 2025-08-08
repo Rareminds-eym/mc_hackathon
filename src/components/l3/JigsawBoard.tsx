@@ -731,18 +731,36 @@ export const JigsawBoard: React.FC = () => {
           setScenarioResults(allScenarioResults);
 
           // Check if all scenarios are completed and show FinalStatsPopup
-          const totalScenariosInModule = scenarios?.length ?? 0;
-          const allScenariosCompleted = allScenarioResults.length === totalScenariosInModule &&
-                                       totalScenariosInModule > 0 &&
-                                       !hasIncompleteScenario;
+          // Only check completion if scenarios are loaded
+          if (scenarios && scenarios.length > 0) {
+            const totalScenariosInModule = scenarios.length;
+            const allScenariosCompleted = allScenarioResults.length === totalScenariosInModule &&
+                                         totalScenariosInModule > 0 &&
+                                         !hasIncompleteScenario;
 
-          if (allScenariosCompleted) {
-            // All scenarios completed - show final stats
-            setShowFinalStats(true);
+            console.log("🔍 Progress restoration completion check:", {
+              totalScenariosInModule,
+              completedScenariosCount: allScenarioResults.length,
+              hasIncompleteScenario,
+              allScenariosCompleted,
+              scenarioResults: allScenarioResults.map(r => ({
+                scenarioIndex: r.scenarioIndex,
+                score: r.score
+              }))
+            });
+
+            if (allScenariosCompleted) {
+              // All scenarios completed - show final stats
+              console.log("🏆 All scenarios completed during restoration - showing FinalStatsPopup");
+              setShowFinalStats(true);
+            } else {
+              // Not all scenarios completed - show current scenario
+              console.log("📋 Showing scenario after progress restoration:", currentScenarioIndex);
+              setShowScenario(true);
+            }
           } else {
-            // Not all scenarios completed - show current scenario
-            console.log("📋 Showing scenario after progress restoration:", currentScenarioIndex);
-            setShowScenario(true);
+            console.log("⏳ Scenarios not loaded yet, will check completion when scenarios are available");
+            // Don't show anything yet, wait for scenarios to load
           }
         } else {
           // No progress data found - start fresh
@@ -783,6 +801,9 @@ export const JigsawBoard: React.FC = () => {
 
         setShowScenario(true);
       }
+
+      // Mark that we've checked progress to prevent multiple runs
+      setHasCheckedProgress(true);
       setIsInitializing(false);
     }
     restoreProgress();

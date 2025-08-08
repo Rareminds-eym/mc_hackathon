@@ -98,20 +98,20 @@ export const casesByModule: Record<number, Case[]> = {
         rootCause: {
           question: "Root Cause?",
           options: [
-            "Poor adherence to equipment maintenance SOP",
             "Power outage",
+            "Poor adherence to equipment maintenance SOP",
             "Supplier error"
           ],
-          correct: 0
+          correct: 1
         },
         impact: {
           question: "Potential consequence?",
           options: [
-            "Invalid test results; product release may be impacted",
             "Label mix-up",
-            "Regulatory delay due to artwork"
+            "Regulatory delay due to artwork",
+            "Invalid test results; product release may be impacted"
           ],
-          correct: 0
+          correct: 2
         }
       }
     },
@@ -127,11 +127,11 @@ export const casesByModule: Record<number, Case[]> = {
         rootCause: {
           question: "Root Cause?",
           options: [
-            "Lack of segregation of duties in QA",
             "Training non-compliance",
+            "Lack of segregation of duties in QA",
             "Vendor error"
           ],
-          correct: 0
+          correct: 1
         },
         impact: {
           question: "Potential consequence?",
@@ -156,20 +156,20 @@ export const casesByModule: Record<number, Case[]> = {
         rootCause: {
           question: "Root Cause?",
           options: [
-            "Lack of supervision during non-peak hours",
             "Contaminated raw materials",
-            "Uncalibrated thermometers"
+            "Uncalibrated thermometers",
+            "Lack of supervision during non-peak hours"
           ],
-          correct: 0
+          correct: 2
         },
         impact: {
           question: "Potential consequence?",
           options: [
-            "Non-compliance risk; possible microbial contamination",
             "Labeling issue",
+            "Non-compliance risk; possible microbial contamination",
             "Excess stock holding"
           ],
-          correct: 0
+          correct: 1
         }
       }
     },
@@ -185,20 +185,20 @@ export const casesByModule: Record<number, Case[]> = {
         rootCause: {
           question: "Root Cause?",
           options: [
-            "Ineffective SOP review process",
             "QA short-staffing",
-            "Equipment overload"
+            "Equipment overload",
+            "Ineffective SOP review process"
           ],
-          correct: 0
+          correct: 2
         },
         impact: {
           question: "Potential consequence?",
           options: [
-            "Audit failure; product risk due to outdated procedure",
             "Missing training records",
+            "Audit failure; product risk due to outdated procedure",
             "Pricing error"
           ],
-          correct: 0
+          correct: 1
         }
       }
     }
