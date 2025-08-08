@@ -382,7 +382,9 @@ export const GameBoard2D: React.FC = () => {
         break;
       case 'feedback':
         const correctAnswers = getCorrectAnswers();
-        const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
+        const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 
+                              (currentCase.questions.rootCause ? 1 : 0) + 
+                              (currentCase.questions.impact ? 1 : 0);
         if (correctAnswers === totalQuestions) {
           // Only continue if all answers are correct
           // Use moduleCases.length to determine if there are more cases
@@ -1033,7 +1035,9 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
   const renderFeedback = () => {
     const correctAnswers = getCorrectAnswers();
     const isAllCorrect = allAnswersCorrectAtFeedback;
-    const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
+    const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 
+                          (currentCase.questions.rootCause ? 1 : 0) + 
+                          (currentCase.questions.impact ? 1 : 0);
     const caseAccuracy = Math.round((correctAnswers / totalQuestions) * 100);
     // Calculate performance for this case only based on score (out of 15)
     const caseIdx = gameState.currentCase;
@@ -1161,7 +1165,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
               {/* Score summary */}
               <div className="flex flex-row items-center gap-2 sm:gap-3 mt-1">
                 <div className="pixel-border bg-black/30 rounded-lg px-2 sm:px-3 py-1 sm:py-2 flex flex-col items-center justify-center">
-                  <span className="text-red-700 font-bold text-sm lg:text-lg xl:text-xl leading-tight">{correctAnswers}/3 Correct</span>
+                  <span className="text-red-700 font-bold text-sm lg:text-lg xl:text-xl leading-tight">{correctAnswers}/{totalQuestions} Correct</span>
                   <span className="text-slate-400 text-xs lg:text-base xl:text-lg leading-tight font-medium">Case Accuracy: {caseAccuracy}%</span>
                 </div>
                 <div className="pixel-border bg-black/30 rounded-lg px-2 sm:px-3 py-1 sm:py-2 flex flex-col items-center justify-center">

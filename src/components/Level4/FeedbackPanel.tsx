@@ -26,11 +26,13 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   onBack
 }) => {
   // Calculate total questions based on what exists
-  const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
+  const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 
+                        (currentCase.questions.rootCause ? 1 : 0) + 
+                        (currentCase.questions.impact ? 1 : 0);
   const correctAnswers = [
     ...(currentCase.questions.violation ? [answers.violation === currentCase.questions.violation.correct] : []),
-    answers.rootCause === currentCase.questions.rootCause.correct,
-    answers.impact === currentCase.questions.impact.correct
+    ...(currentCase.questions.rootCause ? [answers.rootCause === currentCase.questions.rootCause.correct] : []),
+    ...(currentCase.questions.impact ? [answers.impact === currentCase.questions.impact.correct] : [])
   ];
   const caseScore = correctAnswers.filter(Boolean).length;
   const accuracy = Math.round((caseScore / totalQuestions) * 100);
