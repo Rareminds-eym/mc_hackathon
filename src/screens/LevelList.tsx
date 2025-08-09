@@ -18,9 +18,9 @@ const LevelList: React.FC = () => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileLandscape = isMobile && isHorizontal;
 
-  // Get module from location state or find by ID
+  // Get module from location state or find by ID or code (for HL1/HL2)
   const module: Module = location.state?.module ||
-    GMP_MODULES.find(m => m.id === parseInt(moduleId || '0'));
+    GMP_MODULES.find(m => m.id === parseInt(moduleId || '0') || m.code === moduleId);
 
   // Use level progress hook for database-backed progress tracking
   const {

@@ -28,6 +28,7 @@ import BingoGame from './screens/BingoGame';
 import SplashScreen from './components/ui/SplashScreen';
 import Score from './components/Scores/Score';
 import { InstallPrompt, OfflineIndicator } from './components/PWA';
+import GmpSimulationScreen from './screens/GmpSimulationScreen'; // .tsx file, not .jsx
 
 // Import offline sync functions
 import { pullFromSupabase, pushToSupabase, smartSync } from './db/sync';
@@ -191,6 +192,8 @@ function App() {
         },
         { path: '/home', element: <ProtectedRoute><HomeScreen /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules', element: <ProtectedRoute><ModuleMapScreen /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/HL1', element: <ProtectedRoute><GmpSimulationScreen mode="violation-root-cause" /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/HL2', element: <ProtectedRoute><GmpSimulationScreen mode="solution" /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId', element: <ProtectedRoute><LevelList /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/1', element: <ProtectedRoute><BingoGame /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/2', element: <ProtectedRoute><Level2 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
