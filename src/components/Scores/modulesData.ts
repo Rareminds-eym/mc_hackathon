@@ -29,36 +29,12 @@ export const modules: Module[] = [
     status: 'completed'
   },
   {
-    id: "HL1",
-    status: 'locked'
+    id: 5,
+    status: 'unlocked'
   },
   {
-    id: "HL2",
-    status: 'locked'
-  },
-  {
-    id: 7,
-    status: 'locked'
-  },
-  {
-    id: 8,
-    status: 'locked'
-  },
-  {
-    id: 9,
-    status: 'locked'
-  },
-  {
-    id: 10,
-    status: 'locked'
-  },
-  {
-    id: 11,
-    status: 'locked'
-  },
-  {
-    id: 12,
-    status: 'locked'
+    id: 6,
+    status: 'unlocked'
   }
 ];
 
