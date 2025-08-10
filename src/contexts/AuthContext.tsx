@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { getPasswordResetUrl, getAuthRedirectUrl } from '../utils/getCorrectDomain'
 
 interface SignupExtraFields {
   phone: string;
@@ -82,13 +81,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     try {
       setLoading(true)
-      // Use utility to get the correct auth redirect URL
-      const redirectUrl = getAuthRedirectUrl();
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
             ...(extraFields ? {
@@ -147,10 +143,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      // Use utility to get the correct password reset URL
-      const redirectUrl = getPasswordResetUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+        redirectTo: `${window.location.origin}/reset-password`,
         captchaToken: undefined
       })
       return { error }

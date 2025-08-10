@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { useDeviceLayout } from '../../hooks/useOrientation'
 import { collegeCodes as collegeCodeList } from '../../data/collegeCodes'
-import { getAuthRedirectUrl } from '../../utils/getCorrectDomain'
 
 interface AuthFormProps {
   mode: 'login' | 'signup' | 'forgot-password'
@@ -348,15 +347,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
   // Resend verification email logic
   const handleResendVerification = async () => {
     setResendMessage('');
-    // Use utility to get the correct auth redirect URL
-    const redirectUrl = getAuthRedirectUrl();
     // For Supabase JS v2:
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: formData.email,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
     });
     if (error) {
       setResendMessage('Failed to resend email. Try again later.');
