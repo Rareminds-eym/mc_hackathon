@@ -8,7 +8,7 @@ const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { isMobile } = useDeviceLayout()
-  
+
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -23,18 +23,46 @@ const ResetPassword: React.FC = () => {
     // Check if we have valid session from the reset link
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) {
-          console.error('Session error:', error)
-          setError('Invalid or expired reset link. Please request a new password reset.')
-          setIsCheckingSession(false)
-          return
-        }
-        
-        if (session) {
-          setIsValidSession(true)
+        // Get URL parameters to check if this is a password reset flow
+        const accessToken = searchParams.get('access_token')
+        const refreshToken = searchParams.get('refresh_token')
+        const type = searchParams.get('type')
+
+        // If we have the reset parameters, this is a valid reset link
+        if (accessToken && refreshToken && type === 'recovery') {
+          // Set the session using the tokens from the URL
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          })
+
+          if (error) {
+            console.error('Session error:', error)
+            setError('Invalid or expired reset link. Please request a new password reset.')
+            setIsCheckingSession(false)
+            return
+          }
+
+          if (data.session) {
+            setIsValidSession(true)
+          } else {
+            setError('Invalid or expired reset link. Please request a new password reset.')
+          }
         } else {
-          setError('Invalid or expired reset link. Please request a new password reset.')
+          // Fallback: check if we already have a valid session
+          const { data: { session }, error } = await supabase.auth.getSession()
+          if (error) {
+            console.error('Session error:', error)
+            setError('Invalid or expired reset link. Please request a new password reset.')
+            setIsCheckingSession(false)
+            return
+          }
+
+          if (session) {
+            setIsValidSession(true)
+          } else {
+            setError('Invalid or expired reset link. Please request a new password reset.')
+          }
         }
       } catch (err) {
         console.error('Error checking session:', err)
@@ -45,7 +73,7 @@ const ResetPassword: React.FC = () => {
     }
 
     checkSession()
-  }, [])
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,6 +106,10 @@ const ResetPassword: React.FC = () => {
         setError(error.message || 'Failed to update password. Please try again.')
       } else {
         setSuccess('Password updated successfully! Redirecting to login...')
+
+        // Sign out the user after password reset to ensure clean state
+        await supabase.auth.signOut()
+
         setTimeout(() => {
           navigate('/auth', { replace: true })
         }, 2000)
