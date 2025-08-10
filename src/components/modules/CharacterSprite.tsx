@@ -1,5 +1,4 @@
 import React from 'react';
-import { Bot } from 'lucide-react';
 
 interface CharacterSpriteProps {
   moduleId: number;
@@ -7,21 +6,11 @@ interface CharacterSpriteProps {
   platformSpacing: number;
 }
 
-const CharacterSprite: React.FC<CharacterSpriteProps> = ({ 
-  moduleId, 
-  platformWidth, 
-  platformSpacing 
-}) => {
-  // Calculate position based on module ID
-  const xPosition = (moduleId - 1) * (platformWidth + platformSpacing) + platformWidth / 2;
-
+const CharacterSprite: React.FC<CharacterSpriteProps> = () => {
   return (
     <div
-      className="absolute z-20 top-1/2"
+      className="relative z-20"
       style={{
-        left: `${xPosition}px`,
-        transform: 'translateX(-50%)',
-        marginTop: '-140px',
         animation: 'bobble 2.5s ease-in-out infinite',
       }}
     >
