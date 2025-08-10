@@ -347,10 +347,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
   // Resend verification email logic
   const handleResendVerification = async () => {
     setResendMessage('');
+    // Automatically detect the correct app URL
+    const baseUrl = window.location.origin;
     // For Supabase JS v2:
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: formData.email,
+      options: {
+        emailRedirectTo: `${baseUrl}/auth`
+      }
     });
     if (error) {
       setResendMessage('Failed to resend email. Try again later.');

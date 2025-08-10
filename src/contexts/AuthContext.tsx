@@ -81,10 +81,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     try {
       setLoading(true)
+      // Automatically detect the correct app URL
+      const baseUrl = window.location.origin;
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${baseUrl}/auth`,
           data: {
             full_name: fullName,
             ...(extraFields ? {
@@ -143,8 +146,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
+      // Automatically detect the correct app URL
+      const baseUrl = window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${baseUrl}/reset-password`,
         captchaToken: undefined
       })
       return { error }
