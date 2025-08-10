@@ -9,6 +9,11 @@ export const testEmailDomainConfiguration = () => {
   // Test automatic detection
   const detectedUrl = window.location.origin;
   const effectiveUrl = detectedUrl;
+
+  // Check for common issues
+  const isLocalhost = detectedUrl.includes('localhost') || detectedUrl.includes('127.0.0.1');
+  const isProductionUrl = !isLocalhost && (detectedUrl.includes('https://') || detectedUrl.includes('http://'));
+  const currentDomain = new URL(detectedUrl).hostname;
   
   console.log('📋 Auto-Detection Status:');
   console.log(`   Detected URL: ${detectedUrl}`);
