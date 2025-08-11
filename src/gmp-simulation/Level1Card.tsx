@@ -55,8 +55,8 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, text, type, isSelecte
   };
 
   const colorClasses = isSelected
-    ? 'border-blue-400 bg-blue-500/20'
-    : 'border-slate-600 bg-slate-700/50 hover:border-blue-500/50';
+    ? 'pixel-border bg-gradient-to-r from-cyan-500 to-blue-500'
+    : 'pixel-border bg-gradient-to-r from-gray-600 to-gray-700 hover:from-cyan-600 hover:to-blue-600';
 
   return (
     <div
@@ -66,11 +66,11 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, text, type, isSelecte
       {...attributes}
 
 
-      className={`p-2 rounded border cursor-grab transition-all select-none touch-none ${colorClasses} ${
+      className={`p-2 cursor-grab transition-all select-none touch-none ${colorClasses} ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
-      <span className="text-white text-sm">{text}</span>
+      <span className="text-white text-xs font-bold pixel-text">{text}</span>
     </div>
   );
 };
@@ -89,24 +89,23 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({ id, type, selectedItem, c
     data: { type },
   });
 
-  const colorClasses = type === 'violation'
-    ? isOver
-      ? 'border-cyan-400 bg-cyan-500/20 scale-105 shadow-lg shadow-cyan-500/25'
-      : selectedItem
-      ? 'border-cyan-500/50 bg-cyan-500/10'
-      : 'border-slate-600 bg-slate-700/50'
-    : isOver
-      ? 'border-orange-400 bg-orange-500/20 scale-105 shadow-lg shadow-orange-500/25'
-      : selectedItem
-      ? 'border-orange-500/50 bg-orange-500/10'
-      : 'border-slate-600 bg-slate-700/50';
-
   return (
-    <div
-      ref={setNodeRef}
-      className={`border-2 border-dashed rounded-lg p-4 min-h-24 transition-all ${colorClasses}`}
-    >
-      {children}
+    <div ref={setNodeRef} className="h-full relative">
+      {/* Drop Zone Effects */}
+      {isOver && (
+        <div className="absolute inset-0">
+          <div className="absolute inset-1 border-2 border-dashed border-cyan-300 animate-pulse rounded-lg"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-3 border-yellow-400 rounded-full opacity-60 animate-ping"></div>
+          <div className="absolute inset-2 bg-cyan-400 opacity-20 animate-pulse rounded-lg"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-black animate-bounce pixel-text">
+            DROP HERE!
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-10 h-full">
+        {children}
+      </div>
     </div>
   );
 };
@@ -123,12 +122,12 @@ const Level1Card: React.FC<Level1CardProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
-  // Cleanup activeItem on component unmount or question change
+  // Reset fields when question changes
   React.useEffect(() => {
-    return () => {
-      setActiveItem(null);
-    };
-  }, [question.id]);
+    setSelectedViolation(currentAnswer?.violation || '');
+    setSelectedRootCause(currentAnswer?.rootCause || '');
+    setActiveItem(null);
+  }, [question.id, currentAnswer]);
 
   // Setup sensors for drag and drop with higher thresholds to prevent click selection
   const sensors = useSensors(
@@ -245,112 +244,224 @@ const Level1Card: React.FC<Level1CardProps> = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
+      <div className="flex flex-col bg-gray-800 overflow-hidden relative" style={{ height: 'calc(100vh - 80px)' }}>
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+        <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+
         {/* Case Brief */}
         {!isMobileHorizontal && (
-          <div className="bg-slate-800 p-4 border-b border-cyan-500/20">
-            <h3 className="text-cyan-300 font-bold mb-2">CASE BRIEF</h3>
-            <p className="text-gray-200 text-sm">{question.caseFile} Analyze the problem scenario, identify the violation and its root cause, then drag both to the correct containers.</p>
+          <div className="relative z-10 pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 m-2 mb-0">
+            <h3 className="text-cyan-100 font-black pixel-text mb-2">MISSION BRIEFING</h3>
+            <p className="text-cyan-50 text-sm font-bold">{question.caseFile} Analyze the problem scenario, identify the violation and its root cause, then drag both to the correct containers.</p>
           </div>
         )}
 
         {/* Main Content */}
-        <div className="flex-1 flex p-4 space-x-4">
-          {/* VIOLATIONS & ROOT CAUSES Panel */}
-          <div className="w-1/3 bg-slate-800/90 rounded-xl p-4 border border-cyan-400/30">
-            <h3 className="text-cyan-300 font-bold mb-4">VIOLATIONS & ROOT CAUSES</h3>
+        <div className="relative z-10 flex-1 flex p-2 space-x-3">
+          {/* COMMAND CENTER - Items Pool */}
+          <div className="w-1/3 flex-shrink-0">
+            <div className="pixel-border-thick bg-gray-800 p-4 h-full overflow-hidden flex flex-col">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+              <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
 
-            {/* Combined Shuffled Options */}
-            <div className="space-y-2">
-              {combinedOptions.map((option) => (
-                <DraggableItem
-                  key={option.id}
-                  id={option.id}
-                  text={option.text}
-                  type={option.type}
-                  isSelected={option.isSelected}
-                />
-              ))}
+              <div className="relative z-10 flex flex-col h-full">
+                {/* Command Center Header */}
+                <div className="flex items-center space-x-2 mb-3 flex-shrink-0">
+                  <div className="w-6 h-6 bg-cyan-500 pixel-border flex items-center justify-center">
+                    <Target className="w-4 h-4 text-cyan-900" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black text-cyan-300 pixel-text">EVIDENCE ARSENAL</h2>
+                    <div className="text-xs text-gray-400 font-bold">
+                      ITEMS: {combinedOptions.length} | DRAG TO ZONES
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items Pool - Flexible Height */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-2">
+                    {combinedOptions.map((option, index) => (
+                      <div
+                        key={option.id}
+                        className="animate-slideIn"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <DraggableItem
+                          id={option.id}
+                          text={option.text}
+                          type={option.type}
+                          isSelected={option.isSelected}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Analysis Panel */}
-          <div className="w-2/3 bg-slate-800/90 rounded-xl p-4 border border-blue-400/30">
-            <h3 className="text-blue-300 font-bold mb-4">INVESTIGATION ZONES</h3>
-            
-            <div className="space-y-4">
-              {/* Violation Scanner */}
-              <div>
-                <h4 className="text-cyan-300 text-sm font-bold mb-2">VIOLATION SCANNER</h4>
-                <DroppableZone
-                  id="violation-zone"
-                  type="violation"
-                  selectedItem={selectedViolation}
-                >
-                  {selectedViolation ? (
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <CheckCircle className="w-4 h-4 text-cyan-400" />
-                        <span className="text-white font-bold text-sm">VIOLATION DETECTED</span>
+          {/* TARGET ZONES */}
+          <div className="flex-1 flex gap-3 min-h-0">
+            {/* Violation Scanner */}
+            <div className="flex-1 animate-slideIn" style={{ animationDelay: '0ms' }}>
+              <div className="pixel-border-thick bg-gradient-to-br from-green-500 to-green-700 h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col">
+                {/* Header */}
+                <div className="relative z-10 p-3 flex-shrink-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 bg-green-300 pixel-border flex items-center justify-center">
+                        <Target className="w-3 h-3 text-green-900" />
                       </div>
-                      <p className="text-white text-sm">{selectedViolation}</p>
-                    </div>
-                  ) : (
-                    <div className="text-center text-slate-400">
-                      <Target className="w-6 h-6 mx-auto mb-2" />
-                      <p className="text-sm">Drop violation here</p>
-                    </div>
-                  )}
-                </DroppableZone>
-              </div>
-
-              {/* Root Cause Analyzer */}
-              <div>
-                <h4 className="text-orange-300 text-sm font-bold mb-2">ROOT CAUSE ANALYZER</h4>
-                <DroppableZone
-                  id="rootCause-zone"
-                  type="rootCause"
-                  selectedItem={selectedRootCause}
-                >
-                  {selectedRootCause ? (
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <CheckCircle className="w-4 h-4 text-orange-400" />
-                        <span className="text-white font-bold text-sm">ROOT CAUSE FOUND</span>
+                      <div>
+                        <h3 className="text-xs font-black text-white pixel-text">VIOLATION</h3>
+                        <div className="text-white/80 text-xs">Scanner Zone</div>
                       </div>
-                      <p className="text-white text-sm">{selectedRootCause}</p>
                     </div>
-                  ) : (
-                    <div className="text-center text-slate-400">
-                      <Search className="w-6 h-6 mx-auto mb-2" />
-                      <p className="text-sm">Drop root cause here</p>
-                    </div>
-                  )}
-                </DroppableZone>
-              </div>
-
-              {/* Proceed Button */}
-              <div className="mt-6 flex flex-col items-center">
-                <div className="text-slate-400 text-xs mb-3 text-center">
-                  Drag & Drop to select both violation and root cause
+                  </div>
                 </div>
-                <button
-                  onClick={onNext}
-                  disabled={!canProceed}
-                  className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-bold transition-all ${
-                    canProceed
-                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg transform hover:scale-105'
-                      : 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  <span>PROCEED TO NEXT CASE</span>
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+
+                {/* Drop Zone */}
+                <div className="px-3 pb-3 flex-1 min-h-0 overflow-y-auto relative z-10">
+                  <DroppableZone
+                    id="violation-zone"
+                    type="violation"
+                    selectedItem={selectedViolation}
+                  >
+                    {selectedViolation ? (
+                      <div className="h-full flex flex-col">
+                        {/* Status Header */}
+                        <div className="text-center py-2 border-b border-green-300/30">
+                          <div className="w-8 h-8 bg-green-300 pixel-border mx-auto mb-1 flex items-center justify-center animate-pulse">
+                            <CheckCircle className="w-5 h-5 text-green-900" />
+                          </div>
+                          <p className="text-green-100 font-black pixel-text text-xs">VIOLATION DETECTED!</p>
+                        </div>
+
+                        {/* Dropped Item Display */}
+                        <div className="flex-1 p-3 flex items-center justify-center">
+                          <div className="w-full">
+                            <div className="pixel-border-thick bg-gradient-to-r from-green-400 to-green-600 p-3 relative overflow-hidden">
+                              {/* Background Pattern */}
+                              <div className="absolute inset-0 bg-pixel-pattern opacity-20"></div>
+
+                              {/* Content */}
+                              <div className="relative z-10 text-center">
+                                <div className="w-6 h-6 bg-green-200 pixel-border mx-auto mb-2 flex items-center justify-center">
+                                  <Target className="w-4 h-4 text-green-900" />
+                                </div>
+                                <p className="text-white text-xs font-black pixel-text leading-tight">{selectedViolation}</p>
+                              </div>
+
+                              {/* Success Animation */}
+                              <div className="absolute top-1 right-1 w-2 h-2 bg-green-200 rounded-full animate-ping"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-white/20 mx-auto mb-3 flex items-center justify-center rounded-full">
+                          <Target className="w-8 h-8 text-white/60" />
+                        </div>
+                        <p className="text-white/80 font-bold text-sm">DROP ZONE</p>
+                        <p className="text-white/60 text-xs">Drag violation here</p>
+                      </div>
+                    )}
+                  </DroppableZone>
+                </div>
               </div>
             </div>
+
+            {/* Root Cause Analyzer */}
+            <div className="flex-1 animate-slideIn" style={{ animationDelay: '150ms' }}>
+              <div className="pixel-border-thick bg-gradient-to-br from-orange-500 to-red-600 h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col">
+                {/* Header */}
+                <div className="relative z-10 p-3 flex-shrink-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 bg-orange-300 pixel-border flex items-center justify-center">
+                        <Search className="w-3 h-3 text-orange-900" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black text-white pixel-text">ROOT CAUSE</h3>
+                        <div className="text-white/80 text-xs">Analyzer Zone</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Drop Zone */}
+                <div className="px-3 pb-3 flex-1 min-h-0 overflow-y-auto relative z-10">
+                  <DroppableZone
+                    id="rootCause-zone"
+                    type="rootCause"
+                    selectedItem={selectedRootCause}
+                  >
+                    {selectedRootCause ? (
+                      <div className="h-full flex flex-col">
+                        {/* Status Header */}
+                        <div className="text-center py-2 border-b border-orange-300/30">
+                          <div className="w-8 h-8 bg-orange-300 pixel-border mx-auto mb-1 flex items-center justify-center animate-pulse">
+                            <CheckCircle className="w-5 h-5 text-orange-900" />
+                          </div>
+                          <p className="text-orange-100 font-black pixel-text text-xs">ROOT CAUSE FOUND!</p>
+                        </div>
+
+                        {/* Dropped Item Display */}
+                        <div className="flex-1 p-3 flex items-center justify-center">
+                          <div className="w-full">
+                            <div className="pixel-border-thick bg-gradient-to-r from-orange-400 to-red-500 p-3 relative overflow-hidden">
+                              {/* Background Pattern */}
+                              <div className="absolute inset-0 bg-pixel-pattern opacity-20"></div>
+
+                              {/* Content */}
+                              <div className="relative z-10 text-center">
+                                <div className="w-6 h-6 bg-orange-200 pixel-border mx-auto mb-2 flex items-center justify-center">
+                                  <Search className="w-4 h-4 text-orange-900" />
+                                </div>
+                                <p className="text-white text-xs font-black pixel-text leading-tight">{selectedRootCause}</p>
+                              </div>
+
+                              {/* Success Animation */}
+                              <div className="absolute top-1 right-1 w-2 h-2 bg-orange-200 rounded-full animate-ping"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-white/20 mx-auto mb-3 flex items-center justify-center rounded-full">
+                          <Search className="w-8 h-8 text-white/60" />
+                        </div>
+                        <p className="text-white/80 font-bold text-sm">DROP ZONE</p>
+                        <p className="text-white/60 text-xs">Drag root cause here</p>
+                      </div>
+                    )}
+                  </DroppableZone>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Proceed Button - Fixed Position */}
+          <div className="absolute bottom-4 right-4 z-20">
+            <button
+              onClick={onNext}
+              disabled={!canProceed}
+              className={`flex items-center space-x-2 px-4 py-3 pixel-border font-black pixel-text transition-all shadow-lg ${
+                canProceed
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white transform hover:scale-105 animate-pulse'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+              }`}
+            >
+              <span className="text-sm">PROCEED</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
-
       </div>
 
       {/* Drag Overlay */}
@@ -360,10 +471,10 @@ const Level1Card: React.FC<Level1CardProps> = ({
       >
         {activeItem && activeItem.text ? (
           <div
-            className="p-2 rounded border cursor-grabbing shadow-lg border-blue-400 bg-slate-800/90 backdrop-blur-sm transform scale-105 opacity-90 pointer-events-none"
+            className="pixel-border bg-gradient-to-r from-cyan-500 to-blue-500 p-2 cursor-grabbing transform scale-110 opacity-95 shadow-2xl pointer-events-none"
             style={{ zIndex: 9999 }}
           >
-            <span className="text-white text-sm font-medium">
+            <span className="text-white text-xs font-black pixel-text">
               {activeItem.text}
             </span>
           </div>
