@@ -1,8 +1,10 @@
 import { supabase } from '../lib/supabase';
 import React, { useState, useEffect } from 'react';
-import { Factory, Clock, Trophy, AlertTriangle } from 'lucide-react';
+import { Factory, Clock, Trophy, AlertTriangle, Eye } from 'lucide-react';
+import { useDeviceLayout } from '../hooks/useOrientation';
 import { hackathonData } from './HackathonData';
 import type { Question } from './HackathonData';
+// @ts-ignore
 import { QuestionCard } from './QuestionCard';
 import { Timer } from './Timer';
 import { Results } from './Results';
@@ -31,6 +33,13 @@ interface GmpSimulationProps {
 }
 
 const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) => {
+  // Device layout detection
+  const { isMobile, isHorizontal } = useDeviceLayout();
+  const isMobileHorizontal = isMobile && isHorizontal;
+
+  // Case brief modal state
+  const [showCaseBrief, setShowCaseBrief] = useState(false);
+
   // Save team attempt to backend
   const saveTeamAttempt = async (module_number: number) => {
     if (!session_id) {
@@ -136,7 +145,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
     if (gameState.gameCompleted && gameState.currentLevel === 1) {
       // Only poll after Module 5 completion
       const poll = async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("teams")
           .select("can_access_module6")
           .eq("session_id", session_id)
@@ -321,21 +330,6 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
     }));
   };
 
-  const resetGame = () => {
-    setGameState({
-      currentLevel: 1,
-      currentQuestion: 0,
-      questions: [],
-      answers: [],
-      score: 0,
-      timeRemaining: 5400,
-      gameStarted: false,
-      gameCompleted: false,
-      showLevelModal: false,
-      level1CompletionTime: 0,
-    });
-  };
-
   // Reset game state when mode changes (e.g., after navigation to HL2)
   React.useEffect(() => {
     console.log('[HL2 Debug] mode:', mode, 'currentLevel:', gameState.currentLevel);
@@ -494,42 +488,129 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   const progress = ((gameState.currentQuestion + 1) / 5) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900">
-      <div className="container mx-auto px-2 lg:px-4 py-2 lg:py-4">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-3 lg:p-4 mb-3 lg:mb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
-            <div className="flex items-center gap-2 lg:gap-3">
-              <Factory className="w-5 h-5 lg:w-8 lg:h-8 text-blue-600" />
-              <div>
-                <h1 className="text-base lg:text-xl font-bold text-gray-800">
-                  Level {gameState.currentLevel} - {gameState.currentLevel === 1 ? 'Analysis' : 'Solution'}
-                </h1>
-                <p className="text-xs lg:text-sm text-gray-600">
-                  Question {gameState.currentQuestion + 1} of 5
-                </p>
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 opacity-5">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-500/10 to-purple-600/10 animate-pulse"></div>
+        <div className="absolute top-0 left-0 w-full h-full opacity-20">
+          <div className="w-full h-full bg-gradient-to-br from-cyan-500/5 to-blue-600/5 animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* Modern Gaming Header */}
+      <div className="relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-blue-900/20 to-slate-900">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-600/5"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
+        </div>
+
+        <div className="relative backdrop-blur-sm border-b border-cyan-500/30 p-4">
+          <div className="container mx-auto">
+            <div className="flex items-center justify-between">
+
+              {/* Left Section - Mission Identity */}
+              <div className="flex items-center gap-6">
+                {/* Mission Badge */}
+                <div className="relative group">
+                  <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-2xl shadow-cyan-500/25 transform transition-all duration-300 group-hover:scale-105">
+                    <Factory className="w-7 h-7 text-white drop-shadow-lg" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-xs font-black text-black">{gameState.currentLevel}</span>
+                  </div>
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-cyan-400/50 rounded-full blur-sm"></div>
+                </div>
+
+                {/* Mission Info */}
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-3">
+                    <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-blue-200 tracking-wider">
+                      {gameState.currentLevel === 1 ? 'INVESTIGATION MODE' : 'SOLUTION DEPLOYMENT'}
+                    </h1>
+                    <div className="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full border border-cyan-400/30">
+                      <span className="text-cyan-300 text-sm font-bold">LEVEL {gameState.currentLevel}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+                      <span className="text-cyan-200 text-sm font-semibold">
+                        CASE {gameState.currentQuestion + 1} OF 5
+                      </span>
+                    </div>
+                    <div className="w-px h-4 bg-gradient-to-b from-transparent via-slate-500 to-transparent"></div>
+                    <div className="flex items-center space-x-2">
+                      <Trophy className="w-4 h-4 text-yellow-400" />
+                      <span className="text-yellow-300 text-sm font-bold">ACTIVE MISSION</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            {/* Timer */}
-            <div className="flex items-center gap-4">
-              <Timer
-                timeRemaining={gameState.timeRemaining}
-                onTimeUp={handleTimeUp}
-                setTimeRemaining={(time) => setGameState(prev => ({ ...prev, timeRemaining: time }))}
-                initialTime={5400}
-              />
-            </div>
-          </div>
-          {/* Progress Bar */}
-          <div className="mt-3 lg:mt-4">
-            <div className="bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
+
+              {/* Right Section - Control Panel */}
+              <div className="flex items-center gap-3">
+                {/* Case Brief Button - Mobile Horizontal Only */}
+                {isMobileHorizontal && gameState.currentLevel === 1 && (
+                  <button
+                    onClick={() => setShowCaseBrief(true)}
+                    className="group relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 px-4 py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-cyan-500/25 border border-cyan-400/30"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                    <div className="relative flex items-center space-x-2">
+                      <Eye className="w-4 h-4 text-white" />
+                      <span className="text-white text-sm font-bold">CASE BRIEF</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Timer Module */}
+                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-3 border border-slate-600/50 shadow-xl backdrop-blur-sm">
+                  <Timer
+                    timeRemaining={gameState.timeRemaining}
+                    onTimeUp={handleTimeUp}
+                    setTimeRemaining={(time) => setGameState(prev => ({ ...prev, timeRemaining: time }))}
+                    initialTime={5400}
+                  />
+                </div>
+
+                {/* Progress Module */}
+                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-3 border border-slate-600/50 shadow-xl backdrop-blur-sm">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex flex-col items-center">
+                      <span className="text-cyan-400 text-xs font-bold mb-1">PROGRESS</span>
+                      <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                        <div
+                          className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-full transition-all duration-700 shadow-lg"
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-cyan-400 text-lg font-black">{Math.round(progress)}%</div>
+                      <div className="text-slate-400 text-xs">COMPLETE</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="relative">
+                  <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 py-2.5 rounded-xl border border-green-400/30 shadow-lg backdrop-blur-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+                      <span className="text-green-300 font-black text-sm tracking-wide">ONLINE</span>
+                    </div>
+                  </div>
+                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-green-400/30 rounded-full blur-sm"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 container mx-auto px-2 min-h-0">
 
         {/* Question Card */}
         {currentQuestion && (
@@ -579,6 +660,41 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
             >
               Start Module 6
             </button>
+          </div>
+        )}
+
+        {/* Case Brief Modal - Only visible when toggled in mobile horizontal */}
+        {showCaseBrief && currentQuestion && (
+          <div
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowCaseBrief(false)}
+          >
+            <div
+              className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 border border-cyan-500/20 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Eye className="w-5 h-5 text-cyan-400" />
+                  <h3 className="text-lg font-bold text-white">CASE BRIEF</h3>
+                  <div className="bg-cyan-500/20 px-3 py-1 rounded-full">
+                    <span className="text-cyan-300 font-bold text-sm">ACTIVE</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCaseBrief(false)}
+                  className="text-slate-400 hover:text-white transition-colors duration-200 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="bg-slate-700/50 p-4 rounded-lg border border-cyan-500/20">
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 animate-pulse flex-shrink-0"></div>
+                  <p className="text-gray-200 text-sm leading-relaxed">{currentQuestion.caseFile}</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
