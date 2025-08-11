@@ -490,118 +490,95 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden">
       {/* Animated Background */}
-      <div className="fixed inset-0 opacity-5">
+      {/* <div className="fixed inset-0 opacity-5">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-500/10 to-purple-600/10 animate-pulse"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-20">
           <div className="w-full h-full bg-gradient-to-br from-cyan-500/5 to-blue-600/5 animate-pulse"></div>
         </div>
-      </div>
+      </div> */}
 
-      {/* Modern Gaming Header */}
-      <div className="relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-blue-900/20 to-slate-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-600/5"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
-        </div>
+      {/* Modern Game Header */}
+      <div className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 shadow-lg">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
 
-        <div className="relative backdrop-blur-sm border-b border-cyan-500/30 p-4">
-          <div className="container mx-auto">
-            <div className="flex items-center justify-between">
-
-              {/* Left Section - Mission Identity */}
-              <div className="flex items-center gap-6">
-                {/* Mission Badge */}
-                <div className="relative group">
-                  <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-2xl shadow-cyan-500/25 transform transition-all duration-300 group-hover:scale-105">
-                    <Factory className="w-7 h-7 text-white drop-shadow-lg" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-xs font-black text-black">{gameState.currentLevel}</span>
-                  </div>
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-cyan-400/50 rounded-full blur-sm"></div>
+            {/* Left - Game Identity */}
+            <div className="flex items-center gap-4">
+              {/* Level Badge */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">{gameState.currentLevel}</span>
                 </div>
-
-                {/* Mission Info */}
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-3">
-                    <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-blue-200 tracking-wider">
-                      {gameState.currentLevel === 1 ? 'INVESTIGATION MODE' : 'SOLUTION DEPLOYMENT'}
-                    </h1>
-                    <div className="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full border border-cyan-400/30">
-                      <span className="text-cyan-300 text-sm font-bold">LEVEL {gameState.currentLevel}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                      <span className="text-cyan-200 text-sm font-semibold">
-                        CASE {gameState.currentQuestion + 1} OF 5
-                      </span>
-                    </div>
-                    <div className="w-px h-4 bg-gradient-to-b from-transparent via-slate-500 to-transparent"></div>
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="w-4 h-4 text-yellow-400" />
-                      <span className="text-yellow-300 text-sm font-bold">ACTIVE MISSION</span>
-                    </div>
-                  </div>
+                <div>
+                  <h1 className="text-white font-semibold text-base">
+                    Level {gameState.currentLevel}
+                  </h1>
+                  <p className="text-slate-400 text-sm">
+                    {gameState.currentLevel === 1 ? 'Investigation Phase' : 'Solution Phase'}
+                  </p>
                 </div>
               </div>
 
-              {/* Right Section - Control Panel */}
-              <div className="flex items-center gap-3">
-                {/* Case Brief Button - Mobile Horizontal Only */}
-                {isMobileHorizontal && gameState.currentLevel === 1 && (
-                  <button
-                    onClick={() => setShowCaseBrief(true)}
-                    className="group relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 px-4 py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-cyan-500/25 border border-cyan-400/30"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                    <div className="relative flex items-center space-x-2">
-                      <Eye className="w-4 h-4 text-white" />
-                      <span className="text-white text-sm font-bold">CASE BRIEF</span>
-                    </div>
-                  </button>
-                )}
-
-                {/* Timer Module */}
-                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-3 border border-slate-600/50 shadow-xl backdrop-blur-sm">
-                  <Timer
-                    timeRemaining={gameState.timeRemaining}
-                    onTimeUp={handleTimeUp}
-                    setTimeRemaining={(time) => setGameState(prev => ({ ...prev, timeRemaining: time }))}
-                    initialTime={5400}
-                  />
+              {/* Progress Indicator */}
+              <div className="hidden md:flex items-center gap-2 ml-6">
+                <span className="text-slate-400 text-sm">Case</span>
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        i < gameState.currentQuestion
+                          ? 'bg-green-500'
+                          : i === gameState.currentQuestion
+                          ? 'bg-blue-500 animate-pulse'
+                          : 'bg-slate-600'
+                      }`}
+                    />
+                  ))}
                 </div>
+                <span className="text-slate-400 text-sm">
+                  {gameState.currentQuestion + 1}/5
+                </span>
+              </div>
+            </div>
 
-                {/* Progress Module */}
-                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-3 border border-slate-600/50 shadow-xl backdrop-blur-sm">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex flex-col items-center">
-                      <span className="text-cyan-400 text-xs font-bold mb-1">PROGRESS</span>
-                      <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden shadow-inner">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-full transition-all duration-700 shadow-lg"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-cyan-400 text-lg font-black">{Math.round(progress)}%</div>
-                      <div className="text-slate-400 text-xs">COMPLETE</div>
-                    </div>
-                  </div>
-                </div>
+            {/* Right - Controls */}
+            <div className="flex items-center gap-4">
+              {/* Mobile Case Brief Button */}
+              {isMobileHorizontal && gameState.currentLevel === 1 && (
+                <button
+                  onClick={() => setShowCaseBrief(true)}
+                  className="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg transition-colors text-sm font-medium text-white flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Brief
+                </button>
+              )}
 
-                {/* Status Indicator */}
-                <div className="relative">
-                  <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 py-2.5 rounded-xl border border-green-400/30 shadow-lg backdrop-blur-sm">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                      <span className="text-green-300 font-black text-sm tracking-wide">ONLINE</span>
-                    </div>
+              {/* Timer */}
+              <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-600/30">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <Timer
+                  timeRemaining={gameState.timeRemaining}
+                  onTimeUp={handleTimeUp}
+                  setTimeRemaining={(time) => setGameState(prev => ({ ...prev, timeRemaining: time }))}
+                  initialTime={5400}
+                />
+              </div>
+
+              {/* Overall Progress */}
+              <div className="hidden sm:flex items-center gap-3 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-600/30">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
-                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-green-400/30 rounded-full blur-sm"></div>
+                  <span className="text-white text-sm font-medium min-w-[3rem]">
+                    {Math.round(progress)}%
+                  </span>
                 </div>
               </div>
             </div>
