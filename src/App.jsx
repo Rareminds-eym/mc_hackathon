@@ -9,6 +9,7 @@ import { LevelList } from './screens/LevelList';
 import AuthPage from './screens/AuthPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ResetPassword from './components/auth/ResetPassword';
 import ErrorFallback from './components/ErrorFallback';
 import {
   createBrowserRouter,
@@ -29,6 +30,7 @@ import SplashScreen from './components/ui/SplashScreen';
 import Score from './components/Scores/Score';
 import DebugPage from './pages/DebugPage';
 import { InstallPrompt, OfflineIndicator } from './components/PWA';
+import GmpSimulationScreen from './screens/GmpSimulationScreen'; // .tsx file, not .jsx
 
 // Import offline sync functions
 import { pullFromSupabase, pushToSupabase, smartSync } from './db/sync';
@@ -192,6 +194,8 @@ function App() {
         },
         { path: '/home', element: <ProtectedRoute><HomeScreen /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules', element: <ProtectedRoute><ModuleMapScreen /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/HL1', element: <ProtectedRoute><GmpSimulationScreen mode="violation-root-cause" /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
+        { path: '/modules/HL2', element: <ProtectedRoute><GmpSimulationScreen mode="solution" /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId', element: <ProtectedRoute><LevelList /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/1', element: <ProtectedRoute><BingoGame /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/2', element: <ProtectedRoute><Level2 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
@@ -200,6 +204,7 @@ function App() {
         { path: '/modules/:moduleId/levels/4', element: <ProtectedRoute><Level4 /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/modules/:moduleId/levels/4/gameboard2d', element: <ProtectedRoute><GameBoard2D /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/auth', element: <AuthPage />, errorElement: <RouteErrorBoundary /> },
+        { path: '/reset-password', element: <ResetPassword />, errorElement: <RouteErrorBoundary /> },
         { path: '/instructions', element: <ProtectedRoute><InstructionsPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/scores', element: <ProtectedRoute><Score /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },
         { path: '/debug', element: <ProtectedRoute><DebugPage /></ProtectedRoute>, errorElement: <RouteErrorBoundary /> },

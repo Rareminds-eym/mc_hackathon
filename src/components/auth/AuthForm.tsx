@@ -8,11 +8,12 @@ import { useDeviceLayout } from '../../hooks/useOrientation'
 import { collegeCodes as collegeCodeList } from '../../data/collegeCodes'
 
 interface AuthFormProps {
-  mode: 'login' | 'signup'
+  mode: 'login' | 'signup' | 'forgot-password'
   onToggleMode: () => void
+  onForgotPassword?: () => void
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPassword }) => {
   // Removed unused teamMemberRefs
   const [formData, setFormData] = useState({
     email: '',
@@ -29,6 +30,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const [prefilledTeam, setPrefilledTeam] = useState<{ teamName: string; collegeCode: string } | null>(null);
   const [showResendLink, setShowResendLink] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
 
   // Use imported collegeCodes and map to dropdown structure
   const collegeCodes = collegeCodeList.map(code => ({ code }));
@@ -51,7 +54,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, resetPassword } = useAuth()
   const { isHorizontal, isMobile } = useDeviceLayout(); // Add this line
   const isMobileLandscape = isMobile && isHorizontal;
 
@@ -354,6 +357,28 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
     } else {
       setResendMessage('Verification email resent successfully!');
     }
+  };
+
+  // Handle forgot password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail.trim()) {
+      setForgotPasswordMessage('Please enter your email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setForgotPasswordMessage('');
+
+    const { error } = await resetPassword(forgotPasswordEmail);
+
+    if (error) {
+      setForgotPasswordMessage(error.message || 'Failed to send reset email. Please try again.');
+    } else {
+      setForgotPasswordMessage('Password reset email sent! Check your inbox and follow the instructions.');
+    }
+
+    setIsSubmitting(false);
   };
 
 
@@ -783,6 +808,57 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
               </div>
             )}
           </form>
+        ) : mode === 'forgot-password' ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4 w-full">
+            <div className="space-y-2">
+              <label className={`block font-medium text-white mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Email Address</label>
+              <div className="relative w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-blue-300" />
+                </div>
+                <input
+                  id="forgotPasswordEmail"
+                  name="forgotPasswordEmail"
+                  type="email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  required
+                  className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10`}
+                  placeholder="Enter your email address"
+                />
+              </div>
+            </div>
+
+            {forgotPasswordMessage && (
+              <div className={`p-3 rounded-lg ${forgotPasswordMessage.includes('sent') ? 'bg-green-700/90 border border-green-500 text-white' : 'bg-red-700/90 border border-red-500 text-white'}`}>
+                <div className="flex items-center gap-2">
+                  {forgotPasswordMessage.includes('sent') ? (
+                    <CheckCircle className="h-5 w-5 text-green-300" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-red-300" />
+                  )}
+                  <span className="font-medium">{forgotPasswordMessage}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-center mt-6">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    {'Sending Reset Email...'}
+                  </>
+                ) : (
+                  'Send Reset Email'
+                )}
+              </button>
+            </div>
+          </form>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 w-full">
             <div className="space-y-2">
@@ -832,6 +908,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
                 </button>
               </div>
             </div>
+
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-sm text-blue-300 hover:text-blue-400 transition-colors duration-200"
+              >
+                Forgot Password?
+              </button>
+            </div>
+
             <div className="flex justify-center mt-6">
               <button
                 type="submit"
@@ -854,14 +942,29 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode }) => {
         {/* Toggle Mode */}
         <div className="mt-4 text-center">
           <p className={`${isMobileLandscape ? 'text-xs' : 'text-sm'} text-gray-200`}>
-            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
-            <button
-              type="button"
-              onClick={onToggleMode}
-              className="ml-1 font-medium text-white hover:text-blue-400 transition-colors duration-200"
-            >
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
-            </button>
+            {mode === 'forgot-password' ? (
+              <>
+                Remember your password?{' '}
+                <button
+                  type="button"
+                  onClick={onToggleMode}
+                  className="ml-1 font-medium text-white hover:text-blue-400 transition-colors duration-200"
+                >
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <>
+                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
+                <button
+                  type="button"
+                  onClick={onToggleMode}
+                  className="ml-1 font-medium text-white hover:text-blue-400 transition-colors duration-200"
+                >
+                  {mode === 'login' ? 'Sign up' : 'Sign in'}
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>

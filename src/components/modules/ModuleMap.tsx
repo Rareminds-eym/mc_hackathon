@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Module } from "../../types/module";
 import ModuleNode from "./ModuleNode";
 import CharacterSprite from "./CharacterSprite";
-import { useDeviceLayout } from '../../hooks/useOrientation';
-import { useNavigate } from 'react-router-dom';
+import { useDeviceLayout } from "../../hooks/useOrientation";
+import { useNavigate } from "react-router-dom";
 
 interface ModuleMapProps {
   modules: Module[];
@@ -40,8 +40,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
       }
     };
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Get container height for SVG and module alignment
@@ -176,33 +176,59 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
           boxShadow: "0 0 12px 2px #a78bfa, 0 1px 4px rgba(95,0,182,0.10)",
           textShadow: "0 2px 8px #a78bfa, 0 2px 8px #0004",
           animation: "glow 2s infinite alternate",
-          fontFamily: "inherit"
+          fontFamily: "inherit",
         }}
-        onMouseDown={e => (e.currentTarget.style.transform = "scale(0.96)")}
-        onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
-        onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-        onMouseOver={e => {
+        onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
+        onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        onMouseOver={(e) => {
           e.currentTarget.style.background = "#7c3aed";
           e.currentTarget.style.color = "#fff";
         }}
-        onMouseOut={e => {
+        onMouseOut={(e) => {
           e.currentTarget.style.background = "#5f00b6";
           e.currentTarget.style.color = "#fff";
         }}
         aria-label="Back to Home"
       >
         {/* Gamified back pixel arrow icon */}
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="block">
-          <rect x="2" y="2" width="20" height="20" rx="6" fill="#a78bfa" opacity="0.18" />
-          <path d="M14 7l-5 5 5 5" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-          <rect x="7" y="11" width="7" height="2" rx="1" fill="#fff" opacity="0.7" />
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="block"
+        >
+          <rect
+            x="2"
+            y="2"
+            width="20"
+            height="20"
+            rx="6"
+            fill="#a78bfa"
+            opacity="0.18"
+          />
+          <path
+            d="M14 7l-5 5 5 5"
+            stroke="#fff"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <rect
+            x="7"
+            y="11"
+            width="7"
+            height="2"
+            rx="1"
+            fill="#fff"
+            opacity="0.7"
+          />
         </svg>
         Back
       </button>
       {/* Space background with large planet */}
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-800"
-      >
+      <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-800">
         {/* Large planet in background */}
         <div
           className="absolute rounded-full opacity-30 blur-md bg-gradient-to-br from-cyan-400 to-blue-600"
@@ -264,28 +290,33 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
         <div
-        className="mt-5"
-        style={{
-          textAlign: 'center',
-          width: '100%',
-          marginBottom: '30px',
-        }}>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 700,
-            color: '#fff',
-            textShadow: '0 2px 8px #0008',
-            marginBottom: '0.5rem',
-            textAlign: 'center',
-          }}>
+          className="mt-5"
+          style={{
+            textAlign: "center",
+            width: "100%",
+            marginBottom: "30px",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "2rem",
+              fontWeight: 700,
+              color: "#fff",
+              textShadow: "0 2px 8px #0008",
+              marginBottom: "0.5rem",
+              textAlign: "center",
+            }}
+          >
             GMP Training Modules
           </h1>
-          <p style={{
-            fontSize: '1rem',
-            color: '#67e8f9',
-            textShadow: '0 1px 4px #0006',
-            textAlign: 'center',
-          }}>
+          <p
+            style={{
+              fontSize: "1rem",
+              color: "#67e8f9",
+              textShadow: "0 1px 4px #0006",
+              textAlign: "center",
+            }}
+          >
             Navigate through the cosmic training journey
           </p>
         </div>
@@ -311,7 +342,9 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
           {/* Scrollable modules container */}
           <div
             ref={scrollContainerRef}
-            className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} touch-pan-x scrollbar-hide`}
+            className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            } touch-pan-x scrollbar-hide`}
             style={{
               msOverflowStyle: "none",
               scrollbarWidth: "none",
@@ -334,37 +367,70 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                 paddingRight: `${PLATFORM_SPACING}px`,
               }}
             >
-              {/* Character sprite: only one, always above the first available module */}
+              {/* Character sprite: positioned above the module node for desktop and mobile horizontal */}
               {(() => {
-                // Find the last available module
-                const reversedIndex = [...modules].reverse().findIndex(
+                // Find the last available module in the sorted array
+                const availableModules = sortedModules.filter(
                   (m) => m.status === "available"
                 );
-                const lastAvailableIndex = reversedIndex === -1 ? -1 : modules.length - 1 - reversedIndex;
-                if (lastAvailableIndex === -1) return null;
-                // Hide sprite in mobile horizontal
-                if (isMobile && isHorizontal) return null;
-                // Placement logic
-                let zigzagOffset = lastAvailableIndex % 2 === 0 ? -60 : 60;
+                if (availableModules.length === 0) return null;
+                const lastAvailableModule =
+                  availableModules[availableModules.length - 1];
+
+                // Find the index of this module in the sortedModules array
+                const moduleIndex = sortedModules.findIndex(
+                  (m) => m.id === lastAvailableModule.id
+                );
+                if (moduleIndex === -1) return null;
+
+                // Calculate positioning to match the module node exactly
                 let spriteTop, spriteLeft, spriteScale;
-                spriteTop = `calc(50% + ${zigzagOffset - 10}px)`;
-                spriteLeft = `${120}px`;
-                spriteScale = 1;
+
+                // Use the same positioning logic as module nodes
+                const mobileYOffset = isMobile && isHorizontal ? 0 : 20;
+
+                // Position sprite above the module node by adjusting the top position
+                if (isMobile && isHorizontal) {
+                  spriteTop = `calc(50% + ${mobileYOffset - 80}px)`;
+                  spriteScale = 0.7;
+                } else if (isMobile) {
+                  spriteTop = `calc(50% + ${mobileYOffset - 80}px)`;
+                  spriteScale = 0.8;
+                } else {
+                  // Desktop: position above the zigzag module node
+                  const zigzagOffset = moduleIndex % 2 === 0 ? -100 : 20;
+                  spriteTop = `calc(50% + ${zigzagOffset - 80}px)`;
+                  spriteScale = 1;
+                }
+
+                // Use EXACTLY the same left positioning as module nodes (without the +PLATFORM_WIDTH/2)
+                spriteLeft = `${
+                  PLATFORM_SPACING +
+                  (isMobile || (isMobile && isHorizontal) ? 17 : 24) +
+                  moduleIndex * (PLATFORM_WIDTH + PLATFORM_SPACING)
+                }px`;
+
                 return (
                   <div
                     style={{
                       position: "absolute",
                       left: spriteLeft,
                       top: spriteTop,
-                      transform: `translateX(-50%) scale(${spriteScale})`,
-                      transformOrigin: 'top left',
-                      zIndex: 20,
+                      transform: `translateY(-50%) scale(${spriteScale})`, // Match module node transform
+                      transformOrigin: "center",
+                      zIndex: 25,
                       pointerEvents: "none",
+                      // Add the same dimensions as module nodes for perfect alignment
+                      width: isMobile ? "40px" : `${PLATFORM_WIDTH}px`,
+                      height: isMobile ? "40px" : undefined,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
                     <CharacterSprite
-                      key={modules[lastAvailableIndex].id}
-                      moduleId={modules[lastAvailableIndex].id}
+                      key={lastAvailableModule.id}
+                      moduleId={parseInt(lastAvailableModule.id)}
                       platformWidth={PLATFORM_WIDTH}
                       platformSpacing={PLATFORM_SPACING}
                     />
@@ -378,7 +444,7 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                 const nodeTop = isMobile
                   ? `calc(50% + ${mobileYOffset}px)`
                   : `calc(50% + ${index % 2 === 0 ? "-60" : "60"}px)`;
-                const nodeWidth = isMobile ? '40px' : `${PLATFORM_WIDTH}px`;
+                const nodeWidth = isMobile ? "40px" : `${PLATFORM_WIDTH}px`;
                 const nodeHeight = isMobile ? 40 : undefined;
                 return (
                   <div
@@ -386,7 +452,10 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                     className="absolute flex items-center justify-center z-20"
                     style={{
                       transform: "translateY(-50%)",
-                      left: `${PLATFORM_SPACING + index * (PLATFORM_WIDTH + PLATFORM_SPACING)}px`,
+                      left: `${
+                        PLATFORM_SPACING +
+                        index * (PLATFORM_WIDTH + PLATFORM_SPACING)
+                      }px`,
                       top: nodeTop,
                       width: nodeWidth,
                       height: nodeHeight,
@@ -394,13 +463,13 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                       minHeight: nodeHeight,
                       maxWidth: nodeWidth,
                       maxHeight: nodeHeight,
-                      pointerEvents: 'auto',
+                      pointerEvents: "auto",
                     }}
                   >
                     <ModuleNode
                       module={module}
                       onSelect={(id) => navigate(`/modules/${id}`)}
-                      isCurrentModule={module.id === currentModuleId}
+                      isCurrentModule={parseInt(module.id) === currentModuleId}
                     />
                   </div>
                 );
@@ -439,7 +508,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                   const y1 = containerHeight / 2;
                   const y2 = containerHeight / 2;
                   // For desktop, add zigzag to y1/y2
-                  let y1Final = y1, y2Final = y2;
+                  let y1Final = y1,
+                    y2Final = y2;
                   if (!isMobile) {
                     const yOffset1 = index % 2 === 0 ? -60 : 60;
                     const yOffset2 = (index + 1) % 2 === 0 ? -60 : 60;
@@ -450,7 +520,7 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                   const cx = x1 + (x2 - x1) / 2;
                   const cy = isMobile
                     ? y1 // straight line for mobile
-                    : (y1Final + y2Final) / 2 + ((y1Final < y2Final) ? 40 : -40);
+                    : (y1Final + y2Final) / 2 + (y1Final < y2Final ? 40 : -40);
                   return (
                     <path
                       key={`curve-${index}`}

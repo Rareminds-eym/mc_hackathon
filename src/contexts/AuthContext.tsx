@@ -52,8 +52,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) {
         console.error('Error getting session:', error)
       } else {
-        setSession(session)
-        setUser(session?.user ?? null)
+        // Check if this is a password reset session by looking at the current URL
+        const isPasswordResetPage = window.location.pathname === '/reset-password'
+        const hasResetParams = window.location.search.includes('type=recovery')
+
+        // Don't set user state if we're on password reset page with reset parameters
+        if (isPasswordResetPage && hasResetParams) {
+          setSession(session)
+          setUser(null) // Don't set user to prevent auto-redirect
+        } else {
+          setSession(session)
+          setUser(session?.user ?? null)
+        }
       }
       setLoading(false)
     }
@@ -64,8 +74,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // console.log('Auth state changed:', event, session)
-        setSession(session)
-        setUser(session?.user ?? null)
+
+        // Check if this is a password reset session
+        const isPasswordResetPage = window.location.pathname === '/reset-password'
+        const hasResetParams = window.location.search.includes('type=recovery')
+
+        // Handle different auth events
+        if (event === 'PASSWORD_RECOVERY') {
+          // This is a password recovery session, don't set user to prevent auto-redirect
+          setSession(session)
+          setUser(null)
+        } else if (isPasswordResetPage && hasResetParams && session) {
+          // We're on reset password page with reset params, don't set user
+          setSession(session)
+          setUser(null)
+        } else {
+          // Normal auth flow
+          setSession(session)
+          setUser(session?.user ?? null)
+        }
+
         setLoading(false)
       }
     )
@@ -143,8 +171,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
+      // Get the current origin for the redirect URL
+      const redirectUrl = `${window.location.origin}/reset-password`
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: redirectUrl,
+        captchaToken: undefined
       })
       return { error }
     } catch (error) {
