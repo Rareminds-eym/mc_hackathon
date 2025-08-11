@@ -54,13 +54,9 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, text, type, isSelecte
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   };
 
-  const colorClasses = type === 'violation' 
-    ? isSelected 
-      ? 'border-cyan-400 bg-cyan-500/20' 
-      : 'border-slate-600 bg-slate-700/50 hover:border-cyan-500/50'
-    : isSelected 
-      ? 'border-orange-400 bg-orange-500/20' 
-      : 'border-slate-600 bg-slate-700/50 hover:border-orange-500/50';
+  const colorClasses = isSelected
+    ? 'border-blue-400 bg-blue-500/20'
+    : 'border-slate-600 bg-slate-700/50 hover:border-blue-500/50';
 
   return (
     <div
@@ -127,6 +123,13 @@ const Level1Card: React.FC<Level1CardProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
+  // Cleanup activeItem on component unmount or question change
+  React.useEffect(() => {
+    return () => {
+      setActiveItem(null);
+    };
+  }, [question.id]);
+
   // Setup sensors for drag and drop with higher thresholds to prevent click selection
   const sensors = useSensors(
     // Mouse sensor for desktop - requires significant movement
@@ -154,6 +157,35 @@ const Level1Card: React.FC<Level1CardProps> = ({
 
   const canProceed = selectedViolation && selectedRootCause;
 
+  // Shuffle function
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Combine and shuffle violations and root causes
+  const combinedOptions = React.useMemo(() => {
+    const violations = question.violationOptions.map((option, index) => ({
+      id: `violation-${index}`,
+      text: option,
+      type: 'violation' as const,
+      isSelected: selectedViolation === option
+    }));
+
+    const rootCauses = question.rootCauseOptions.map((option, index) => ({
+      id: `rootCause-${index}`,
+      text: option,
+      type: 'rootCause' as const,
+      isSelected: selectedRootCause === option
+    }));
+
+    return shuffleArray([...violations, ...rootCauses]);
+  }, [question.violationOptions, question.rootCauseOptions, selectedViolation, selectedRootCause]);
+
   const handleViolationSelect = (violation: string) => {
     setSelectedViolation(violation);
     onAnswer({ violation });
@@ -168,30 +200,41 @@ const Level1Card: React.FC<Level1CardProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const draggedData = active.data.current as { text: string; type: 'violation' | 'rootCause' };
-    setActiveItem(draggedData);
+
+    if (draggedData && draggedData.text) {
+      setActiveItem(draggedData);
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveItem(null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
+    // Always clear the active item first
+    setActiveItem(null);
+
     if (!over) {
-      setActiveItem(null);
       return;
     }
 
     const draggedData = active.data.current as { text: string; type: 'violation' | 'rootCause' };
     const dropZoneData = over.data.current as { type: 'violation' | 'rootCause' };
 
-    // Only allow drops in matching zones
-    if (draggedData.type === dropZoneData.type) {
-      if (draggedData.type === 'violation') {
-        handleViolationSelect(draggedData.text);
-      } else if (draggedData.type === 'rootCause') {
-        handleRootCauseSelect(draggedData.text);
-      }
+    // Validate drag data
+    if (!draggedData || !draggedData.text || !dropZoneData) {
+      console.warn('Invalid drag or drop data:', { draggedData, dropZoneData });
+      return;
     }
 
-    setActiveItem(null);
+    // Allow any option to be dropped in any zone
+    if (dropZoneData.type === 'violation') {
+      handleViolationSelect(draggedData.text);
+    } else if (dropZoneData.type === 'rootCause') {
+      handleRootCauseSelect(draggedData.text);
+    }
   };
 
   return (
@@ -200,52 +243,34 @@ const Level1Card: React.FC<Level1CardProps> = ({
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
-      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 overflow-hidden">
+      <div className="flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
         {/* Case Brief */}
         {!isMobileHorizontal && (
           <div className="bg-slate-800 p-4 border-b border-cyan-500/20">
             <h3 className="text-cyan-300 font-bold mb-2">CASE BRIEF</h3>
-            <p className="text-gray-200 text-sm">{question.caseFile}</p>
+            <p className="text-gray-200 text-sm">{question.caseFile} Analyze the problem scenario, identify the violation and its root cause, then drag both to the correct containers.</p>
           </div>
         )}
 
         {/* Main Content */}
         <div className="flex-1 flex p-4 space-x-4">
-          {/* Evidence Panel */}
+          {/* VIOLATIONS & ROOT CAUSES Panel */}
           <div className="w-1/3 bg-slate-800/90 rounded-xl p-4 border border-cyan-400/30">
-            <h3 className="text-cyan-300 font-bold mb-4">EVIDENCE ARSENAL</h3>
-            
-            {/* Violations */}
-            <div className="mb-6">
-              <h4 className="text-cyan-300 text-sm font-bold mb-2">VIOLATIONS</h4>
-              <div className="space-y-2">
-                {question.violationOptions.map((option, index) => (
-                  <DraggableItem
-                    key={`violation-${index}`}
-                    id={`violation-${index}`}
-                    text={option}
-                    type="violation"
-                    isSelected={selectedViolation === option}
-                  />
-                ))}
-              </div>
-            </div>
+            <h3 className="text-cyan-300 font-bold mb-4">VIOLATIONS & ROOT CAUSES</h3>
 
-            {/* Root Causes */}
-            <div>
-              <h4 className="text-orange-300 text-sm font-bold mb-2">ROOT CAUSES</h4>
-              <div className="space-y-2">
-                {question.rootCauseOptions.map((option, index) => (
-                  <DraggableItem
-                    key={`rootCause-${index}`}
-                    id={`rootCause-${index}`}
-                    text={option}
-                    type="rootCause"
-                    isSelected={selectedRootCause === option}
-                  />
-                ))}
-              </div>
+            {/* Combined Shuffled Options */}
+            <div className="space-y-2">
+              {combinedOptions.map((option) => (
+                <DraggableItem
+                  key={option.id}
+                  id={option.id}
+                  text={option.text}
+                  type={option.type}
+                  isSelected={option.isSelected}
+                />
+              ))}
             </div>
           </div>
 
@@ -329,15 +354,17 @@ const Level1Card: React.FC<Level1CardProps> = ({
       </div>
 
       {/* Drag Overlay */}
-      <DragOverlay>
-        {activeItem ? (
-          <div className={`p-2 rounded border cursor-grabbing shadow-lg ${
-            activeItem.type === 'violation'
-              ? 'border-cyan-400 bg-cyan-500/20'
-              : 'border-orange-400 bg-orange-500/20'
-          } bg-slate-800/90 backdrop-blur-sm transform scale-105 opacity-90`}>
+      <DragOverlay
+        dropAnimation={null}
+        key={activeItem ? `overlay-${activeItem.text}` : 'no-overlay'}
+      >
+        {activeItem && activeItem.text ? (
+          <div
+            className="p-2 rounded border cursor-grabbing shadow-lg border-blue-400 bg-slate-800/90 backdrop-blur-sm transform scale-105 opacity-90 pointer-events-none"
+            style={{ zIndex: 9999 }}
+          >
             <span className="text-white text-sm font-medium">
-              {activeItem.text || 'Dragging...'}
+              {activeItem.text}
             </span>
           </div>
         ) : null}
