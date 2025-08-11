@@ -1,14 +1,14 @@
-import { supabase } from '../lib/supabase';
-import React, { useState, useEffect } from 'react';
-import { Factory, Clock, Trophy, AlertTriangle, Eye } from 'lucide-react';
-import { useDeviceLayout } from '../hooks/useOrientation';
-import { hackathonData } from './HackathonData';
-import type { Question } from './HackathonData';
+import { supabase } from "../lib/supabase";
+import React, { useState, useEffect } from "react";
+import { Factory, Clock, Trophy, AlertTriangle, Eye } from "lucide-react";
+import { useDeviceLayout } from "../hooks/useOrientation";
+import { hackathonData } from "./HackathonData";
+import type { Question } from "./HackathonData";
 // @ts-ignore
-import { QuestionCard } from './QuestionCard';
-import { Timer } from './Timer';
-import { Results } from './Results';
-import { ModuleCompleteModal } from './ModuleCompleteModal';
+import { QuestionCard } from "./QuestionCard";
+import { Timer } from "./Timer";
+import { Results } from "./Results";
+import { ModuleCompleteModal } from "./ModuleCompleteModal";
 
 export interface GameState {
   currentLevel: 1 | 2;
@@ -32,7 +32,10 @@ interface GmpSimulationProps {
   onProceedToLevel2?: () => void;
 }
 
-const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) => {
+const GameEngine: React.FC<GmpSimulationProps> = ({
+  mode,
+  onProceedToLevel2,
+}) => {
   // Device layout detection
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
@@ -43,30 +46,37 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   // Save team attempt to backend
   const saveTeamAttempt = async (module_number: number) => {
     if (!session_id) {
-      console.warn('No session_id available for team attempt.');
+      console.warn("No session_id available for team attempt.");
       return;
     }
     // Fetch all individual attempts for this session and module
     const { data: attempts, error } = await supabase
-      .from('individual_attempts')
-      .select('score, completion_time_sec')
-      .eq('session_id', session_id)
-      .eq('module_number', module_number);
+      .from("individual_attempts")
+      .select("score, completion_time_sec")
+      .eq("session_id", session_id)
+      .eq("module_number", module_number);
     if (error) {
-      console.error('Supabase fetch error (individual_attempts):', error.message, error.details);
+      console.error(
+        "Supabase fetch error (individual_attempts):",
+        error.message,
+        error.details
+      );
       return;
     }
     if (!attempts || attempts.length === 0) {
-      console.warn('No individual attempts found for team.');
+      console.warn("No individual attempts found for team.");
       return;
     }
     // Calculate weighted average score and average time
     const totalScore = attempts.reduce((sum, a) => sum + (a.score || 0), 0);
     const weightedAvgScore = (totalScore / attempts.length).toFixed(2);
-    const avgTimeSec = Math.round(attempts.reduce((sum, a) => sum + (a.completion_time_sec || 0), 0) / attempts.length);
+    const avgTimeSec = Math.round(
+      attempts.reduce((sum, a) => sum + (a.completion_time_sec || 0), 0) /
+        attempts.length
+    );
     // Insert into team_attempts
     const { error: insertError, data: teamData } = await supabase
-      .from('team_attempts')
+      .from("team_attempts")
       .insert([
         {
           session_id: session_id,
@@ -77,9 +87,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
         },
       ]);
     if (insertError) {
-      console.error('Supabase insert error (team_attempts):', insertError.message, insertError.details);
+      console.error(
+        "Supabase insert error (team_attempts):",
+        insertError.message,
+        insertError.details
+      );
     } else {
-      console.log('Saved team attempt:', teamData);
+      console.log("Saved team attempt:", teamData);
     }
   };
   // Error state for loading team info
@@ -87,7 +101,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   // Determine which level to show based on mode
   // mode === 'violation-root-cause' => Level 1 (HL1)
   // mode === 'solution' => Level 2 (HL2)
-  const initialLevel = mode === 'solution' ? 2 : 1;
+  const initialLevel = mode === "solution" ? 2 : 1;
   const [gameState, setGameState] = useState<GameState>({
     currentLevel: initialLevel,
     currentQuestion: 0,
@@ -128,7 +142,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
         .eq("email", userEmail)
         .single();
       if (error) {
-        setTeamInfoError("Could not load team info. " + (error.message || "Unknown error."));
+        setTeamInfoError(
+          "Could not load team info. " + (error.message || "Unknown error.")
+        );
       } else if (!data) {
         setTeamInfoError("No team info found for this user.");
       } else {
@@ -162,18 +178,20 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   }, [gameState.gameCompleted, gameState.currentLevel, session_id]);
 
   // Save individual attempt to backend
-  const saveIndividualAttempt = async (score: number, completion_time_sec: number, module_number: number) => {
-    const { error, data } = await supabase
-      .from("individual_attempts")
-      .insert([
-        {
-          email: email,
-          session_id: session_id,
-          module_number,
-          score,
-          completion_time_sec,
-        },
-      ]);
+  const saveIndividualAttempt = async (
+    score: number,
+    completion_time_sec: number,
+    module_number: number
+  ) => {
+    const { error, data } = await supabase.from("individual_attempts").insert([
+      {
+        email: email,
+        session_id: session_id,
+        module_number,
+        score,
+        completion_time_sec,
+      },
+    ]);
     if (error) {
       console.error("Supabase insert error:", error.message, error.details);
       alert("Error saving attempt: " + error.message);
@@ -191,12 +209,12 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   const startGame = () => {
     const questions = selectRandomQuestions();
     const initialAnswers = questions.map(() => ({
-      violation: '',
-      rootCause: '',
-      solution: ''
+      violation: "",
+      rootCause: "",
+      solution: "",
     }));
-    
-    setGameState(prev => ({
+
+    setGameState((prev) => ({
       ...prev,
       questions,
       answers: initialAnswers,
@@ -206,8 +224,12 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
     }));
   };
 
-  const handleAnswer = (answer: { violation?: string; rootCause?: string; solution?: string }) => {
-    setGameState(prev => {
+  const handleAnswer = (answer: {
+    violation?: string;
+    rootCause?: string;
+    solution?: string;
+  }) => {
+    setGameState((prev) => {
       const newAnswers = [...prev.answers];
       if (answer.violation !== undefined) {
         newAnswers[prev.currentQuestion].violation = answer.violation;
@@ -222,18 +244,21 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
       // Auto-save answers and questions to database after every answer
       const saveAttemptDetails = async () => {
         try {
-          await supabase.from('attempt_details').upsert([
-            {
-              email: email,
-              session_id: session_id,
-              module_number: prev.currentLevel === 1 ? 5 : 6,
-              question_index: prev.currentQuestion,
-              question: prev.questions[prev.currentQuestion],
-              answer: newAnswers[prev.currentQuestion],
-            }
-          ], { onConflict: 'email,session_id,module_number,question_index' });
+          await supabase.from("attempt_details").upsert(
+            [
+              {
+                email: email,
+                session_id: session_id,
+                module_number: prev.currentLevel === 1 ? 5 : 6,
+                question_index: prev.currentQuestion,
+                question: prev.questions[prev.currentQuestion],
+                answer: newAnswers[prev.currentQuestion],
+              },
+            ],
+            { onConflict: "email,session_id,module_number,question_index" }
+          );
         } catch (err) {
-          console.error('Auto-save error:', err);
+          console.error("Auto-save error:", err);
         }
       };
       saveAttemptDetails();
@@ -246,14 +271,18 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   };
 
   const nextQuestion = () => {
-    setGameState(prev => {
+    setGameState((prev) => {
       const nextQuestionIndex = prev.currentQuestion + 1;
       if (nextQuestionIndex >= 5) {
         if (prev.currentLevel === 1) {
           // Level 1 completed - show modal
           const level1Time = Math.max(0, 5400 - prev.timeRemaining);
           // Save attempt to backend
-          saveIndividualAttempt(calculateScore(prev.answers, prev.questions), level1Time, 5);
+          saveIndividualAttempt(
+            calculateScore(prev.answers, prev.questions),
+            level1Time,
+            5
+          );
           saveTeamAttempt(5); // Save team summary for module 5
           return {
             ...prev,
@@ -277,11 +306,15 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
         // Always initialize the next answer object to clear drag-and-drop
         const newAnswers = [...prev.answers];
         if (!newAnswers[nextQuestionIndex]) {
-          newAnswers[nextQuestionIndex] = { violation: '', rootCause: '', solution: '' };
+          newAnswers[nextQuestionIndex] = {
+            violation: "",
+            rootCause: "",
+            solution: "",
+          };
         } else {
-          newAnswers[nextQuestionIndex].violation = '';
-          newAnswers[nextQuestionIndex].rootCause = '';
-          newAnswers[nextQuestionIndex].solution = '';
+          newAnswers[nextQuestionIndex].violation = "";
+          newAnswers[nextQuestionIndex].rootCause = "";
+          newAnswers[nextQuestionIndex].solution = "";
         }
         return {
           ...prev,
@@ -295,7 +328,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   const proceedToLevel2 = () => {
     // Only allow proceeding to Level 2 if mode is not 'solution' AND not 'violation-root-cause'
     // In HL1 (violation-root-cause), do NOT show Level 2 after modal
-    if (mode === 'solution') {
+    if (mode === "solution") {
       // Do nothing, stay in Level 2
       return;
     }
@@ -303,26 +336,29 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
     if (onProceedToLevel2) onProceedToLevel2();
   };
 
-  const calculateScore = (answers: Array<{violation: string; rootCause: string; solution: string}>, questions: Question[]) => {
+  const calculateScore = (
+    answers: Array<{ violation: string; rootCause: string; solution: string }>,
+    questions: Question[]
+  ) => {
     let score = 0;
-    
+
     questions.forEach((question, index) => {
       const answer = answers[index];
-      
+
       // Level 1 scoring (10 points each for violation and root cause)
       if (answer.violation === question.correctViolation) score += 10;
       if (answer.rootCause === question.correctRootCause) score += 10;
-      
+
       // Level 2 scoring (20 points for solution)
       if (answer.solution === question.correctSolution) score += 20;
     });
-    
+
     return score;
   };
 
   const handleTimeUp = () => {
     const finalScore = calculateScore(gameState.answers, gameState.questions);
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       gameCompleted: true,
       score: finalScore,
@@ -332,25 +368,40 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
 
   // Reset game state when mode changes (e.g., after navigation to HL2)
   React.useEffect(() => {
-    console.log('[HL2 Debug] mode:', mode, 'currentLevel:', gameState.currentLevel);
-    if (mode === 'solution') {
+    console.log(
+      "[HL2 Debug] mode:",
+      mode,
+      "currentLevel:",
+      gameState.currentLevel
+    );
+    if (mode === "solution") {
       // Preserve Level 1 answers for summary in Level 2
-      setGameState(prev => {
+      setGameState((prev) => {
         // If already in Level 2, do nothing
         if (prev.currentLevel === 2) return prev;
         // Use previous questions and answers, only reset solution field
-        const newAnswers = prev.answers.map(ans => ({
+        const newAnswers = prev.answers.map((ans) => ({
           violation: ans.violation,
           rootCause: ans.rootCause,
-          solution: '' // clear solution for Level 2
+          solution: "", // clear solution for Level 2
         }));
         return {
           ...prev,
           currentLevel: 2,
           currentQuestion: 0,
           // Keep previous questions and answers
-          questions: prev.questions.length === 5 ? prev.questions : selectRandomQuestions(),
-          answers: prev.answers.length === 5 ? newAnswers : selectRandomQuestions().map(() => ({ violation: '', rootCause: '', solution: '' })),
+          questions:
+            prev.questions.length === 5
+              ? prev.questions
+              : selectRandomQuestions(),
+          answers:
+            prev.answers.length === 5
+              ? newAnswers
+              : selectRandomQuestions().map(() => ({
+                  violation: "",
+                  rootCause: "",
+                  solution: "",
+                })),
           gameStarted: true,
           gameCompleted: false,
           showLevelModal: false,
@@ -367,11 +418,21 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Loading Team Info...</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              Loading Team Info...
+            </h2>
             {teamInfoError ? (
               <>
                 <p className="text-red-600 mb-6">{teamInfoError}</p>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg" onClick={() => { setTeamInfoError(null); window.location.reload(); }}>Retry</button>
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
+                  onClick={() => {
+                    setTeamInfoError(null);
+                    window.location.reload();
+                  }}
+                >
+                  Retry
+                </button>
               </>
             ) : (
               <>
@@ -396,23 +457,36 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
               GMP Simulation Game
             </h1>
             <p className="text-gray-600 mb-6 lg:mb-8 text-sm lg:text-base">
-              Test your knowledge of Good Manufacturing Practices through interactive case studies
+              Test your knowledge of Good Manufacturing Practices through
+              interactive case studies
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4 mb-6 lg:mb-8">
               <div className="bg-blue-50 p-3 lg:p-4 rounded-lg">
                 <Clock className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">60 Minutes</h3>
-                <p className="text-gray-600 text-xs lg:text-sm">Complete all questions</p>
+                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
+                  60 Minutes
+                </h3>
+                <p className="text-gray-600 text-xs lg:text-sm">
+                  Complete all questions
+                </p>
               </div>
               <div className="bg-green-50 p-3 lg:p-4 rounded-lg">
                 <Trophy className="w-6 h-6 lg:w-8 lg:h-8 text-green-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">2 Levels</h3>
-                <p className="text-gray-600 text-xs lg:text-sm">Analysis & Solution</p>
+                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
+                  2 Levels
+                </h3>
+                <p className="text-gray-600 text-xs lg:text-sm">
+                  Analysis & Solution
+                </p>
               </div>
               <div className="bg-orange-50 p-3 lg:p-4 rounded-lg">
                 <AlertTriangle className="w-6 h-6 lg:w-8 lg:h-8 text-orange-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">5 Cases</h3>
-                <p className="text-gray-600 text-xs lg:text-sm">Random GMP scenarios</p>
+                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
+                  5 Cases
+                </h3>
+                <p className="text-gray-600 text-xs lg:text-sm">
+                  Random GMP scenarios
+                </p>
               </div>
             </div>
             <button
@@ -441,13 +515,21 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4 mb-6 lg:mb-8">
               <div className="bg-blue-50 p-3 lg:p-4 rounded-lg">
                 <Clock className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">60 Minutes</h3>
-                <p className="text-gray-600 text-xs lg:text-sm">Complete all solutions</p>
+                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
+                  60 Minutes
+                </h3>
+                <p className="text-gray-600 text-xs lg:text-sm">
+                  Complete all solutions
+                </p>
               </div>
               <div className="bg-orange-50 p-3 lg:p-4 rounded-lg">
                 <AlertTriangle className="w-6 h-6 lg:w-8 lg:h-8 text-orange-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">5 Cases</h3>
-                <p className="text-gray-600 text-xs lg:text-sm">Random GMP scenarios</p>
+                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
+                  5 Cases
+                </h3>
+                <p className="text-gray-600 text-xs lg:text-sm">
+                  Random GMP scenarios
+                </p>
               </div>
             </div>
             <button
@@ -468,19 +550,23 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Awaiting Team Evaluation</h2>
-            <p className="text-gray-600 mb-6">Your team’s results are being evaluated. Please wait for Module 6 to unlock.</p>
-            <div className="animate-pulse text-blue-600">Checking team status...</div>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              Awaiting Team Evaluation
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your team’s results are being evaluated. Please wait for Module 6
+              to unlock.
+            </p>
+            <div className="animate-pulse text-blue-600">
+              Checking team status...
+            </div>
           </div>
         </div>
       );
     }
     // If unlocked or Module 6, show results
     return (
-      <Results
-        gameState={gameState}
-        canAccessModule6={canAccessModule6}
-      />
+      <Results gameState={gameState} canAccessModule6={canAccessModule6} />
     );
   }
 
@@ -490,118 +576,77 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden">
       {/* Animated Background */}
-      <div className="fixed inset-0 opacity-5">
+      {/* <div className="fixed inset-0 opacity-5">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-500/10 to-purple-600/10 animate-pulse"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-20">
           <div className="w-full h-full bg-gradient-to-br from-cyan-500/5 to-blue-600/5 animate-pulse"></div>
         </div>
-      </div>
+      </div> */}
 
-      {/* Modern Gaming Header */}
-      <div className="relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-blue-900/20 to-slate-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-600/5"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse"></div>
-        </div>
-
-        <div className="relative backdrop-blur-sm border-b border-cyan-500/30 p-4">
-          <div className="container mx-auto">
-            <div className="flex items-center justify-between">
-
-              {/* Left Section - Mission Identity */}
-              <div className="flex items-center gap-6">
-                {/* Mission Badge */}
-                <div className="relative group">
-                  <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-2xl shadow-cyan-500/25 transform transition-all duration-300 group-hover:scale-105">
-                    <Factory className="w-7 h-7 text-white drop-shadow-lg" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-xs font-black text-black">{gameState.currentLevel}</span>
-                  </div>
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-cyan-400/50 rounded-full blur-sm"></div>
+      {/* Modern Game Header */}
+      <div className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 shadow-lg">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Left - Game Identity */}
+            <div className="flex items-center gap-4">
+              {/* Level Badge */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">
+                    {gameState.currentLevel}
+                  </span>
                 </div>
-
-                {/* Mission Info */}
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-3">
-                    <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-blue-200 tracking-wider">
-                      {gameState.currentLevel === 1 ? 'INVESTIGATION MODE' : 'SOLUTION DEPLOYMENT'}
-                    </h1>
-                    <div className="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full border border-cyan-400/30">
-                      <span className="text-cyan-300 text-sm font-bold">LEVEL {gameState.currentLevel}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                      <span className="text-cyan-200 text-sm font-semibold">
-                        CASE {gameState.currentQuestion + 1} OF 5
-                      </span>
-                    </div>
-                    <div className="w-px h-4 bg-gradient-to-b from-transparent via-slate-500 to-transparent"></div>
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="w-4 h-4 text-yellow-400" />
-                      <span className="text-yellow-300 text-sm font-bold">ACTIVE MISSION</span>
-                    </div>
+                <div>
+                  <h1 className="text-white font-semibold text-base">
+                    Level {gameState.currentLevel}
+                  </h1>
+                  {/* Simple Progress Indicator */}
+                  <div className="text-slate-400 text-sm">
+                    Case {gameState.currentQuestion + 1}/5
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Right Section - Control Panel */}
-              <div className="flex items-center gap-3">
-                {/* Case Brief Button - Mobile Horizontal Only */}
-                {isMobileHorizontal && gameState.currentLevel === 1 && (
-                  <button
-                    onClick={() => setShowCaseBrief(true)}
-                    className="group relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 px-4 py-2.5 rounded-xl transition-all duration-300 shadow-lg shadow-cyan-500/25 border border-cyan-400/30"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                    <div className="relative flex items-center space-x-2">
-                      <Eye className="w-4 h-4 text-white" />
-                      <span className="text-white text-sm font-bold">CASE BRIEF</span>
-                    </div>
-                  </button>
-                )}
+            {/* Right - Controls */}
+            <div className="flex items-center gap-4">
+              {/* Mobile Case Brief Button */}
+              {isMobileHorizontal && gameState.currentLevel === 1 && (
+                <button
+                  onClick={() => setShowCaseBrief(true)}
+                  className="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg transition-colors text-sm font-medium text-white flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Brief
+                </button>
+              )}
 
-                {/* Timer Module */}
-                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-3 border border-slate-600/50 shadow-xl backdrop-blur-sm">
-                  <Timer
-                    timeRemaining={gameState.timeRemaining}
-                    onTimeUp={handleTimeUp}
-                    setTimeRemaining={(time) => setGameState(prev => ({ ...prev, timeRemaining: time }))}
-                    initialTime={5400}
-                  />
-                </div>
+              {/* Timer */}
+              <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-600/30">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <Timer
+                  timeRemaining={gameState.timeRemaining}
+                  onTimeUp={handleTimeUp}
+                  setTimeRemaining={(time) =>
+                    setGameState((prev) => ({ ...prev, timeRemaining: time }))
+                  }
+                  initialTime={5400}
+                />
+              </div>
 
-                {/* Progress Module */}
-                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-3 border border-slate-600/50 shadow-xl backdrop-blur-sm">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex flex-col items-center">
-                      <span className="text-cyan-400 text-xs font-bold mb-1">PROGRESS</span>
-                      <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden shadow-inner">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-full transition-all duration-700 shadow-lg"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-cyan-400 text-lg font-black">{Math.round(progress)}%</div>
-                      <div className="text-slate-400 text-xs">COMPLETE</div>
-                    </div>
+              {/* Overall Progress */}
+              <div className="hidden sm:flex items-center gap-3 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-600/30">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
-                </div>
-
-                {/* Status Indicator */}
-                <div className="relative">
-                  <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 py-2.5 rounded-xl border border-green-400/30 shadow-lg backdrop-blur-sm">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                      <span className="text-green-300 font-black text-sm tracking-wide">ONLINE</span>
-                    </div>
-                  </div>
-                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-green-400/30 rounded-full blur-sm"></div>
+                  <span className="text-white text-sm font-medium min-w-[3rem]">
+                    {Math.round(progress)}%
+                  </span>
                 </div>
               </div>
             </div>
@@ -611,7 +656,6 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
 
       {/* Main Content Area */}
       <div className="flex-1 container mx-auto px-2 min-h-0">
-
         {/* Question Card */}
         {currentQuestion && (
           <QuestionCard
@@ -626,7 +670,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
         )}
 
         {/* Level Complete Modal */}
-        {gameState.showLevelModal && mode === 'violation-root-cause' && (
+        {gameState.showLevelModal && mode === "violation-root-cause" && (
           <ModuleCompleteModal
             level1CompletionTime={gameState.level1CompletionTime}
             onProceed={proceedToLevel2}
@@ -638,32 +682,44 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
           <div className="flex justify-center mt-8">
             <button
               className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg"
-              onClick={() => setGameState(prev => {
-                // Preserve Level 1 answers and questions
-                const newAnswers = prev.answers.map(ans => ({
-                  violation: ans.violation,
-                  rootCause: ans.rootCause,
-                  solution: ''
-                }));
-                return {
-                  ...prev,
-                  currentLevel: 2,
-                  currentQuestion: 0,
-                  questions: prev.questions.length === 5 ? prev.questions : selectRandomQuestions(),
-                  answers: prev.answers.length === 5 ? newAnswers : selectRandomQuestions().map(() => ({ violation: '', rootCause: '', solution: '' })),
-                  gameStarted: true,
-                  gameCompleted: false,
-                  showLevelModal: false,
-                  level1CompletionTime: 0,
-                };
-              })}
+              onClick={() =>
+                setGameState((prev) => {
+                  // Preserve Level 1 answers and questions
+                  const newAnswers = prev.answers.map((ans) => ({
+                    violation: ans.violation,
+                    rootCause: ans.rootCause,
+                    solution: "",
+                  }));
+                  return {
+                    ...prev,
+                    currentLevel: 2,
+                    currentQuestion: 0,
+                    questions:
+                      prev.questions.length === 5
+                        ? prev.questions
+                        : selectRandomQuestions(),
+                    answers:
+                      prev.answers.length === 5
+                        ? newAnswers
+                        : selectRandomQuestions().map(() => ({
+                            violation: "",
+                            rootCause: "",
+                            solution: "",
+                          })),
+                    gameStarted: true,
+                    gameCompleted: false,
+                    showLevelModal: false,
+                    level1CompletionTime: 0,
+                  };
+                })
+              }
             >
               Start Module 6
             </button>
           </div>
         )}
 
-        {/* Case Brief Modal - Only visible when toggled in mobile horizontal */}
+        {/* PROBLEM SCENARIO Modal - Only visible when toggled in mobile horizontal */}
         {showCaseBrief && currentQuestion && (
           <div
             className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
@@ -676,9 +732,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <Eye className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-lg font-bold text-white">CASE BRIEF</h3>
+                  <h3 className="text-lg font-bold text-white">
+                    PROBLEM SCENARIO
+                  </h3>
                   <div className="bg-cyan-500/20 px-3 py-1 rounded-full">
-                    <span className="text-cyan-300 font-bold text-sm">ACTIVE</span>
+                    <span className="text-cyan-300 font-bold text-sm">
+                      ACTIVE
+                    </span>
                   </div>
                 </div>
                 <button
@@ -691,7 +751,11 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
               <div className="bg-slate-700/50 p-4 rounded-lg border border-cyan-500/20">
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 animate-pulse flex-shrink-0"></div>
-                  <p className="text-gray-200 text-sm leading-relaxed">{currentQuestion.caseFile}</p>
+                  <p className="text-gray-200 text-sm leading-relaxed">
+                    {currentQuestion.caseFile} Read the scenario carefully, spot
+                    the violation and its root cause, and place them in the
+                    right category containers.
+                  </p>
                 </div>
               </div>
             </div>
