@@ -23,6 +23,7 @@ const Level2Card: React.FC<Level2CardProps> = ({
 }) => {
   const [selectedSolution, setSelectedSolution] = useState(currentAnswer?.solution || '');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   const canProceed = selectedSolution;
 
@@ -34,24 +35,42 @@ const Level2Card: React.FC<Level2CardProps> = ({
   // Drag and Drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(true);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     const solution = e.dataTransfer.getData('text/plain');
-    if (solution) {
+    const droppedType = e.dataTransfer.getData('application/type');
+    
+    // Only accept solution drops
+    if (solution && droppedType === 'solution') {
       handleSolutionSelect(solution);
     }
+    
     setIsDragOver(false);
+    setDraggedItem(null);
   };
 
   const handleDragStart = (e: React.DragEvent, item: string) => {
     e.dataTransfer.setData('text/plain', item);
+    e.dataTransfer.setData('application/type', 'solution');
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItem(item);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setIsDragOver(false);
   };
 
   return (
@@ -99,7 +118,7 @@ const Level2Card: React.FC<Level2CardProps> = ({
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-lg p-4 h-64 transition-all ${
               isDragOver
-                ? 'border-emerald-400 bg-emerald-500/20'
+                ? 'border-emerald-400 bg-emerald-500/20 scale-105'
                 : selectedSolution
                 ? 'border-emerald-500/50 bg-emerald-500/10'
                 : 'border-slate-600 bg-slate-700/50'
@@ -131,12 +150,13 @@ const Level2Card: React.FC<Level2CardProps> = ({
                 key={option}
                 draggable
                 onDragStart={(e) => handleDragStart(e, option)}
+                onDragEnd={handleDragEnd}
                 onClick={() => handleSolutionSelect(option)}
                 className={`p-2 rounded border cursor-grab transition-all ${
                   selectedSolution === option
                     ? 'border-emerald-400 bg-emerald-500/20'
                     : 'border-slate-600 bg-slate-700/50 hover:border-emerald-500/50'
-                }`}
+                } ${draggedItem === option ? 'opacity-50' : ''}`}
               >
                 <span className="text-white text-sm">{option}</span>
               </div>

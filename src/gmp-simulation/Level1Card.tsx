@@ -24,6 +24,8 @@ const Level1Card: React.FC<Level1CardProps> = ({
   const [selectedRootCause, setSelectedRootCause] = useState(currentAnswer?.rootCause || '');
   const [isViolationDragOver, setIsViolationDragOver] = useState(false);
   const [isRootCauseDragOver, setIsRootCauseDragOver] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [draggedType, setDraggedType] = useState<'violation' | 'rootCause' | null>(null);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
@@ -42,43 +44,82 @@ const Level1Card: React.FC<Level1CardProps> = ({
   // Drag and Drop handlers for violations
   const handleViolationDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsViolationDragOver(true);
+    e.stopPropagation();
+    // Only allow violation drops in violation zone
+    if (draggedType === 'violation') {
+      setIsViolationDragOver(true);
+    }
   };
 
-  const handleViolationDragLeave = () => {
+  const handleViolationDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsViolationDragOver(false);
   };
 
   const handleViolationDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const violation = e.dataTransfer.getData('text/plain');
-    if (violation) {
-      handleViolationSelect(violation);
+    e.stopPropagation();
+    
+    const droppedData = e.dataTransfer.getData('text/plain');
+    const droppedType = e.dataTransfer.getData('application/type');
+    
+    // Only accept violation drops
+    if (droppedData && droppedType === 'violation') {
+      handleViolationSelect(droppedData);
     }
+    
     setIsViolationDragOver(false);
+    setDraggedItem(null);
+    setDraggedType(null);
   };
 
   // Drag and Drop handlers for root causes
   const handleRootCauseDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsRootCauseDragOver(true);
+    e.stopPropagation();
+    // Only allow root cause drops in root cause zone
+    if (draggedType === 'rootCause') {
+      setIsRootCauseDragOver(true);
+    }
   };
 
-  const handleRootCauseDragLeave = () => {
+  const handleRootCauseDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsRootCauseDragOver(false);
   };
 
   const handleRootCauseDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const rootCause = e.dataTransfer.getData('text/plain');
-    if (rootCause) {
-      handleRootCauseSelect(rootCause);
+    e.stopPropagation();
+    
+    const droppedData = e.dataTransfer.getData('text/plain');
+    const droppedType = e.dataTransfer.getData('application/type');
+    
+    // Only accept root cause drops
+    if (droppedData && droppedType === 'rootCause') {
+      handleRootCauseSelect(droppedData);
     }
+    
     setIsRootCauseDragOver(false);
+    setDraggedItem(null);
+    setDraggedType(null);
   };
 
-  const handleDragStart = (e: React.DragEvent, item: string) => {
+  const handleDragStart = (e: React.DragEvent, item: string, type: 'violation' | 'rootCause') => {
     e.dataTransfer.setData('text/plain', item);
+    e.dataTransfer.setData('application/type', type);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItem(item);
+    setDraggedType(type);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDraggedType(null);
+    setIsViolationDragOver(false);
+    setIsRootCauseDragOver(false);
   };
 
   return (
@@ -105,13 +146,14 @@ const Level1Card: React.FC<Level1CardProps> = ({
                 <div
                   key={option}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, option)}
+                  onDragStart={(e) => handleDragStart(e, option, 'violation')}
+                  onDragEnd={handleDragEnd}
                   onClick={() => handleViolationSelect(option)}
                   className={`p-2 rounded border cursor-grab transition-all ${
                     selectedViolation === option
                       ? 'border-cyan-400 bg-cyan-500/20'
                       : 'border-slate-600 bg-slate-700/50 hover:border-cyan-500/50'
-                  }`}
+                  } ${draggedItem === option ? 'opacity-50' : ''}`}
                 >
                   <span className="text-white text-sm">{option}</span>
                 </div>
@@ -127,13 +169,14 @@ const Level1Card: React.FC<Level1CardProps> = ({
                 <div
                   key={option}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, option)}
+                  onDragStart={(e) => handleDragStart(e, option, 'rootCause')}
+                  onDragEnd={handleDragEnd}
                   onClick={() => handleRootCauseSelect(option)}
                   className={`p-2 rounded border cursor-grab transition-all ${
                     selectedRootCause === option
                       ? 'border-orange-400 bg-orange-500/20'
                       : 'border-slate-600 bg-slate-700/50 hover:border-orange-500/50'
-                  }`}
+                  } ${draggedItem === option ? 'opacity-50' : ''}`}
                 >
                   <span className="text-white text-sm">{option}</span>
                 </div>
@@ -156,7 +199,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
                 onDrop={handleViolationDrop}
                 className={`border-2 border-dashed rounded-lg p-4 min-h-24 transition-all ${
                   isViolationDragOver
-                    ? 'border-cyan-400 bg-cyan-500/20'
+                    ? 'border-cyan-400 bg-cyan-500/20 scale-105 shadow-lg shadow-cyan-500/25'
                     : selectedViolation
                     ? 'border-cyan-500/50 bg-cyan-500/10'
                     : 'border-slate-600 bg-slate-700/50'
@@ -188,7 +231,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
                 onDrop={handleRootCauseDrop}
                 className={`border-2 border-dashed rounded-lg p-4 min-h-24 transition-all ${
                   isRootCauseDragOver
-                    ? 'border-orange-400 bg-orange-500/20'
+                    ? 'border-orange-400 bg-orange-500/20 scale-105 shadow-lg shadow-orange-500/25'
                     : selectedRootCause
                     ? 'border-orange-500/50 bg-orange-500/10'
                     : 'border-slate-600 bg-slate-700/50'
