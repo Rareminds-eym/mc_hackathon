@@ -63,7 +63,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
       {...listeners}
       {...attributes}
       className={`p-2 cursor-grab transition-all select-none touch-none ${colorClasses} ${
-        isDragging ? "opacity-50" : ""
+        isDragging ? "opacity-0" : ""
       }`}
     >
       <span className="text-white text-xs font-bold pixel-text">{text}</span>
@@ -531,11 +531,8 @@ const Level1Card: React.FC<Level1CardProps> = ({
       </div>
 
       {/* Drag Overlay */}
-      <DragOverlay
-        dropAnimation={null}
-        key={activeItem ? `overlay-${activeItem.text}` : "no-overlay"}
-      >
-        {activeItem && activeItem.text ? (
+      <DragOverlay dropAnimation={null}>
+        {activeItem ? (
           <div
             className="pixel-border bg-gradient-to-r from-cyan-500 to-blue-500 p-2 cursor-grabbing transform scale-110 opacity-95 shadow-2xl pointer-events-none"
             style={{ zIndex: 9999 }}
