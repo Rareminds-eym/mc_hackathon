@@ -249,54 +249,56 @@ const Level1Card: React.FC<Level1CardProps> = ({
         <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
         <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
 
-        {/* Case Brief */}
+        {/* PROBLEM SCENARIO */}
         {!isMobileHorizontal && (
           <div className="relative z-10 pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 m-2 mb-0">
-            <h3 className="text-cyan-100 font-black pixel-text mb-2">MISSION BRIEFING</h3>
+            <h3 className="text-cyan-100 font-black pixel-text mb-2">PROBLEM SCENARIO</h3>
             <p className="text-cyan-50 text-sm font-bold">{question.caseFile} Analyze the problem scenario, identify the violation and its root cause, then drag both to the correct containers.</p>
           </div>
         )}
 
         {/* Main Content */}
-        <div className="relative z-10 flex-1 flex p-2 space-x-3">
+        <div className="relative z-10 flex-1 flex p-2 space-x-3 min-h-0">
           {/* COMMAND CENTER - Items Pool */}
-          <div className="w-1/3 flex-shrink-0">
-            <div className="pixel-border-thick bg-gray-800 p-4 h-full overflow-hidden flex flex-col">
+          <div className="w-1/3 flex-shrink-0 flex flex-col min-h-0">
+            <div className="pixel-border-thick bg-gray-800 p-4 flex-1 overflow-hidden flex flex-col min-h-0">
               {/* Background Pattern */}
               <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
               <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
 
-              <div className="relative z-10 flex flex-col h-full">
+              <div className="relative z-10 flex flex-col h-full min-h-0">
                 {/* Command Center Header */}
                 <div className="flex items-center space-x-2 mb-3 flex-shrink-0">
                   <div className="w-6 h-6 bg-cyan-500 pixel-border flex items-center justify-center">
                     <Target className="w-4 h-4 text-cyan-900" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-cyan-300 pixel-text">EVIDENCE ARSENAL</h2>
+                    <h2 className="text-sm font-black text-cyan-300 pixel-text">VIOLATION & ROOT CAUSE</h2>
                     <div className="text-xs text-gray-400 font-bold">
                       ITEMS: {combinedOptions.length} | DRAG TO ZONES
                     </div>
                   </div>
                 </div>
 
-                {/* Items Pool - Flexible Height */}
-                <div className="flex-1 overflow-y-auto">
-                  <div className="space-y-2">
-                    {combinedOptions.map((option, index) => (
-                      <div
-                        key={option.id}
-                        className="animate-slideIn"
-                        style={{ animationDelay: `${index * 100}ms` }}
-                      >
-                        <DraggableItem
-                          id={option.id}
-                          text={option.text}
-                          type={option.type}
-                          isSelected={option.isSelected}
-                        />
-                      </div>
-                    ))}
+                {/* Items Pool - Scrollable with Max Height */}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500 scrollbar-track-gray-700">
+                    <div className="space-y-2 p-1">
+                      {combinedOptions.map((option, index) => (
+                        <div
+                          key={option.id}
+                          className="animate-slideIn"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <DraggableItem
+                            id={option.id}
+                            text={option.text}
+                            type={option.type}
+                            isSelected={option.isSelected}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
