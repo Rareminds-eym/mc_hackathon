@@ -7,12 +7,33 @@ interface ModuleNodeProps {
   module: Module;
   onSelect?: (id: number) => void;
   isCurrentModule: boolean;
+  userEmail?: string;
 }
 
-const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModule }) => {
+const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModule, userEmail }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   // Reduce size if mobile and horizontal
   const isCompact = isMobile && isHorizontal;
+
+  // Email-based module access logic
+  const getActualModuleStatus = () => {
+    if (userEmail === 'hackathontest@gmail.com') {
+      // For hackathontest@gmail.com:
+      // - Modules until id "4" are locked
+      // - HL1 and HL2 are available
+      if (module.id === 'HL1' || module.id === 'HL2') {
+        return 'available';
+      }
+      // Lock modules 1, 2, 3, 4
+      if (['1', '2', '3', '4'].includes(module.id)) {
+        return 'locked';
+      }
+    }
+    // Return original status for other users or modules not affected by the rule
+    return module.status;
+  };
+
+  const actualStatus = getActualModuleStatus();
 
   const platformWidth = isCompact ? 96 : 144;
   const platformHeight = isCompact ? 64 : 96;
@@ -30,7 +51,7 @@ const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModu
   const badgePadding = isCompact ? '0.15rem 0.75rem' : '0.25rem 1.25rem';
 
   const handleClick = () => {
-    if (module.status === 'available' || module.status === 'completed') {
+    if (actualStatus === 'available' || actualStatus === 'completed') {
       onSelect?.(module.id);
     }
   };
@@ -38,7 +59,7 @@ const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModu
   return (
     <div className={`relative flex flex-col items-center min-h-[${isCompact ? 80 : 120}px]`}>
       {/* Completed badge (gamified style) */}
-      {module.status === 'completed' && (
+      {actualStatus === 'completed' && (
         <div
           className="absolute left-1/2 z-30 pointer-events-none"
           style={{ top: -badgeHeight, transform: `translate(-50%, ${isCompact ? 16 : 24}px)` }}
@@ -66,18 +87,18 @@ const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModu
       {/* Floating orb/module indicator */}
       <div
         onClick={handleClick}
-        className={`relative z-10 ${module.status === 'locked' ? 'cursor-default' : 'cursor-pointer'}`}
+        className={`relative z-10 ${actualStatus === 'locked' ? 'cursor-default' : 'cursor-pointer'}`}
         style={{ marginTop: isCompact ? -20 : -32, transform: `translateY(${isCompact ? 40 : 56}px)` }}
       >
         <div
-          className={`flex items-center justify-center rounded-full border-4 border-white/30 shadow-lg ${module.status !== 'locked' ? 'animate-pulse' : ''}`}
+          className={`flex items-center justify-center rounded-full border-4 border-white/30 shadow-lg ${actualStatus !== 'locked' ? 'animate-pulse' : ''}`}
           style={{
             width: orbSize,
             height: orbSize,
             background:
-              module.status === 'completed'
+              actualStatus === 'completed'
                 ? 'linear-gradient(to bottom, #10b981, #047857)'
-                : module.status === 'available'
+                : actualStatus === 'available'
                 ? 'linear-gradient(to bottom, #22d3ee, #0891b2)'
                 : 'linear-gradient(to bottom, #4b5563, #1f2937)',
           }}
@@ -88,7 +109,7 @@ const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModu
           </div>
         </div>
         {/* Orb glow effect */}
-        {module.status === 'available' && (
+        {actualStatus === 'available' && (
           <div
             className="absolute rounded-full bg-cyan-400 opacity-30 animate-ping"
             style={{ inset: 0, width: orbSize, height: orbSize }}
@@ -98,28 +119,28 @@ const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModu
       {/* Main floating platform */}
       <div
         onClick={handleClick}
-        className={`relative flex flex-col items-center justify-center transition-transform duration-300 ${module.status === 'locked' ? 'cursor-default' : 'cursor-pointer'}`}
+        className={`relative flex flex-col items-center justify-center transition-transform duration-300 ${actualStatus === 'locked' ? 'cursor-default' : 'cursor-pointer'}`}
         style={{
           width: platformWidth,
           height: platformHeight,
           background:
-            module.status === 'completed'
+            actualStatus === 'completed'
               ? 'linear-gradient(to bottom right, #6d28d9, #4c1d95, #312e81)'
-              : module.status === 'available'
+              : actualStatus === 'available'
               ? 'linear-gradient(to bottom right, #7c3aed, #6d28d9, #3730a3)'
               : 'linear-gradient(to bottom right, #374151, #1f2937, #111827)',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
           clipPath: 'ellipse(70% 100% at 50% 100%)',
           borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-          outline: isCurrentModule && module.status === 'available' ? '4px solid #67e8f9' : undefined,
-          outlineOffset: isCurrentModule && module.status === 'available' ? '2px' : undefined,
+          outline: isCurrentModule && actualStatus === 'available' ? '4px solid #67e8f9' : undefined,
+          outlineOffset: isCurrentModule && actualStatus === 'available' ? '2px' : undefined,
           boxSizing: 'border-box',
         }}
         onMouseOver={e => {
-          if (module.status !== 'locked') e.currentTarget.style.transform = 'scale(1.05)';
+          if (actualStatus !== 'locked') e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseOut={e => {
-          if (module.status !== 'locked') e.currentTarget.style.transform = 'scale(1)';
+          if (actualStatus !== 'locked') e.currentTarget.style.transform = 'scale(1)';
         }}
       >
         {/* Platform top surface */}
@@ -132,7 +153,7 @@ const ModuleNode: React.FC<ModuleNodeProps> = ({ module, onSelect, isCurrentModu
           }}
         />
         {/* Progress stars for completed modules */}
-        {module.status === 'completed' && module.progress && (
+        {actualStatus === 'completed' && module.progress && (
           <div className="absolute left-1/2 flex gap-1" style={{ bottom: isCompact ? 4 : 8, transform: 'translateX(-50%)' }}>
             {[1, 2, 3].map((star) => (
               <Star
