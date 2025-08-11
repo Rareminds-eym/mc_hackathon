@@ -5,6 +5,7 @@ import ModuleNode from "./ModuleNode";
 import CharacterSprite from "./CharacterSprite";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ModuleMapProps {
   modules: Module[];
@@ -19,6 +20,7 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
 }) => {
   const { isMobile, isHorizontal } = useDeviceLayout();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -470,6 +472,7 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                       module={module}
                       onSelect={(id) => navigate(`/modules/${id}`)}
                       isCurrentModule={parseInt(module.id) === currentModuleId}
+                      userEmail={user?.email}
                     />
                   </div>
                 );
