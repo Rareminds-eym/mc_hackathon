@@ -136,7 +136,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
             {/* First Logo */}
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-              <div className="relative bg-gsradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
+              <div className="relative bg-gradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
                 <div className="flex items-center justify-center space-x-3">
                   <div className="text-left">
                     <img src="/logos/NM.png" alt="Company Logo" className={`${layout.isMobile && layout.isHorizontal ? 'h-16 w-36' : 'h-28 w-72'} rounded-xs shadow-lg py-4`} />
