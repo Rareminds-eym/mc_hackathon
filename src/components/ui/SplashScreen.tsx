@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {Sparkles, CheckCircle, Target } from 'lucide-react';
+import {Sparkles, CheckCircle, Target, X } from 'lucide-react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 
 interface SplashScreenProps {
@@ -111,6 +111,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     <div
       className={`fixed inset-0 z-50 bg-gradient-to-br from-gray-950 via-slate-950 to-black flex items-center justify-center transition-all duration-800 ${isExiting ? 'opacity-0 scale-110' : 'opacity-100 scale-100'} ${layout.isMobile && layout.isHorizontal ? 'px-2 py-2' : ''}`}
     >
+    
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 animate-pulse"></div>
@@ -126,18 +127,35 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           {particles}
         </div>
       )}
-
-      {/* Main Content - Responsive for landscape */}
+        {/* Main Content */}
       <div className={`relative z-10 flex ${layout.isMobile && layout.isHorizontal ? 'flex-row items-center justify-between w-full max-w-3xl px-2' : 'flex-col text-center px-8'}`}>
         {/* Logo and Tagline */}
         <div className={`${layout.isMobile && layout.isHorizontal ? 'flex-1 flex flex-col items-center justify-center' : ''}`}>
-          {/* Company Logo */}
-          <div className={`mb-8 transition-all duration-1000 ${showLogo ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90'}`}
-            style={layout.isMobile && layout.isHorizontal ? { marginBottom: 0 } : {}}>
+          {/* Logo Container - Horizontal Layout */}
+          <div className={`flex items-center justify-center mb-8 transition-all duration-1000 ${showLogo ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90'}`}>
+            {/* First Logo */}
             <div className="relative inline-block">
-              {/* Glow Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-              {/* Logo Container */}
+              <div className="relative bg-gsradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="text-left">
+                    <img src="/logos/NM.png" alt="Company Logo" className={`${layout.isMobile && layout.isHorizontal ? 'h-16 w-36' : 'h-28 w-72'} rounded-xs shadow-lg py-4`} />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute inset-0 animate-spin-slow">
+                <CheckCircle className="absolute -top-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-green-400" />
+                <Target className="absolute top-1/2 -right-2 transform -translate-y-1/2 h-6 w-6 text-blue-400" />
+                <Sparkles className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-purple-400" />
+              </div>
+            </div>
+
+            {/* X Symbol */}
+            <X className={`mx-4 ${layout.isMobile && layout.isHorizontal ? 'h-8 w-8' : 'h-12 w-12'} text-white`} />
+
+            {/* Second Logo */}
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
               <div className="relative bg-gradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
                 <div className="flex items-center justify-center space-x-3">
                   <div className="text-left">
@@ -145,7 +163,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                   </div>
                 </div>
               </div>
-              {/* Orbiting Icons */}
               <div className="absolute inset-0 animate-spin-slow">
                 <CheckCircle className="absolute -top-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-green-400" />
                 <Target className="absolute top-1/2 -right-2 transform -translate-y-1/2 h-6 w-6 text-blue-400" />
@@ -153,6 +170,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
               </div>
             </div>
           </div>
+
           {/* Tagline */}
           <div className={`mb-8 transition-all duration-1000 delay-500 ${showTagline ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} ${layout.isMobile && layout.isHorizontal ? 'mb-2' : 'mb-16'}`}>
             <h2 className={`${layout.isMobile && layout.isHorizontal ? 'text-lg' : 'text-2xl md:text-3xl'} font-bold text-white mb-2`}>
@@ -164,6 +182,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
             <div className="mt-4 w-16 h-1 bg-gradient-to-r from-blue-400 to-purple-500 mx-auto rounded-full"></div>
           </div>
         </div>
+      
         {/* Loading Indicator and Character for landscape */}
         <div className={`${layout.isMobile && layout.isHorizontal ? 'flex-1 flex flex-col items-center justify-center' : ''}`}>
           <div className={`transition-all duration-500 ${loadingProgress > 0 ? 'opacity-100' : 'opacity-0'}`}>
