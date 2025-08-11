@@ -513,33 +513,14 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
                   <h1 className="text-white font-semibold text-base">
                     Level {gameState.currentLevel}
                   </h1>
-                  <p className="text-slate-400 text-sm">
-                    {gameState.currentLevel === 1 ? 'Investigation Phase' : 'Solution Phase'}
-                  </p>
+                  {/* Simple Progress Indicator */}
+                  <div className="text-slate-400 text-sm">
+                    Case {gameState.currentQuestion + 1}/5
+                  </div>
                 </div>
               </div>
 
-              {/* Progress Indicator */}
-              <div className="hidden md:flex items-center gap-2 ml-6">
-                <span className="text-slate-400 text-sm">Case</span>
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        i < gameState.currentQuestion
-                          ? 'bg-green-500'
-                          : i === gameState.currentQuestion
-                          ? 'bg-blue-500 animate-pulse'
-                          : 'bg-slate-600'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-slate-400 text-sm">
-                  {gameState.currentQuestion + 1}/5
-                </span>
-              </div>
+
             </div>
 
             {/* Right - Controls */}

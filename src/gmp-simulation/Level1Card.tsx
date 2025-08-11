@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
-import {
-  Search, ChevronRight, CheckCircle, Target
-} from 'lucide-react';
+import React, { useState } from "react";
+import { Search, ChevronRight, CheckCircle, Target } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -15,9 +13,9 @@ import {
   DragEndEvent,
   useDraggable,
   useDroppable,
-} from '@dnd-kit/core';
-import { useDeviceLayout } from '../hooks/useOrientation';
-import { Question } from './HackathonData';
+} from "@dnd-kit/core";
+import { useDeviceLayout } from "../hooks/useOrientation";
+import { Question } from "./HackathonData";
 
 interface Level1CardProps {
   question: Question;
@@ -32,31 +30,31 @@ interface Level1CardProps {
 interface DraggableItemProps {
   id: string;
   text: string;
-  type: 'violation' | 'rootCause';
+  type: "violation" | "rootCause";
   isSelected: boolean;
 }
 
-const DraggableItem: React.FC<DraggableItemProps> = ({ id, text, type, isSelected }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-  } = useDraggable({
-    id,
-    data: { text, type },
-  });
-
-
+const DraggableItem: React.FC<DraggableItemProps> = ({
+  id,
+  text,
+  type,
+  isSelected,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id,
+      data: { text, type },
+    });
 
   const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
   };
 
   const colorClasses = isSelected
-    ? 'pixel-border bg-gradient-to-r from-cyan-500 to-blue-500'
-    : 'pixel-border bg-gradient-to-r from-gray-600 to-gray-700 hover:from-cyan-600 hover:to-blue-600';
+    ? "pixel-border bg-gradient-to-r from-cyan-500 to-blue-500"
+    : "pixel-border bg-gradient-to-r from-gray-600 to-gray-700 hover:from-cyan-600 hover:to-blue-600";
 
   return (
     <div
@@ -64,10 +62,8 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, text, type, isSelecte
       style={style}
       {...listeners}
       {...attributes}
-
-
       className={`p-2 cursor-grab transition-all select-none touch-none ${colorClasses} ${
-        isDragging ? 'opacity-50' : ''
+        isDragging ? "opacity-50" : ""
       }`}
     >
       <span className="text-white text-xs font-bold pixel-text">{text}</span>
@@ -78,12 +74,17 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, text, type, isSelecte
 // Droppable Zone Component
 interface DroppableZoneProps {
   id: string;
-  type: 'violation' | 'rootCause';
+  type: "violation" | "rootCause";
   selectedItem: string;
   children: React.ReactNode;
 }
 
-const DroppableZone: React.FC<DroppableZoneProps> = ({ id, type, selectedItem, children }) => {
+const DroppableZone: React.FC<DroppableZoneProps> = ({
+  id,
+  type,
+  selectedItem,
+  children,
+}) => {
   const { isOver, setNodeRef } = useDroppable({
     id,
     data: { type },
@@ -103,9 +104,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({ id, type, selectedItem, c
         </div>
       )}
 
-      <div className="relative z-10 h-full">
-        {children}
-      </div>
+      <div className="relative z-10 h-full">{children}</div>
     </div>
   );
 };
@@ -114,18 +113,25 @@ const Level1Card: React.FC<Level1CardProps> = ({
   question,
   onAnswer,
   onNext,
-  currentAnswer
+  currentAnswer,
 }) => {
-  const [selectedViolation, setSelectedViolation] = useState(currentAnswer?.violation || '');
-  const [selectedRootCause, setSelectedRootCause] = useState(currentAnswer?.rootCause || '');
-  const [activeItem, setActiveItem] = useState<{ text: string; type: 'violation' | 'rootCause' } | null>(null);
+  const [selectedViolation, setSelectedViolation] = useState(
+    currentAnswer?.violation || ""
+  );
+  const [selectedRootCause, setSelectedRootCause] = useState(
+    currentAnswer?.rootCause || ""
+  );
+  const [activeItem, setActiveItem] = useState<{
+    text: string;
+    type: "violation" | "rootCause";
+  } | null>(null);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
   // Reset fields when question changes
   React.useEffect(() => {
-    setSelectedViolation(currentAnswer?.violation || '');
-    setSelectedRootCause(currentAnswer?.rootCause || '');
+    setSelectedViolation(currentAnswer?.violation || "");
+    setSelectedRootCause(currentAnswer?.rootCause || "");
     setActiveItem(null);
   }, [question.id, currentAnswer]);
 
@@ -171,19 +177,24 @@ const Level1Card: React.FC<Level1CardProps> = ({
     const violations = question.violationOptions.map((option, index) => ({
       id: `violation-${index}`,
       text: option,
-      type: 'violation' as const,
-      isSelected: selectedViolation === option
+      type: "violation" as const,
+      isSelected: selectedViolation === option,
     }));
 
     const rootCauses = question.rootCauseOptions.map((option, index) => ({
       id: `rootCause-${index}`,
       text: option,
-      type: 'rootCause' as const,
-      isSelected: selectedRootCause === option
+      type: "rootCause" as const,
+      isSelected: selectedRootCause === option,
     }));
 
     return shuffleArray([...violations, ...rootCauses]);
-  }, [question.violationOptions, question.rootCauseOptions, selectedViolation, selectedRootCause]);
+  }, [
+    question.violationOptions,
+    question.rootCauseOptions,
+    selectedViolation,
+    selectedRootCause,
+  ]);
 
   const handleViolationSelect = (violation: string) => {
     setSelectedViolation(violation);
@@ -198,7 +209,10 @@ const Level1Card: React.FC<Level1CardProps> = ({
   // Drag and Drop event handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const draggedData = active.data.current as { text: string; type: 'violation' | 'rootCause' };
+    const draggedData = active.data.current as {
+      text: string;
+      type: "violation" | "rootCause";
+    };
 
     if (draggedData && draggedData.text) {
       setActiveItem(draggedData);
@@ -219,19 +233,24 @@ const Level1Card: React.FC<Level1CardProps> = ({
       return;
     }
 
-    const draggedData = active.data.current as { text: string; type: 'violation' | 'rootCause' };
-    const dropZoneData = over.data.current as { type: 'violation' | 'rootCause' };
+    const draggedData = active.data.current as {
+      text: string;
+      type: "violation" | "rootCause";
+    };
+    const dropZoneData = over.data.current as {
+      type: "violation" | "rootCause";
+    };
 
     // Validate drag data
     if (!draggedData || !draggedData.text || !dropZoneData) {
-      console.warn('Invalid drag or drop data:', { draggedData, dropZoneData });
+      console.warn("Invalid drag or drop data:", { draggedData, dropZoneData });
       return;
     }
 
     // Allow any option to be dropped in any zone
-    if (dropZoneData.type === 'violation') {
+    if (dropZoneData.type === "violation") {
       handleViolationSelect(draggedData.text);
-    } else if (dropZoneData.type === 'rootCause') {
+    } else if (dropZoneData.type === "rootCause") {
       handleRootCauseSelect(draggedData.text);
     }
   };
@@ -244,7 +263,10 @@ const Level1Card: React.FC<Level1CardProps> = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex flex-col bg-gray-800 overflow-hidden relative" style={{ height: 'calc(100vh - 80px)' }}>
+      <div
+        className="flex flex-col bg-gray-800 overflow-hidden relative"
+        style={{ height: "calc(100vh - 80px)" }}
+      >
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
         <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
@@ -252,8 +274,14 @@ const Level1Card: React.FC<Level1CardProps> = ({
         {/* PROBLEM SCENARIO */}
         {!isMobileHorizontal && (
           <div className="relative z-10 pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 m-2 mb-0">
-            <h3 className="text-cyan-100 font-black pixel-text mb-2">PROBLEM SCENARIO</h3>
-            <p className="text-cyan-50 text-sm font-bold">{question.caseFile} Analyze the problem scenario, identify the violation and its root cause, then drag both to the correct containers.</p>
+            <h3 className="text-cyan-100 font-black pixel-text mb-2">
+              PROBLEM SCENARIO
+            </h3>
+            <p className="text-cyan-50 text-sm font-bold">
+              {question.caseFile} <br />
+              Read the scenario carefully, spot the violation and its root
+              cause, and place them in the right category containers.
+            </p>
           </div>
         )}
 
@@ -273,7 +301,9 @@ const Level1Card: React.FC<Level1CardProps> = ({
                     <Target className="w-4 h-4 text-cyan-900" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-cyan-300 pixel-text">VIOLATION & ROOT CAUSE</h2>
+                    <h2 className="text-sm font-black text-cyan-300 pixel-text">
+                      VIOLATION & ROOT CAUSE
+                    </h2>
                     <div className="text-xs text-gray-400 font-bold">
                       ITEMS: {combinedOptions.length} | DRAG TO ZONES
                     </div>
@@ -308,18 +338,25 @@ const Level1Card: React.FC<Level1CardProps> = ({
           {/* TARGET ZONES */}
           <div className="flex-1 flex gap-3 min-h-0">
             {/* Violation Scanner */}
-            <div className="flex-1 animate-slideIn" style={{ animationDelay: '0ms' }}>
-              <div className="pixel-border-thick bg-gradient-to-br from-green-500 to-green-700 h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col">
+            <div
+              className="flex-1 animate-slideIn"
+              style={{ animationDelay: "0ms" }}
+            >
+              <div className="pixel-border-thick bg-gradient-to-br from-indigo-900 to-indigo-800 h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col">
                 {/* Header */}
                 <div className="relative z-10 p-3 flex-shrink-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 bg-green-300 pixel-border flex items-center justify-center">
-                        <Target className="w-3 h-3 text-green-900" />
+                        <div className="w-5 h-5 bg-blue-800 pixel-border flex items-center justify-center">
+                          <Target className="w-3 h-3 text-blue-300" />
                       </div>
                       <div>
-                        <h3 className="text-xs font-black text-white pixel-text">VIOLATION</h3>
-                        <div className="text-white/80 text-xs">Scanner Zone</div>
+                        <h3 className="text-xs font-black text-white pixel-text">
+                          VIOLATION
+                        </h3>
+                        <div className="text-white/80 text-xs">
+                          Scanner Zone
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -335,30 +372,36 @@ const Level1Card: React.FC<Level1CardProps> = ({
                     {selectedViolation ? (
                       <div className="h-full flex flex-col">
                         {/* Status Header */}
-                        <div className="text-center py-2 border-b border-green-300/30">
-                          <div className="w-8 h-8 bg-green-300 pixel-border mx-auto mb-1 flex items-center justify-center animate-pulse">
-                            <CheckCircle className="w-5 h-5 text-green-900" />
+                        <div className="text-center py-2 border-b border-blue-700/30">
+                          <div className="w-8 h-8 bg-blue-800 pixel-border mx-auto mb-1 flex items-center justify-center animate-pulse">
+                            <CheckCircle className="w-5 h-5 text-blue-300" />
                           </div>
-                          <p className="text-green-100 font-black pixel-text text-xs">VIOLATION DETECTED!</p>
+                          <p className="text-blue-100 font-black pixel-text text-xs">
+                            VIOLATION DETECTED!
+                          </p>
                         </div>
 
                         {/* Dropped Item Display */}
-                        <div className="flex-1 p-3 flex items-center justify-center">
+                        <div className="flex-1 p-3">
                           <div className="w-full">
-                            <div className="pixel-border-thick bg-gradient-to-r from-green-400 to-green-600 p-3 relative overflow-hidden">
+                            <div className="pixel-border-thick bg-gradient-to-r from-blue-900 to-blue-700 p-3 relative overflow-hidden">
                               {/* Background Pattern */}
                               <div className="absolute inset-0 bg-pixel-pattern opacity-20"></div>
 
                               {/* Content */}
-                              <div className="relative z-10 text-center">
-                                <div className="w-6 h-6 bg-green-200 pixel-border mx-auto mb-2 flex items-center justify-center">
-                                  <Target className="w-4 h-4 text-green-900" />
+                              <div className="relative z-10">
+                                <div className="flex items-center mb-2">
+                                  <div className="w-6 h-6 bg-blue-800 pixel-border mr-2 flex items-center justify-center flex-shrink-0">
+                                    <Target className="w-4 h-4 text-blue-300" />
+                                  </div>
+                                  <p className="text-white text-xs font-black pixel-text leading-tight">
+                                    {selectedViolation}
+                                  </p>
                                 </div>
-                                <p className="text-white text-xs font-black pixel-text leading-tight">{selectedViolation}</p>
                               </div>
 
                               {/* Success Animation */}
-                              <div className="absolute top-1 right-1 w-2 h-2 bg-green-200 rounded-full animate-ping"></div>
+                              <div className="absolute top-1 right-1 w-2 h-2 bg-blue-800 rounded-full animate-ping"></div>
                             </div>
                           </div>
                         </div>
@@ -368,8 +411,12 @@ const Level1Card: React.FC<Level1CardProps> = ({
                         <div className="w-16 h-16 bg-white/20 mx-auto mb-3 flex items-center justify-center rounded-full">
                           <Target className="w-8 h-8 text-white/60" />
                         </div>
-                        <p className="text-white/80 font-bold text-sm">DROP ZONE</p>
-                        <p className="text-white/60 text-xs">Drag violation here</p>
+                        <p className="text-white/80 font-bold text-sm">
+                          DROP ZONE
+                        </p>
+                        <p className="text-white/60 text-xs">
+                          Drag violation here
+                        </p>
                       </div>
                     )}
                   </DroppableZone>
@@ -378,18 +425,25 @@ const Level1Card: React.FC<Level1CardProps> = ({
             </div>
 
             {/* Root Cause Analyzer */}
-            <div className="flex-1 animate-slideIn" style={{ animationDelay: '150ms' }}>
-              <div className="pixel-border-thick bg-gradient-to-br from-orange-500 to-red-600 h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col">
+            <div
+              className="flex-1 animate-slideIn"
+              style={{ animationDelay: "150ms" }}
+            >
+              <div className="pixel-border-thick bg-gradient-to-br from-purple-900 to-purple-800 h-full relative overflow-hidden transition-all duration-300 rounded-lg flex flex-col">
                 {/* Header */}
                 <div className="relative z-10 p-3 flex-shrink-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 bg-orange-300 pixel-border flex items-center justify-center">
-                        <Search className="w-3 h-3 text-orange-900" />
+                        <div className="w-5 h-5 bg-purple-800 pixel-border flex items-center justify-center">
+                          <Search className="w-3 h-3 text-purple-300" />
                       </div>
                       <div>
-                        <h3 className="text-xs font-black text-white pixel-text">ROOT CAUSE</h3>
-                        <div className="text-white/80 text-xs">Analyzer Zone</div>
+                        <h3 className="text-xs font-black text-white pixel-text">
+                          ROOT CAUSE
+                        </h3>
+                        <div className="text-purple-100/80 text-xs">
+                          Analyzer Zone
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -405,30 +459,36 @@ const Level1Card: React.FC<Level1CardProps> = ({
                     {selectedRootCause ? (
                       <div className="h-full flex flex-col">
                         {/* Status Header */}
-                        <div className="text-center py-2 border-b border-orange-300/30">
-                          <div className="w-8 h-8 bg-orange-300 pixel-border mx-auto mb-1 flex items-center justify-center animate-pulse">
-                            <CheckCircle className="w-5 h-5 text-orange-900" />
+                        <div className="text-center py-2 border-b border-purple-700/30">
+                          <div className="w-8 h-8 bg-purple-800 pixel-border mx-auto mb-1 flex items-center justify-center animate-pulse">
+                            <CheckCircle className="w-5 h-5 text-purple-300" />
                           </div>
-                          <p className="text-orange-100 font-black pixel-text text-xs">ROOT CAUSE FOUND!</p>
+                          <p className="text-purple-100 font-black pixel-text text-xs">
+                            ROOT CAUSE FOUND!
+                          </p>
                         </div>
 
                         {/* Dropped Item Display */}
-                        <div className="flex-1 p-3 flex items-center justify-center">
+                        <div className="flex-1 p-3">
                           <div className="w-full">
-                            <div className="pixel-border-thick bg-gradient-to-r from-orange-400 to-red-500 p-3 relative overflow-hidden">
+                            <div className="pixel-border-thick bg-gradient-to-r from-purple-900 to-purple-700 p-3 relative overflow-hidden">
                               {/* Background Pattern */}
                               <div className="absolute inset-0 bg-pixel-pattern opacity-20"></div>
 
                               {/* Content */}
-                              <div className="relative z-10 text-center">
-                                <div className="w-6 h-6 bg-orange-200 pixel-border mx-auto mb-2 flex items-center justify-center">
-                                  <Search className="w-4 h-4 text-orange-900" />
+                              <div className="relative z-10">
+                                <div className="flex items-center mb-2">
+                                  <div className="w-6 h-6 bg-purple-800 pixel-border mr-2 flex items-center justify-center flex-shrink-0">
+                                    <Search className="w-4 h-4 text-purple-300" />
+                                  </div>
+                                  <p className="text-white text-xs font-black pixel-text leading-tight">
+                                    {selectedRootCause}
+                                  </p>
                                 </div>
-                                <p className="text-white text-xs font-black pixel-text leading-tight">{selectedRootCause}</p>
                               </div>
 
                               {/* Success Animation */}
-                              <div className="absolute top-1 right-1 w-2 h-2 bg-orange-200 rounded-full animate-ping"></div>
+                              <div className="absolute top-1 right-1 w-2 h-2 bg-purple-800 rounded-full animate-ping"></div>
                             </div>
                           </div>
                         </div>
@@ -438,8 +498,12 @@ const Level1Card: React.FC<Level1CardProps> = ({
                         <div className="w-16 h-16 bg-white/20 mx-auto mb-3 flex items-center justify-center rounded-full">
                           <Search className="w-8 h-8 text-white/60" />
                         </div>
-                        <p className="text-white/80 font-bold text-sm">DROP ZONE</p>
-                        <p className="text-white/60 text-xs">Drag root cause here</p>
+                        <p className="text-white/80 font-bold text-sm">
+                          DROP ZONE
+                        </p>
+                        <p className="text-white/60 text-xs">
+                          Drag root cause here
+                        </p>
                       </div>
                     )}
                   </DroppableZone>
@@ -455,8 +519,8 @@ const Level1Card: React.FC<Level1CardProps> = ({
               disabled={!canProceed}
               className={`flex items-center space-x-2 px-4 py-3 pixel-border font-black pixel-text transition-all shadow-lg ${
                 canProceed
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white transform hover:scale-105 animate-pulse'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                  ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white transform hover:scale-105"
+                  : "bg-gray-600 text-gray-400 cursor-not-allowed opacity-50"
               }`}
             >
               <span className="text-sm">PROCEED</span>
@@ -469,7 +533,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
       {/* Drag Overlay */}
       <DragOverlay
         dropAnimation={null}
-        key={activeItem ? `overlay-${activeItem.text}` : 'no-overlay'}
+        key={activeItem ? `overlay-${activeItem.text}` : "no-overlay"}
       >
         {activeItem && activeItem.text ? (
           <div
