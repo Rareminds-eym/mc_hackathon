@@ -484,7 +484,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               Test your knowledge of Good Manufacturing Practices through
               interactive case studies
             </p> */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="pixel-border bg-gradient-to-r from-blue-700 to-blue-600 p-2">
                 <div className="w-6 h-6 bg-blue-800 pixel-border mx-auto mb-1 flex items-center justify-center">
                   <Clock className="w-3 h-3 text-blue-300" />
