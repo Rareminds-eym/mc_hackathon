@@ -1,14 +1,14 @@
-import { supabase } from "../lib/supabase";
-import React, { useState, useEffect } from "react";
-import { Factory, Clock, Trophy, AlertTriangle, Eye, Play } from "lucide-react";
+import { AlertTriangle, Clock, Eye, Factory, Play, Trophy } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useDeviceLayout } from "../hooks/useOrientation";
-import { hackathonData } from "./HackathonData";
+import { supabase } from "../lib/supabase";
 import type { Question } from "./HackathonData";
+import { hackathonData } from "./HackathonData";
 // @ts-ignore
-import { QuestionCard } from "./QuestionCard";
-import { Timer } from "./Timer";
-import { Results } from "./Results";
 import { ModuleCompleteModal } from "./ModuleCompleteModal";
+import { QuestionCard } from "./QuestionCard";
+import { Results } from "./Results";
+import { Timer } from "./Timer";
 
 export interface GameState {
   currentLevel: 1 | 2;
@@ -42,6 +42,27 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
   // Case brief modal state
   const [showCaseBrief, setShowCaseBrief] = useState(false);
+
+  // Utility function to ensure valid session before API calls
+  const ensureValidSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        // Try to refresh the session
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error("Session expired. Please log in again.");
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Session validation failed:", err);
+      setTeamInfoError("Session expired. Please log in again.");
+      return false;
+    }
+  };
   
   // Walkthrough video handler
   const showWalkthroughVideo = () => {
@@ -56,6 +77,14 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       console.warn("No session_id available for team attempt.");
       return;
     }
+
+    // Ensure valid session before saving
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid) {
+      console.error("Cannot save team attempt: Invalid session");
+      return;
+    }
+
     // Fetch all individual attempts for this session and module
     const { data: attempts, error } = await supabase
       .from("individual_attempts")
@@ -68,6 +97,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
         error.message,
         error.details
       );
+      if (error.message.includes("JWT") || error.message.includes("expired")) {
+        setTeamInfoError("Session expired while loading team data. Please log in again.");
+      }
       return;
     }
     if (!attempts || attempts.length === 0) {
@@ -99,6 +131,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
         insertError.message,
         insertError.details
       );
+      if (insertError.message.includes("JWT") || insertError.message.includes("expired")) {
+        setTeamInfoError("Session expired while saving team data. Please log in again.");
+      }
     } else {
       console.log("Saved team attempt:", teamData);
     }
@@ -129,36 +164,68 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   // Block UI until session_id and email are loaded
   const loadingIds = !session_id || !email;
 
-  // Example: get current user's id from auth (replace with your auth logic)
+  // Enhanced auth handling with JWT refresh
   useEffect(() => {
     const fetchTeamInfo = async () => {
-      // Get current user's email from Supabase Auth
-      const {
-        data: { session },
-        error: authError,
-      } = await supabase.auth.getSession();
-      if (authError || !session || !session.user || !session.user.email) {
-        setTeamInfoError("User email not found. Please log in.");
-        return;
-      }
-      const userEmail = session.user.email;
-      // Fetch session_id from teams table using email
-      const { data, error } = await supabase
-        .from("teams")
-        .select("session_id")
-        .eq("email", userEmail)
-        .single();
-      if (error) {
-        setTeamInfoError(
-          "Could not load team info. " + (error.message || "Unknown error.")
-        );
-      } else if (!data) {
-        setTeamInfoError("No team info found for this user.");
-      } else {
-        setSessionId(data.session_id);
-        setEmail(userEmail);
+      try {
+        // First, try to refresh the session if it's expired
+        const { error: refreshError } = await supabase.auth.refreshSession();
+
+        if (refreshError) {
+          console.warn("Session refresh failed:", refreshError.message);
+        }
+
+        // Get current user's email from Supabase Auth
+        const {
+          data: { session },
+          error: authError,
+        } = await supabase.auth.getSession();
+
+        if (authError) {
+          console.error("Auth error:", authError);
+          if (authError.message.includes("JWT") || authError.message.includes("expired")) {
+            setTeamInfoError("Session expired. Please log in again.");
+          } else {
+            setTeamInfoError("Authentication error. Please log in.");
+          }
+          return;
+        }
+
+        if (!session || !session.user || !session.user.email) {
+          setTeamInfoError("User session not found. Please log in.");
+          return;
+        }
+
+        const userEmail = session.user.email;
+        console.log("Authenticated user:", userEmail);
+
+        // Fetch session_id from teams table using email
+        const { data, error } = await supabase
+          .from("teams")
+          .select("session_id")
+          .eq("email", userEmail)
+          .single();
+
+        if (error) {
+          console.error("Database error:", error);
+          if (error.message.includes("JWT") || error.message.includes("expired")) {
+            setTeamInfoError("Session expired. Please log in again.");
+          } else {
+            setTeamInfoError("Could not load team info. " + (error.message || "Unknown error."));
+          }
+        } else if (!data) {
+          setTeamInfoError("No team info found for this user.");
+        } else {
+          setSessionId(data.session_id);
+          setEmail(userEmail);
+          console.log("Team info loaded successfully");
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        setTeamInfoError("An unexpected error occurred. Please try again.");
       }
     };
+
     fetchTeamInfo();
   }, []);
 
@@ -197,6 +264,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     completion_time_sec: number,
     module_number: number
   ) => {
+    // Ensure valid session before saving
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid) {
+      console.error("Cannot save attempt: Invalid session");
+      return;
+    }
+
     const { error, data } = await supabase.from("individual_attempts").insert([
       {
         email: email,
@@ -208,7 +282,11 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     ]);
     if (error) {
       console.error("Supabase insert error:", error.message, error.details);
-      alert("Error saving attempt: " + error.message);
+      if (error.message.includes("JWT") || error.message.includes("expired")) {
+        setTeamInfoError("Session expired while saving. Please log in again.");
+      } else {
+        alert("Error saving attempt: " + error.message);
+      }
     } else {
       console.log("Saved attempt:", data);
     }
@@ -258,6 +336,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       // Auto-save answers and questions to database after every answer
       const saveAttemptDetails = async () => {
         try {
+          // Ensure valid session before auto-saving
+          const sessionValid = await ensureValidSession();
+          if (!sessionValid) {
+            console.warn("Cannot auto-save: Invalid session");
+            return;
+          }
+
           await supabase.from("attempt_details").upsert(
             [
               {
@@ -273,6 +358,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           );
         } catch (err) {
           console.error("Auto-save error:", err);
+          if (err instanceof Error && (err.message.includes("JWT") || err.message.includes("expired"))) {
+            console.warn("Session expired during auto-save");
+            // Don't show error to user for auto-save failures, just log it
+          }
         }
       };
       saveAttemptDetails();
@@ -442,15 +531,46 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
             {teamInfoError ? (
               <>
                 <p className="text-red-300 mb-4 font-bold text-sm">{teamInfoError}</p>
-                <button
-                  className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-1 px-3 pixel-text transition-all text-sm"
-                  onClick={() => {
-                    setTeamInfoError(null);
-                    window.location.reload();
-                  }}
-                >
-                  RETRY
-                </button>
+                <div className="flex flex-col gap-2">
+                  {teamInfoError.includes("expired") || teamInfoError.includes("JWT") ? (
+                    <>
+                      <button
+                        className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-2 px-4 pixel-text transition-all text-sm"
+                        onClick={() => {
+                          // Redirect to login page
+                          window.location.href = '/login'; // Adjust this path as needed
+                        }}
+                      >
+                        GO TO LOGIN
+                      </button>
+                      <button
+                        className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-1 px-3 pixel-text transition-all text-sm"
+                        onClick={async () => {
+                          setTeamInfoError(null);
+                          // Try to sign out and clear any cached tokens
+                          try {
+                            await supabase.auth.signOut();
+                          } catch (err) {
+                            console.warn("Sign out error:", err);
+                          }
+                          window.location.reload();
+                        }}
+                      >
+                        RETRY
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-1 px-3 pixel-text transition-all text-sm"
+                      onClick={() => {
+                        setTeamInfoError(null);
+                        window.location.reload();
+                      }}
+                    >
+                      RETRY
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <>
