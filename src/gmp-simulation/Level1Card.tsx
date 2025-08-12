@@ -1,21 +1,20 @@
-import React, { useState } from "react";
-import { Search, ChevronRight, CheckCircle, Target } from "lucide-react";
 import {
   DndContext,
+  DragEndEvent,
   DragOverlay,
-  closestCenter,
-  rectIntersection,
-  pointerWithin,
+  DragStartEvent,
+  MouseSensor,
   PointerSensor,
   TouchSensor,
-  MouseSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragEndEvent,
+  pointerWithin,
+  rectIntersection,
   useDraggable,
   useDroppable,
+  useSensor,
+  useSensors
 } from "@dnd-kit/core";
+import { CheckCircle, ChevronRight, Search, Target } from "lucide-react";
+import React, { useState } from "react";
 import { useDeviceLayout } from "../hooks/useOrientation";
 import { Question } from "./HackathonData";
 
@@ -67,31 +66,38 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
     }
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = () => {
     // Prevent scrolling when touching draggable items on mobile
     if (isMobile) {
-      e.preventDefault();
+      // Strong haptic feedback for mobile
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
     }
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    // Allow primary pointer events for drag
-    if (e.isPrimary) {
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
+  // Enhanced listeners for mobile touch
+  const enhancedListeners = isMobile ? {
+    ...listeners,
+    onTouchStart: handleTouchStart,
+  } : {
+    ...listeners,
   };
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      {...listeners}
+      style={{
+        ...style,
+        ...(isMobile && {
+          touchAction: 'none',
+          WebkitTouchAction: 'none',
+          msTouchAction: 'none',
+        }),
+      }}
+      {...enhancedListeners}
       {...attributes}
       onClick={handleClick}
-      onPointerDown={handlePointerDown}
-      onTouchStart={handleTouchStart}
       className={`p-2 cursor-grab active:cursor-grabbing transition-all select-none ${
         isMobile ? "touch-manipulation" : "touch-none"
       } ${colorClasses} ${isDragging ? "opacity-0" : ""}`}
@@ -195,30 +201,43 @@ const Level1Card: React.FC<Level1CardProps> = ({
   };
   // Setup sensors for drag and drop with mobile-optimized constraints
   const sensors = useSensors(
-    // Mouse sensor for desktop - requires significant movement
+    // Mouse sensor for desktop
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // Reduced for better responsiveness
+        distance: 3, // Very low distance
       },
     }),
-    // Touch sensor optimized for mobile with shorter delay
+    // Touch sensor with minimal constraints for mobile
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: isMobile ? 100 : 200, // Much shorter delay for mobile
-        tolerance: isMobile ? 5 : 8, // Lower tolerance for mobile
+        delay: 0, // No delay for immediate response
+        tolerance: 15, // High tolerance for easier touch
       },
     }),
-    // Pointer sensor with mobile-optimized settings
+    // Pointer sensor with ultra-low constraints for mobile
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: isMobile ? 5 : 10, // Much lower distance for mobile
-        delay: isMobile ? 50 : 100, // Shorter delay for mobile
-        tolerance: isMobile ? 3 : 5, // Lower tolerance for mobile
+        distance: isMobile ? 1 : 3, // Almost no distance for mobile
+        delay: 0, // No delay
+        tolerance: isMobile ? 15 : 5, // Very high tolerance for mobile
       },
     })
   );
 
   const canProceed = selectedViolation && selectedRootCause;
+
+  // Simple haptic feedback for mobile devices
+  const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'strong' = 'light') => {
+    if (!isMobile || !('vibrate' in navigator)) return;
+
+    const patterns = {
+      light: 15,
+      medium: 30,
+      strong: [40, 20, 40]
+    };
+
+    navigator.vibrate(patterns[intensity]);
+  };
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -274,11 +293,15 @@ const Level1Card: React.FC<Level1CardProps> = ({
 
     if (draggedData && draggedData.text) {
       setActiveItem(draggedData);
+      // Provide haptic feedback on drag start
+      triggerHapticFeedback('strong');
     }
   };
 
   const handleDragCancel = () => {
     setActiveItem(null);
+    // Light haptic feedback for cancelled drag
+    triggerHapticFeedback('light');
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -296,6 +319,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
     // If there's no drop target, don't do anything
     if (!over) {
       console.log("Dropped outside of any drop zone - no 'over' detected");
+      triggerHapticFeedback('light'); // Cancelled drop
       return;
     }
 
@@ -342,6 +366,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
         draggedData.text
       );
       handleViolationSelect(draggedData.text);
+      triggerHapticFeedback('strong'); // Successful drop
     } else if (
       over.id === "rootCause-zone" &&
       dropZoneData.type === "rootCause"
@@ -351,12 +376,14 @@ const Level1Card: React.FC<Level1CardProps> = ({
         draggedData.text
       );
       handleRootCauseSelect(draggedData.text);
+      triggerHapticFeedback('strong'); // Successful drop
     } else {
       console.log("❌ Drop zone validation failed:", {
         dropZoneId: over.id,
         dropZoneType: dropZoneData.type,
         draggedText: draggedData.text,
       });
+      triggerHapticFeedback('light'); // Failed drop
     }
   };
 
