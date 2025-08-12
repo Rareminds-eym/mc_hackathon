@@ -1,19 +1,20 @@
-import React, { useState } from "react";
-import { Search, ChevronRight, CheckCircle, Target } from "lucide-react";
 import {
   DndContext,
+  DragEndEvent,
   DragOverlay,
-  closestCenter,
+  DragStartEvent,
+  MouseSensor,
   PointerSensor,
   TouchSensor,
-  MouseSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragEndEvent,
+  pointerWithin,
+  rectIntersection,
   useDraggable,
   useDroppable,
+  useSensor,
+  useSensors
 } from "@dnd-kit/core";
+import { CheckCircle, ChevronRight, Search, Target } from "lucide-react";
+import React, { useState } from "react";
 import { useDeviceLayout } from "../hooks/useOrientation";
 import { Question } from "./HackathonData";
 
@@ -40,6 +41,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
   type,
   isSelected,
 }) => {
+  const { isMobile } = useDeviceLayout();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id,
@@ -56,17 +58,53 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
     ? "pixel-border bg-gradient-to-r from-cyan-500 to-blue-500"
     : "pixel-border bg-gradient-to-r from-gray-600 to-gray-700 hover:from-cyan-600 hover:to-blue-600";
 
+  // Mobile-optimized event handlers
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isMobile) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleTouchStart = () => {
+    // Prevent scrolling when touching draggable items on mobile
+    if (isMobile) {
+      // Strong haptic feedback for mobile
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }
+  };
+
+  // Enhanced listeners for mobile touch
+  const enhancedListeners = isMobile ? {
+    ...listeners,
+    onTouchStart: handleTouchStart,
+  } : {
+    ...listeners,
+  };
+
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      {...listeners}
+      style={{
+        ...style,
+        ...(isMobile && {
+          touchAction: 'none',
+          WebkitTouchAction: 'none',
+          msTouchAction: 'none',
+        }),
+      }}
+      {...enhancedListeners}
       {...attributes}
-      className={`p-2 cursor-grab transition-all select-none touch-none ${colorClasses} ${
-        isDragging ? "opacity-0" : ""
-      }`}
+      onClick={handleClick}
+      className={`p-2 cursor-grab active:cursor-grabbing transition-all select-none ${
+        isMobile ? "touch-manipulation" : "touch-none"
+      } ${colorClasses} ${isDragging ? "opacity-0" : ""}`}
     >
-      <span className="text-white text-xs font-bold pixel-text">{text}</span>
+      <span className="text-white text-xs font-bold pixel-text pointer-events-none">
+        {text}
+      </span>
     </div>
   );
 };
@@ -87,7 +125,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
 }) => {
   const { isOver, setNodeRef } = useDroppable({
     id,
-    data: { type },
+    data: { type, isDropZone: true },
   });
 
   return (
@@ -135,32 +173,71 @@ const Level1Card: React.FC<Level1CardProps> = ({
     setActiveItem(null);
   }, [question.id, currentAnswer]);
 
-  // Setup sensors for drag and drop with higher thresholds to prevent click selection
+  // Custom collision detection that only allows drops on specific zones
+  const customCollisionDetection = (args: any) => {
+    // First, let's try pointer intersection for more precise detection
+    const pointerCollisions = pointerWithin(args);
+
+    if (pointerCollisions.length > 0) {
+      // Filter to only our designated drop zones
+      const validCollisions = pointerCollisions.filter((collision: any) => {
+        const validIds = ["violation-zone", "rootCause-zone"];
+        return validIds.includes(collision.id);
+      });
+
+      if (validCollisions.length > 0) {
+        return validCollisions;
+      }
+    }
+
+    // Fallback to rectangle intersection but still filter
+    const rectCollisions = rectIntersection(args);
+    const validRectCollisions = rectCollisions.filter((collision: any) => {
+      const validIds = ["violation-zone", "rootCause-zone"];
+      return validIds.includes(collision.id);
+    });
+
+    return validRectCollisions.length > 0 ? validRectCollisions : [];
+  };
+  // Setup sensors for drag and drop with mobile-optimized constraints
   const sensors = useSensors(
-    // Mouse sensor for desktop - requires significant movement
+    // Mouse sensor for desktop
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 10, // Require 10px movement to start drag
+        distance: 3, // Very low distance
       },
     }),
-    // Touch sensor with delay to distinguish from taps
+    // Touch sensor with minimal constraints for mobile
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250, // 250ms delay to prevent tap selection
-        tolerance: 5, // Lower tolerance after delay
+        delay: 0, // No delay for immediate response
+        tolerance: 15, // High tolerance for easier touch
       },
     }),
-    // Pointer sensor with higher distance threshold
+    // Pointer sensor with ultra-low constraints for mobile
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: isMobile ? 8 : 10, // Higher distance requirement
-        delay: isMobile ? 100 : 0, // Small delay on mobile
-        tolerance: 5, // Lower tolerance
+        distance: isMobile ? 1 : 3, // Almost no distance for mobile
+        delay: 0, // No delay
+        tolerance: isMobile ? 15 : 5, // Very high tolerance for mobile
       },
     })
   );
 
   const canProceed = selectedViolation && selectedRootCause;
+
+  // Simple haptic feedback for mobile devices
+  const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'strong' = 'light') => {
+    if (!isMobile || !('vibrate' in navigator)) return;
+
+    const patterns = {
+      light: 15,
+      medium: 30,
+      strong: [40, 20, 40]
+    };
+
+    navigator.vibrate(patterns[intensity]);
+  };
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -216,20 +293,52 @@ const Level1Card: React.FC<Level1CardProps> = ({
 
     if (draggedData && draggedData.text) {
       setActiveItem(draggedData);
+      // Provide haptic feedback on drag start
+      triggerHapticFeedback('strong');
     }
   };
 
   const handleDragCancel = () => {
     setActiveItem(null);
+    // Light haptic feedback for cancelled drag
+    triggerHapticFeedback('light');
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
+    console.log("Drag end event:", {
+      activeId: active?.id,
+      overId: over?.id,
+      overData: over?.data?.current,
+    });
+
     // Always clear the active item first
     setActiveItem(null);
 
+    // If there's no drop target, don't do anything
     if (!over) {
+      console.log("Dropped outside of any drop zone - no 'over' detected");
+      triggerHapticFeedback('light'); // Cancelled drop
+      return;
+    }
+
+    // Strict validation - only allow drops on our specific zones
+    const validDropZoneIds = ["violation-zone", "rootCause-zone"];
+    if (!validDropZoneIds.includes(over.id as string)) {
+      console.log("Invalid drop zone ID:", over.id);
+      return;
+    }
+
+    // Check if the drop target has the isDropZone flag
+    const dropZoneData = over.data.current as {
+      type: "violation" | "rootCause";
+      isDropZone?: boolean;
+    };
+
+    // Only proceed if this is actually one of our designated drop zones
+    if (!dropZoneData?.isDropZone) {
+      console.log("Dropped on non-drop zone element:", over.id);
       return;
     }
 
@@ -237,28 +346,51 @@ const Level1Card: React.FC<Level1CardProps> = ({
       text: string;
       type: "violation" | "rootCause";
     };
-    const dropZoneData = over.data.current as {
-      type: "violation" | "rootCause";
-    };
 
-    // Validate drag data
-    if (!draggedData || !draggedData.text || !dropZoneData) {
-      console.warn("Invalid drag or drop data:", { draggedData, dropZoneData });
+    // Validate that we have proper drag data
+    if (!draggedData || !draggedData.text) {
+      console.warn("Invalid drag data:", draggedData);
       return;
     }
 
-    // Allow any option to be dropped in any zone
-    if (dropZoneData.type === "violation") {
+    // Validate that we have proper drop zone data
+    if (!dropZoneData || !dropZoneData.type) {
+      console.warn("Invalid drop zone data:", dropZoneData);
+      return;
+    }
+
+    // Final validation: exact ID and type matching
+    if (over.id === "violation-zone" && dropZoneData.type === "violation") {
+      console.log(
+        "✅ Successfully dropping item in violation zone:",
+        draggedData.text
+      );
       handleViolationSelect(draggedData.text);
-    } else if (dropZoneData.type === "rootCause") {
+      triggerHapticFeedback('strong'); // Successful drop
+    } else if (
+      over.id === "rootCause-zone" &&
+      dropZoneData.type === "rootCause"
+    ) {
+      console.log(
+        "✅ Successfully dropping item in root cause zone:",
+        draggedData.text
+      );
       handleRootCauseSelect(draggedData.text);
+      triggerHapticFeedback('strong'); // Successful drop
+    } else {
+      console.log("❌ Drop zone validation failed:", {
+        dropZoneId: over.id,
+        dropZoneType: dropZoneData.type,
+        draggedText: draggedData.text,
+      });
+      triggerHapticFeedback('light'); // Failed drop
     }
   };
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
@@ -304,9 +436,11 @@ const Level1Card: React.FC<Level1CardProps> = ({
                     <h2 className="text-sm font-black text-cyan-300 pixel-text">
                       VIOLATION & ROOT CAUSE
                     </h2>
-                    <div className="text-xs text-gray-400 font-bold">
-                      ITEMS: {combinedOptions.length} | DRAG TO ZONES
-                    </div>
+                    {!isMobileHorizontal && (
+                      <div className="text-xs text-gray-400 font-bold">
+                        ITEMS: {combinedOptions.length} | DRAG TO ZONES
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -347,8 +481,8 @@ const Level1Card: React.FC<Level1CardProps> = ({
                 <div className="relative z-10 p-3 flex-shrink-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                        <div className="w-5 h-5 bg-blue-800 pixel-border flex items-center justify-center">
-                          <Target className="w-3 h-3 text-blue-300" />
+                      <div className="w-5 h-5 bg-blue-800 pixel-border flex items-center justify-center">
+                        <Target className="w-3 h-3 text-blue-300" />
                       </div>
                       <div>
                         <h3 className="text-xs font-black text-white pixel-text">
@@ -434,8 +568,8 @@ const Level1Card: React.FC<Level1CardProps> = ({
                 <div className="relative z-10 p-3 flex-shrink-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                        <div className="w-5 h-5 bg-purple-800 pixel-border flex items-center justify-center">
-                          <Search className="w-3 h-3 text-purple-300" />
+                      <div className="w-5 h-5 bg-purple-800 pixel-border flex items-center justify-center">
+                        <Search className="w-3 h-3 text-purple-300" />
                       </div>
                       <div>
                         <h3 className="text-xs font-black text-white pixel-text">

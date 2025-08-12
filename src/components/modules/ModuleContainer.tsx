@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+x`import React, { useState } from 'react';
 import { useModuleProgress } from '../../hooks/useModuleProgress';
 import ModuleNode from './ModuleNode';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ModuleContainerProps {
   userId?: string;
@@ -17,6 +18,9 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(currentModuleId || null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  // Get user from auth context
+  const { user } = useAuth();
 
   // Get current user if not provided
   const [currentUser, setCurrentUser] = React.useState<string | null>(userId || null);
@@ -216,6 +220,7 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
               }}
               onSelect={handleModuleSelect}
               isCurrentModule={selectedModuleId === parseInt(module.id)}
+              userEmail={user?.email}
             />
             
             {/* Loading overlay for individual modules */}
