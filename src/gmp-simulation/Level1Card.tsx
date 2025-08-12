@@ -56,17 +56,37 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
     ? "pixel-border bg-gradient-to-r from-cyan-500 to-blue-500"
     : "pixel-border bg-gradient-to-r from-gray-600 to-gray-700 hover:from-cyan-600 hover:to-blue-600";
 
+  // Prevent default click behavior to avoid accidental selections
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only allow drag if it's a primary pointer (left mouse button or first touch)
+    if (e.isPrimary && e.button === 0) {
+      // Let the drag listeners handle it
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
       className={`p-2 cursor-grab transition-all select-none touch-none ${colorClasses} ${
         isDragging ? "opacity-0" : ""
       }`}
     >
-      <span className="text-white text-xs font-bold pixel-text">{text}</span>
+      <span className="text-white text-xs font-bold pixel-text pointer-events-none">
+        {text}
+      </span>
     </div>
   );
 };
@@ -135,27 +155,27 @@ const Level1Card: React.FC<Level1CardProps> = ({
     setActiveItem(null);
   }, [question.id, currentAnswer]);
 
-  // Setup sensors for drag and drop with higher thresholds to prevent click selection
+  // Setup sensors for drag and drop with strict constraints to prevent click selection
   const sensors = useSensors(
     // Mouse sensor for desktop - requires significant movement
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 10, // Require 10px movement to start drag
+        distance: 15, // Require 15px movement to start drag (increased)
       },
     }),
     // Touch sensor with delay to distinguish from taps
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250, // 250ms delay to prevent tap selection
-        tolerance: 5, // Lower tolerance after delay
+        delay: 300, // 300ms delay to prevent tap selection (increased)
+        tolerance: 8, // Higher tolerance after delay
       },
     }),
     // Pointer sensor with higher distance threshold
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: isMobile ? 8 : 10, // Higher distance requirement
-        delay: isMobile ? 100 : 0, // Small delay on mobile
-        tolerance: 5, // Lower tolerance
+        distance: isMobile ? 12 : 15, // Higher distance requirement (increased)
+        delay: isMobile ? 150 : 50, // Longer delay to prevent accidental clicks
+        tolerance: 8, // Higher tolerance
       },
     })
   );
@@ -229,7 +249,16 @@ const Level1Card: React.FC<Level1CardProps> = ({
     // Always clear the active item first
     setActiveItem(null);
 
+    // If there's no drop target, don't do anything
     if (!over) {
+      console.log("Dropped outside of any drop zone");
+      return;
+    }
+
+    // Only allow drops on the specific drop zones
+    const validDropZones = ["violation-zone", "rootCause-zone"];
+    if (!validDropZones.includes(over.id as string)) {
+      console.log("Dropped on invalid area:", over.id);
       return;
     }
 
@@ -241,16 +270,24 @@ const Level1Card: React.FC<Level1CardProps> = ({
       type: "violation" | "rootCause";
     };
 
-    // Validate drag data
-    if (!draggedData || !draggedData.text || !dropZoneData) {
-      console.warn("Invalid drag or drop data:", { draggedData, dropZoneData });
+    // Validate that we have proper drag data
+    if (!draggedData || !draggedData.text) {
+      console.warn("Invalid drag data:", draggedData);
       return;
     }
 
-    // Allow any option to be dropped in any zone
+    // Validate that we have proper drop zone data
+    if (!dropZoneData || !dropZoneData.type) {
+      console.warn("Invalid drop zone data:", dropZoneData);
+      return;
+    }
+
+    // Process the drop based on the drop zone type
     if (dropZoneData.type === "violation") {
+      console.log("Dropping item in violation zone:", draggedData.text);
       handleViolationSelect(draggedData.text);
     } else if (dropZoneData.type === "rootCause") {
+      console.log("Dropping item in root cause zone:", draggedData.text);
       handleRootCauseSelect(draggedData.text);
     }
   };

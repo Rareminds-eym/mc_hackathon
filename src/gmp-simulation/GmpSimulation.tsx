@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 import React, { useState, useEffect } from "react";
-import { Factory, Clock, Trophy, AlertTriangle, Eye } from "lucide-react";
+import { Factory, Clock, Trophy, AlertTriangle, Eye, Play } from "lucide-react";
 import { useDeviceLayout } from "../hooks/useOrientation";
 import { hackathonData } from "./HackathonData";
 import type { Question } from "./HackathonData";
@@ -42,6 +42,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
   // Case brief modal state
   const [showCaseBrief, setShowCaseBrief] = useState(false);
+  
+  // Walkthrough video handler
+  const showWalkthroughVideo = () => {
+    // You can replace this URL with the actual walkthrough video URL
+    const videoUrl = "https://www.youtube.com/watch?v=your-walkthrough-video-id";
+    window.open(videoUrl, '_blank');
+  };
 
   // Save team attempt to backend
   const saveTeamAttempt = async (module_number: number) => {
@@ -176,6 +183,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     }
     return () => pollInterval && clearInterval(pollInterval);
   }, [gameState.gameCompleted, gameState.currentLevel, session_id]);
+
+  // Auto-show case brief for Level 1 in mobile horizontal mode when game starts
+  useEffect(() => {
+    if (gameState.gameStarted && gameState.currentLevel === 1 && isMobileHorizontal) {
+      setTimeout(() => setShowCaseBrief(true), 100);
+    }
+  }, [gameState.gameStarted, gameState.currentLevel, isMobileHorizontal]);
 
   // Save individual attempt to backend
   const saveIndividualAttempt = async (
@@ -416,30 +430,34 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   if (!gameState.gameStarted) {
     if (loadingIds || teamInfoError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">
-              Loading Team Info...
+        <div className="min-h-screen flex items-center justify-center bg-gray-800 relative p-2">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+          <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+          
+          <div className="pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-md w-full text-center relative z-10">
+            <h2 className="text-lg font-black mb-3 text-cyan-100 pixel-text">
+              LOADING TEAM INFO...
             </h2>
             {teamInfoError ? (
               <>
-                <p className="text-red-600 mb-6">{teamInfoError}</p>
+                <p className="text-red-300 mb-4 font-bold text-sm">{teamInfoError}</p>
                 <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
+                  className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-1 px-3 pixel-text transition-all text-sm"
                   onClick={() => {
                     setTeamInfoError(null);
                     window.location.reload();
                   }}
                 >
-                  Retry
+                  RETRY
                 </button>
               </>
             ) : (
               <>
-                <p className="text-gray-600 mb-6 lg:mb-8 text-sm lg:text-base">
+                <p className="text-cyan-100 mb-4 text-sm font-bold">
                   Please wait while we load your team session.
                 </p>
-                <div className="animate-pulse text-blue-600">Loading...</div>
+                <div className="animate-pulse text-cyan-300 font-black pixel-text text-sm">LOADING...</div>
               </>
             )}
           </div>
@@ -448,96 +466,136 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     }
     if (initialLevel === 1) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900 flex items-center justify-center p-2 lg:p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8 max-w-2xl w-full text-center">
-            <div className="flex justify-center mb-6">
-              <Factory className="w-12 h-12 lg:w-16 lg:h-16 text-blue-600" />
+        <div className="min-h-screen bg-gray-800 flex items-center justify-center p-2 relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+          <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+          
+          <div className="pixel-border-thick bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-xl w-full text-center relative z-10">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-cyan-500 pixel-border flex items-center justify-center">
+                <Factory className="w-6 h-6 text-cyan-900" />
+              </div>
             </div>
-            <h1 className="text-2xl lg:text-4xl font-bold text-gray-800 mb-4">
-              GMP Simulation Game
+            <h1 className="text-xl font-black text-cyan-100 mb-3 pixel-text">
+              GOOD MANUFACTURING PRACTICES
             </h1>
-            <p className="text-gray-600 mb-6 lg:mb-8 text-sm lg:text-base">
+            {/* <p className="text-cyan-100 mb-4 text-sm font-bold">
               Test your knowledge of Good Manufacturing Practices through
               interactive case studies
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4 mb-6 lg:mb-8">
-              <div className="bg-blue-50 p-3 lg:p-4 rounded-lg">
-                <Clock className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
-                  60 Minutes
+            </p> */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
+              <div className="pixel-border bg-gradient-to-r from-blue-700 to-blue-600 p-2">
+                <div className="w-6 h-6 bg-blue-800 pixel-border mx-auto mb-1 flex items-center justify-center">
+                  <Clock className="w-3 h-3 text-blue-300" />
+                </div>
+                <h3 className="font-black text-white text-xs pixel-text">
+                  60 MINUTES
                 </h3>
-                <p className="text-gray-600 text-xs lg:text-sm">
+                <p className="text-blue-100 text-xs font-bold">
                   Complete all questions
                 </p>
               </div>
-              <div className="bg-green-50 p-3 lg:p-4 rounded-lg">
-                <Trophy className="w-6 h-6 lg:w-8 lg:h-8 text-green-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
-                  2 Levels
+              <div className="pixel-border bg-gradient-to-r from-green-700 to-green-600 p-2">
+                <div className="w-6 h-6 bg-green-800 pixel-border mx-auto mb-1 flex items-center justify-center">
+                  <Trophy className="w-3 h-3 text-green-300" />
+                </div>
+                <h3 className="font-black text-white text-xs pixel-text">
+                  2 LEVELS
                 </h3>
-                <p className="text-gray-600 text-xs lg:text-sm">
+                <p className="text-green-100 text-xs font-bold">
                   Analysis & Solution
                 </p>
               </div>
-              <div className="bg-orange-50 p-3 lg:p-4 rounded-lg">
-                <AlertTriangle className="w-6 h-6 lg:w-8 lg:h-8 text-orange-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
-                  5 Cases
+              <div className="pixel-border bg-gradient-to-r from-orange-700 to-orange-600 p-2">
+                <div className="w-6 h-6 bg-orange-800 pixel-border mx-auto mb-1 flex items-center justify-center">
+                  <AlertTriangle className="w-3 h-3 text-orange-300" />
+                </div>
+                <h3 className="font-black text-white text-xs pixel-text">
+                  5 CASES
                 </h3>
-                <p className="text-gray-600 text-xs lg:text-sm">
+                <p className="text-orange-100 text-xs font-bold">
                   Random GMP scenarios
                 </p>
               </div>
             </div>
-            <button
-              onClick={startGame}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 lg:px-8 rounded-lg transition-colors duration-200 text-sm lg:text-base"
-            >
-              Start Simulation
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <button
+                onClick={startGame}
+                className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
+              >
+                START SIMULATION
+              </button>
+              <button
+                onClick={showWalkthroughVideo}
+                className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm flex items-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                WALKTHROUGH VIDEO
+              </button>
+            </div>
           </div>
         </div>
       );
     } else {
       // Level 2 only UI (HL2)
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900 flex items-center justify-center p-2 lg:p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8 max-w-2xl w-full text-center">
-            <div className="flex justify-center mb-6">
-              <Trophy className="w-12 h-12 lg:w-16 lg:h-16 text-green-600" />
+        <div className="min-h-screen bg-gray-800 flex items-center justify-center p-2 relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+          <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+          
+          <div className="pixel-border-thick bg-gradient-to-r from-purple-600 to-purple-700 p-4 max-w-xl w-full text-center relative z-10">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-purple-500 pixel-border flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-purple-900" />
+              </div>
             </div>
-            <h1 className="text-2xl lg:text-4xl font-bold text-gray-800 mb-4">
-              GMP Solution Round
+            <h1 className="text-xl font-black text-purple-100 mb-3 pixel-text">
+              GMP SOLUTION ROUND
             </h1>
-            <p className="text-gray-600 mb-6 lg:mb-8 text-sm lg:text-base">
+            <p className="text-purple-100 mb-4 text-sm font-bold">
               Select the best solutions for each GMP case scenario
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4 mb-6 lg:mb-8">
-              <div className="bg-blue-50 p-3 lg:p-4 rounded-lg">
-                <Clock className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
-                  60 Minutes
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+              <div className="pixel-border bg-gradient-to-r from-blue-700 to-blue-600 p-2">
+                <div className="w-6 h-6 bg-blue-800 pixel-border mx-auto mb-1 flex items-center justify-center">
+                  <Clock className="w-3 h-3 text-blue-300" />
+                </div>
+                <h3 className="font-black text-white text-xs pixel-text">
+                  60 MINUTES
                 </h3>
-                <p className="text-gray-600 text-xs lg:text-sm">
+                <p className="text-blue-100 text-xs font-bold">
                   Complete all solutions
                 </p>
               </div>
-              <div className="bg-orange-50 p-3 lg:p-4 rounded-lg">
-                <AlertTriangle className="w-6 h-6 lg:w-8 lg:h-8 text-orange-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-800 text-sm lg:text-base">
-                  5 Cases
+              <div className="pixel-border bg-gradient-to-r from-orange-700 to-orange-600 p-2">
+                <div className="w-6 h-6 bg-orange-800 pixel-border mx-auto mb-1 flex items-center justify-center">
+                  <AlertTriangle className="w-3 h-3 text-orange-300" />
+                </div>
+                <h3 className="font-black text-white text-xs pixel-text">
+                  5 CASES
                 </h3>
-                <p className="text-gray-600 text-xs lg:text-sm">
+                <p className="text-orange-100 text-xs font-bold">
                   Random GMP scenarios
                 </p>
               </div>
             </div>
-            <button
-              onClick={startGame}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 lg:px-8 rounded-lg transition-colors duration-200 text-sm lg:text-base"
-            >
-              Start Solution Round
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <button
+                onClick={startGame}
+                className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
+              >
+                START SOLUTION ROUND
+              </button>
+              <button
+                onClick={showWalkthroughVideo}
+                className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm flex items-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                WALKTHROUGH VIDEO
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -548,17 +606,21 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     // After Module 5, show waiting screen if not unlocked
     if (gameState.currentLevel === 1 && !canAccessModule6) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-teal-900">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">
-              Awaiting Team Evaluation
+        <div className="min-h-screen flex items-center justify-center bg-gray-800 relative p-2">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+          <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+          
+          <div className="pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-md w-full text-center relative z-10">
+            <h2 className="text-lg font-black mb-3 text-cyan-100 pixel-text">
+              AWAITING TEAM EVALUATION
             </h2>
-            <p className="text-gray-600 mb-6">
-              Your team’s results are being evaluated. Please wait for Module 6
+            <p className="text-cyan-100 mb-4 text-sm font-bold">
+              Your team's results are being evaluated. Please wait for Module 6
               to unlock.
             </p>
-            <div className="animate-pulse text-blue-600">
-              Checking team status...
+            <div className="animate-pulse text-cyan-300 font-black pixel-text text-sm">
+              CHECKING TEAM STATUS...
             </div>
           </div>
         </div>
@@ -574,56 +636,54 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   const progress = ((gameState.currentQuestion + 1) / 5) * 100;
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden">
-      {/* Animated Background */}
-      {/* <div className="fixed inset-0 opacity-5">
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-500/10 to-purple-600/10 animate-pulse"></div>
-        <div className="absolute top-0 left-0 w-full h-full opacity-20">
-          <div className="w-full h-full bg-gradient-to-br from-cyan-500/5 to-blue-600/5 animate-pulse"></div>
-        </div>
-      </div> */}
+    <div className="h-screen bg-gray-800 flex flex-col overflow-hidden relative">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+      <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
 
-      {/* Modern Game Header */}
-      <div className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 shadow-lg">
-        <div className="container mx-auto px-4 py-3">
+      {/* Pixel Game Header */}
+      <div className="pixel-border-thick bg-gradient-to-r from-gray-900 to-gray-800 relative z-10">
+        <div className="container mx-auto px-3 py-2">
           <div className="flex items-center justify-between">
             {/* Left - Game Identity */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Level Badge */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gray-700 pixel-border flex items-center justify-center">
+                  <span className="text-gray-100 font-black text-sm pixel-text">
                     {gameState.currentLevel}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-white font-semibold text-base">
-                    Level {gameState.currentLevel}
+                  <h1 className="text-gray-100 font-black text-sm pixel-text">
+                    LEVEL {gameState.currentLevel}
                   </h1>
                   {/* Simple Progress Indicator */}
-                  <div className="text-slate-400 text-sm">
-                    Case {gameState.currentQuestion + 1}/5
+                  <div className="text-gray-300 text-xs font-bold">
+                    CASE {gameState.currentQuestion + 1}/5
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right - Controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               {/* Mobile Case Brief Button */}
               {isMobileHorizontal && gameState.currentLevel === 1 && (
                 <button
                   onClick={() => setShowCaseBrief(true)}
-                  className="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg transition-colors text-sm font-medium text-white flex items-center gap-2"
+                  className="pixel-border bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 px-2 py-1 transition-all text-xs font-black text-white flex items-center gap-1 pixel-text"
                 >
-                  <Eye className="w-4 h-4" />
-                  Brief
+                  <Eye className="w-3 h-3" />
+                  BRIEF
                 </button>
               )}
 
               {/* Timer */}
-              <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-600/30">
-                <Clock className="w-4 h-4 text-slate-400" />
+              <div className="flex items-center gap-1 pixel-border bg-gradient-to-r from-gray-700 to-gray-600 px-2 py-1">
+                <div className="w-3 h-3 bg-gray-800 pixel-border flex items-center justify-center">
+                  <Clock className="w-2 h-2 text-gray-300" />
+                </div>
                 <Timer
                   timeRemaining={gameState.timeRemaining}
                   onTimeUp={handleTimeUp}
@@ -635,16 +695,18 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               </div>
 
               {/* Overall Progress */}
-              <div className="hidden sm:flex items-center gap-3 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-600/30">
-                <Trophy className="w-4 h-4 text-yellow-500" />
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="hidden sm:flex items-center gap-2 pixel-border bg-gradient-to-r from-gray-700 to-gray-600 px-2 py-1">
+                <div className="w-3 h-3 bg-yellow-600 pixel-border flex items-center justify-center">
+                  <Trophy className="w-2 h-2 text-yellow-300" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-16 h-2 bg-gray-800 pixel-border overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <span className="text-white text-sm font-medium min-w-[3rem]">
+                  <span className="text-white text-xs font-black min-w-[2rem] pixel-text">
                     {Math.round(progress)}%
                   </span>
                 </div>
@@ -655,7 +717,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 container mx-auto px-2 min-h-0">
+      <div className="flex-1 container mx-auto px-1 min-h-0">
         {/* Question Card */}
         {currentQuestion && (
           <QuestionCard
@@ -679,9 +741,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
         {/* Module 6 Button (only if unlocked) */}
         {canAccessModule6 && gameState.currentLevel === 1 && (
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-4">
             <button
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg"
+              className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-2 px-4 pixel-text text-sm"
               onClick={() =>
                 setGameState((prev) => {
                   // Preserve Level 1 answers and questions
@@ -714,7 +776,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                 })
               }
             >
-              Start Module 6
+              START MODULE 6
             </button>
           </div>
         )}
@@ -722,40 +784,48 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
         {/* PROBLEM SCENARIO Modal - Only visible when toggled in mobile horizontal */}
         {showCaseBrief && currentQuestion && (
           <div
-            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-2"
             onClick={() => setShowCaseBrief(false)}
           >
             <div
-              className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 border border-cyan-500/20 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              className="pixel-border-thick bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Eye className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-lg font-bold text-white">
-                    PROBLEM SCENARIO
-                  </h3>
-                  <div className="bg-cyan-500/20 px-3 py-1 rounded-full">
-                    <span className="text-cyan-300 font-bold text-sm">
-                      ACTIVE
-                    </span>
+              {/* Background Pattern */}
+              <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+              <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 bg-cyan-500 pixel-border flex items-center justify-center">
+                      <Eye className="w-3 h-3 text-cyan-900" />
+                    </div>
+                    <h3 className="text-base font-black text-cyan-100 pixel-text">
+                      PROBLEM SCENARIO
+                    </h3>
+                    <div className="pixel-border bg-gradient-to-r from-green-600 to-green-500 px-2 py-1">
+                      <span className="text-green-100 font-black text-xs pixel-text">
+                        ACTIVE
+                      </span>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setShowCaseBrief(false)}
+                    className="pixel-border bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-red-100 hover:text-white transition-all text-lg font-black w-6 h-6 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowCaseBrief(false)}
-                  className="text-slate-400 hover:text-white transition-colors duration-200 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="bg-slate-700/50 p-4 rounded-lg border border-cyan-500/20">
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 animate-pulse flex-shrink-0"></div>
-                  <p className="text-gray-200 text-sm leading-relaxed">
-                    {currentQuestion.caseFile} Read the scenario carefully, spot
-                    the violation and its root cause, and place them in the
-                    right category containers.
-                  </p>
+                <div className="pixel-border bg-gradient-to-r from-gray-700 to-gray-600 p-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-red-500 pixel-border mt-1 animate-pulse flex-shrink-0"></div>
+                    <p className="text-gray-100 text-sm leading-relaxed font-bold">
+                      {currentQuestion.caseFile} Read the scenario carefully, spot
+                      the violation and its root cause, and place them in the
+                      right category containers.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
