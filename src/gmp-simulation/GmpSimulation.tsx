@@ -108,13 +108,20 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       console.warn("No individual attempts found for team.");
       return;
     }
-    // Calculate weighted average score and average time
-    const totalScore = attempts.reduce((sum, a) => sum + (a.score || 0), 0);
-    const weightedAvgScore = (totalScore / attempts.length).toFixed(2);
+    // Calculate average score, top scorer, and average time
+    const scores = attempts.map(a => a.score || 0);
+    const totalScore = scores.reduce((sum, s) => sum + s, 0);
+    const avgScore = scores.length > 0 ? totalScore / scores.length : 0;
+    const topScore = scores.length > 0 ? Math.max(...scores) : 0;
+    const weightedAvgScore = (0.7 * avgScore + 0.3 * topScore).toFixed(2);
     const avgTimeSec = Math.round(
       attempts.reduce((sum, a) => sum + (a.completion_time_sec || 0), 0) /
         attempts.length
     );
+    // Debug logs
+    console.log("[TEAM SCORING] Individual scores:", scores);
+    console.log(`[TEAM SCORING] Avg score: ${avgScore}, Top score: ${topScore}, Weighted team score: ${weightedAvgScore}`);
+    console.log(`[TEAM SCORING] Avg time (sec): ${avgTimeSec}`);
     // Insert into team_attempts
     const { error: insertError } = await supabase
       .from("team_attempts")
