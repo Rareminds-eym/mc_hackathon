@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react'
+import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 
-import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
-import { useDeviceLayout } from '../../hooks/useOrientation'
-import { collegeCodes as collegeCodeList } from '../../data/collegeCodes'
+import { useAuth } from '../../contexts/AuthContext';
+import { collegeCodes as collegeCodeList } from '../../data/collegeCodes';
+import { useDeviceLayout } from '../../hooks/useOrientation';
+import { supabase } from '../../lib/supabase';
 
 interface AuthFormProps {
   mode: 'login' | 'signup' | 'forgot-password'
@@ -171,35 +171,42 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
           // 1. Check if email already exists in teams table
           const { data: existingEmailRows, error: emailCheckError } = await supabase
             .from('teams')
-            .select('email')
+            .select('*')
             .eq('email', formData.email);
           if (emailCheckError) {
             setError('Error checking email. Please try again.');
             setIsSubmitting(false);
             return;
           }
+
+          let shouldUpdateExisting = false;
+          let existingRecord = null;
           if (existingEmailRows && existingEmailRows.length > 0) {
-            setError('An account with this email already exists. Please use a different email.');
-            setIsSubmitting(false);
-            return;
+            shouldUpdateExisting = true;
+            existingRecord = existingEmailRows[0];
           }
-          // 2. Check if team name already exists
-          const { data: existingTeams, error: teamCheckError } = await supabase
-            .from('teams')
-            .select('team_name')
-            .ilike('team_name', formData.teamName);
-          if (teamCheckError) {
-            setError('Error checking team name. Please try again.');
-            setIsSubmitting(false);
-            return;
+
+          // 2. Check if team name already exists (only if not updating existing record)
+          if (!shouldUpdateExisting) {
+            const { data: existingTeams, error: teamCheckError } = await supabase
+              .from('teams')
+              .select('team_name')
+              .ilike('team_name', formData.teamName);
+            if (teamCheckError) {
+              setError('Error checking team name. Please try again.');
+              setIsSubmitting(false);
+              return;
+            }
+            if (existingTeams && existingTeams.length > 0) {
+              setError('Team name already exists, try a different name');
+              setIsSubmitting(false);
+              return;
+            }
           }
-          if (existingTeams && existingTeams.length > 0) {
-            setError('Team name already exists, try a different name');
-            setIsSubmitting(false);
-            return;
-          }
-          const joinCode = generateJoinCode().toUpperCase().trim();
-          const sessionId = uuidv4();
+          // Keep existing join code for team leaders, generate new for new teams
+          const joinCode = shouldUpdateExisting ? existingRecord.join_code : generateJoinCode().toUpperCase().trim();
+          const sessionId = shouldUpdateExisting ? existingRecord.session_id : uuidv4();
+
           const { error } = await signUp(
             formData.email,
             formData.password,
@@ -242,9 +249,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
           if (user && user.id) {
             teamRow.user_id = user.id;
           }
-          const { error: insertError } = await supabase.from('teams').insert([teamRow]);
-          if (insertError) {
-            setError('Team creation failed: ' + insertError.message);
+
+          // Update existing record or insert new one
+          let dbError;
+          if (shouldUpdateExisting) {
+            const { error: updateError } = await supabase
+              .from('teams')
+              .update(teamRow)
+              .eq('email', formData.email);
+            dbError = updateError;
+          } else {
+            const { error: insertError } = await supabase.from('teams').insert([teamRow]);
+            dbError = insertError;
+          }
+
+          if (dbError) {
+            setError(`Team ${shouldUpdateExisting ? 'update' : 'creation'} failed: ` + dbError.message);
             setIsSubmitting(false);
             return;
           }
