@@ -135,7 +135,7 @@ const HomeScreen: React.FC = () => {
           {
             label: 'RareMinds',
             icon: <img src="/logos/bulb.png" alt="RareMinds Bulb" width={28} height={28} />,
-            url: 'https://www.rareminds.com/',
+            url: 'https://www.rareminds.in/',
             color: 'hover:bg-yellow-200',
           },
           {
@@ -246,7 +246,7 @@ const HomeScreen: React.FC = () => {
           {/* Extra logos below avatar */}
           <div className="flex flex-col items-center gap-2 mt-2">
             <a
-              href="https://helpdesk.rareminds.com/"
+              href="https://us06web.zoom.us/j/86412214284?pwd=I8U47ItobcPBHvKgzmwsDAckIPBFYY.1"
               target="_blank"
               rel="noopener noreferrer"
               className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 border-green-300 shadow-md hover:bg-blue-200 transition-all"
@@ -255,7 +255,7 @@ const HomeScreen: React.FC = () => {
               <img src="/logos/helpdesk.png" alt="Help Desk" width={32} height={32} />
             </a>
             <a
-              href="https://www.rareminds.com/"
+              href="https://naanmudhalvan.tn.gov.in/"
               target="_blank"
               rel="noopener noreferrer"
               className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 p-1 border-green-300 shadow-md hover:bg-green-200 transition-all"
