@@ -405,16 +405,65 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
             // Final validation of savedTimeRemaining before setting state
             const finalTimeRemaining = (isNaN(savedTimeRemaining) || savedTimeRemaining < 0 || savedTimeRemaining > 5400) ? 5400 : savedTimeRemaining;
 
-            // Restore game state (but don't auto-start the game)
-            setGameState(prev => ({
-              ...prev,
-              questions: finalQuestions,
-              answers: finalAnswers,
-              currentQuestion: currentQuestionIndex,
-              gameStarted: false, // Let user choose to continue
-              currentLevel: initialLevel,
-              timeRemaining: finalTimeRemaining, // Restore timer state with validation
-            }));
+            // Check if all cases are completed during restoration
+            const allCasesCompleted = completeCount >= finalQuestions.length;
+
+            if (allCasesCompleted) {
+              // All cases completed - show level complete modal immediately
+              if (initialLevel === 1) {
+                const level1Time = Math.max(0, 5400 - finalTimeRemaining);
+                // Save attempt to backend
+                saveIndividualAttempt(
+                  calculateScore(finalAnswers, finalQuestions),
+                  level1Time,
+                  5
+                );
+                saveTeamAttempt(5); // Save team summary for module 5
+
+                // Restore game state with level modal shown
+                setGameState(prev => ({
+                  ...prev,
+                  questions: finalQuestions,
+                  answers: finalAnswers,
+                  currentQuestion: finalQuestions.length - 1, // Set to last question
+                  gameStarted: false,
+                  currentLevel: initialLevel,
+                  timeRemaining: finalTimeRemaining,
+                  showLevelModal: true,
+                  level1CompletionTime: level1Time,
+                }));
+              } else {
+                // Level 2 completed - finish game
+                const finalScore = calculateScore(finalAnswers, finalQuestions);
+                const finalTime = Math.max(0, 5400 - finalTimeRemaining);
+                saveIndividualAttempt(finalScore, finalTime, 6);
+                saveTeamAttempt(6); // Save team summary for module 6
+
+                // Restore game state as completed
+                setGameState(prev => ({
+                  ...prev,
+                  questions: finalQuestions,
+                  answers: finalAnswers,
+                  currentQuestion: finalQuestions.length - 1, // Set to last question
+                  gameStarted: false,
+                  currentLevel: initialLevel,
+                  timeRemaining: finalTimeRemaining,
+                  gameCompleted: true,
+                  score: finalScore,
+                }));
+              }
+            } else {
+              // Not all cases completed - restore normal game state
+              setGameState(prev => ({
+                ...prev,
+                questions: finalQuestions,
+                answers: finalAnswers,
+                currentQuestion: currentQuestionIndex,
+                gameStarted: false, // Let user choose to continue
+                currentLevel: initialLevel,
+                timeRemaining: finalTimeRemaining, // Restore timer state with validation
+              }));
+            }
 
 
           }
@@ -472,8 +521,8 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
   // Periodic timer save - save timer every 30 seconds during active gameplay
   useEffect(() => {
-    if (!gameState.gameStarted || gameState.gameCompleted || !session_id || !email) {
-      // Clear any existing interval if game is not active
+    if (!gameState.gameStarted || gameState.gameCompleted || gameState.showLevelModal || !session_id || !email) {
+      // Clear any existing interval if game is not active or level modal is shown
       if (timerSaveInterval) {
         clearInterval(timerSaveInterval);
         setTimerSaveInterval(null);
@@ -489,8 +538,8 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           const currentSession = sessionIdRef.current;
           const currentEmailValue = emailRef.current;
 
-          // Skip if game is no longer active
-          if (!currentState.gameStarted || currentState.gameCompleted || !currentSession || !currentEmailValue) {
+          // Skip if game is no longer active or level modal is shown
+          if (!currentState.gameStarted || currentState.gameCompleted || currentState.showLevelModal || !currentSession || !currentEmailValue) {
             return;
           }
 
@@ -535,7 +584,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
       setTimerSaveInterval(interval);
     }
-  }, [gameState.gameStarted, gameState.gameCompleted, session_id, email, timerSaveInterval]);
+  }, [gameState.gameStarted, gameState.gameCompleted, gameState.showLevelModal, session_id, email, timerSaveInterval]);
 
   // Save individual attempt to backend
   const saveIndividualAttempt = async (
@@ -1258,7 +1307,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                   onTimeUp={handleTimeUp}
                   setTimeRemaining={handleSetTimeRemaining}
                   initialTime={5400}
-                  isActive={gameState.gameStarted && !gameState.gameCompleted}
+                  isActive={gameState.gameStarted && !gameState.gameCompleted && !gameState.showLevelModal}
                 />
 
                 {/* Auto-save indicator */}
