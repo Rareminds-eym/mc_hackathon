@@ -299,13 +299,21 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
         if (attemptDetails && attemptDetails.length > 0) {
           setHasSavedProgress(true);
 
-          // Check if there's meaningful progress (at least one answer)
-          const hasAnswers = attemptDetails.some(detail => {
-            const answer = detail.answer;
-            return answer && (answer.violation || answer.rootCause || answer.solution);
+          console.log("Loading saved progress:", {
+            attemptDetailsLength: attemptDetails.length,
+            moduleNumber,
+            initialLevel,
+            attemptDetails: attemptDetails.map(d => ({
+              question_index: d.question_index,
+              hasQuestion: !!d.question,
+              hasAnswer: !!d.answer
+            }))
           });
 
-          if (hasAnswers) {
+          // Always restore game state if there are saved attempt details,
+          // even if no answers have been provided yet
+          // This fixes the "No saved questions found" error when user starts game but doesn't answer anything
+          if (attemptDetails.length > 0) {
             // The saved data might not have all 5 questions if user didn't reach them all
             // We need to reconstruct the full game state properly
 
@@ -316,9 +324,12 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               answer: detail.answer
             })).sort((a, b) => a.index - b.index);
 
+            console.log("Saved question data:", savedQuestionData);
+
             // If we don't have a complete set, we need to generate the missing questions
             // This happens when user didn't reach all questions before saving
             if (savedQuestionData.length < 5) {
+              console.log("Incomplete saved data, generating missing questions...");
 
               // Generate a fresh set of 5 questions
               const allQuestions = selectRandomQuestions();
@@ -330,9 +341,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
               // Restore the saved questions and answers in their correct positions
               savedQuestionData.forEach(({ index, question, answer }) => {
-                if (index < 5) {
+                if (index < 5 && question) {
                   allQuestions[index] = question;
-                  allAnswers[index] = answer;
+                  allAnswers[index] = answer || { violation: "", rootCause: "", solution: "" };
                 }
               });
 
@@ -340,10 +351,27 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               var finalQuestions = allQuestions;
               var finalAnswers = allAnswers;
             } else {
+              console.log("Complete saved data found, using saved questions...");
               // We have all 5 questions saved
-              var finalQuestions = savedQuestionData.map(item => item.question) as Question[];
-              var finalAnswers = savedQuestionData.map(item => item.answer) as { violation: string; rootCause: string; solution: string; }[];
+              var finalQuestions = savedQuestionData.map(item => item.question).filter(q => q) as Question[];
+              var finalAnswers = savedQuestionData.map(item => item.answer || { violation: "", rootCause: "", solution: "" }) as { violation: string; rootCause: string; solution: string; }[];
+
+              // Ensure we still have 5 questions even if some were null
+              if (finalQuestions.length < 5) {
+                console.warn("Some saved questions were null, filling with random questions...");
+                const additionalQuestions = selectRandomQuestions();
+                while (finalQuestions.length < 5) {
+                  finalQuestions.push(additionalQuestions[finalQuestions.length]);
+                  finalAnswers.push({ violation: "", rootCause: "", solution: "" });
+                }
+              }
             }
+
+            console.log("Final questions and answers:", {
+              questionsLength: finalQuestions.length,
+              answersLength: finalAnswers.length,
+              questions: finalQuestions.map(q => q?.id || 'null')
+            });
 
             // Find the furthest question the user has navigated to
             // This represents where they should continue from (after clicking Proceed)
@@ -454,6 +482,13 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               }
             } else {
               // Not all cases completed - restore normal game state
+              console.log("Restoring normal game state:", {
+                questionsLength: finalQuestions.length,
+                answersLength: finalAnswers.length,
+                currentQuestionIndex,
+                finalTimeRemaining
+              });
+
               setGameState(prev => ({
                 ...prev,
                 questions: finalQuestions,
@@ -467,11 +502,16 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
 
           }
+        } else {
+          console.log("No saved attempt details found");
+          setHasSavedProgress(false);
         }
 
         setProgressLoaded(true);
       } catch (err) {
         console.error("Error loading progress:", err);
+        // Even if loading fails, if we detected saved progress, keep that flag
+        // The continue game function will handle generating questions if needed
         setProgressLoaded(true);
       } finally {
         setIsLoadingProgress(false);
@@ -680,8 +720,38 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     // Game state should already be restored from saved progress
     // Just ensure the game is marked as started
     setGameState(prev => {
+      // Debug logging to understand the issue
+      console.log("Continue Game Debug:", {
+        questionsLength: prev.questions.length,
+        answersLength: prev.answers.length,
+        currentQuestion: prev.currentQuestion,
+        hasSavedProgress,
+        progressLoaded,
+        gameStarted: prev.gameStarted
+      });
+
       // Validate game state before continuing
       if (prev.questions.length === 0) {
+        console.error("No questions found in game state. Attempting to restore from saved progress...");
+
+        // If we have saved progress but questions weren't loaded, try to generate them
+        if (hasSavedProgress) {
+          console.log("Attempting to generate questions for continue game...");
+          const questions = selectRandomQuestions();
+          const initialAnswers = questions.map(() => ({
+            violation: "",
+            rootCause: "",
+            solution: "",
+          }));
+
+          return {
+            ...prev,
+            questions,
+            answers: initialAnswers,
+            gameStarted: true,
+          };
+        }
+
         alert("Error: No saved questions found. Please start a new game.");
         return prev;
       }
@@ -692,8 +762,22 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       }
 
       if (prev.answers.length !== prev.questions.length) {
-        alert("Error: Corrupted saved progress. Please start a new game.");
-        return prev;
+        console.warn("Answers length mismatch. Fixing...");
+        // Fix the answers array to match questions length
+        const fixedAnswers = [...prev.answers];
+        while (fixedAnswers.length < prev.questions.length) {
+          fixedAnswers.push({
+            violation: "",
+            rootCause: "",
+            solution: "",
+          });
+        }
+
+        return {
+          ...prev,
+          answers: fixedAnswers,
+          gameStarted: true,
+        };
       }
 
       return {
