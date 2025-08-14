@@ -124,7 +124,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen w-screen relative bg-cover bg-center flex flex-col${
+      className={`min-h-screen max-h-screen relative bg-cover bg-center flex flex-col overflow-y-auto${
         layout.isMobile && layout.isHorizontal ? " px-2 py-2" : ""
       }`}
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.webp')` }}
@@ -344,14 +344,7 @@ const HomeScreen: React.FC = () => {
       {/* Profile Info Modal */}
       {showInfoModal && (
         <ProfileInfo
-          name={user?.user_metadata?.full_name || ""}
-          phone={user?.user_metadata?.phone || ""}
-          teamName={user?.user_metadata?.team_name || ""}
-          teamLeader={user?.user_metadata?.team_lead || ""}
-          teamMembers={user?.user_metadata?.team_members ?? []}
           email={user?.email || ""}
-          collegeCode={user?.user_metadata?.college_code || ""}
-          joinCode={user?.user_metadata?.join_code || ""}
           onClose={() => setShowInfoModal(false)}
         />
       )}
@@ -364,8 +357,10 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <motion.h1
-          className={`relative text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
-            layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : "mb-10"
+          className={`relative font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
+            layout.isMobile && layout.isHorizontal
+              ? "text-3xl mb-5"
+              : "text-4xl md:text-5xl mb-10"
           }`}
           initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
