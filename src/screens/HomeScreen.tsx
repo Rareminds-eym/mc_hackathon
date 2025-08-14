@@ -1,13 +1,13 @@
-import React, { useRef, useState, useEffect } from "react";
-import ProfileInfo from "../components/ProfileInfo";
 import { Icon } from '@iconify/react';
+import { motion } from "framer-motion";
 import { X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ProfileInfo from "../components/ProfileInfo";
 import { Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext";
-import { motion } from "framer-motion";
-import { useDeviceLayout } from "../hooks/useOrientation";
 import { useGameUnlock } from "../hooks/useGameUnlock";
+import { useDeviceLayout } from "../hooks/useOrientation";
 
 // Avatar options for modal
 const AVATAR_OPTIONS = [
@@ -368,7 +368,6 @@ const HomeScreen: React.FC = () => {
           >
             {[
               { label: "Start Game", onClick: startGame, shouldDisable: true },
-              // { label: "Continue", onClick: continueGame, shouldDisable: true },
               { label: "View Scores", onClick: viewScores, shouldDisable: true },
               { label: "Instructions", onClick: viewInstructions, shouldDisable: false },
               {
