@@ -13,9 +13,10 @@ const Popup: React.FC<{ message: string; onClose: () => void }> = ({ message, on
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in max-h-[65vh] overflow-y-auto">
+    // message component
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
       <div
-        className="bg-gray-900 rounded-2xl shadow-2xl px-8 py-7 max-w-sm w-full text-center relative border border-gray-800 animate-pop"
+        className="bg-gray-900 rounded-2xl shadow-2xl px-8 py-7 max-w-sm w-full text-center relative border border-gray-800 animate-pop max-h-[65vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
       >
