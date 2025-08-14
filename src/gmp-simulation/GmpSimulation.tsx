@@ -1,5 +1,6 @@
 import { AlertTriangle, Clock, Eye, Factory, Play, Trophy } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDeviceLayout } from "../hooks/useOrientation";
 import { supabase } from "../lib/supabase";
 import type { Question } from "./HackathonData";
@@ -38,6 +39,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   mode,
   onProceedToLevel2,
 }) => {
+  const navigate = useNavigate();
   // Device layout detection
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
@@ -1253,7 +1255,6 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
           <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
-          
           <div className="pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-md w-full text-center relative z-10">
             <h2 className="text-lg font-black mb-3 text-cyan-100 pixel-text">
               LOADING TEAM INFO...
@@ -1268,7 +1269,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                         className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-2 px-4 pixel-text transition-all text-sm"
                         onClick={() => {
                           // Redirect to login page
-                          window.location.href = '/login'; // Adjust this path as needed
+                          navigate('/login');
                         }}
                       >
                         GO TO LOGIN
@@ -1289,6 +1290,15 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                         RETRY
                       </button>
                     </>
+                  ) : teamInfoError.includes("No team registration found") ? (
+                    <button
+                      className="pixel-border bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white font-black py-1 px-3 pixel-text transition-all text-sm"
+                      onClick={() => {
+                        navigate('/home');
+                      }}
+                    >
+                      BACK TO HOME
+                    </button>
                   ) : (
                     <button
                       className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-1 px-3 pixel-text transition-all text-sm"

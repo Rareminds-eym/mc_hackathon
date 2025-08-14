@@ -13,7 +13,7 @@ const Popup: React.FC<{ message: string; onClose: () => void }> = ({ message, on
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadein">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in max-h-[65vh] overflow-y-auto">
       <div
         className="bg-gray-900 rounded-2xl shadow-2xl px-8 py-7 max-w-sm w-full text-center relative border border-gray-800 animate-pop"
         role="dialog"
@@ -395,8 +395,8 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
   return (
     <>
       {popup && <Popup message={popup.message} onClose={() => setPopup(null)} />}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full max-w-md flex flex-col items-center relative backdrop-blur-md transition-all duration-300">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full max-w-md flex flex-col items-center relative backdrop-blur-md transition-all duration-300 max-h-[75vh] overflow-y-auto">
         <h2 className="font-bold mb-6 text-white text-2xl">
           {isEditing ? 'Edit Profile' : 'Profile Information'}
         </h2>
