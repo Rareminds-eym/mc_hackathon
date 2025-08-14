@@ -1,40 +1,82 @@
 import React, { useEffect, useState, useRef } from "react";
+// Modern, accessible Popup component
+const Popup: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => {
+  // Trap focus inside popup
+  const okButtonRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    okButtonRef.current?.focus();
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadein">
+      <div
+        className="bg-gray-900 rounded-2xl shadow-2xl px-8 py-7 max-w-sm w-full text-center relative border border-gray-800 animate-pop"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex flex-col items-center">
+          <div className="mb-3">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="mx-auto">
+              <circle cx="12" cy="12" r="12" fill="#2563eb" fillOpacity="0.18" />
+              <path d="M12 8v4m0 4h.01" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="mb-5 text-gray-100 text-lg font-medium" style={{wordBreak:'break-word'}}>{message}</div>
+          <button
+            ref={okButtonRef}
+            className="bg-blue-700 hover:bg-blue-800 focus:ring-2 focus:ring-blue-400 focus:outline-none text-white font-semibold py-2 px-8 rounded-lg text-base shadow transition-all duration-150"
+            onClick={onClose}
+          >
+            OK
+          </button>
+        </div>
+        <button
+          className="absolute top-3 right-3 text-gray-500 hover:text-blue-400 text-2xl font-bold focus:outline-none"
+          onClick={onClose}
+          aria-label="Close popup"
+          tabIndex={-1}
+          type="button"
+        >
+          ×
+        </button>
+      </div>
+      <style>{`
+        .animate-fadein { animation: fadein 0.2s; }
+        .animate-pop { animation: pop 0.18s cubic-bezier(.4,2,.6,1) ; }
+        @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pop { 0% { transform: scale(0.92); opacity:0.7; } 100% { transform: scale(1); opacity:1; } }
+      `}</style>
+    </div>
+  );
+};
 import { supabase } from '../lib/supabase';
 import { collegeCodes as collegeCodeList } from '../data/collegeCodes';
 
 interface ProfileInfoProps {
   email: string;
-  name?: string;
-  phone?: string;
-  teamName?: string;
-  collegeCode?: string;
-  teamLeader?: string;
-  teamMembers?: string[];
-  joinCode?: string; // optional, but will be fetched if not provided
   onClose: () => void;
 }
 
 const ProfileInfo: React.FC<ProfileInfoProps> = ({
   email,
-  // password prop removed
-  name,
-  phone,
-  teamName,
-  collegeCode,
-  teamLeader,
-  teamMembers,
-  joinCode: joinCodeProp,
   onClose,
 }) => {
-  const [joinCode, setJoinCode] = useState<string | undefined>(joinCodeProp);
+  // Popup state must be inside the component
+  const [popup, setPopup] = useState<{ message: string } | null>(null);
+  const [joinCode, setJoinCode] = useState<string | undefined>();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: name || '',
-    phone: phone || '',
-    teamName: teamName || '',
-    collegeCode: collegeCode || '',
-    teamLeader: teamLeader || '',
-    teamMembers: teamMembers || [],
+    name: '',
+    phone: '',
+    teamName: '',
+    collegeCode: '',
+    teamLeader: '',
+    teamMembers: [] as string[],
   });
   const [editData, setEditData] = useState({
     name: '',
@@ -56,7 +98,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
   );
 
   useEffect(() => {
-    // Fetch complete profile data from Supabase
+    // Fetch complete profile data from Supabase teams table only
     const fetchProfileData = async () => {
       if (!email) return;
       
@@ -70,16 +112,16 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
 
         if (!error && data) {
           const fetchedData = {
-            name: data.name || name || '',
-            phone: data.phone || phone || '',
-            teamName: data.team_name || teamName || '',
-            collegeCode: data.college_code || collegeCode || '',
-            teamLeader: data.team_lead || teamLeader || '',
-            teamMembers: data.team_members || teamMembers || [],
+            name: data.full_name || '',
+            phone: data.phone || '',
+            teamName: data.team_name || '',
+            collegeCode: data.college_code || '',
+            teamLeader: '', // Will be populated from team leader lookup if needed
+            teamMembers: [] as string[], // Will be populated from team members lookup if needed
           };
           
           setProfileData(fetchedData);
-          setJoinCode(data.join_code || joinCodeProp);
+          setJoinCode(data.join_code);
           
           // Set edit data only for missing fields
           setEditData({
@@ -94,15 +136,15 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
           // Set college search for dropdown
           setCollegeSearch(fetchedData.collegeCode || '');
         } else {
-          console.log('ProfileInfo: error fetching profile data', error);
-          // Use props as fallback
+          console.log('ProfileInfo: No profile data found in teams table', error);
+          // Initialize empty profile data if no record found
           setProfileData({
-            name: name || '',
-            phone: phone || '',
-            teamName: teamName || '',
-            collegeCode: collegeCode || '',
-            teamLeader: teamLeader || '',
-            teamMembers: teamMembers || [],
+            name: '',
+            phone: '',
+            teamName: '',
+            collegeCode: '',
+            teamLeader: '',
+            teamMembers: [],
           });
         }
       } catch (error) {
@@ -113,7 +155,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
     };
 
     fetchProfileData();
-  }, [email, name, phone, teamName, collegeCode, teamLeader, teamMembers, joinCodeProp]);
+  }, [email]);
 
   // Check if any important data is missing
   const hasMissingData = !profileData.name || !profileData.phone || !profileData.teamName || !profileData.collegeCode;
@@ -123,47 +165,44 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
 
   const validateForm = () => {
     if (!profileData.name && !editData.name.trim()) {
-      alert('Please enter your full name');
+      setPopup({ message: 'Please enter your full name' });
       return false;
     }
     if (!profileData.phone && !editData.phone.trim()) {
-      alert('Please enter your phone number');
+      setPopup({ message: 'Please enter your phone number' });
       return false;
     }
     if (!profileData.phone && editData.phone && !/^\d{10}$/.test(editData.phone.trim())) {
-      alert('Please enter a valid 10-digit phone number');
+      setPopup({ message: 'Please enter a valid 10-digit phone number' });
       return false;
     }
-    
     if (editData.isTeamLeader === null) {
-      alert('Please specify if you are the team leader');
+      setPopup({ message: 'Please specify if you are the team leader' });
       return false;
     }
-    
     if (editData.isTeamLeader) {
       // Team leader: must provide team name and college code
       if (!profileData.teamName && !editData.teamName.trim()) {
-        alert('Please enter your team name');
+        setPopup({ message: 'Please enter your team name' });
         return false;
       }
       if (!profileData.collegeCode && !editData.collegeCode.trim()) {
-        alert('Please enter your college code');
+        setPopup({ message: 'Please enter your college code' });
         return false;
       }
       // Validate college code against the list
       const validCollegeCodes = collegeCodes.map(c => c.code.toLowerCase());
       if (!profileData.collegeCode && !validCollegeCodes.includes(editData.collegeCode.trim().toLowerCase())) {
-        alert('College code not found. Contact HelpDesk for assistance.');
+        setPopup({ message: 'College code not found. Contact HelpDesk for assistance.' });
         return false;
       }
     } else {
       // Team member: must provide join code
       if (!editData.joinCode.trim()) {
-        alert('Please enter the join code provided by your team leader');
+        setPopup({ message: 'Please enter the join code provided by your team leader' });
         return false;
       }
     }
-    
     return true;
   };
 
@@ -177,7 +216,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
       // Get current user ID from Supabase auth (for potential future use)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        alert('Authentication error. Please log in again.');
+        setPopup({ message: 'Authentication error. Please log in again.' });
         return;
       }
       
@@ -205,11 +244,11 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
           
         if (teamError) {
           console.error('Team lookup error:', teamError);
-          alert('Error finding team. Please try again.');
+          setPopup({ message: 'Error finding team. Please try again.' });
           return;
         }
         if (!teamRows || teamRows.length === 0) {
-          alert('Invalid join code. Please check with your team leader.');
+          setPopup({ message: 'Invalid join code. Please check with your team leader.' });
           return;
         }
         
@@ -228,10 +267,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
           session_id: team.session_id,
           is_team_leader: false,
         };
-        
-        // Add missing fields only
-        if (!profileData.name && editData.name) memberData.name = editData.name;
-        if (!profileData.phone && editData.phone) memberData.phone = editData.phone;
         
         console.log('Member data to save:', memberData);
 
@@ -257,7 +292,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
 
         if (saveResult.error) {
           console.error('Save error:', saveResult.error);
-          alert('Failed to join team: ' + saveResult.error.message);
+          setPopup({ message: 'Failed to join team: ' + saveResult.error.message });
           return;
         }
         
@@ -266,7 +301,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
         // Update local state
         setProfileData(prev => ({
           ...prev,
-          name: memberData.name || memberData.full_name || prev.name,
+          name: memberData.full_name || prev.name,
           phone: memberData.phone || prev.phone,
           teamName: team.team_name,
           collegeCode: team.college_code,
@@ -305,12 +340,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
           session_id: sessionIdToUse,
         };
         
-        // Add missing fields only
-        if (!profileData.name && editData.name) leaderData.name = editData.name;
-        if (!profileData.phone && editData.phone) leaderData.phone = editData.phone;
-        if (!profileData.teamName && editData.teamName) leaderData.team_name = editData.teamName;
-        if (!profileData.collegeCode && editData.collegeCode) leaderData.college_code = editData.collegeCode;
-        
         console.log('Leader data to save:', leaderData);
 
         let saveResult;
@@ -335,7 +364,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
 
         if (saveResult.error) {
           console.error('Save error:', saveResult.error);
-          alert('Failed to update profile: ' + saveResult.error.message);
+          setPopup({ message: 'Failed to update profile: ' + saveResult.error.message });
           return;
         }
         
@@ -344,7 +373,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
         // Update local state
         setProfileData(prev => ({
           ...prev,
-          name: leaderData.name || leaderData.full_name || prev.name,
+          name: leaderData.full_name || prev.name,
           phone: leaderData.phone || prev.phone,
           teamName: leaderData.team_name || prev.teamName,
           collegeCode: leaderData.college_code || prev.collegeCode,
@@ -355,16 +384,18 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
         }
       }
 
-      alert('Profile updated successfully!');
-      setIsEditing(false);
+  setPopup({ message: 'Profile updated successfully!' });
+  setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again.');
+      setPopup({ message: 'Failed to update profile. Please try again.' });
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <>
+      {popup && <Popup message={popup.message} onClose={() => setPopup(null)} />}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full max-w-md flex flex-col items-center relative backdrop-blur-md transition-all duration-300">
         <h2 className="font-bold mb-6 text-white text-2xl">
           {isEditing ? 'Edit Profile' : 'Profile Information'}
@@ -576,9 +607,10 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
         >
           ×
         </button>
-      </div>
-    </div>
-  );
-};
+          </div>
+        </div>
+        </>
+      );
+    }
 
-export default ProfileInfo;
+    export default ProfileInfo;

@@ -344,14 +344,7 @@ const HomeScreen: React.FC = () => {
       {/* Profile Info Modal */}
       {showInfoModal && (
         <ProfileInfo
-          name={user?.user_metadata?.full_name || ""}
-          phone={user?.user_metadata?.phone || ""}
-          teamName={user?.user_metadata?.team_name || ""}
-          teamLeader={user?.user_metadata?.team_lead || ""}
-          teamMembers={user?.user_metadata?.team_members ?? []}
           email={user?.email || ""}
-          collegeCode={user?.user_metadata?.college_code || ""}
-          joinCode={user?.user_metadata?.join_code || ""}
           onClose={() => setShowInfoModal(false)}
         />
       )}
