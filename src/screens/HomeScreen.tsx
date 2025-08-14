@@ -133,6 +133,12 @@ const HomeScreen: React.FC = () => {
       <div className="fixed top-1/2 left-0 z-40 -translate-y-1/2 flex flex-col gap-3 p-2 bg-white/10 rounded-r-2xl shadow-lg backdrop-blur-md border-l-4 border-green-400">
         {[
           {
+            label: 'RareMinds',
+            icon: <img src="/logos/bulb.png" alt="RareMinds Bulb" width={28} height={28} />,
+            url: 'https://www.rareminds.in/',
+            color: 'hover:bg-yellow-200',
+          },
+          {
             label: 'Instagram',
             icon: <Icon icon="mdi:instagram" width={28} height={28} />, // color handled below
             url: 'https://www.instagram.com/rareminds.uni?igsh=MTV6NTNwa3N6cmcycw==',
@@ -150,6 +156,7 @@ const HomeScreen: React.FC = () => {
             url: 'https://www.linkedin.com/company/rareminds/',
             color: 'hover:bg-blue-800',
           },
+        
         ].map((item, idx) => (
           <motion.a
             key={item.label}
@@ -227,7 +234,7 @@ const HomeScreen: React.FC = () => {
           layout.isMobile && layout.isHorizontal ? " scale-90" : ""
         }`}
       >
-        <div className="relative">
+        <div className="relative flex flex-col items-center gap-3">
           <img
             src={avatar}
             alt="Player Avatar"
@@ -236,6 +243,27 @@ const HomeScreen: React.FC = () => {
             tabIndex={0}
             onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           />
+          {/* Extra logos below avatar */}
+          <div className="flex flex-col items-center gap-2 mt-2">
+            <a
+              href="https://us06web.zoom.us/j/86412214284?pwd=I8U47ItobcPBHvKgzmwsDAckIPBFYY.1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 border-green-300 shadow-md hover:bg-blue-200 transition-all"
+              title="Help Desk"
+            >
+              <img src="/logos/helpdesk.png" alt="Help Desk" width={32} height={32} />
+            </a>
+            <a
+              href="https://naanmudhalvan.tn.gov.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 p-1 border-green-300 shadow-md hover:bg-green-200 transition-all"
+              title="RareMinds Website"
+            >
+              <img src="/logos/nmlogo.png" alt="RareMinds Logo" className="w-auto" height={32} />
+            </a>
+          </div>
           {profileOpen && (
             <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
                 <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide break-words break-all">
