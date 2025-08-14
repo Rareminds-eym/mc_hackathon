@@ -200,26 +200,27 @@ const Level1Card: React.FC<Level1CardProps> = ({
     return validRectCollisions.length > 0 ? validRectCollisions : [];
   };
   // Setup sensors for drag and drop with mobile-optimized constraints
+
+
+  // Use a custom PointerSensor for horizontal drag only
   const sensors = useSensors(
-    // Mouse sensor for desktop
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 3, // Very low distance
+        distance: 3,
       },
     }),
-    // Touch sensor with minimal constraints for mobile
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 0, // No delay for immediate response
-        tolerance: 15, // High tolerance for easier touch
+        delay: 0,
+        tolerance: 15,
       },
     }),
-    // Pointer sensor with ultra-low constraints for mobile
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: isMobile ? 1 : 3, // Almost no distance for mobile
-        delay: 0, // No delay
-        tolerance: isMobile ? 15 : 5, // Very high tolerance for mobile
+        axis: 'x', // Only allow horizontal drag
+        distance: isMobile ? 1 : 3,
+        delay: 0,
+        tolerance: isMobile ? 15 : 5,
       },
     })
   );
