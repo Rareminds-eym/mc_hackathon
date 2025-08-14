@@ -69,7 +69,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   // Walkthrough video handler
   const showWalkthroughVideo = () => {
     // You can replace this URL with the actual walkthrough video URL
-    const videoUrl = "https://www.youtube.com/watch?v=your-walkthrough-video-id";
+    const videoUrl = "https://www.youtube.com/watch?v=7CemV2XIaXo";
     window.open(videoUrl, '_blank');
   };
 
