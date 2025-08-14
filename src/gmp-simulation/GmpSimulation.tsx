@@ -127,17 +127,39 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     let collegeCode = null;
     let fullName = null;
     if (email) {
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("team_name, college_code, full_name")
-        .eq("email", email)
-        .single();
-      if (teamError) {
-        console.warn("Could not fetch team/team fields for team_attempts:", teamError.message);
-      } else if (teamData) {
-        if (teamData.team_name) teamName = teamData.team_name;
-        if (teamData.college_code) collegeCode = teamData.college_code;
-        if (teamData.full_name) fullName = teamData.full_name;
+      try {
+        const { data: teamData, error: teamError } = await supabase
+          .from("teams")
+          .select("team_name, college_code, full_name")
+          .eq("email", email)
+          .limit(1)
+          .single();
+        
+        if (teamError) {
+          if (teamError.message.includes("JSON object requested, multiple")) {
+            console.warn("Multiple team records found for team_attempts, using first record");
+            // Try to get the first record when multiple exist
+            const { data: firstTeamData } = await supabase
+              .from("teams")
+              .select("team_name, college_code, full_name")
+              .eq("email", email)
+              .limit(1)
+              .single();
+            if (firstTeamData) {
+              teamName = firstTeamData.team_name;
+              collegeCode = firstTeamData.college_code;
+              fullName = firstTeamData.full_name;
+            }
+          } else {
+            console.warn("Could not fetch team fields for team_attempts:", teamError.message);
+          }
+        } else if (teamData) {
+          teamName = teamData.team_name;
+          collegeCode = teamData.college_code;
+          fullName = teamData.full_name;
+        }
+      } catch (err) {
+        console.warn("Error fetching team data for team_attempts:", err);
       }
     }
 
@@ -291,7 +313,58 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
         const userEmail = session.user.email;
 
-        // Fetch session_id from teams table using email
+        // First, check how many records exist for this email
+        const { data: countData, error: countError } = await supabase
+          .from("teams")
+          .select("session_id", { count: 'exact' })
+          .eq("email", userEmail);
+
+        if (countError) {
+          console.error("Database count error:", countError);
+          if (countError.message.includes("JWT") || countError.message.includes("expired")) {
+            setTeamInfoError("Session expired. Please log in again.");
+          } else {
+            setTeamInfoError("Database connection error. Please try again later.");
+          }
+          return;
+        }
+
+        const recordCount = countData?.length || 0;
+        console.log(`Found ${recordCount} team records for email: ${userEmail}`);
+
+        if (recordCount === 0) {
+          setTeamInfoError("No team registration found for your account. Please complete team registration first.");
+          return;
+        }
+
+        if (recordCount > 1) {
+          console.warn(`Multiple team records found for email: ${userEmail}. Using the first one.`);
+          // Use the first record when multiple exist
+          const { data, error } = await supabase
+            .from("teams")
+            .select("session_id")
+            .eq("email", userEmail)
+            .limit(1)
+            .single();
+
+          if (error) {
+            console.error("Database error (multiple records):", error);
+            setTeamInfoError("Multiple team registrations found. Please contact support for assistance.");
+            return;
+          }
+
+          if (!data || !data.session_id) {
+            setTeamInfoError("Invalid team data found. Please contact support.");
+            return;
+          }
+
+          console.log("Using session_id from first record:", data.session_id);
+          setSessionId(data.session_id);
+          setEmail(userEmail);
+          return;
+        }
+
+        // Exactly one record found - proceed normally
         const { data, error } = await supabase
           .from("teams")
           .select("session_id")
@@ -300,20 +373,41 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
         if (error) {
           console.error("Database error:", error);
+          
+          // Provide specific error messages based on error type
           if (error.message.includes("JWT") || error.message.includes("expired")) {
             setTeamInfoError("Session expired. Please log in again.");
+          } else if (error.message.includes("JSON object requested, multiple")) {
+            setTeamInfoError("Multiple team registrations detected. Please contact support to resolve this issue.");
+          } else if (error.message.includes("no rows")) {
+            setTeamInfoError("Team registration not found. Please complete your team registration.");
+          } else if (error.code === 'PGRST116') {
+            setTeamInfoError("Team data not found. Please verify your registration.");
           } else {
-            setTeamInfoError("Could not load team info. " + (error.message || "Unknown error."));
+            setTeamInfoError(`Team data loading failed: ${error.message}. Please try again or contact support.`);
           }
         } else if (!data) {
-          setTeamInfoError("No team info found for this user.");
+          setTeamInfoError("Team registration data is empty. Please complete your registration.");
+        } else if (!data.session_id) {
+          setTeamInfoError("Invalid team session. Please contact support for assistance.");
         } else {
+          console.log("Successfully loaded team info for:", userEmail);
           setSessionId(data.session_id);
           setEmail(userEmail);
         }
       } catch (err) {
-        console.error("Unexpected error:", err);
-        setTeamInfoError("An unexpected error occurred. Please try again.");
+        console.error("Unexpected error in fetchTeamInfo:", err);
+        if (err instanceof Error) {
+          if (err.message.includes("fetch")) {
+            setTeamInfoError("Network connection error. Please check your internet connection and try again.");
+          } else if (err.message.includes("timeout")) {
+            setTeamInfoError("Request timed out. Please try again.");
+          } else {
+            setTeamInfoError(`Unexpected error: ${err.message}. Please try again or contact support.`);
+          }
+        } else {
+          setTeamInfoError("An unexpected error occurred. Please refresh the page and try again.");
+        }
       }
     };
 
@@ -693,17 +787,39 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     let collegeCode = null;
     let fullName = null;
     if (email) {
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("team_name, college_code, full_name")
-        .eq("email", email)
-        .single();
-      if (teamError) {
-        console.warn("Could not fetch team/team fields for individual_attempts:", teamError.message);
-      } else if (teamData) {
-        if (teamData.team_name) teamName = teamData.team_name;
-        if (teamData.college_code) collegeCode = teamData.college_code;
-        if (teamData.full_name) fullName = teamData.full_name;
+      try {
+        const { data: teamData, error: teamError } = await supabase
+          .from("teams")
+          .select("team_name, college_code, full_name")
+          .eq("email", email)
+          .limit(1)
+          .single();
+        
+        if (teamError) {
+          if (teamError.message.includes("JSON object requested, multiple")) {
+            console.warn("Multiple team records found for individual_attempts, using first record");
+            // Try to get the first record when multiple exist
+            const { data: firstTeamData } = await supabase
+              .from("teams")
+              .select("team_name, college_code, full_name")
+              .eq("email", email)
+              .limit(1)
+              .single();
+            if (firstTeamData) {
+              teamName = firstTeamData.team_name;
+              collegeCode = firstTeamData.college_code;
+              fullName = firstTeamData.full_name;
+            }
+          } else {
+            console.warn("Could not fetch team fields for individual_attempts:", teamError.message);
+          }
+        } else if (teamData) {
+          teamName = teamData.team_name;
+          collegeCode = teamData.college_code;
+          fullName = teamData.full_name;
+        }
+      } catch (err) {
+        console.warn("Error fetching team data for individual_attempts:", err);
       }
     }
 
