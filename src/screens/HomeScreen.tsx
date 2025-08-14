@@ -124,7 +124,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen w-screen relative bg-cover bg-center flex flex-col${
+      className={`min-h-screen max-h-screen relative bg-cover bg-center flex flex-col overflow-y-auto${
         layout.isMobile && layout.isHorizontal ? " px-2 py-2" : ""
       }`}
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.webp')` }}
