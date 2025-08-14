@@ -87,12 +87,25 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       return;
     }
 
+    // Debug: Log query parameters and types
+    console.log("[DEBUG] Querying individual_attempts with:", { session_id, module_number });
+    console.log("[DEBUG] Type of session_id:", typeof session_id, "Value:", session_id);
+    console.log("[DEBUG] Type of module_number:", typeof module_number, "Value:", module_number);
+
+    // Try a broader query to see all attempts for this session_id
+    const { data: allAttempts, error: allError } = await supabase
+      .from("individual_attempts")
+      .select("*")
+      .eq("session_id", session_id);
+    console.log("[DEBUG] All attempts for session_id:", allAttempts, allError);
     // Fetch all individual attempts for this session and module
     const { data: attempts, error } = await supabase
       .from("individual_attempts")
-      .select("score, completion_time_sec")
+      .select("score, completion_time_sec, module_number, session_id, email")
       .eq("session_id", session_id)
       .eq("module_number", module_number);
+    // Debug: Log query result
+    console.log("[DEBUG] Query result (session_id + module_number):", { attempts, error });
     if (error) {
       console.error(
         "Supabase fetch error (individual_attempts):",
@@ -108,6 +121,26 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       console.warn("No individual attempts found for team.");
       return;
     }
+
+    // Fetch team_name, college_code, and full_name from teams table
+    let teamName = null;
+    let collegeCode = null;
+    let fullName = null;
+    if (email) {
+      const { data: teamData, error: teamError } = await supabase
+        .from("teams")
+        .select("team_name, college_code, full_name")
+        .eq("email", email)
+        .single();
+      if (teamError) {
+        console.warn("Could not fetch team/team fields for team_attempts:", teamError.message);
+      } else if (teamData) {
+        if (teamData.team_name) teamName = teamData.team_name;
+        if (teamData.college_code) collegeCode = teamData.college_code;
+        if (teamData.full_name) fullName = teamData.full_name;
+      }
+    }
+
     // Calculate average score, top scorer, and average time
     const scores = attempts.map(a => a.score || 0);
     const totalScore = scores.reduce((sum, s) => sum + s, 0);
@@ -122,6 +155,18 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     console.log("[TEAM SCORING] Individual scores:", scores);
     console.log(`[TEAM SCORING] Avg score: ${avgScore}, Top score: ${topScore}, Weighted team score: ${weightedAvgScore}`);
     console.log(`[TEAM SCORING] Avg time (sec): ${avgTimeSec}`);
+    // Debug: Log data to be inserted into team_attempts
+    console.log("[DEBUG] Inserting into team_attempts:", {
+      session_id,
+      module_number,
+      weighted_avg_score: weightedAvgScore,
+      avg_time_sec: avgTimeSec,
+      unlocked_next_module: false,
+      team_name: teamName,
+      college_code: collegeCode,
+      full_name: fullName,
+      email
+    });
     // Insert into team_attempts
     const { error: insertError } = await supabase
       .from("team_attempts")
@@ -132,6 +177,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           weighted_avg_score: weightedAvgScore,
           avg_time_sec: avgTimeSec,
           unlocked_next_module: false,
+          team_name: teamName,
+          college_code: collegeCode,
+          full_name: fullName,
+          email: email
         },
       ]);
     if (insertError) {
