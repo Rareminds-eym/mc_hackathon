@@ -357,8 +357,10 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <motion.h1
-          className={`relative text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
-            layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : "mb-10"
+          className={`relative font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
+            layout.isMobile && layout.isHorizontal
+              ? "text-3xl mb-5"
+              : "text-4xl md:text-5xl mb-10"
           }`}
           initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
