@@ -639,17 +639,39 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       return;
     }
 
-    const { error } = await supabase.from("individual_attempts").insert([
+    // Fetch team_name, college_code, and full_name from teams table
+    let teamName = null;
+    let collegeCode = null;
+    let fullName = null;
+    if (email) {
+      const { data: teamData, error: teamError } = await supabase
+        .from("teams")
+        .select("team_name, college_code, full_name")
+        .eq("email", email)
+        .single();
+      if (teamError) {
+        console.warn("Could not fetch team/team fields for individual_attempts:", teamError.message);
+      } else if (teamData) {
+        if (teamData.team_name) teamName = teamData.team_name;
+        if (teamData.college_code) collegeCode = teamData.college_code;
+        if (teamData.full_name) fullName = teamData.full_name;
+      }
+    }
+
+    const { error } = await supabase.from("individual_attempts").upsert([
       {
         email: email,
         session_id: session_id,
         module_number,
         score,
         completion_time_sec,
+        team_name: teamName,
+        college_code: collegeCode,
+        full_name: fullName,
       },
-    ]);
+    ], { onConflict: "email,session_id,module_number" });
     if (error) {
-      console.error("Supabase insert error:", error.message, error.details);
+      console.error("Supabase upsert error:", error.message, error.details);
       if (error.message.includes("JWT") || error.message.includes("expired")) {
         setTeamInfoError("Session expired while saving. Please log in again.");
       } else {
