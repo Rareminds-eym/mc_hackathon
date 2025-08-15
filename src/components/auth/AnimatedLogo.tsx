@@ -12,10 +12,11 @@ const AnimatedLogo: React.FC = () => {
       {isMobileLandscape ? (
         <div className="text-center">
           <h1 className={`text-2xl font-bold bg-gradient-to-r from-green-500 via-cyan-200 to-emerald-600 bg-clip-text text-transparent animate-gradient-x mb-1`}>
-            GMP Quest
+            {/* GMP Quest */}
+            CAPAthon 2.0
           </h1>
           <p className={`text-xs text-gray-200 font-medium animate-fade-in-up`}>
-            Good Manufacturing Practices
+            Good Manufacturing Practices - Hackathon
           </p>
           <div className="flex items-center justify-center space-x-1 mt-1">
             <div className="bg-blue-500 rounded-full animate-pulse w-1.5 h-1.5"></div>
@@ -49,10 +50,10 @@ const AnimatedLogo: React.FC = () => {
           {/* Animated Title */}
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-500 via-cyan-200 to-emerald-600 bg-clip-text text-transparent animate-gradient-x mb-1">
-              GMP Quest
+            CAPAthon 2.0
             </h1>
             <p className="text-lg text-gray-200 font-medium animate-fade-in-up">
-              Good Manufacturing Practices
+              Good Manufacturing Practices - Hackathon
             </p>
             <div className="flex items-center justify-center space-x-1 mt-1">
               <div className="bg-blue-500 rounded-full animate-pulse w-2 h-2"></div>

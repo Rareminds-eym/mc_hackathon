@@ -148,7 +148,7 @@ const HomeScreen: React.FC = () => {
           {
             label: "Instagram",
             icon: <Icon icon="mdi:instagram" width={28} height={28} />, // color handled below
-            url: "https://www.instagram.com/rareminds.uni?igsh=MTV6NTNwa3N6cmcycw==",
+            url: "https://www.instagram.com/rareminds_eym/?hl=en",
             color:
               "hover:bg-gradient-to-tr hover:from-pink-500 hover:to-yellow-400",
           },
@@ -377,7 +377,8 @@ const HomeScreen: React.FC = () => {
               filter: "drop-shadow(0 2px 4px #34d399)", // extra glow for outline
             }}
           >
-            GMP QUEST
+            {/* GMP QUEST */}
+            CAPAthon 2.0
           </span>
           <span
             className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2"
@@ -414,7 +415,7 @@ const HomeScreen: React.FC = () => {
             }}
           >
             {[
-              { label: "Start Game", onClick: startGame, shouldDisable: true },
+              { label: "Start Hackathon", onClick: startGame, shouldDisable: true },
               {
                 label: "View Scores",
                 onClick: viewScores,

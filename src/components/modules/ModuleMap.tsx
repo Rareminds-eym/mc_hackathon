@@ -309,7 +309,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
               textAlign: "center",
             }}
           >
-            GMP Training Modules
+            {/* GMP Training Modules */}
+
           </h1>
           <p
             style={{
@@ -344,9 +345,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
           {/* Scrollable modules container */}
           <div
             ref={scrollContainerRef}
-            className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            } touch-pan-x scrollbar-hide`}
+            className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"
+              } touch-pan-x scrollbar-hide`}
             style={{
               msOverflowStyle: "none",
               scrollbarWidth: "none",
@@ -406,11 +406,10 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                 }
 
                 // Use EXACTLY the same left positioning as module nodes (without the +PLATFORM_WIDTH/2)
-                spriteLeft = `${
-                  PLATFORM_SPACING +
+                spriteLeft = `${PLATFORM_SPACING +
                   (isMobile || (isMobile && isHorizontal) ? 17 : 24) +
                   moduleIndex * (PLATFORM_WIDTH + PLATFORM_SPACING)
-                }px`;
+                  }px`;
 
                 return (
                   <div
@@ -454,10 +453,9 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                     className="absolute flex items-center justify-center z-20"
                     style={{
                       transform: "translateY(-50%)",
-                      left: `${
-                        PLATFORM_SPACING +
+                      left: `${PLATFORM_SPACING +
                         index * (PLATFORM_WIDTH + PLATFORM_SPACING)
-                      }px`,
+                        }px`,
                       top: nodeTop,
                       width: nodeWidth,
                       height: nodeHeight,
