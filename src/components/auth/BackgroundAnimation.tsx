@@ -5,7 +5,7 @@ const BackgroundAnimation: React.FC = () => {
   const particles = Array.from({ length: 20 }).map((_, i) => (
     <div
       key={i}
-      className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-70"
+      className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-blue-900 rounded-full opacity-70"
       style={{
         left: `${Math.random() * 100}%`,
         top: `${Math.random() * 100}%`,
@@ -18,14 +18,14 @@ const BackgroundAnimation: React.FC = () => {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
       {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-900"></div>
+      <div className="absolute inset-0" style={{background: 'linear-gradient(80deg, #020617 0%, rgba(71,85,105,0.9) 50%, #020720 100%)'}}></div>
       
       {/* Animated Geometric Shapes */}
       <div className="absolute inset-0">
         {/* Large floating circles */}
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-blue-200 to-blue-300 rounded-full opacity-20 animate-float"></div>
-        <div className="absolute top-3/4 right-1/4 w-48 h-48 bg-gradient-to-r from-purple-200 to-purple-300 rounded-full opacity-20 animate-float-delayed"></div>
-        <div className="absolute bottom-1/4 left-1/3 w-32 h-32 bg-gradient-to-r from-green-200 to-green-300 rounded-full opacity-20 animate-float-slow"></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-blue-500 to-blue-300 rounded-full opacity-20 animate-float"></div>
+        <div className="absolute top-3/4 right-1/4 w-48 h-48 bg-gradient-to-r from-purple-600 to-purple-300 rounded-full opacity-20 animate-float-delayed"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-32 h-32 bg-gradient-to-r from-green-500 to-green-300 rounded-full opacity-20 animate-float-slow"></div>
         
         {/* Quality control themed shapes */}
         <div className="absolute top-1/3 right-1/4 w-24 h-24 border-4 border-blue-200 rounded-lg rotate-45 opacity-30 animate-spin-very-slow"></div>

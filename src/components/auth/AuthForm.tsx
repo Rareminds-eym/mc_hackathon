@@ -523,12 +523,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
         {/* Form Header */}
         <div className={`text-center ${isMobileLandscape ? 'mb-6' : 'mb-8'}`}>
           <h2 className={`${isMobileLandscape ? 'text-base' : 'text-3xl'} font-bold text-white mb-1`}>
-            {mode === 'login' ? 'Welcome Back' : 'Join GMP Quest'}
+            {mode === 'login' ? 'Welcome Back' : 'Join Medicode Mastery'}
           </h2>
           <p className={`${isMobileLandscape ? 'text-xs text-white' : (mode === 'login' ? 'text-gray-300' : 'text-white')}`}>
             {mode === 'login' 
               ? 'Sign in to continue your quality journey' 
-              : 'Start your manufacturing excellence adventure'
+              : 'Start your medical coding mastery'
             }
           </p>
         </div>
@@ -772,7 +772,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+                  className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-700 hover:from-blue-500 hover:via-cyan-400 hover:to-blue-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
                 >
                   {isSubmitting ? (
                     <>
@@ -787,7 +787,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+                  className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-700 hover:from-blue-500 hover:via-cyan-400 hover:to-blue-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
                 >
                   {isSubmitting ? (
                     <>
@@ -976,7 +976,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
+                className={`flex justify-center items-center rounded-lg shadow-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-700 hover:from-blue-500 hover:via-cyan-400 hover:to-blue-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 w-full max-w-xs ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-3 text-base'}`}
               >
                 {isSubmitting ? (
                   <>

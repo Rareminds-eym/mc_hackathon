@@ -130,7 +130,7 @@ const HomeScreen: React.FC = () => {
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.webp')` }}
     >
       {/* Social Media Vertical Bar */}
-      <div className="fixed top-1/2 left-0 z-40 -translate-y-1/2 flex flex-col gap-3 p-2 bg-white/10 rounded-r-2xl shadow-lg backdrop-blur-md border-l-4 border-green-400">
+      <div className="fixed top-1/2 left-0 z-40 -translate-y-1/2 flex flex-col gap-3 p-2 bg-white/10 rounded-r-2xl shadow-lg backdrop-blur-md border-l-4 border-blue-500">
         {[
           {
             label: "RareMinds",
@@ -170,7 +170,7 @@ const HomeScreen: React.FC = () => {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`group flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 bg-white/80 border-2 border-green-300 shadow-md mb-1 hover:scale-110 ${item.color}`}
+            className={`group flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 bg-white/80 border-2 border-blue-500 shadow-md mb-1 hover:scale-110 ${item.color}`}
             title={item.label}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -192,7 +192,7 @@ const HomeScreen: React.FC = () => {
       {showAvatarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div
-            className={`bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full flex flex-col items-center relative backdrop-blur-md transition-all duration-300
+            className={`bg-gradient-to-br from-blue-300 to-cyan-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full flex flex-col items-center relative backdrop-blur-md transition-all duration-300
               ${
                 layout.isMobile && layout.isHorizontal
                   ? "max-w-md min-w-[340px] p-2"
@@ -271,13 +271,13 @@ const HomeScreen: React.FC = () => {
           <img
             src={avatar}
             alt="Player Avatar"
-            className="w-16 h-16 rounded-full border-4 border-green-400 shadow-[0_0_16px_4px_rgba(34,197,94,0.7)] cursor-pointer transition-all duration-300"
+            className="w-16 h-16 rounded-full border-4 border-blue-500 shadow-[0_0_32px_8px_rgba(59,130,246,0.55)] cursor-pointer transition-all duration-300"
             onClick={() => setProfileOpen((v) => !v)}
             tabIndex={0}
           />
           {profileOpen && (
             <div 
-              className="absolute top-[4.5rem] right-0 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
+              className="absolute top-[4.5rem] right-0 w-52 from-blue-300 to-cyan-100 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
               onMouseLeave={() => setProfileOpen(false)}
             >
               <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide break-words break-all">
@@ -314,7 +314,7 @@ const HomeScreen: React.FC = () => {
               href="https://us06web.zoom.us/j/86412214284?pwd=I8U47ItobcPBHvKgzmwsDAckIPBFYY.1"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 border-green-300 shadow-md hover:bg-blue-200 transition-all"
+              className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 border-blue-500 shadow-md hover:bg-blue-200 transition-all"
               title="Help Desk"
             >
               <img
@@ -328,7 +328,7 @@ const HomeScreen: React.FC = () => {
               href="https://naanmudhalvan.tn.gov.in/"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 p-1 border-green-300 shadow-md hover:bg-green-200 transition-all"
+              className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 p-1 border-blue-500 shadow-md hover:bg-green-200 transition-all"
               title="RareMinds Website"
             >
               <img
@@ -357,37 +357,56 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <motion.h1
-          className={`relative font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
-            layout.isMobile && layout.isHorizontal
-              ? "text-3xl mb-5"
-              : "text-4xl md:text-5xl mb-10"
+          className={`relative text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-300 drop-shadow-lg text-center tracking-widest select-none${
+            layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : " mb-10"
           }`}
           initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ duration: 0.7, delay: 0.1, type: "spring" }}
         >
-          <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg mr-2">
-            <Icon icon="mdi:cube-outline" width={38} height={38} />
+          <span className="flex items-center justify-center gap-2 w-full">
+            <span className="inline-block animate-bounce text-cyan-300 drop-shadow-lg mr-2">
+              <Icon icon="mdi:code-tags" width={38} height={38} />
+            </span>
+            <span
+              className="bg-gradient-to-r from-blue-600 via-cyan-300 to-blue-600 bg-clip-text text-transparent drop-shadow-lg shadow-blue-200 px-1 rounded-lg"
+              style={{
+                WebkitTextStroke: '2px #2563eb',
+                filter: 'drop-shadow(0 2px 4px #38bdf8)'
+              }}
+            >
+              CODECare 2.0
+            </span>
+            <span className="inline-block animate-bounce text-cyan-300 drop-shadow-lg ml-2" style={{ animationDelay: '0.2s' }}>
+              <Icon icon="mdi:clipboard-check-outline" width={38} height={38} />
+            </span>
           </span>
-          <span
-            className="bg-gradient-to-r from-green-300 via-emerald-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg shadow-green-200 px-2 rounded-lg border-b-4 border-green-400"
-            style={{
-              WebkitTextStroke: "2px #064e3b",
-              // textStroke is not standard in React, so only WebkitTextStroke is used
-              filter: "drop-shadow(0 2px 4px #34d399)", // extra glow for outline
-            }}
-          >
-            {/* GMP QUEST */}
-            CAPAthon 2.0
+          <span className="flex justify-center w-full mt-1">
+            <svg width="260" height="18" viewBox="0 0 260 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="heartbeat-line">
+              <polyline
+                points="0,9 20,9 30,3 40,15 50,3 60,15 70,9 90,9 100,3 110,15 120,3 130,15 140,9 260,9"
+                stroke="#38bdf8"
+                strokeWidth="3.5"
+                fill="none"
+                style={{
+                  strokeDasharray: 300,
+                  strokeDashoffset: 0,
+                  animation: 'heartbeat-move 2.5s linear infinite'
+                }}
+              />
+              <style>{`
+                @keyframes heartbeat-move {
+                  0% { stroke-dashoffset: 300; }
+                  40% { stroke-dashoffset: 120; }
+                  60% { stroke-dashoffset: 60; }
+                  80% { stroke-dashoffset: 0; }
+                  100% { stroke-dashoffset: 0; }
+                }
+              `}</style>
+            </svg>
           </span>
-          <span
-            className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2"
-            style={{ animationDelay: "0.2s" }}
-          >
-            <Icon icon="mdi:clipboard-check-outline" width={38} height={38} />
-          </span>
-          <span className="block text-base md:text-lg font-semibold text-emerald-200 mt-2 tracking-normal animate-fade-in-slow">
-            Embark on your adventure!
+          <span className="block text-base md:text-lg font-semibold text-cyan-200 mt-2 tracking-normal animate-fade-in-slow">
+            ACE IN CODING!
           </span>
         </motion.h1>
         {/* items list */}
@@ -462,7 +481,7 @@ const HomeScreen: React.FC = () => {
             ))}
           </motion.ul>
           <motion.div
-            className={`absolute z-20 w-max right-0 bottom-0 translate-x-[100%]${
+            className={`absolute z-20 w-max right-0 bottom-[-48px] translate-x-[100%]${
               layout.isMobile && layout.isHorizontal ? "" : ""
             }`}
             initial={{ opacity: 0 }}
@@ -470,12 +489,12 @@ const HomeScreen: React.FC = () => {
             transition={{ duration: 0.0, delay: 0, type: "spring" }}
           >
             <img
-              src="/characters/intern.png"
+              src="/characters/Intern.webp"
               alt="Scientist Character"
               className={
                 layout.isMobile && layout.isHorizontal
-                  ? "h-[220px] mb-0"
-                  : "h-[380px] mb-0"
+                  ? "h-[280px] mb-0"
+                  : "h-[420px] mb-0"
               }
             />
           </motion.div>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import logo from "../../public/logos/bulb.png";
 import { Icon } from '@iconify/react';
-import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame, ArrowLeft } from 'lucide-react';
+import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame, ArrowLeft, ChevronRight, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDeviceLayout } from '../hooks/useOrientation';
 
@@ -13,8 +13,8 @@ const levelImages = [
   "/backgrounds/Level2.png",
   "/backgrounds/Level3.png",
   "/backgrounds/Level4.png",
-  "/backgrounds/Level5.png",
-  "/backgrounds/Level6.png",
+  "/backgrounds/HL1.png",
+  "/backgrounds/HL2.png",
 ];
 
 const levels = [
@@ -214,11 +214,11 @@ const levels = [
       }
     ],
     controls: [
-      { icon: Clock, label: "Timer", tooltip: "Track your design time", gradient: "from-blue-400 to-blue-500" },
-      { icon: Trophy, label: "Score", tooltip: "Your design evaluation score", gradient: "from-amber-400 to-amber-500" },
-      { icon: Target, label: "Progress", tooltip: "Design completion progress", gradient: "from-green-400 to-green-500" },
-      { icon: RotateCcw, label: "Reset", tooltip: "Reset your design", gradient: "from-yellow-400 to-yellow-500" },
-      { icon: Home, label: "Exit", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" }
+      { icon: Hash, label: "Case No", tooltip: "Current case number", gradient: "from-purple-400 to-purple-500" },
+      { icon: Clock, label: "Timer", tooltip: "Track your time for this case", gradient: "from-blue-400 to-blue-500" },
+      { icon: Target, label: "Progress", tooltip: "Case completion progress", gradient: "from-green-400 to-green-500" },
+      { icon: ChevronRight, label: "Proceed", tooltip: "Proceed to next case", gradient: "from-green-400 to-green-700" },
+      { icon: Download, label: "Download", tooltip: "Download attempted scenarios for HL1", gradient: "from-cyan-400 to-blue-400" }
     ],
     youtube: ""
   },

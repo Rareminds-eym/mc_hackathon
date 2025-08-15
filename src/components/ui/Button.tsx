@@ -24,11 +24,11 @@ const Button: React.FC<ButtonProps> = ({
 }) => {
   const layout = useDeviceLayout();
   const variants = {
-    primary: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%)',
-    secondary: 'linear-gradient(90deg, #6b7280 0%, #4b5563 100%)',
-    success: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
-    danger: 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)',
-    game: 'linear-gradient(90deg, #2ecc40 0%, #baffb6 100%)'
+    primary: 'linear-gradient(90deg, #2563eb 0%, #06b6d4 100%)', // blue to cyan
+    secondary: 'linear-gradient(90deg, #2563eb 0%, #06b6d4 100%)', // blue to cyan
+    success: 'linear-gradient(90deg, #2563eb 0%, #06b6d4 100%)', // blue to cyan
+    danger: 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)', // keep red for quit game
+    game: 'linear-gradient(90deg, #2563eb 0%, #06b6d4 100%)' // blue to cyan
   };
 
   const sizes = {
@@ -95,8 +95,10 @@ const Button: React.FC<ButtonProps> = ({
       onMouseEnter={(e) => {
         if (!disabled && !loading) {
           Object.assign(e.currentTarget.style, hoverStyle);
-          if (variant === 'game') {
-            e.currentTarget.style.background = 'linear-gradient(90deg, #baffb6 0%, #2ecc40 100%)';
+          if (variant === 'game' || variant === 'primary' || variant === 'secondary' || variant === 'success') {
+            e.currentTarget.style.background = 'linear-gradient(90deg, #06b6d4 0%, #2563eb 100%)'; // cyan to blue on hover
+          } else if (variant === 'danger') {
+            e.currentTarget.style.background = 'linear-gradient(90deg, #dc2626 0%, #ef4444 100%)'; // red reverse on hover
           }
         }
       }}

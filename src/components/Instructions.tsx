@@ -115,7 +115,7 @@ const Instructions: React.FC<InstructionsProps> = ({ onStart }) => (
         <div className="bg-orange-50 p-3 lg:p-4 rounded-lg">
           <AlertTriangle className="w-6 h-6 lg:w-8 lg:h-8 text-orange-600 mx-auto mb-2" />
           <h3 className="font-semibold text-gray-800 text-sm lg:text-base">5 Cases</h3>
-          <p className="text-gray-600 text-xs lg:text-sm">Random GMP scenarios</p>
+          <p className="text-gray-600 text-xs lg:text-sm">Random MC scenarios</p>
         </div>
       </div>
       <button

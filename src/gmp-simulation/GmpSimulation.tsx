@@ -81,7 +81,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   // Walkthrough video handler
   const showWalkthroughVideo = () => {
     // You can replace this URL with the actual walkthrough video URL
-    const videoUrl = "https://www.youtube.com/watch?v=7CemV2XIaXo";
+    const videoUrl = "https://www.youtube.com/watch?v=TlZ79exnc4o";
     window.open(videoUrl, '_blank');
   };
 
@@ -1717,7 +1717,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               </div>
             </div>
             <h1 className="text-xl font-black text-cyan-100 mb-3 pixel-text">
-              GOOD MANUFACTURING PRACTICES
+              Medical Coding
             </h1>
             {/* <p className="text-cyan-100 mb-4 text-sm font-bold">
               Test your knowledge of Good Manufacturing Practices through
@@ -1754,7 +1754,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                   5 CASES
                 </h3>
                 <p className="text-orange-100 text-xs font-bold">
-                  Random GMP scenarios
+                  Random MC scenarios
                 </p>
               </div>
             </div>

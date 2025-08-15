@@ -134,7 +134,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           {/* Logo Container - Horizontal Layout */}
           <div className={`flex items-center justify-center mb-8 transition-all duration-1000 ${showLogo ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90'}`}>
             {/* First Logo */}
-            {/* <div className="relative inline-block">
+            <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
               <div className="relative bg-gradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
                 <div className="flex items-center justify-center space-x-3">
@@ -148,10 +148,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                 <Target className="absolute top-1/2 -right-2 transform -translate-y-1/2 h-6 w-6 text-blue-400" />
                 <Sparkles className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-purple-400" />
               </div>
-            </div> */}
+            </div>
 
             {/* X Symbol */}
-            {/* <X className={`mx-4 ${layout.isMobile && layout.isHorizontal ? 'h-8 w-8' : 'h-12 w-12'} text-white`} /> */}
+            <X className={`mx-4 ${layout.isMobile && layout.isHorizontal ? 'h-8 w-8' : 'h-12 w-12'} text-white`} />
 
             {/* Second Logo */}
             <div className="relative inline-block">
@@ -200,7 +200,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           </div>
           {/* Character image for landscape */}
           {layout.isMobile && layout.isHorizontal && (
-            <img src="/characters/intern.png" alt="Scientist Character" className="h-[120px] mt-4" />
+            <img src="/characters/Intern.webp" alt="Scientist Character" className="h-[220px] mt-4" />
           )}
         </div>
         {/* Skip Button */}
