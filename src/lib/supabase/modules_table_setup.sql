@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS public.level_progress (
 
 -- Insert modules data
 INSERT INTO modules (id, title, description, status, progress) VALUES
-('1', 'Introduction to GMP', 'Foundation of pharmaceutical regulations and GMP principles', 'available', 0),
+('1', 'Introduction', 'Foundation of pharmaceutical regulations and GMP principles', 'available', 0),
 ('2', 'Personal Hygiene', 'Learn about proper hygiene practices in manufacturing', 'available', 0),
 ('3', 'Cleaning Validation', 'Understanding cleaning validation processes and requirements', 'available', 0),
 ('4', 'Documentation', 'Good Documentation Practices and maintaining data integrity', 'available', 0),

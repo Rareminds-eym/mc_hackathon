@@ -51,7 +51,8 @@ export const InstallPrompt: React.FC<InstallPromptProps> = ({ className = '', on
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                Install Hackathon-CAPAthon 2.0 Game
+                {/*  Training Game */}
+                Install Hackathon-CodeCare 2.0
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Install the app for a better experience and offline access.
