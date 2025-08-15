@@ -1,28 +1,59 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface TimerProps {
   timeRemaining: number;
   onTimeUp: () => void;
-  setTimeRemaining: (time: number) => void;
+  setTimeRemaining: (timeOrUpdater: number | ((prev: number) => number)) => void;
   initialTime: number;
+  isActive?: boolean; // Add optional prop to control if timer should run
 }
 
-export const Timer: React.FC<TimerProps> = ({ timeRemaining, onTimeUp, setTimeRemaining, initialTime }) => {
+export const Timer: React.FC<TimerProps> = ({ timeRemaining, onTimeUp, setTimeRemaining, initialTime, isActive = true }) => {
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeRemaining(timeRemaining - 1);
-      if (timeRemaining <= 1) {
-        clearInterval(interval);
-        onTimeUp();
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!isActive) {
+      return;
+    }
+
+    const tick = () => {
+      setTimeRemaining((prevTime) => {
+        const newTime = prevTime - 1;
+
+        if (newTime <= 0) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          onTimeUp();
+          return 0;
+        }
+        return newTime;
+      });
+    };
+
+    intervalRef.current = setInterval(tick, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    }, 1000);
+    };
+  }, [onTimeUp, setTimeRemaining, isActive]);
 
-    return () => clearInterval(interval);
-  }, [timeRemaining, onTimeUp, setTimeRemaining]);
+  // Validate timeRemaining to prevent NaN display
+  const validTimeRemaining = isNaN(timeRemaining) || timeRemaining < 0 ? 0 : timeRemaining;
 
-  const minutes = Math.floor(timeRemaining / 60);
-  const seconds = timeRemaining % 60;
-  const percentage = (timeRemaining / initialTime) * 100;
+  const minutes = Math.floor(validTimeRemaining / 60);
+  const seconds = validTimeRemaining % 60;
+  const percentage = (validTimeRemaining / initialTime) * 100;
 
   const getTextColor = () => {
     if (percentage > 25) return 'text-white';

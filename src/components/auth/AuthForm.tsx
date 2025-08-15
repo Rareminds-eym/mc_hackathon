@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react'
+import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 
-import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
-import { useDeviceLayout } from '../../hooks/useOrientation'
-import { collegeCodes as collegeCodeList } from '../../data/collegeCodes'
+import { useAuth } from '../../contexts/AuthContext';
+import { collegeCodes as collegeCodeList } from '../../data/collegeCodes';
+import { useDeviceLayout } from '../../hooks/useOrientation';
+import { supabase } from '../../lib/supabase';
 
 interface AuthFormProps {
   mode: 'login' | 'signup' | 'forgot-password'
@@ -31,7 +31,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
   const [showResendLink, setShowResendLink] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('')
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
 
   // Use imported collegeCodes and map to dropdown structure
   const collegeCodes = collegeCodeList.map(code => ({ code }));
@@ -171,35 +172,42 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
           // 1. Check if email already exists in teams table
           const { data: existingEmailRows, error: emailCheckError } = await supabase
             .from('teams')
-            .select('email')
+            .select('*')
             .eq('email', formData.email);
           if (emailCheckError) {
             setError('Error checking email. Please try again.');
             setIsSubmitting(false);
             return;
           }
+
+          let shouldUpdateExisting = false;
+          let existingRecord = null;
           if (existingEmailRows && existingEmailRows.length > 0) {
-            setError('An account with this email already exists. Please use a different email.');
-            setIsSubmitting(false);
-            return;
+            shouldUpdateExisting = true;
+            existingRecord = existingEmailRows[0];
           }
-          // 2. Check if team name already exists
-          const { data: existingTeams, error: teamCheckError } = await supabase
-            .from('teams')
-            .select('team_name')
-            .ilike('team_name', formData.teamName);
-          if (teamCheckError) {
-            setError('Error checking team name. Please try again.');
-            setIsSubmitting(false);
-            return;
+
+          // 2. Check if team name already exists (only if not updating existing record)
+          if (!shouldUpdateExisting) {
+            const { data: existingTeams, error: teamCheckError } = await supabase
+              .from('teams')
+              .select('team_name')
+              .ilike('team_name', formData.teamName);
+            if (teamCheckError) {
+              setError('Error checking team name. Please try again.');
+              setIsSubmitting(false);
+              return;
+            }
+            if (existingTeams && existingTeams.length > 0) {
+              setError('Team name already exists, try a different name');
+              setIsSubmitting(false);
+              return;
+            }
           }
-          if (existingTeams && existingTeams.length > 0) {
-            setError('Team name already exists, try a different name');
-            setIsSubmitting(false);
-            return;
-          }
-          const joinCode = generateJoinCode().toUpperCase().trim();
-          const sessionId = uuidv4();
+          // Keep existing join code for team leaders, generate new for new teams
+          const joinCode = shouldUpdateExisting ? existingRecord.join_code : generateJoinCode().toUpperCase().trim();
+          const sessionId = shouldUpdateExisting ? existingRecord.session_id : uuidv4();
+
           const { error } = await signUp(
             formData.email,
             formData.password,
@@ -242,9 +250,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
           if (user && user.id) {
             teamRow.user_id = user.id;
           }
-          const { error: insertError } = await supabase.from('teams').insert([teamRow]);
-          if (insertError) {
-            setError('Team creation failed: ' + insertError.message);
+
+          // Update existing record or insert new one
+          let dbError;
+          if (shouldUpdateExisting) {
+            const { error: updateError } = await supabase
+              .from('teams')
+              .update(teamRow)
+              .eq('email', formData.email);
+            dbError = updateError;
+          } else {
+            const { error: insertError } = await supabase.from('teams').insert([teamRow]);
+            dbError = insertError;
+          }
+
+          if (dbError) {
+            setError(`Team ${shouldUpdateExisting ? 'update' : 'creation'} failed: ` + dbError.message);
             setIsSubmitting(false);
             return;
           }
@@ -367,15 +388,39 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
       return;
     }
 
+    // Basic email validation
+    if (!/\S+@\S+\.\S+/.test(forgotPasswordEmail.trim())) {
+      setForgotPasswordMessage('Please enter a valid email address.');
+      return;
+    }
+
     setIsSubmitting(true);
     setForgotPasswordMessage('');
+    setForgotPasswordSuccess(false);
 
-    const { error } = await resetPassword(forgotPasswordEmail);
+    const { error } = await resetPassword(forgotPasswordEmail.trim());
 
     if (error) {
-      setForgotPasswordMessage(error.message || 'Failed to send reset email. Please try again.');
+      // Provide user-friendly error messages
+      setForgotPasswordSuccess(false);
+
+      if (error.name === 'UserNotFound') {
+        setForgotPasswordMessage('No account found with this email address. Please check your email or sign up for a new account.');
+      } else if (error.name === 'RateLimited') {
+        setForgotPasswordMessage('Too many requests. Please wait a few minutes before trying again.');
+      } else if (error.name === 'InvalidEmail') {
+        setForgotPasswordMessage('Please enter a valid email address.');
+      } else if (error.name === 'NetworkError') {
+        setForgotPasswordMessage('Connection issue. Please check your internet and try again.');
+      } else if (error.name === 'ResetError') {
+        setForgotPasswordMessage('Unable to send reset email. Please try again later.');
+      } else {
+        // Fallback for any other errors
+        setForgotPasswordMessage('Something went wrong. Please try again in a few moments.');
+      }
     } else {
-      setForgotPasswordMessage('Password reset email sent! Check your inbox and follow the instructions.');
+      setForgotPasswordSuccess(true);
+      setForgotPasswordMessage('Password reset email sent! Check your inbox and follow the instructions to reset your password.');
     }
 
     setIsSubmitting(false);
@@ -821,7 +866,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
                   name="forgotPasswordEmail"
                   type="email"
                   value={forgotPasswordEmail}
-                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  onChange={(e) => {
+                    setForgotPasswordEmail(e.target.value);
+                    // Clear any previous messages when user starts typing
+                    if (forgotPasswordMessage) {
+                      setForgotPasswordMessage('');
+                      setForgotPasswordSuccess(false);
+                    }
+                  }}
                   required
                   className={`w-full ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2'} bg-white/10 border border-slate-700/50 rounded-md shadow-sm placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white pl-10`}
                   placeholder="Enter your email address"
@@ -830,9 +882,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
             </div>
 
             {forgotPasswordMessage && (
-              <div className={`p-3 rounded-lg ${forgotPasswordMessage.includes('sent') ? 'bg-green-700/90 border border-green-500 text-white' : 'bg-red-700/90 border border-red-500 text-white'}`}>
+              <div className={`p-3 rounded-lg ${forgotPasswordSuccess ? 'bg-green-700/90 border border-green-500 text-white' : 'bg-red-700/90 border border-red-500 text-white'}`}>
                 <div className="flex items-center gap-2">
-                  {forgotPasswordMessage.includes('sent') ? (
+                  {forgotPasswordSuccess ? (
                     <CheckCircle className="h-5 w-5 text-green-300" />
                   ) : (
                     <AlertCircle className="h-5 w-5 text-red-300" />

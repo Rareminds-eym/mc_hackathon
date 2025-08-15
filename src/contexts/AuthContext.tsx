@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { AuthError, Session, User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface SignupExtraFields {
   phone: string;
@@ -171,16 +171,73 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      // Get the current origin for the redirect URL
+      // Check if email exists in auth.users table using RPC function
+      const { data: userExists, error: checkError } = await supabase
+        .rpc('check_user_exists_by_email', { p_email: email.trim() })
+
+      if (checkError) {
+        console.error('Error checking user existence:', checkError)
+        return {
+          error: {
+            message: 'Unable to process request. Please try again later.',
+            name: 'DatabaseError',
+            status: 500
+          } as AuthError
+        }
+      }
+
+      // If no user found with this email in auth.users
+      if (!userExists) {
+        return {
+          error: {
+            message: 'No account found with this email address. Please check your email or sign up for a new account.',
+            name: 'UserNotFound',
+            status: 404
+          } as AuthError
+        }
+      }
+
+      // Email exists in teams table, proceed with password reset
       const redirectUrl = `${window.location.origin}/reset-password`
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: redirectUrl,
         captchaToken: undefined
       })
-      return { error }
+
+      if (error) {
+        // Handle rate limiting
+        if (error.message.includes('rate limit') ||
+            error.message.includes('too many') ||
+            error.message.includes('Email rate limit exceeded')) {
+          return {
+            error: {
+              message: 'Too many requests. Please wait a few minutes before trying again.',
+              name: 'RateLimited',
+              status: 429
+            } as AuthError
+          }
+        }
+
+        // Handle other errors
+        return {
+          error: {
+            message: 'Unable to send reset email. Please try again later.',
+            name: 'ResetError',
+            status: 400
+          } as AuthError
+        }
+      }
+
+      return { error: null }
     } catch (error) {
-      return { error: error as AuthError }
+      return {
+        error: {
+          message: 'An unexpected error occurred. Please try again.',
+          name: 'UnexpectedError',
+          status: 500
+        } as AuthError
+      }
     }
   }
 
