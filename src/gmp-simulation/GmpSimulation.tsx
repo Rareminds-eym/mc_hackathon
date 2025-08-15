@@ -1,5 +1,4 @@
-  // State for team score calculation modal
-  const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
+
 import { AlertTriangle, Clock, Eye, Factory, Play, Trophy } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +6,6 @@ import { useDeviceLayout } from "../hooks/useOrientation";
 import { supabase } from "../lib/supabase";
 import type { Question } from "./HackathonData";
 import { hackathonData } from "./HackathonData";
-// @ts-ignore
 import { ModuleCompleteModal } from "./ModuleCompleteModal";
 import { QuestionCard } from "./QuestionCard";
 import { Results } from "./Results";
@@ -49,6 +47,8 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
+  // State for team score calculation modal
+  const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
   // Case brief modal state
   const [showCaseBrief, setShowCaseBrief] = useState(false);
 
