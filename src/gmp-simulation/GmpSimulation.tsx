@@ -13,6 +13,7 @@ import { Timer } from "./Timer";
 
 
 
+
 export interface GameState {
   currentLevel: 1 | 2;
   currentQuestion: number;
@@ -42,7 +43,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   mode,
   onProceedToLevel2,
 }) => {
-  const navigate = useNavigate();
+
+  // State for team score calculation modal (must be inside component)
+  const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
+
   // Device layout detection
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
@@ -1466,7 +1470,15 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   return (
     <>
       <TeamScoreModal />
-      {/* ...existing code... */}
+      <div
+        className="h-screen bg-gray-800 flex flex-col overflow-hidden relative"
+        style={{ fontFamily: 'Verdana, Geneva, Tahoma, sans-serif' }}
+      >
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+        <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+        {/* ...rest of your hackathon level UI code... */}
+      </div>
     </>
   );
           return {
