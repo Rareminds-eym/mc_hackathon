@@ -28,7 +28,7 @@ export const InstallPrompt: React.FC<InstallPromptProps> = ({ className = '' }) 
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                {/* Install GMP Training Game */}
+                {/*  Training Game */}
                 Install Hackathon-CAPAthon 2.0 Game
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
