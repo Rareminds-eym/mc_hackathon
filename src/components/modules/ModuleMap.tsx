@@ -89,23 +89,49 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
     }
   };
 
-  // Auto-scroll to current module
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const targetX =
-        (currentModuleId - 1) * (PLATFORM_WIDTH + PLATFORM_SPACING);
-      const containerWidth = scrollContainerRef.current.clientWidth;
-      const scrollTo = Math.max(
-        0,
-        targetX - containerWidth / 2 + PLATFORM_WIDTH / 2
-      );
+  // Always sort modules by id before rendering
+  const sortedModules = Array.isArray(modules)
+    ? [...modules].sort((a, b) => Number(a.id) - Number(b.id))
+    : [];
 
-      scrollContainerRef.current.scrollTo({
-        left: scrollTo,
-        behavior: "smooth",
-      });
+  // Auto-scroll to latest available module only once on initial load
+  const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
+  
+  useEffect(() => {
+    if (scrollContainerRef.current && sortedModules.length > 0 && !hasAutoScrolled) {
+      // Find all available modules
+      const availableModules = sortedModules.filter(
+        (m) => m.status === "available"
+      );
+      
+      if (availableModules.length > 0) {
+        // Get the latest available module (highest ID)
+        const latestAvailableModule = availableModules[availableModules.length - 1];
+        
+        // Find its index in the sorted modules array
+        const moduleIndex = sortedModules.findIndex(
+          (m) => m.id === latestAvailableModule.id
+        );
+        
+        if (moduleIndex !== -1) {
+          const targetX = moduleIndex * (PLATFORM_WIDTH + PLATFORM_SPACING);
+          const containerWidth = scrollContainerRef.current.clientWidth;
+          const scrollTo = Math.max(
+            0,
+            targetX - containerWidth / 2 + PLATFORM_WIDTH / 2
+          );
+
+          scrollContainerRef.current.scrollTo({
+            left: scrollTo,
+            behavior: "smooth",
+          });
+          
+          // Mark as auto-scrolled to prevent future automatic scrolling
+          setHasAutoScrolled(true);
+        }
+      }
     }
-  }, [currentModuleId]);
+  }, [sortedModules, PLATFORM_WIDTH, PLATFORM_SPACING, hasAutoScrolled]);
 
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -162,11 +188,6 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
 
   const totalWidth =
     modules.length * (PLATFORM_WIDTH + PLATFORM_SPACING) + PLATFORM_SPACING;
-
-  // Always sort modules by id before rendering
-  const sortedModules = Array.isArray(modules)
-    ? [...modules].sort((a, b) => Number(a.id) - Number(b.id))
-    : [];
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -309,7 +330,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
               textAlign: "center",
             }}
           >
-            GMP Training Modules
+            {/* GMP Training Modules */}
+
           </h1>
           <p
             style={{
@@ -344,9 +366,8 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
           {/* Scrollable modules container */}
           <div
             ref={scrollContainerRef}
-            className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            } touch-pan-x scrollbar-hide`}
+            className={`w-full h-full overflow-x-auto overflow-y-hidden select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"
+              } touch-pan-x scrollbar-hide`}
             style={{
               msOverflowStyle: "none",
               scrollbarWidth: "none",
@@ -406,11 +427,10 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                 }
 
                 // Use EXACTLY the same left positioning as module nodes (without the +PLATFORM_WIDTH/2)
-                spriteLeft = `${
-                  PLATFORM_SPACING +
+                spriteLeft = `${PLATFORM_SPACING +
                   (isMobile || (isMobile && isHorizontal) ? 17 : 24) +
                   moduleIndex * (PLATFORM_WIDTH + PLATFORM_SPACING)
-                }px`;
+                  }px`;
 
                 return (
                   <div
@@ -454,10 +474,9 @@ const ModuleMap: React.FC<ModuleMapProps> = ({
                     className="absolute flex items-center justify-center z-20"
                     style={{
                       transform: "translateY(-50%)",
-                      left: `${
-                        PLATFORM_SPACING +
+                      left: `${PLATFORM_SPACING +
                         index * (PLATFORM_WIDTH + PLATFORM_SPACING)
-                      }px`,
+                        }px`,
                       top: nodeTop,
                       width: nodeWidth,
                       height: nodeHeight,

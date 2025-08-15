@@ -102,10 +102,11 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onExit }) => {
                     </div>
                     <div className="text-center">
                       <h1 className="text-sm font-black text-purple-100 pixel-text tracking-wider">
-                        GMP QUEST
+                        {/* GMP QUEST */}
+                        CAPAthon 2.0
                       </h1>
                       <div className="text-purple-200 text-xs font-bold tracking-widest">
-                        CLASSIFICATION ADVENTURE
+                        CLASSIFICATION ADVENTURE - Hackathon
                       </div>
                     </div>
                     <div className="w-6 h-6 border-[2px] bg-indigo-300 pixel-border flex items-center justify-center">
