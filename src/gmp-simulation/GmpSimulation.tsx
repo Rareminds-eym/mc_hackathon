@@ -1,3 +1,5 @@
+  // State for team score calculation modal
+  const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
 import { AlertTriangle, Clock, Eye, Factory, Play, Trophy } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -179,8 +181,11 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     console.log("[TEAM SCORING] Individual scores:", scores);
     console.log(`[TEAM SCORING] Avg score: ${avgScore}, Top score: ${topScore}, Weighted team score: ${weightedAvgScore}`);
     console.log(`[TEAM SCORING] Avg time (sec): ${avgTimeSec}`);
-    // Debug: Log data to be inserted into team_attempts
-    console.log("[DEBUG] Inserting into team_attempts:", {
+    // Debug: Log calculation and insert data right before insert
+    console.log("[DEBUG] About to insert into team_attempts:");
+    console.log("  scores:", scores);
+    console.log("  avgScore:", avgScore, "topScore:", topScore, "weightedAvgScore:", weightedAvgScore);
+    console.log("  Insert object:", {
       session_id,
       module_number,
       weighted_avg_score: weightedAvgScore,
@@ -591,7 +596,19 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                   level1Time,
                   5
                 );
-                saveTeamAttempt(5); // Save team summary for module 5
+                // Only save team attempt if all individual attempts are complete
+                setShowTeamScoreModal(true);
+                supabase.rpc('is_team_complete', {
+                  p_session_id: session_id,
+                  p_module_number: 5
+                }).then(async ({ data: isComplete, error }) => {
+                  if (isComplete && isComplete === true) {
+                    await saveTeamAttempt(5);
+                  } else {
+                    console.log("Not all team members have completed their attempts for module 5.");
+                  }
+                  setShowTeamScoreModal(false);
+                });
 
                 // Restore game state with level modal shown
                 setGameState(prev => ({
@@ -610,7 +627,18 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                 const finalScore = calculateScore(finalAnswers, finalQuestions);
                 const finalTime = Math.max(0, 5400 - finalTimeRemaining);
                 saveIndividualAttempt(finalScore, finalTime, 6);
-                saveTeamAttempt(6); // Save team summary for module 6
+                setShowTeamScoreModal(true);
+                supabase.rpc('is_team_complete', {
+                  p_session_id: session_id,
+                  p_module_number: 6
+                }).then(async ({ data: isComplete, error }) => {
+                  if (isComplete && isComplete === true) {
+                    await saveTeamAttempt(6);
+                  } else {
+                    console.log("Not all team members have completed their attempts for module 6.");
+                  }
+                  setShowTeamScoreModal(false);
+                });
 
                 // Restore game state as completed
                 setGameState(prev => ({
@@ -1088,7 +1116,18 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
             level1Time,
             5
           );
-          saveTeamAttempt(5); // Save team summary for module 5
+          setShowTeamScoreModal(true);
+          supabase.rpc('is_team_complete', {
+            p_session_id: session_id,
+            p_module_number: 5
+          }).then(async ({ data: isComplete, error }) => {
+            if (isComplete && isComplete === true) {
+              await saveTeamAttempt(5);
+            } else {
+              console.log("Not all team members have completed their attempts for module 5.");
+            }
+            setShowTeamScoreModal(false);
+          });
           return {
             ...prev,
             showLevelModal: true,
@@ -1100,7 +1139,55 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           // Save attempt to backend
           const finalTime = Math.max(0, 5400 - prev.timeRemaining);
           saveIndividualAttempt(finalScore, finalTime, 6);
-          saveTeamAttempt(6); // Save team summary for module 6
+          setShowTeamScoreModal(true);
+          supabase.rpc('is_team_complete', {
+            p_session_id: session_id,
+            p_module_number: 6
+          }).then(async ({ data: isComplete, error }) => {
+            if (isComplete && isComplete === true) {
+              await saveTeamAttempt(6);
+            } else {
+              console.log("Not all team members have completed their attempts for module 6.");
+            }
+            setShowTeamScoreModal(false);
+          });
+  // Modal for team score calculation
+  const TeamScoreModal = () => (
+    showTeamScoreModal ? (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '2rem 3rem',
+          borderRadius: '1rem',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
+          textAlign: 'center',
+          fontSize: '1.2rem',
+          fontWeight: 500
+        }}>
+          Calculating team score… Please wait.
+        </div>
+      </div>
+    ) : null
+  );
+  // ...existing code...
+  // Render the modal at the root of the component
+  return (
+    <>
+      <TeamScoreModal />
+      {/* ...existing code... */}
+    </>
+  );
           return {
             ...prev,
             gameCompleted: true,
