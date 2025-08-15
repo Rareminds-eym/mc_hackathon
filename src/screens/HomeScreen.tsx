@@ -1,6 +1,6 @@
-import { Icon } from '@iconify/react';
+import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProfileInfo from "../components/ProfileInfo";
@@ -46,11 +46,11 @@ const AVATAR_OPTIONS = [
   {
     label: "Niharika",
     src: "/characters/Intern9.png",
-  }, 
+  },
   {
     label: "Shiney",
     src: "/characters/Intern10.png",
-  }
+  },
 ];
 
 const HomeScreen: React.FC = () => {
@@ -124,7 +124,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen w-screen relative bg-cover bg-center flex flex-col${
+      className={`min-h-screen max-h-screen relative bg-cover bg-center flex flex-col overflow-y-auto${
         layout.isMobile && layout.isHorizontal ? " px-2 py-2" : ""
       }`}
       style={{ backgroundImage: `url('/backgrounds/Homepagebg.webp')` }}
@@ -133,30 +133,37 @@ const HomeScreen: React.FC = () => {
       <div className="fixed top-1/2 left-0 z-40 -translate-y-1/2 flex flex-col gap-3 p-2 bg-white/10 rounded-r-2xl shadow-lg backdrop-blur-md border-l-4 border-green-400">
         {[
           {
-            label: 'RareMinds',
-            icon: <img src="/logos/bulb.png" alt="RareMinds Bulb" width={28} height={28} />,
-            url: 'https://www.rareminds.in/',
-            color: 'hover:bg-yellow-200',
+            label: "RareMinds",
+            icon: (
+              <img
+                src="/logos/bulb.png"
+                alt="RareMinds Bulb"
+                width={28}
+                height={28}
+              />
+            ),
+            url: "https://www.rareminds.in/",
+            color: "hover:bg-yellow-200",
           },
           {
-            label: 'Instagram',
+            label: "Instagram",
             icon: <Icon icon="mdi:instagram" width={28} height={28} />, // color handled below
-            url: 'https://www.instagram.com/rareminds.uni?igsh=MTV6NTNwa3N6cmcycw==',
-            color: 'hover:bg-gradient-to-tr hover:from-pink-500 hover:to-yellow-400',
+            url: "https://www.instagram.com/rareminds_eym/?hl=en",
+            color:
+              "hover:bg-gradient-to-tr hover:from-pink-500 hover:to-yellow-400",
           },
           {
-            label: 'Facebook',
+            label: "Facebook",
             icon: <Icon icon="mdi:facebook" width={28} height={28} />,
-            url: 'https://www.facebook.com/profile.php?id=61576552526095',
-            color: 'hover:bg-blue-700',
+            url: "https://www.facebook.com/profile.php?id=61576552526095",
+            color: "hover:bg-blue-700",
           },
           {
-            label: 'LinkedIn',
+            label: "LinkedIn",
             icon: <Icon icon="mdi:linkedin" width={28} height={28} />,
-            url: 'https://www.linkedin.com/company/rareminds/',
-            color: 'hover:bg-blue-800',
+            url: "https://www.linkedin.com/company/rareminds/",
+            color: "hover:bg-blue-800",
           },
-        
         ].map((item, idx) => (
           <motion.a
             key={item.label}
@@ -167,7 +174,11 @@ const HomeScreen: React.FC = () => {
             title={item.label}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 + idx * 0.08, type: 'spring' }}
+            transition={{
+              duration: 0.4,
+              delay: 0.1 + idx * 0.08,
+              type: "spring",
+            }}
             whileHover={{ scale: 1.18, rotate: 6 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -182,19 +193,31 @@ const HomeScreen: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div
             className={`bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl shadow-2xl p-8 sm:p-6 w-full flex flex-col items-center relative backdrop-blur-md transition-all duration-300
-              ${layout.isMobile && layout.isHorizontal ? 'max-w-md min-w-[340px] p-2' : 'max-w-3xl'}`}
+              ${
+                layout.isMobile && layout.isHorizontal
+                  ? "max-w-md min-w-[340px] p-2"
+                  : "max-w-3xl"
+              }`}
           >
-            <h2 className={`font-bold mb-6 text-white drop-shadow ${layout.isMobile && layout.isHorizontal ? 'text-lg' : 'text-2xl'}`}>
+            <h2
+              className={`font-bold mb-6 text-white drop-shadow ${
+                layout.isMobile && layout.isHorizontal ? "text-lg" : "text-2xl"
+              }`}
+            >
               Choose Your Avatar
             </h2>
-            <div className={`grid grid-cols-4 w-full mb-2 ${layout.isMobile && layout.isHorizontal ? 'gap-4' : 'gap-12'}`}>
+            <div
+              className={`grid grid-cols-4 w-full mb-2 ${
+                layout.isMobile && layout.isHorizontal ? "gap-4" : "gap-12"
+              }`}
+            >
               {AVATAR_OPTIONS.map((option) => (
                 <button
                   key={option.label}
                   className={`flex flex-col items-center justify-center rounded-2xl border-2 transition-all bg-white/80 hover:bg-white ${
                     layout.isMobile && layout.isHorizontal
-                      ? 'p-2 min-w-[60px] min-h-[60px]'
-                      : 'p-4'
+                      ? "p-2 min-w-[60px] min-h-[60px]"
+                      : "p-4"
                   } ${
                     avatar === option.src
                       ? "border-blue-500 ring-2 ring-blue-300"
@@ -209,9 +232,19 @@ const HomeScreen: React.FC = () => {
                   <img
                     src={option.src}
                     alt={option.label}
-                    className={`${layout.isMobile && layout.isHorizontal ? 'w-14 h-14' : 'w-24 h-24'} rounded-full object-cover border border-gray-200 mb-2`}
+                    className={`${
+                      layout.isMobile && layout.isHorizontal
+                        ? "w-14 h-14"
+                        : "w-24 h-24"
+                    } rounded-full object-cover border border-gray-200 mb-2`}
                   />
-                  <span className={`font-semibold text-blue-900 ${layout.isMobile && layout.isHorizontal ? 'text-xs' : 'text-base'}`}>
+                  <span
+                    className={`font-semibold text-blue-900 ${
+                      layout.isMobile && layout.isHorizontal
+                        ? "text-xs"
+                        : "text-base"
+                    }`}
+                  >
                     {option.label}
                   </span>
                 </button>
@@ -241,8 +274,40 @@ const HomeScreen: React.FC = () => {
             className="w-16 h-16 rounded-full border-4 border-green-400 shadow-[0_0_16px_4px_rgba(34,197,94,0.7)] cursor-pointer transition-all duration-300"
             onClick={() => setProfileOpen((v) => !v)}
             tabIndex={0}
-            onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           />
+          {profileOpen && (
+            <div 
+              className="absolute top-[4.5rem] right-0 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md"
+              onMouseLeave={() => setProfileOpen(false)}
+            >
+              <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide break-words break-all">
+                {user?.user_metadata?.full_name || user?.email || "Player"}
+              </span>
+              {/* Avatars button */}
+              <Button
+                size="sm"
+                className="w-full mb-3"
+                onClick={() => {
+                  setShowAvatarModal(true);
+                  setProfileOpen(false);
+                }}
+              >
+                Avatars
+              </Button>
+              <Button
+                size="sm"
+                className="w-full mb-3"
+                onClick={() => {
+                  console.log("Information button clicked");
+                  setShowInfoModal(true);
+                  setProfileOpen(false);
+                }}
+              >
+                Information
+              </Button>
+              {/* Logout button removed from profile dropdown */}
+            </div>
+          )}
           {/* Extra logos below avatar */}
           <div className="flex flex-col items-center gap-2 mt-2">
             <a
@@ -252,7 +317,12 @@ const HomeScreen: React.FC = () => {
               className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 border-green-300 shadow-md hover:bg-blue-200 transition-all"
               title="Help Desk"
             >
-              <img src="/logos/helpdesk.png" alt="Help Desk" width={32} height={32} />
+              <img
+                src="/logos/helpdesk.png"
+                alt="Help Desk"
+                width={32}
+                height={32}
+              />
             </a>
             <a
               href="https://naanmudhalvan.tn.gov.in/"
@@ -261,48 +331,20 @@ const HomeScreen: React.FC = () => {
               className="w-16 h-16 flex items-center justify-center rounded-xl bg-white/80 border-2 p-1 border-green-300 shadow-md hover:bg-green-200 transition-all"
               title="RareMinds Website"
             >
-              <img src="/logos/nmlogo.png" alt="RareMinds Logo" className="w-auto" height={32} />
+              <img
+                src="/logos/nmlogo.png"
+                alt="RareMinds Logo"
+                className="w-auto"
+                height={32}
+              />
             </a>
           </div>
-          {profileOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-green-200 rounded-xl shadow-lg py-4 px-5 flex flex-col items-center animate-fade-in z-40 backdrop-blur-md">
-                <span className="font-bold text-lg text-blue-900 mb-3 text-center tracking-wide break-words break-all">
-                  {user?.user_metadata?.full_name || user?.email || "Player"}
-                </span>
-              {/* Avatars button */}
-              <Button
-                size="sm"
-                className="w-full mb-3"
-                onClick={() => setShowAvatarModal(true)}
-              >
-                Avatars
-              </Button>
-              <Button
-                size="sm"
-                className="w-full mb-3"
-                onClick={() => {
-                  console.log('Information button clicked');
-                  setShowInfoModal(true);
-                }}
-              >
-                Information
-              </Button>
-              {/* Logout button removed from profile dropdown */}
-            </div>
-          )}
         </div>
       </div>
       {/* Profile Info Modal */}
       {showInfoModal && (
         <ProfileInfo
-          name={user?.user_metadata?.full_name || ""}
-          phone={user?.user_metadata?.phone || ""}
-          teamName={user?.user_metadata?.team_name || ""}
-          teamLeader={user?.user_metadata?.team_lead || ""}
-          teamMembers={user?.user_metadata?.team_members ?? []}
           email={user?.email || ""}
-          collegeCode={user?.user_metadata?.college_code || ""}
-          joinCode={user?.user_metadata?.join_code || ""}
           onClose={() => setShowInfoModal(false)}
         />
       )}
@@ -315,8 +357,10 @@ const HomeScreen: React.FC = () => {
         }`}
       >
         <motion.h1
-          className={`relative text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
-            layout.isMobile && layout.isHorizontal ? " text-2xl mb-2" : "mb-10"
+          className={`relative font-extrabold text-white drop-shadow-lg text-center tracking-widest select-none ${
+            layout.isMobile && layout.isHorizontal
+              ? "text-3xl mb-5"
+              : "text-4xl md:text-5xl mb-10"
           }`}
           initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -328,14 +372,18 @@ const HomeScreen: React.FC = () => {
           <span
             className="bg-gradient-to-r from-green-300 via-emerald-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg shadow-green-200 px-2 rounded-lg border-b-4 border-green-400"
             style={{
-              WebkitTextStroke: '2px #064e3b',
+              WebkitTextStroke: "2px #064e3b",
               // textStroke is not standard in React, so only WebkitTextStroke is used
-              filter: 'drop-shadow(0 2px 4px #34d399)' // extra glow for outline
+              filter: "drop-shadow(0 2px 4px #34d399)", // extra glow for outline
             }}
           >
-            GMP QUEST
+            {/* GMP QUEST */}
+            CAPAthon 2.0
           </span>
-          <span className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2" style={{ animationDelay: '0.2s' }}>
+          <span
+            className="inline-block animate-bounce text-emerald-300 drop-shadow-lg ml-2"
+            style={{ animationDelay: "0.2s" }}
+          >
             <Icon icon="mdi:clipboard-check-outline" width={38} height={38} />
           </span>
           <span className="block text-base md:text-lg font-semibold text-emerald-200 mt-2 tracking-normal animate-fade-in-slow">
@@ -367,9 +415,17 @@ const HomeScreen: React.FC = () => {
             }}
           >
             {[
-              { label: "Start Game", onClick: startGame, shouldDisable: true },
-              { label: "View Scores", onClick: viewScores, shouldDisable: true },
-              { label: "Instructions", onClick: viewInstructions, shouldDisable: false },
+              { label: "Start Hackathon", onClick: startGame, shouldDisable: true },
+              {
+                label: "View Scores",
+                onClick: viewScores,
+                shouldDisable: true,
+              },
+              {
+                label: "Instructions",
+                onClick: viewInstructions,
+                shouldDisable: false,
+              },
               {
                 label: "Logout",
                 onClick: handleLogout,
@@ -449,18 +505,20 @@ const HomeScreen: React.FC = () => {
             >
               <X size={20} />
             </button>
-            
+
             <motion.div
               className="mb-6"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.4, type: "spring", bounce: 0.6 }}
+              transition={{
+                duration: 0.8,
+                delay: 0.4,
+                type: "spring",
+                bounce: 0.6,
+              }}
             >
               <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                <Icon
-                  icon="mdi:lock"
-                  className="w-12 h-12 text-white"
-                />
+                <Icon icon="mdi:lock" className="w-12 h-12 text-white" />
               </div>
               <motion.h1
                 className="text-3xl font-bold text-white mb-2 drop-shadow-lg"
@@ -487,8 +545,14 @@ const HomeScreen: React.FC = () => {
             >
               <div className="flex justify-center space-x-1">
                 <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div
+                  className="w-2 h-2 bg-white rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-white rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                ></div>
               </div>
             </motion.div>
           </motion.div>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  ChevronRight, CheckCircle, Target, Trophy
+  ChevronRight, CheckCircle, Target, Trophy, AlertTriangle
 } from 'lucide-react';
 import { Question } from './HackathonData';
 
@@ -24,8 +24,30 @@ const Level2Card: React.FC<Level2CardProps> = ({
   const [selectedSolution, setSelectedSolution] = useState(currentAnswer?.solution || '');
   const [isDragOver, setIsDragOver] = useState(false);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  
+  // Case change indication state
+  const [showCaseChangeIndicator, setShowCaseChangeIndicator] = useState(false);
+  const [previousQuestionId, setPreviousQuestionId] = useState<string | null>(null);
 
   const canProceed = selectedSolution;
+
+  // Detect case changes and show indicator
+  useEffect(() => {
+    if (previousQuestionId && previousQuestionId !== question.id) {
+      // Case has changed, show the indicator
+      setShowCaseChangeIndicator(true);
+      
+      // Hide the indicator after 3 seconds
+      const timer = setTimeout(() => {
+        setShowCaseChangeIndicator(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // Update the previous question ID
+    setPreviousQuestionId(question.id);
+  }, [question.id, previousQuestionId]);
 
   const handleSolutionSelect = (solution: string) => {
     setSelectedSolution(solution);
@@ -76,7 +98,11 @@ const Level2Card: React.FC<Level2CardProps> = ({
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-500 p-3">
+      <div className={`p-3 transition-all duration-500 ${
+        showCaseChangeIndicator 
+          ? 'bg-gradient-to-r from-orange-600 to-red-600 animate-pulse shadow-lg shadow-orange-500/50' 
+          : 'bg-gradient-to-r from-emerald-600 to-teal-500'
+      }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Target className="w-6 h-6 text-white" />
@@ -86,24 +112,66 @@ const Level2Card: React.FC<Level2CardProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            {showCaseChangeIndicator && (
+              <div className="flex items-center space-x-2 animate-bounce mr-3">
+                <AlertTriangle className="w-4 h-4 text-yellow-300" />
+                <span className="text-yellow-300 font-bold text-xs">
+                  NEW CASE
+                </span>
+              </div>
+            )}
             <Trophy className="w-4 h-4 text-yellow-400" />
             <span className="text-yellow-300 font-bold">20 PTS</span>
           </div>
         </div>
+        {showCaseChangeIndicator && (
+          <div className="mt-2 flex items-center space-x-2">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
+            <span className="text-yellow-200 text-xs font-bold">
+              Case scenario has changed - review intel report!
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex p-3 space-x-3">
         {/* Intel Report */}
-        <div className="w-1/3 bg-slate-800/80 rounded-xl p-3 border border-emerald-500/20">
-          <h3 className="text-emerald-400 font-bold mb-3">INTEL REPORT</h3>
+        <div className={`w-1/3 rounded-xl p-3 transition-all duration-500 ${
+          showCaseChangeIndicator 
+            ? 'bg-orange-800/80 border border-orange-500/50 shadow-lg shadow-orange-500/30' 
+            : 'bg-slate-800/80 border border-emerald-500/20'
+        }`}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`font-bold ${
+              showCaseChangeIndicator ? 'text-orange-400' : 'text-emerald-400'
+            }`}>INTEL REPORT</h3>
+            {showCaseChangeIndicator && (
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
+                <span className="text-yellow-300 font-bold text-xs">UPDATED</span>
+              </div>
+            )}
+          </div>
           <div className="space-y-2">
-            <div className="p-2 rounded border border-green-500/50 bg-green-500/20">
-              <h4 className="text-green-300 font-bold text-xs mb-1">VIOLATION:</h4>
+            <div className={`p-2 rounded border transition-all duration-300 ${
+              showCaseChangeIndicator 
+                ? 'border-orange-500/50 bg-orange-500/20' 
+                : 'border-green-500/50 bg-green-500/20'
+            }`}>
+              <h4 className={`font-bold text-xs mb-1 ${
+                showCaseChangeIndicator ? 'text-orange-300' : 'text-green-300'
+              }`}>VIOLATION:</h4>
               <p className="text-white text-xs">{level1Answers?.violation || 'Not identified'}</p>
             </div>
-            <div className="p-2 rounded border border-green-500/50 bg-green-500/20">
-              <h4 className="text-green-300 font-bold text-xs mb-1">ROOT CAUSE:</h4>
+            <div className={`p-2 rounded border transition-all duration-300 ${
+              showCaseChangeIndicator 
+                ? 'border-orange-500/50 bg-orange-500/20' 
+                : 'border-green-500/50 bg-green-500/20'
+            }`}>
+              <h4 className={`font-bold text-xs mb-1 ${
+                showCaseChangeIndicator ? 'text-orange-300' : 'text-green-300'
+              }`}>ROOT CAUSE:</h4>
               <p className="text-white text-xs">{level1Answers?.rootCause || 'Not identified'}</p>
             </div>
           </div>
