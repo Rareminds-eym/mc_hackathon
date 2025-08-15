@@ -1,7 +1,7 @@
 // ...existing code...
 // ...existing code...
 // ...existing code...
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -169,6 +169,8 @@ const Level1Card: React.FC<Level1CardProps> = ({
   } | null>(null);
 
   const [showCautionModal, setShowCautionModal] = useState(false);
+  const [previousQuestionId, setPreviousQuestionId] = useState<string | null>(null);
+  const [showCaseChangeIndicator, setShowCaseChangeIndicator] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
