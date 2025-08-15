@@ -30,6 +30,9 @@ export interface GameState {
   gameCompleted: boolean;
   showLevelModal: boolean;
   level1CompletionTime: number;
+  showCountdown: boolean;
+  countdownNumber: number;
+  isCountdownForContinue: boolean;
 }
 
 interface GmpSimulationProps {
@@ -48,6 +51,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
   // Case brief modal state
   const [showCaseBrief, setShowCaseBrief] = useState(false);
+
+  // Case change indication state
+  const [showCaseChangeIndicator, setShowCaseChangeIndicator] = useState(false);
+  const [previousQuestionId, setPreviousQuestionId] = useState<string | null>(null);
 
   // Utility function to ensure valid session before API calls
   const ensureValidSession = async () => {
@@ -69,7 +76,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       return false;
     }
   };
-  
+
   // Walkthrough video handler
   const showWalkthroughVideo = () => {
     // You can replace this URL with the actual walkthrough video URL
@@ -138,7 +145,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           .eq("email", email)
           .limit(1)
           .single();
-        
+
         if (teamError) {
           if (teamError.message.includes("JSON object requested, multiple")) {
             console.warn("Multiple team records found for team_attempts, using first record");
@@ -175,7 +182,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     const weightedAvgScore = (0.7 * avgScore + 0.3 * topScore).toFixed(2);
     const avgTimeSec = Math.round(
       attempts.reduce((sum, a) => sum + (a.completion_time_sec || 0), 0) /
-        attempts.length
+      attempts.length
     );
     // Debug logs
     console.log("[TEAM SCORING] Individual scores:", scores);
@@ -196,10 +203,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       full_name: fullName,
       email
     });
-    // Insert into team_attempts
+    // Upsert into team_attempts (insert or update if exists)
     const { error: insertError } = await supabase
       .from("team_attempts")
-      .insert([
+      .upsert([
         {
           session_id: session_id,
           module_number,
@@ -211,7 +218,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           full_name: fullName,
           email: email
         },
-      ]);
+      ], {
+        onConflict: 'email,module_number'
+      });
     if (insertError) {
       console.error(
         "Supabase insert error (team_attempts):",
@@ -242,6 +251,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       gameCompleted: false,
       showLevelModal: false,
       level1CompletionTime: 0,
+      showCountdown: false,
+      countdownNumber: 3,
+      isCountdownForContinue: false,
     };
 
     return initialState;
@@ -282,9 +294,9 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     gameStateRef.current = gameState;
     sessionIdRef.current = session_id;
     emailRef.current = email;
-
-
   }, [gameState, session_id, email]);
+
+
 
   // Enhanced auth handling with JWT refresh
   useEffect(() => {
@@ -380,7 +392,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
         if (error) {
           console.error("Database error:", error);
-          
+
           // Provide specific error messages based on error type
           if (error.message.includes("JWT") || error.message.includes("expired")) {
             setTeamInfoError("Session expired. Please log in again.");
@@ -554,7 +566,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                 let isComplete = false;
                 if (initialLevel === 1) {
                   isComplete = !!(answer.violation && answer.violation.trim() !== "" &&
-                             answer.rootCause && answer.rootCause.trim() !== "");
+                    answer.rootCause && answer.rootCause.trim() !== "");
                 } else {
                   isComplete = !!(answer.solution && answer.solution.trim() !== "");
                 }
@@ -799,6 +811,28 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     }
   }, [gameState.gameStarted, gameState.gameCompleted, gameState.showLevelModal, session_id, email, timerSaveInterval]);
 
+  // Detect case changes and show indicator
+  useEffect(() => {
+    const currentQuestion = gameState.questions[gameState.currentQuestion];
+
+    if (currentQuestion && previousQuestionId && previousQuestionId !== currentQuestion.id) {
+      // Case has changed, show the indicator
+      setShowCaseChangeIndicator(true);
+
+      // Hide the indicator after 3 seconds
+      const timer = setTimeout(() => {
+        setShowCaseChangeIndicator(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+
+    // Update the previous question ID
+    if (currentQuestion) {
+      setPreviousQuestionId(currentQuestion.id);
+    }
+  }, [gameState.questions, gameState.currentQuestion, previousQuestionId]);
+
   // Save individual attempt to backend
   const saveIndividualAttempt = async (
     score: number,
@@ -824,7 +858,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           .eq("email", email)
           .limit(1)
           .single();
-        
+
         if (teamError) {
           if (teamError.message.includes("JSON object requested, multiple")) {
             console.warn("Multiple team records found for individual_attempts, using first record");
@@ -911,21 +945,41 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
       solution: "",
     }));
 
+    // Start countdown
     setGameState((prev) => ({
       ...prev,
       questions,
       answers: initialAnswers,
-      gameStarted: true,
+      showCountdown: true,
+      countdownNumber: 3,
+      isCountdownForContinue: false,
       // Ensure correct level is set on start
       currentLevel: initialLevel,
       // Reset timer to full time for new game
       timeRemaining: 5400,
     }));
 
-    // Save initial position (question 0) when starting new game
-    setTimeout(() => {
-      saveCurrentPosition(0);
-    }, 100);
+    // Countdown sequence: 3, 2, 1, then start
+    const countdown = async () => {
+      for (let i = 3; i >= 1; i--) {
+        setGameState(prev => ({ ...prev, countdownNumber: i }));
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // After countdown, start the actual game
+      setGameState(prev => ({
+        ...prev,
+        showCountdown: false,
+        gameStarted: true,
+      }));
+
+      // Save initial position (question 0) when starting new game
+      setTimeout(() => {
+        saveCurrentPosition(0);
+      }, 100);
+    };
+
+    countdown();
 
     // Reset progress flags
     setProgressLoaded(false);
@@ -933,25 +987,110 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
     setSavedProgressInfo(null);
   };
 
-  const continueGame = () => {
-    // Game state should already be restored from saved progress
-    // Just ensure the game is marked as started
+  // Function to check if hackathon is completed
+  const isHackathonCompleted = () => {
+    if (!gameState.questions.length || !gameState.answers.length) {
+      console.log("isHackathonCompleted: No questions or answers", {
+        questionsLength: gameState.questions.length,
+        answersLength: gameState.answers.length
+      });
+      return false;
+    }
+
+    let completeCount = 0;
+    console.log("Checking hackathon completion:", {
+      currentLevel: gameState.currentLevel,
+      questionsLength: gameState.questions.length,
+      answersLength: gameState.answers.length
+    });
+
+    for (let i = 0; i < gameState.answers.length; i++) {
+      const answer = gameState.answers[i];
+      if (answer) {
+        let isComplete = false;
+        if (gameState.currentLevel === 1) {
+          isComplete = !!(answer.violation && answer.violation.trim() !== "" &&
+            answer.rootCause && answer.rootCause.trim() !== "");
+        } else {
+          isComplete = !!(answer.solution && answer.solution.trim() !== "");
+        }
+        console.log(`Answer ${i}:`, {
+          violation: answer.violation || "(empty)",
+          rootCause: answer.rootCause || "(empty)",
+          solution: answer.solution || "(empty)",
+          isComplete
+        });
+        if (isComplete) completeCount++;
+      }
+    }
+
+    const completed = completeCount >= gameState.questions.length;
+    console.log("Hackathon completion result:", {
+      completeCount,
+      questionsLength: gameState.questions.length,
+      completed
+    });
+    return completed;
+  };
+
+  // Function to reset game state (for testing)
+  const resetGameState = () => {
+    console.log("Resetting game state...");
+    setGameState(prev => ({
+      ...prev,
+      questions: [],
+      answers: [],
+      currentQuestion: 0,
+      gameStarted: false,
+      gameCompleted: false,
+      showLevelModal: false,
+      level1CompletionTime: 0,
+      timeRemaining: 5400,
+      showCountdown: false,
+    }));
+    setHasSavedProgress(false);
+    setProgressLoaded(false);
+  };
+
+  // Function to handle when hackathon is completed
+  const showCompletionModal = () => {
+    console.log("showCompletionModal called - showing completion modal");
     setGameState(prev => {
-      // Debug logging to understand the issue
+      console.log("Setting showLevelModal to true, current state:", {
+        showLevelModal: prev.showLevelModal,
+        currentLevel: prev.currentLevel,
+        gameCompleted: prev.gameCompleted
+      });
+      return {
+        ...prev,
+        showLevelModal: true,
+        level1CompletionTime: Math.max(0, 5400 - prev.timeRemaining),
+        gameStarted: false,
+      };
+    });
+  };
+
+  const continueGame = () => {
+    // Check if all cases are completed before doing anything else
+    setGameState(prev => {
       console.log("Continue Game Debug:", {
         questionsLength: prev.questions.length,
         answersLength: prev.answers.length,
         currentQuestion: prev.currentQuestion,
-        hasSavedProgress,
-        progressLoaded,
-        gameStarted: prev.gameStarted
+        currentLevel: prev.currentLevel,
+        showLevelModal: prev.showLevelModal,
+        gameCompleted: prev.gameCompleted
       });
+
+      // If already showing completion screen, don't do anything
+      if (prev.showLevelModal || prev.gameCompleted) {
+        console.log("Already showing completion screen, returning current state");
+        return prev;
+      }
 
       // Validate game state before continuing
       if (prev.questions.length === 0) {
         console.error("No questions found in game state. Attempting to restore from saved progress...");
-
-        // If we have saved progress but questions weren't loaded, try to generate them
         if (hasSavedProgress) {
           console.log("Attempting to generate questions for continue game...");
           const questions = selectRandomQuestions();
@@ -960,48 +1099,138 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
             rootCause: "",
             solution: "",
           }));
-
           return {
             ...prev,
             questions,
             answers: initialAnswers,
-            gameStarted: true,
+            showCountdown: true,
+            countdownNumber: 3,
+            isCountdownForContinue: true,
           };
         }
-
         alert("Error: No saved questions found. Please start a new game.");
         return prev;
       }
 
-      if (prev.currentQuestion >= prev.questions.length) {
-        alert("Error: Invalid saved progress. Please start a new game.");
-        return prev;
-      }
-
+      // Fix answers array if needed
       if (prev.answers.length !== prev.questions.length) {
         console.warn("Answers length mismatch. Fixing...");
-        // Fix the answers array to match questions length
         const fixedAnswers = [...prev.answers];
         while (fixedAnswers.length < prev.questions.length) {
-          fixedAnswers.push({
-            violation: "",
-            rootCause: "",
-            solution: "",
-          });
+          fixedAnswers.push({ violation: "", rootCause: "", solution: "" });
         }
-
-        return {
-          ...prev,
-          answers: fixedAnswers,
-          gameStarted: true,
-        };
+        return { ...prev, answers: fixedAnswers };
       }
 
+      // Check completion status
+      let completeCount = 0;
+      console.log("Checking completion status for all answers:");
+
+      for (let i = 0; i < prev.answers.length; i++) {
+        const answer = prev.answers[i];
+        if (answer) {
+          let isComplete = false;
+          if (prev.currentLevel === 1) {
+            // For Level 1, need both violation and root cause
+            isComplete = !!(answer.violation && answer.violation.trim() !== "" &&
+              answer.rootCause && answer.rootCause.trim() !== "");
+          } else {
+            // For Level 2, need solution
+            isComplete = !!(answer.solution && answer.solution.trim() !== "");
+          }
+
+          console.log(`Answer ${i}:`, {
+            violation: answer.violation || "(empty)",
+            rootCause: answer.rootCause || "(empty)",
+            solution: answer.solution || "(empty)",
+            isComplete
+          });
+
+          if (isComplete) completeCount++;
+        }
+      }
+
+      const allCasesCompleted = completeCount >= prev.questions.length;
+      console.log(`Completion check: ${completeCount}/${prev.questions.length} completed = ${allCasesCompleted}`);
+
+      // If all cases completed, show completion screen immediately
+      if (allCasesCompleted) {
+        console.log("🎉 All cases completed! Showing completion screen immediately...");
+
+        if (prev.currentLevel === 1) {
+          const level1Time = Math.max(0, 5400 - prev.timeRemaining);
+          console.log("Level 1 completed, showing modal with time:", level1Time);
+
+          // Save attempt to backend
+          saveIndividualAttempt(calculateScore(prev.answers, prev.questions), level1Time, 5);
+          saveTeamAttempt(5);
+
+          return {
+            ...prev,
+            showLevelModal: true,
+            level1CompletionTime: level1Time,
+            gameStarted: false,
+            showCountdown: false, // Make sure countdown is not shown
+          };
+        } else {
+          // Level 2 completed
+          const finalScore = calculateScore(prev.answers, prev.questions);
+          const finalTime = Math.max(0, 5400 - prev.timeRemaining);
+          console.log("Level 2 completed, finishing game with score:", finalScore);
+
+          saveIndividualAttempt(finalScore, finalTime, 6);
+          saveTeamAttempt(6);
+
+          return {
+            ...prev,
+            gameCompleted: true,
+            score: finalScore,
+            gameStarted: false,
+            showCountdown: false, // Make sure countdown is not shown
+          };
+        }
+      }
+
+      // Not all cases completed - start countdown
+      console.log("Not all cases completed, starting countdown...");
       return {
         ...prev,
-        gameStarted: true,
+        showCountdown: true,
+        countdownNumber: 3,
+        isCountdownForContinue: true,
       };
     });
+
+    // Start countdown only if needed (after a small delay to let state update)
+    setTimeout(() => {
+      setGameState(prev => {
+        // Skip countdown if completion screen should be shown
+        if (prev.showLevelModal || prev.gameCompleted || !prev.showCountdown) {
+          console.log("Skipping countdown - completion screen should be shown");
+          return prev;
+        }
+
+        console.log("Starting countdown sequence...");
+
+        // Countdown sequence: 3, 2, 1, then continue
+        const countdown = async () => {
+          for (let i = 3; i >= 1; i--) {
+            setGameState(prevState => ({ ...prevState, countdownNumber: i }));
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
+          // After countdown, continue the actual game
+          setGameState(prevState => ({
+            ...prevState,
+            showCountdown: false,
+            gameStarted: true,
+          }));
+        };
+
+        countdown();
+        return prev;
+      });
+    }, 100); // Small delay to ensure state has updated
   };
 
   const handleAnswer = (answer: {
@@ -1058,6 +1287,58 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
         }
       };
       saveAttemptDetails();
+
+      // Check if all cases are completed after this answer
+      let completeCount = 0;
+      for (let i = 0; i < newAnswers.length; i++) {
+        const answerItem = newAnswers[i];
+        if (answerItem) {
+          let isComplete = false;
+          if (prev.currentLevel === 1) {
+            isComplete = !!(answerItem.violation && answerItem.violation.trim() !== "" &&
+              answerItem.rootCause && answerItem.rootCause.trim() !== "");
+          } else {
+            isComplete = !!(answerItem.solution && answerItem.solution.trim() !== "");
+          }
+          if (isComplete) completeCount++;
+        }
+      }
+
+      const allCasesCompleted = completeCount >= prev.questions.length;
+
+      // If all cases are completed, automatically show completion screen
+      if (allCasesCompleted) {
+        if (prev.currentLevel === 1) {
+          // Level 1 completed - show modal
+          const level1Time = Math.max(0, 5400 - prev.timeRemaining);
+          // Save attempt to backend
+          saveIndividualAttempt(
+            calculateScore(newAnswers, prev.questions),
+            level1Time,
+            5
+          );
+          saveTeamAttempt(5); // Save team summary for module 5
+          return {
+            ...prev,
+            answers: newAnswers,
+            showLevelModal: true,
+            level1CompletionTime: level1Time,
+          };
+        } else {
+          // Level 2 completed - finish game
+          const finalScore = calculateScore(newAnswers, prev.questions);
+          const finalTime = Math.max(0, 5400 - prev.timeRemaining);
+          // Save attempt to backend
+          saveIndividualAttempt(finalScore, finalTime, 6);
+          saveTeamAttempt(6); // Save team summary for module 6
+          return {
+            ...prev,
+            answers: newAnswers,
+            gameCompleted: true,
+            score: finalScore,
+          };
+        }
+      }
 
       return {
         ...prev,
@@ -1320,10 +1601,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
             prev.answers.length === 5
               ? newAnswers
               : selectRandomQuestions().map(() => ({
-                  violation: "",
-                  rootCause: "",
-                  solution: "",
-                })),
+                violation: "",
+                rootCause: "",
+                solution: "",
+              })),
           gameStarted: true,
           gameCompleted: false,
           showLevelModal: false,
@@ -1335,7 +1616,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
   // Only show Level 1 UI for HL1 (mode violation-root-cause)
   // Only show Level 2 UI for HL2 (mode solution)
-  if (!gameState.gameStarted) {
+  if (!gameState.gameStarted && !gameState.showCountdown) {
     if (loadingIds || teamInfoError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-800 relative p-2">
@@ -1419,7 +1700,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
           <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
-          
+
           <div className="pixel-border-thick bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-xl w-full text-center relative z-10">
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 bg-cyan-500 pixel-border flex items-center justify-center">
@@ -1472,10 +1753,23 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               {hasSavedProgress ? (
                 <div className="flex flex-col items-center gap-2">
                   <button
-                    onClick={continueGame}
-                    className="pixel-border bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
+                    onClick={() => {
+                      const completed = isHackathonCompleted();
+                      console.log("Button clicked, completed status:", completed);
+                      if (completed) {
+                        console.log("Calling showCompletionModal");
+                        showCompletionModal();
+                      } else {
+                        console.log("Calling continueGame");
+                        continueGame();
+                      }
+                    }}
+                    className={`pixel-border text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm ${isHackathonCompleted()
+                      ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500"
+                      : "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500"
+                      }`}
                   >
-                    CONTINUE GAME
+                    {isHackathonCompleted() ? "HL-1 COMPLETED" : "CONTINUE HACKATHON"}
                   </button>
                   {/* {savedProgressInfo && (
                     <div className="text-xs text-cyan-200 font-bold space-y-1">
@@ -1489,7 +1783,8 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                   onClick={startGame}
                   className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
                 >
-                  START SIMULATION
+                  {/* START SIMULATION */}
+                  START HACKATHON
                 </button>
               )}
               <button
@@ -1510,7 +1805,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
           <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
-          
+
           <div className="pixel-border-thick bg-gradient-to-r from-purple-600 to-purple-700 p-4 max-w-xl w-full text-center relative z-10">
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 bg-purple-500 pixel-border flex items-center justify-center">
@@ -1551,10 +1846,23 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               {hasSavedProgress ? (
                 <div className="flex flex-col items-center gap-2">
                   <button
-                    onClick={continueGame}
-                    className="pixel-border bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
+                    onClick={() => {
+                      const completed = isHackathonCompleted();
+                      console.log("Button clicked, completed status:", completed);
+                      if (completed) {
+                        console.log("Calling showCompletionModal");
+                        showCompletionModal();
+                      } else {
+                        console.log("Calling continueGame");
+                        continueGame();
+                      }
+                    }}
+                    className={`pixel-border text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm ${isHackathonCompleted()
+                      ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500"
+                      : "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500"
+                      }`}
                   >
-                    CONTINUE GAME
+                    {isHackathonCompleted() ? "HL-2 COMPLETED" : "CONTINUE HACKATHON"}
                   </button>
                   {/* {savedProgressInfo && (
                     <div className="text-xs text-purple-200 font-bold space-y-1">
@@ -1593,7 +1901,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
           <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
-          
+
           <div className="pixel-border bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-md w-full text-center relative z-10">
             <h2 className="text-lg font-black mb-3 text-cyan-100 pixel-text">
               AWAITING TEAM EVALUATION
@@ -1644,7 +1952,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                     LEVEL {gameState.currentLevel}
                   </h1>
                   {/* Simple Progress Indicator */}
-                  <div className="text-gray-300 text-xs font-bold">
+                  <div className="text-white text-xs font-bold bg-violet-600 px-3 py-1 rounded-lg">
                     CASE {gameState.currentQuestion + 1}/5
                   </div>
                 </div>
@@ -1665,7 +1973,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
               )}
 
               {/* Timer */}
-              <div className="flex items-center gap-1 pixel-border bg-gradient-to-r from-gray-700 to-gray-600 px-2 py-1">
+              <div className="flex items-center gap-1 pixel-border bg-gradient-to-r from-red-700 to-red-600 px-2 py-1">
                 <div className="w-3 h-3 bg-gray-800 pixel-border flex items-center justify-center">
                   <Clock className="w-2 h-2 text-gray-300" />
                 </div>
@@ -1712,6 +2020,20 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
 
       {/* Main Content Area */}
       <div className="flex-1 container mx-auto px-1 min-h-0">
+        {/* Countdown Display */}
+        {gameState.showCountdown && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+            <div className="text-center">
+              <div className="text-8xl md:text-9xl font-black text-white pixel-text animate-pulse mb-4">
+                {gameState.countdownNumber}
+              </div>
+              <div className="text-xl md:text-2xl font-bold text-gray-300 pixel-text">
+                {gameState.isCountdownForContinue ? "GET READY TO CONTINUE!" : "GET READY TO START!"}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Question Card */}
         {currentQuestion && gameState.questions.length > 0 && gameState.currentQuestion < gameState.questions.length ? (
           <QuestionCard
@@ -1758,12 +2080,20 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
         )}
 
         {/* Level Complete Modal */}
-        {gameState.showLevelModal && mode === "violation-root-cause" && (
-          <ModuleCompleteModal
-            level1CompletionTime={gameState.level1CompletionTime}
-            onProceed={proceedToLevel2}
-          />
-        )}
+        {(() => {
+          const shouldShowModal = gameState.showLevelModal && gameState.currentLevel === 1;
+          console.log("Modal render check:", {
+            showLevelModal: gameState.showLevelModal,
+            currentLevel: gameState.currentLevel,
+            shouldShowModal
+          });
+          return shouldShowModal ? (
+            <ModuleCompleteModal
+              level1CompletionTime={gameState.level1CompletionTime}
+              onProceed={proceedToLevel2}
+            />
+          ) : null;
+        })()}
 
         {/* Module 6 Button (only if unlocked) */}
         {canAccessModule6 && gameState.currentLevel === 1 && (
@@ -1790,10 +2120,10 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                       prev.answers.length === 5
                         ? newAnswers
                         : selectRandomQuestions().map(() => ({
-                            violation: "",
-                            rootCause: "",
-                            solution: "",
-                          })),
+                          violation: "",
+                          rootCause: "",
+                          solution: "",
+                        })),
                     gameStarted: true,
                     gameCompleted: false,
                     showLevelModal: false,
@@ -1814,27 +2144,38 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
             onClick={() => setShowCaseBrief(false)}
           >
             <div
-              className="pixel-border-thick bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
+              className="pixel-border-thick p-4 max-w-lg w-full max-h-[80vh] overflow-y-auto relative bg-gradient-to-r from-cyan-600 to-blue-600"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Background Pattern */}
               <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
               <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
-              
+
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <div className="w-5 h-5 bg-cyan-500 pixel-border flex items-center justify-center">
                       <Eye className="w-3 h-3 text-cyan-900" />
                     </div>
-                    <h3 className="text-base font-black text-cyan-100 pixel-text">
+                    <h3 className={`font-black pixel-text text-lg transition-all duration-500 ${showCaseChangeIndicator
+                      ? 'text-yellow-300 animate-pulse drop-shadow-lg shadow-yellow-400/50 scale-105'
+                      : 'text-cyan-100'
+                      }`}>
                       PROBLEM SCENARIO
                     </h3>
-                    <div className="pixel-border bg-gradient-to-r from-green-600 to-green-500 px-2 py-1">
-                      <span className="text-green-100 font-black text-xs pixel-text">
-                        ACTIVE
-                      </span>
-                    </div>
+                    {showCaseChangeIndicator ? (
+                      <div className="pixel-border bg-gradient-to-r from-yellow-600 to-orange-500 px-2 py-1 animate-bounce">
+                        <span className="text-yellow-100 font-black text-xs pixel-text">
+                          NEW CASE
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="pixel-border bg-gradient-to-r from-green-600 to-green-500 px-2 py-1">
+                        <span className="text-green-100 font-black text-xs pixel-text">
+                          ACTIVE
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => setShowCaseBrief(false)}
@@ -1845,13 +2186,24 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
                 </div>
                 <div className="pixel-border bg-gradient-to-r from-gray-700 to-gray-600 p-3">
                   <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 bg-red-500 pixel-border mt-1 animate-pulse flex-shrink-0"></div>
+                    <div className={`w-2 h-2 pixel-border mt-1 flex-shrink-0 ${showCaseChangeIndicator
+                      ? 'bg-yellow-400 animate-ping'
+                      : 'bg-red-500 animate-pulse'
+                      }`}></div>
                     <p className="text-gray-100 text-sm leading-relaxed font-bold">
                       {currentQuestion.caseFile} Read the scenario carefully, spot
                       the violation and its root cause, and place them in the
                       right category containers.
                     </p>
                   </div>
+                  {showCaseChangeIndicator && (
+                    <div className="mt-3 flex items-center space-x-2 pixel-border bg-gradient-to-r from-yellow-700 to-orange-700 p-2">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
+                      <span className="text-yellow-200 text-xs font-bold">
+                        Case scenario has changed - review carefully!
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
