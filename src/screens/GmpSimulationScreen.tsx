@@ -37,5 +37,9 @@ export default function GmpSimulationScreen({ mode: routeMode }) {
     return null;
   }
 
-  return <GmpSimulation mode={mode} onProceedToLevel2={handleProceedToLevel2} />;
+  return (
+    <div style={{ fontFamily: 'Verdana, Geneva, Tahoma, sans-serif' }}>
+      <GmpSimulation mode={mode} onProceedToLevel2={handleProceedToLevel2} />
+    </div>
+  );
 }

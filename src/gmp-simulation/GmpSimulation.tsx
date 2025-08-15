@@ -1,5 +1,4 @@
-  // State for team score calculation modal
-  const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
+
 import { AlertTriangle, Clock, Eye, Factory, Play, Trophy } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDeviceLayout } from "../hooks/useOrientation";
@@ -11,6 +10,7 @@ import { ModuleCompleteModal } from "./ModuleCompleteModal";
 import { QuestionCard } from "./QuestionCard";
 import { Results } from "./Results";
 import { Timer } from "./Timer";
+
 
 
 
@@ -40,6 +40,8 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   mode,
   onProceedToLevel2,
 }) => {
+  // State for team score calculation modal (must be inside component)
+  const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
   // Device layout detection
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
@@ -1067,7 +1069,15 @@ const GameEngine: React.FC<GmpSimulationProps> = ({
   return (
     <>
       <TeamScoreModal />
-      {/* ...existing code... */}
+      <div
+        className="h-screen bg-gray-800 flex flex-col overflow-hidden relative"
+        style={{ fontFamily: 'Verdana, Geneva, Tahoma, sans-serif' }}
+      >
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+        <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+        {/* ...rest of your hackathon level UI code... */}
+      </div>
     </>
   );
           return {
