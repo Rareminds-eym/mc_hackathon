@@ -477,7 +477,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
                   <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 rounded-lg opacity-30 animate-pulse"></div>
                   <div className="absolute -inset-1 bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 rounded-lg opacity-20 animate-ping"></div>
                   
-                  {/* Tutorial tooltip */}
+                  {/* Tutorial tooltip 
                   <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-50">
                     <div className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg font-black text-xs pixel-text animate-bounce shadow-lg">
                       <div className="flex items-center space-x-2">
@@ -486,7 +486,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
                       </div>
                       <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-yellow-400"></div>
                     </div>
-                  </div>
+                  </div>*/}
                   
                   {/* Pulsing corner indicators */}
                   <div className="absolute -top-2 -left-2 w-4 h-4 bg-cyan-400 rounded-full animate-ping"></div>
@@ -739,6 +739,14 @@ const Level1Card: React.FC<Level1CardProps> = ({
             {/* Background Pattern */}
             <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
             <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+            {/* Close Button */}
+            <button
+              className="absolute top-2 right-2 text-yellow-900 bg-yellow-200 rounded-full p-1 pixel-border hover:bg-yellow-300 focus:outline-none z-20"
+              onClick={() => setShowCautionModal(false)}
+              aria-label="Close caution modal"
+            >
+              <span style={{ fontWeight: 'bold', fontSize: '1.2rem', lineHeight: 1 }}>×</span>
+            </button>
             {/* Content */}
             <div className="relative z-10">
               <div className="flex items-center justify-center space-x-2 mb-4">

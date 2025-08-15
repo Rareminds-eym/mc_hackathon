@@ -3,35 +3,35 @@ import { useNavigate } from 'react-router-dom'
 import AnimatedLogo from '../components/auth/AnimatedLogo'
 import BackgroundAnimation from '../components/auth/BackgroundAnimation'
 import AuthForm from '../components/auth/AuthForm'
+// import { InstallPrompt } from '../components/PWA'
+import '../components/auth/auth-blur.css'
+import { InstallPrompt } from '../components/PWA'
+import { usePWA } from '../hooks/usePWA'
+import '../components/auth/auth-blur.css'
 import { useAuth } from '../contexts/AuthContext' // Import useAuth
 
 const AuthPage: React.FC = () => {
+  // Toggle between login and signup modes
+  const toggleAuthMode = () => {
+    setAuthMode((prev) =>
+      prev === 'login' ? 'signup' : 'login'
+    );
+  };
+
+  // Switch to forgot-password mode
+  const handleForgotPassword = () => {
+    setAuthMode('forgot-password');
+  };
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login')
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const navigate = useNavigate()
   const { user } = useAuth() // Get user from auth context
 
   useEffect(() => {
     if (user) {
-      navigate('/home', { replace: true })
+      navigate('/home', { replace: true });
     }
-  }, [user, navigate])
-
-  const toggleAuthMode = () => {
-    setAuthMode(prev => {
-      if (prev === 'forgot-password') {
-        return 'login';
-      }
-      const next = prev === 'login' ? 'signup' : 'login';
-      if (next === 'signup') {
-        localStorage.setItem("selectedAvatar", "/characters/Intern1.png");
-      }
-      return next;
-    });
-  }
-
-  const handleForgotPassword = () => {
-    setAuthMode('forgot-password');
-  }
+  }, [user, navigate]);
 
   return (
     <div 
@@ -46,7 +46,14 @@ const AuthPage: React.FC = () => {
       }}
     >
       <BackgroundAnimation />
-      
+      {/* Blur overlay when install prompt is visible */}
+      {showInstallPrompt && <div className="auth-blur-overlay" />}
+      {/* InstallPrompt controls the overlay via callback */}
+      <InstallPrompt
+        className={showInstallPrompt ? '' : 'hidden'}
+        onShow={() => setShowInstallPrompt(true)}
+        onHide={() => setShowInstallPrompt(false)}
+      />
       <div
         className={`relative z-10 h-full overflow-y-scroll ${
           window.innerWidth > window.innerHeight
@@ -62,7 +69,6 @@ const AuthPage: React.FC = () => {
           willChange: 'scroll-position',
           // Oppo-specific fixes
           touchAction: 'pan-y',
-          overflowScrolling: 'touch',
           // Ensure minimum height for scrolling
           minHeight: '100vh',
           height: '100%'
@@ -96,7 +102,7 @@ const AuthPage: React.FC = () => {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default AuthPage
