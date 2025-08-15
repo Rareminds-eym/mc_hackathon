@@ -1,3 +1,7 @@
+// ...existing code...
+// ...existing code...
+// ...existing code...
+import React, { useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -13,8 +17,7 @@ import {
   useSensor,
   useSensors
 } from "@dnd-kit/core";
-import { CheckCircle, ChevronRight, Search, Target } from "lucide-react";
-import React, { useState } from "react";
+import { CheckCircle, ChevronRight, Search, Target, AlertTriangle } from "lucide-react";
 import { useDeviceLayout } from "../hooks/useOrientation";
 import { Question } from "./HackathonData";
 
@@ -98,11 +101,11 @@ const DraggableItem: React.FC<DraggableItemProps> = ({
       {...enhancedListeners}
       {...attributes}
       onClick={handleClick}
-      className={`p-2 cursor-grab active:cursor-grabbing transition-all select-none ${
+      className={`p-2 cursor-grab active:cursor-grabbing transition-all select-none font-[Verdana,Arial,sans-serif] ${
         isMobile ? "touch-manipulation" : "touch-none"
       } ${colorClasses} ${isDragging ? "opacity-0" : ""}`}
     >
-      <span className="text-white text-xs font-bold pixel-text pointer-events-none">
+      <span className="text-white text-xs font-bold pixel-text pointer-events-none font-[Verdana,Arial,sans-serif]">
         {text}
       </span>
     </div>
@@ -129,7 +132,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   });
 
   return (
-    <div ref={setNodeRef} className="h-full relative">
+  <div ref={setNodeRef} className="h-full relative font-[Verdana,Arial,sans-serif]">
       {/* Drop Zone Effects */}
       {isOver && (
         <div className="absolute inset-0">
@@ -163,6 +166,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
     text: string;
     type: "violation" | "rootCause";
   } | null>(null);
+  const [showCautionModal, setShowCautionModal] = useState(false);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
@@ -605,7 +609,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
                         {/* Dropped Item Display */}
                         <div className="flex-1 p-3">
                           <div className="w-full">
-                            <div className="pixel-border-thick bg-gradient-to-r from-purple-900 to-purple-700 p-3 relative overflow-hidden">
+                              <div className="pixel-border-thick bg-gradient-to-r from-purple-900 to-purple-700 p-3 relative overflow-hidden font-[Verdana,Arial,sans-serif]">
                               {/* Background Pattern */}
                               <div className="absolute inset-0 bg-pixel-pattern opacity-20"></div>
 
@@ -628,7 +632,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-8">
+                      <div className="text-center py-8 font-[Verdana,Arial,sans-serif]">
                         <div className="w-16 h-16 bg-white/20 mx-auto mb-3 flex items-center justify-center rounded-full">
                           <Search className="w-8 h-8 text-white/60" />
                         </div>
@@ -649,7 +653,7 @@ const Level1Card: React.FC<Level1CardProps> = ({
           {/* Proceed Button - Fixed Position */}
           <div className="absolute bottom-4 right-4 z-20">
             <button
-              onClick={onNext}
+              onClick={() => setShowCautionModal(true)}
               disabled={!canProceed}
               className={`flex items-center space-x-2 px-4 py-3 pixel-border font-black pixel-text transition-all shadow-lg ${
                 canProceed
@@ -660,6 +664,41 @@ const Level1Card: React.FC<Level1CardProps> = ({
               <span className="text-sm">PROCEED</span>
               <ChevronRight className="w-4 h-4" />
             </button>
+      {/* Caution Modal */}
+      {showCautionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 font-[Verdana,Arial,sans-serif]">
+          <div className="pixel-border-thick bg-yellow-100 w-full max-w-md text-center relative overflow-hidden animate-slideIn p-6 font-[Verdana,Arial,sans-serif]">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
+            <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
+            {/* Content */}
+            <div className="relative z-10">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <div className="bg-yellow-400 pixel-border flex items-center justify-center w-8 h-8 animate-bounce relative">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-yellow-300 opacity-60 animate-ping"></span>
+                  <AlertTriangle className="text-yellow-900 w-5 h-5 relative z-10" />
+                </div>
+                <h2 className="font-black text-yellow-900 pixel-text text-lg">CAUTION</h2>
+              </div>
+              <div className="mb-6">
+                <span className="font-bold text-yellow-900 pixel-text text-base">
+                  The selected answer cannot be reverted.
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCautionModal(false);
+                  onNext();
+                }}
+                className="pixel-border bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-yellow-900 font-black pixel-text transition-all duration-200 flex items-center space-x-2 mx-auto py-3 px-6 transform hover:scale-105 shadow-lg"
+              >
+                <span className="text-sm">CONFIRM &amp; PROCEED</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
           </div>
         </div>
       </div>
