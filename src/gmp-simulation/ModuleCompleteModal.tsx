@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Clock, ChevronRight, Target } from 'lucide-react';
+import { CheckCircle, Clock, ChevronRight, Target, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceLayout } from '../hooks/useOrientation';
 
@@ -16,14 +16,9 @@ export const ModuleCompleteModal: React.FC<ModuleCompleteModalProps> = ({
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+
       <div className={`pixel-border-thick bg-gray-800 w-full text-center relative overflow-hidden animate-slideIn my-auto ${isMobileHorizontal ? 'max-w-4xl p-4' : 'max-w-2xl p-6'
         }`}>
         {/* Background Pattern */}
@@ -83,6 +78,7 @@ export const ModuleCompleteModal: React.FC<ModuleCompleteModalProps> = ({
               </h3>
               <p className={`text-yellow-100 pixel-text ${isMobileHorizontal ? 'text-xs leading-tight' : 'text-xs'
                 }`}>
+
                 Focus on practical, innovative solutions that can make your idea stand out in the next round!
               </p>
             </div>
