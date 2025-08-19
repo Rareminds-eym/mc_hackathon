@@ -48,8 +48,8 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            mkdir -p /home/ubuntu/gmp-temp
-            tar -xzf /home/ubuntu/build.tar.gz -C /home/ubuntu/gmp-temp
-            sudo rm -rf /var/www/gmp/*
-            sudo mv /home/ubuntu/gmp-temp/* /var/www/gmp/
-            rm -rf /home/ubuntu/build.tar.gz /home/ubuntu/gmp-temp
+            mkdir -p /home/ubuntu/mc-temp
+            tar -xzf /home/ubuntu/build.tar.gz -C /home/ubuntu/mc-temp
+            sudo rm -rf /var/www/mc/*
+            sudo mv /home/ubuntu/mc-temp/* /var/www/mc/
+            rm -rf /home/ubuntu/build.tar.gz /home/ubuntu/mc-temp
