@@ -10,18 +10,18 @@ const Level4LoadingScreen: React.FC<Level4LoadingScreenProps> = ({ onComplete })
   const [progress, setProgress] = useState(0);
   const { isMobile, isHorizontal } = useDeviceLayout();
   
-  // GMP tips to display during loading
+  // Medical Coding tips to display during loading
   const gmpTips = [
-    "GMP ensures products are consistently produced according to quality standards",
-    "Document everything: If it's not written down, it didn't happen",
-    "Risk assessment is a critical part of GMP compliance",
-    "Cross-contamination prevention is essential in manufacturing facilities",
-    "Proper personnel training is fundamental to GMP compliance",
-    "Quality cannot be tested into a product, it must be built in",
-    "Always follow established SOPs to maintain consistency",
-    "Equipment validation ensures reliable manufacturing processes",
-    "Change control procedures protect product quality",
-    "Root cause analysis helps prevent recurrence of deviations"
+    "Accurate medical terminology is critical for proper diagnosis coding",
+    "Always verify ICD-10 codes match the documented clinical findings",
+    "Document everything: Proper documentation supports code selection",
+    "Prevent overcoding by matching service complexity to time and effort",
+    "Cross-reference CPT and ICD codes to ensure appropriate pairing",
+    "Modifier usage must align with specific billing and coding guidelines",
+    "Quality coding cannot be rushed - accuracy is paramount",
+    "Always follow current coding guidelines and payer requirements",
+    "Root cause analysis helps prevent recurring coding errors",
+    "Continuous education keeps coders updated on evolving standards"
   ];
   
   const [currentTip, setCurrentTip] = useState(0);
@@ -40,7 +40,7 @@ const Level4LoadingScreen: React.FC<Level4LoadingScreenProps> = ({ onComplete })
     }
   }, [progress, onComplete]);
 
-  // Cycle through GMP tips every 3 seconds
+  // Cycle through Medical Coding tips every 3 seconds
   useEffect(() => {
     const tipTimer = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % gmpTips.length);
@@ -62,9 +62,13 @@ const Level4LoadingScreen: React.FC<Level4LoadingScreenProps> = ({ onComplete })
     <div className={
       `fixed inset-0 w-full h-full min-h-screen min-w-full flex items-center justify-center pixel-perfect bg-gradient-to-b from-gray-900 via-blue-900 to-purple-900 overflow-hidden`
     } style={{ position: 'relative' }}>
-      {/* Animated manufacturing background */}
+      {/* Background image */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
-        <Animation_manufacture />
+        <img 
+          src="/backgrounds/background.webp" 
+          alt="Medical Coding Background" 
+          className="w-full h-full object-cover opacity-30"
+        />
       </div>
       {/* Cosmic overlay for extra depth, matching Level2 cosmic theme */}
       <div className="absolute inset-0 z-10 bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-transparent opacity-50 pixel-glow" />
@@ -126,7 +130,7 @@ const Level4LoadingScreen: React.FC<Level4LoadingScreenProps> = ({ onComplete })
         {/* GMP loading header */}
         <div className="text-center mb-2 w-full">
           <h2 className="text-white font-bold mb-1 w-full text-center " style={{fontSize: isMobile ? '1.15rem' : '1.6rem', letterSpacing: '0.01em'}}>
-            GMP Inspector Simulator
+            MC Inspector Simulator
           </h2>
           <h3 className="text-blue-200 w-full text-center " style={{fontSize: isMobile ? '1.05rem' : '1.18rem'}}>
             Level 4: Risk Assessment
@@ -145,9 +149,9 @@ const Level4LoadingScreen: React.FC<Level4LoadingScreenProps> = ({ onComplete })
         </div>
         {/* Loading status */}
         <div className="text-white mb-2 w-full text-center pixel-perfect" style={{fontSize: isMobile ? '0.9rem' : '1.05rem'}}>
-          Loading GMP scenarios... {Math.min(Math.floor(progress), 100)}%
+          Loading MC scenarios... {Math.min(Math.floor(progress), 100)}%
         </div>
-        {/* GMP tips */}
+        {/* Medical Coding tips */}
         <div className="mt-1 text-center px-1 w-full">
           <p className="text-blue-100 italic tip-text w-full text-center pixel-perfect" style={{fontSize: isMobile ? '0.85rem' : '1.05rem'}}>
             Tip: {gmpTips[currentTip]}

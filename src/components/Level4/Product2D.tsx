@@ -53,11 +53,11 @@ export const Product2D: React.FC<Product2DProps> = ({
         {/* Product Information */}
         <div className="text-center mt-1 w-full flex flex-col items-center animate-product-info">
         <div className="relative w-full flex items-center justify-center h-[48px] animate-fade-in-scale" style={{ animationDelay: '2.2s' }}>
-            <img
+            {/* <img
               src={imageSrc}
               alt={productName}
               className="w-[60%] h-auto object-cover rounded-lg"
-            />
+            /> */}
           </div>
           <h3 className="text-xs lg:text-lg font-semibold text-cyan-200 animate-slide-up" style={{ animationDelay: '2.6s' }}>{productName}</h3>
           <p className="text-[9px] lg:text-lg text-cyan-200 animate-slide-up whitespace-nowrap" style={{ animationDelay: '3.0s' }}>Batch: {batchNumber}</p>

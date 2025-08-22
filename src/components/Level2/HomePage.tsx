@@ -93,7 +93,7 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onExit }) => {
                 <span>EXIT</span>
               </button>
 
-              {/* GMP QUEST - Center */}
+              {/* MC QUEST - Center */}
               <div className="flex-1 flex justify-center">
                 <div className="pixel-border-thick bg-gradient-to-r from-purple-500 to-indigo-600 p-2 relative">
                   <div className="flex items-center space-x-2">
@@ -102,11 +102,10 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onExit }) => {
                     </div>
                     <div className="text-center">
                       <h1 className="text-sm font-black text-purple-100 pixel-text tracking-wider">
-                        {/* GMP QUEST */}
-                        CAPAthon 2.0
+                        MC QUEST
                       </h1>
                       <div className="text-purple-200 text-xs font-bold tracking-widest">
-                        CLASSIFICATION ADVENTURE - Hackathon
+                        CLASSIFICATION ADVENTURE
                       </div>
                     </div>
                     <div className="w-6 h-6 border-[2px] bg-indigo-300 pixel-border flex items-center justify-center">
@@ -245,7 +244,7 @@ const HomePage: React.FC<HomePageProps> = ({ moduleId = '1', onExit }) => {
                     </div>
                     <div className="text-left">
                       <h1 className="text-4xl font-black text-white pixel-text tracking-wider">
-                        GMP QUEST
+                        MC QUEST
                       </h1>
                       <div className="text-yellow-200 text-sm font-bold tracking-widest">
                         CLASSIFICATION ADVENTURE

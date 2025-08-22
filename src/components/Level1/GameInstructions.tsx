@@ -2,7 +2,7 @@ import React, { useState, useEffect} from 'react';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 
 // Use placeholder image for Trainer and use selected avatar for Intern
-const TRAINER_IMG = "/characters/Trainer2.png";
+const TRAINER_IMG = "/characters/trainer2.webp";
 // Get avatar from localStorage, fallback to Intern1
 const INTERN_IMG = typeof window !== "undefined"
   ? (localStorage.getItem("selectedAvatar") || "/characters/Intern1.png")
@@ -19,43 +19,43 @@ const conversation = [
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Welcome onboard! I’m your Trainer — here to help you master Good Manufacturing Practices.",
+    text: "Welcome to Medical Coding Bingo! I’m your Trainer — let’s decode healthcare together.",
     pointer: 'left',
   },
   {
     speaker: 'Intern',
     icon: INTERN_IMG,
-    text: "Hi Trainer! I’m ready to give my best. What’s today’s challenge?",
+    text: "Hi Trainer! I’m excited to sharpen my coding skills. What’s the goal today?",
     pointer: 'right',
   },
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Your mission: stay sharp, think fast, and keep every batch compliant.",
+    text: "Your task: spot the right codes, avoid mismatches, and fill up that bingo card!",
     pointer: 'left',
   },
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Remember, in GMP, every detail counts — one mistake can stop the whole line.",
+    text: "In coding, accuracy is everything — one wrong code can delay the whole claim.",
     pointer: 'left',
   },
   {
     speaker: 'Intern',
     icon: INTERN_IMG,
-    text: "No pressure! Let’s make zero mistakes and ace this.",
+    text: "Got it! I’ll code carefully and aim for a perfect game.",
     pointer: 'right',
   },
   {
     speaker: 'Trainer',
     icon: TRAINER_IMG,
-    text: "Good spirit! Ready to jump in?",
+    text: "That’s the spirit! Are you ready to begin?",
     pointer: 'left',
   },
   {
     speaker: 'Intern',
     icon: INTERN_IMG,
-    text: "I’m ready — let’s play!",
+    text: "Let’s do this — I’m ready to play!",
     isLetsPlay: true,
     pointer: 'right',
   },
@@ -242,7 +242,7 @@ const GameInstructions: React.FC<GameInstructionsProps & { tutorialStep?: number
           {current.icon && (
             <div
               className={`flex-shrink-0 rounded-full flex items-center justify-center ${
-                current.speaker === "Trainer" ? "bg-yellow-500" : ""
+                current.speaker === "Trainer" ? "bg-green-200" : ""
               } ${isMobileLandscape ? "w-14 h-14" : "w-16 h-16"}`}
             >
               <img

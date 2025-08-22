@@ -26,9 +26,9 @@ const GameHeader: React.FC<GameHeaderProps> = ({ currentCase, totalCases, score,
       <div className="flex flex-col items-center w-full ">
         {/* <h2 className="text-xl md:text-2xl font-black text-cyan-300 pixel-text mb-1 text-center w-full">Deviation Investigation Game</h2> */}
         <div className="flex flex-row items-center justify-center gap-3 mt-2 w-full">
-          <span className="pixel-border bg-blue-900 px-3 py-1.5 text-blue-300 font-bold text-xs md:text-base text-center shadow-md pixel-text">Case <span className="text-white font-black">{currentCase}</span> / {totalCases}</span>
-          <span className="pixel-border bg-orange-600 px-3 py-1.5 text-orange-100 font-bold text-xs md:text-base text-center shadow-md pixel-text">Score <span className="text-white font-black">{score}</span></span>
-          <span className="pixel-border bg-yellow-500 px-3 py-1.5 text-yellow-100 font-bold text-xs md:text-base text-center shadow-md pixel-text">Questions <span className="text-white font-black">{totalQuestions}</span></span>
+          <span className="pixel-border bg-gradient-to-br from-black via-gray-900 to-black px-3 py-1.5 text-cyan-300 font-bold text-xs md:text-base text-center shadow-md pixel-text border-2 border-teal-400/60">Case <span className="text-cyan-400 font-black">{currentCase}</span> / {totalCases}</span>
+          <span className="pixel-border bg-gradient-to-br from-black via-gray-900 to-black px-3 py-1.5 text-cyan-300 font-bold text-xs md:text-base text-center shadow-md pixel-text border-2 border-teal-400/60">Score <span className="text-cyan-400 font-black">{score}</span></span>
+          <span className="pixel-border bg-gradient-to-br from-black via-gray-900 to-black px-3 py-1.5 text-cyan-300 font-bold text-xs md:text-base text-center shadow-md pixel-text border-2 border-teal-400/60">Questions <span className="text-cyan-400 font-black">{totalQuestions}</span></span>
         </div>
       </div>
     </header>

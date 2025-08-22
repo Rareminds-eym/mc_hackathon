@@ -2,304 +2,386 @@ import { GameMode } from '../../../types/Level2/types';
 
 export const gameModes: GameMode[] = [
   {
-    id: 'gmp-vs-non-gmp',
-    title: '📂 GMP vs Non-GMP Sort',
-    description: 'Sort items into GMP Requirements vs Non-GMP Related',
+    id: 'prefix-vs-suffix',
+    title: '� Prefix vs Suffix Sort',
+    description: 'Sort medical terms into Prefix vs Suffix categories',
     moduleId: 1,
     type: 1,
     categories: [
       {
-        id: 'gmp-requirement',
-        name: 'GMP Requirement',
-        description: 'Essential for Good Manufacturing Practice',
-        color: 'bg-green-100 border-green-300'
-      },
-      {
-        id: 'not-gmp-related',
-        name: 'Not GMP Related',
-        description: 'Not directly related to manufacturing quality',
-        color: 'bg-gray-100 border-gray-300'
-      }
-    ],
-    terms: [
-      { id: 'sanitation-log', text: 'Sanitation Log', correctCategory: 'gmp-requirement' },
-      { id: 'marketing-brochure', text: 'Product Marketing Brochure', correctCategory: 'not-gmp-related' },
-      { id: 'equipment-maintenance', text: 'Equipment Maintenance Checklist', correctCategory: 'gmp-requirement' },
-      { id: 'social-media', text: 'Social Media Post', correctCategory: 'not-gmp-related' },
-      { id: 'batch-processing', text: 'Batch Processing Record', correctCategory: 'gmp-requirement' },
-      { id: 'training-attendance', text: 'Training Attendance Sheet', correctCategory: 'gmp-requirement' },
-      { id: 'sales-pitch', text: 'Sales Pitch Document', correctCategory: 'not-gmp-related' },
-      { id: 'deviation-report', text: 'Deviation Report Form', correctCategory: 'gmp-requirement' }
-    ]
-  },
-  {
-    id: 'documentation-vs-production',
-    title: '📋 Documentation vs Production Sort',
-    description: 'Sort items into Documentation vs Production categories',
-    moduleId: 2,
-    type: 1,
-    categories: [
-      {
-        id: 'documentation',
-        name: 'Documentation',
-        description: 'Records, logs, and documentation materials',
-        color: 'bg-green-100 border-green-300'
-      },
-      {
-        id: 'production',
-        name: 'Production',
-        description: 'Manufacturing processes and activities',
-        color: 'bg-gray-100 border-gray-300'
-      }
-    ],
-    terms: [
-      { id: 'batch-manufacturing-record', text: 'Batch Manufacturing Record', correctCategory: 'documentation' },
-      { id: 'cleaning-sanitation', text: 'Cleaning and Sanitation', correctCategory: 'production' },
-      { id: 'equipment-usage-log', text: 'Equipment Usage Log', correctCategory: 'documentation' },
-      { id: 'granulation-process', text: 'Granulation Process', correctCategory: 'production' }
-    ]
-  },
-  {
-    id: 'qa-vs-qc',
-    title: '🔍 QA vs QC Sort',
-    description: 'Sort items into Quality Assurance vs Quality Control categories',
-    moduleId: 2,
-    type: 2,
-    categories: [
-      {
-        id: 'qa',
-        name: 'QA (Quality Assurance)',
-        description: 'Prevention-focused activities and systems',
+        id: 'prefix',
+        name: 'Prefix',
+        description: 'Word parts that come before the root word',
         color: 'bg-blue-100 border-blue-300'
       },
       {
-        id: 'qc',
-        name: 'QC (Quality Control)',
-        description: 'Detection-focused testing and inspection',
+        id: 'suffix',
+        name: 'Suffix',
+        description: 'Word parts that come after the root word',
+        color: 'bg-green-100 border-green-300'
+      }
+    ],
+    terms: [
+      { id: 'nephro', text: 'Nephro', correctCategory: 'prefix' },
+      { id: 'megaly', text: 'Megaly', correctCategory: 'suffix' },
+      { id: 'cardio', text: 'Cardio', correctCategory: 'prefix' },
+      { id: 'logy', text: 'Logy', correctCategory: 'suffix' },
+      { id: 'ectomy', text: 'Ectomy', correctCategory: 'suffix' }
+    ]
+  },
+  {
+    id: 'digestive-vs-nondigestive',
+    title: '🫁 Digestive vs Non-Digestive Sort',
+    description: 'Sort medical terms into Digestive vs Non-Digestive categories',
+    moduleId: 1,
+    type: 2,
+    categories: [
+      {
+        id: 'digestive',
+        name: 'Digestive',
+        description: 'Terms related to digestive system',
+        color: 'bg-orange-100 border-orange-300'
+      },
+      {
+        id: 'nondigestive',
+        name: 'NonDigestive',
+        description: 'Terms not related to digestive system',
         color: 'bg-purple-100 border-purple-300'
       }
     ],
     terms: [
-      { id: 'final-product-review', text: 'Final product review', correctCategory: 'qa' },
-      { id: 'microbial-testing', text: 'Microbial testing', correctCategory: 'qc' },
-      { id: 'deviation-approval', text: 'Deviation approval', correctCategory: 'qa' },
-      { id: 'assay-test', text: 'Assay test', correctCategory: 'qc' }
+      { id: 'gastro', text: 'Gastro', correctCategory: 'digestive' },
+      { id: 'hepato', text: 'Hepato', correctCategory: 'digestive' },
+      { id: 'neuro', text: 'Neuro', correctCategory: 'nondigestive' },
+      { id: 'rhino', text: 'Rhino', correctCategory: 'nondigestive' },
+      { id: 'arthro', text: 'Arthro', correctCategory: 'nondigestive' }
     ]
   },
   {
-    id: 'hygiene-vs-record-keeping',
-    title: '🧼 Hygiene Practice vs Record Keeping Sort',
-    description: 'Sort items into Hygiene Practice vs Record Keeping categories',
-    moduleId: 2,
+    id: 'blood-related-vs-nonblood',
+    title: '🩸 Blood Related vs Non-Blood Related Sort',
+    description: 'Sort medical terms into Blood Related vs Non-Blood Related categories',
+    moduleId: 1,
     type: 3,
     categories: [
       {
-        id: 'hygiene-practice',
-        name: 'Hygiene Practice',
-        description: 'Physical cleanliness and safety procedures',
-        color: 'bg-teal-100 border-teal-300'
-      },
-      {
-        id: 'record-keeping',
-        name: 'Record Keeping',
-        description: 'Documentation and logging activities',
-        color: 'bg-orange-100 border-orange-300'
-      }
-    ],
-    terms: [
-      { id: 'gowning-procedure', text: 'Gowning Procedure', correctCategory: 'hygiene-practice' },
-      { id: 'entry-logbook', text: 'Entry Logbook', correctCategory: 'record-keeping' },
-      { id: 'glove-disposal-sop', text: 'Glove Disposal SOP', correctCategory: 'hygiene-practice' },
-      { id: 'equipment-usage-sheet', text: 'Equipment Usage Sheet', correctCategory: 'record-keeping' }
-    ]
-  },
-  {
-    id: 'gdocp-vs-data-integrity',
-    title: '📋 GDocP Principles vs Data Integrity Controls',
-    description: 'Sort items into GDocP Principles vs Data Integrity Controls',
-    moduleId: 3,
-    type: 1,
-    categories: [
-      {
-        id: 'gdocp-principle',
-        name: 'GDocP Principle',
-        description: 'Good Documentation Practice principles',
-        color: 'bg-green-100 border-green-300'
-      },
-      {
-        id: 'data-integrity-control',
-        name: 'Data Integrity Control',
-        description: 'Controls for maintaining data integrity',
-        color: 'bg-blue-100 border-blue-300'
-      }
-    ],
-    terms: [
-      { id: 'legible-entries', text: 'Legible Entries', correctCategory: 'gdocp-principle' },
-      { id: 'audit-trail', text: 'Audit Trail', correctCategory: 'data-integrity-control' },
-      { id: 'timely-documentation', text: 'Timely Documentation', correctCategory: 'gdocp-principle' },
-      { id: 'user-role-access', text: 'User Role Access', correctCategory: 'data-integrity-control' }
-    ]
-  },
-  {
-    id: 'correct-vs-incorrect-practice',
-    title: '✅ Correct Practice vs Incorrect Practice',
-    description: 'Sort items into Correct Practice vs Incorrect Practice',
-    moduleId: 3,
-    type: 2,
-    categories: [
-      {
-        id: 'correct-practice',
-        name: 'Correct Practice',
-        description: 'Proper documentation practices',
-        color: 'bg-green-100 border-green-300'
-      },
-      {
-        id: 'incorrect-practice',
-        name: 'Incorrect Practice',
-        description: 'Improper documentation practices',
+        id: 'bloodrelated',
+        name: 'BloodRelated',
+        description: 'Terms related to blood conditions',
         color: 'bg-red-100 border-red-300'
-      }
-    ],
-    terms: [
-      { id: 'backdating-records', text: 'Backdating records', correctCategory: 'incorrect-practice' },
-      { id: 'recording-realtime-data', text: 'Recording real-time data', correctCategory: 'correct-practice' },
-      { id: 'deleting-original-entry', text: 'Deleting original entry', correctCategory: 'incorrect-practice' },
-      { id: 'using-permanent-ink', text: 'Using permanent ink', correctCategory: 'correct-practice' }
-    ]
-  },
-  {
-    id: 'electronic-vs-paper-record-control',
-    title: '💻 Electronic Record Control vs Paper-Based Record Control',
-    description: 'Sort items into Electronic Record Control vs Paper-Based Record Control',
-    moduleId: 3,
-    type: 3,
-    categories: [
-      {
-        id: 'electronic-record-control',
-        name: 'Electronic Record Control',
-        description: 'Controls specific to electronic records',
-        color: 'bg-purple-100 border-purple-300'
       },
       {
-        id: 'paper-based-record-control',
-        name: 'Paper-Based Record Control',
-        description: 'Controls specific to paper-based records',
-        color: 'bg-orange-100 border-orange-300'
+        id: 'nonbloodrelated',
+        name: 'NonBloodRelated',
+        description: 'Terms not related to blood conditions',
+        color: 'bg-gray-100 border-gray-300'
       }
     ],
     terms: [
-      { id: 'audit-trail-electronic', text: 'Audit Trail', correctCategory: 'electronic-record-control' },
-      { id: 'initial-date-on-change', text: 'Initial & Date on Change', correctCategory: 'paper-based-record-control' },
-      { id: 'password-protection', text: 'Password Protection', correctCategory: 'electronic-record-control' },
-      { id: 'crossed-out-error-comment', text: 'Crossed-out error with comment', correctCategory: 'paper-based-record-control' }
+      { id: 'emia', text: 'Emia', correctCategory: 'bloodrelated' },
+      { id: 'Hemo', text: 'Hemo', correctCategory: 'bloodrelated' },
+      { id: 'oma', text: 'Oma', correctCategory: 'nonbloodrelated' },
+      { id: 'algia', text: 'Algia', correctCategory: 'nonbloodrelated' },
+      { id: 'rrhea', text: 'Rrhea', correctCategory: 'nonbloodrelated' }
     ]
   },
   {
-    id: 'alcoa-vs-documentation-errors',
-    title: '📊 ALCOA+ Principles vs Documentation Errors',
-    description: 'Sort items into ALCOA+ Principles vs Documentation Errors',
-    moduleId: 3,
+    id: 'upper-body-vs-outer-body',
+    title: '🫀 Upper Body vs Outer Body Sort',
+    description: 'Sort medical terms into Upper Body vs Outer Body categories',
+    moduleId: 1,
     type: 4,
     categories: [
       {
-        id: 'alcoa-principle',
-        name: 'ALCOA+ Principle',
-        description: 'ALCOA+ data integrity principles',
+        id: 'upperbody',
+        name: 'UpperBody',
+        description: 'Terms related to upper body parts',
         color: 'bg-teal-100 border-teal-300'
       },
       {
-        id: 'documentation-error',
-        name: 'Documentation Error',
-        description: 'Common documentation mistakes',
-        color: 'bg-red-100 border-red-300'
+        id: 'outerbody',
+        name: 'OuterBody',
+        description: 'Terms related to outer body parts',
+        color: 'bg-yellow-100 border-yellow-300'
       }
     ],
-    terms: [
-      { id: 'complete', text: 'Complete', correctCategory: 'alcoa-principle' },
-      { id: 'omitted-entry', text: 'Omitted entry', correctCategory: 'documentation-error' },
-      { id: 'consistent', text: 'Consistent', correctCategory: 'alcoa-principle' },
-      { id: 'backdated-entry', text: 'Backdated entry', correctCategory: 'documentation-error' }
-    ]
+   "terms": [
+    { "id": "cervico", "text": "Cervico", "correctCategory": "upperbody" },
+    { "id": "oculo", "text": "Oculo", "correctCategory": "upperbody" },
+    { "id": "oto", "text": "Oto", "correctCategory": "upperbody" },
+    { "id": "arthro-outer", "text": "Arthro", "correctCategory": "outerbody" },
+    { "id": "dermato-outer", "text": "Dermato", "correctCategory": "outerbody" }
+  ]
   },
   {
-    id: 'internal-vs-external-audit',
-    title: '🔍 Internal Audit vs External Audit Sort',
-    description: 'Sort items into Internal Audit vs External Audit categories',
-    moduleId: 4,
+    id: 'cpt-vs-hcpcs',
+    title: '🏥 CPT vs HCPCS Sort',
+    description: 'Sort medical codes into CPT vs HCPCS categories',
+    moduleId: 2,
     type: 1,
     categories: [
       {
-        id: 'internal-audit',
-        name: 'Internal Audit',
-        description: 'Self-conducted audits and inspections',
+        id: 'cpt',
+        name: 'CPT',
+        description: 'Current Procedural Terminology codes',
         color: 'bg-blue-100 border-blue-300'
       },
       {
-        id: 'external-audit',
-        name: 'External Audit',
-        description: 'Third-party or regulatory audits',
-        color: 'bg-purple-100 border-purple-300'
+        id: 'hcpcs',
+        name: 'HCPCS',
+        description: 'Healthcare Common Procedure Coding System codes',
+        color: 'bg-green-100 border-green-300'
       }
     ],
     terms: [
-      { id: 'self-inspection', text: 'Self-Inspection', correctCategory: 'internal-audit' },
-      { id: 'regulatory-inspection', text: 'Regulatory Inspection', correctCategory: 'external-audit' },
-      { id: 'mock-audit', text: 'Mock Audit', correctCategory: 'internal-audit' },
-      { id: 'fda-audit', text: 'FDA Audit', correctCategory: 'external-audit' }
+      { id: '99213', text: '99213', correctCategory: 'cpt' },
+      { id: 'A0429', text: 'A0429', correctCategory: 'hcpcs' },
+      { id: 'G0008', text: 'G0008', correctCategory: 'hcpcs' },
+      { id: '93000', text: '93000', correctCategory: 'cpt' }
     ]
   },
   {
-    id: 'audit-preparation-vs-followup',
-    title: '📋 Audit Preparation vs Audit Follow-up Sort',
-    description: 'Sort items into Audit Preparation vs Audit Follow-up categories',
-    moduleId: 4,
+    id: 'cpt-vs-modifier',
+    title: '📋 CPT vs Modifier Sort',
+    description: 'Sort items into CPT vs Modifier categories',
+    moduleId: 2,
     type: 2,
     categories: [
       {
-        id: 'audit-preparation',
-        name: 'Audit Preparation',
-        description: 'Activities done before an audit',
-        color: 'bg-green-100 border-green-300'
+        id: 'cpt',
+        name: 'CPT',
+        description: 'Current Procedural Terminology codes',
+        color: 'bg-purple-100 border-purple-300'
       },
       {
-        id: 'audit-followup',
-        name: 'Audit Follow-up',
-        description: 'Activities done after an audit',
+        id: 'modifier',
+        name: 'Modifier',
+        description: 'Code modifiers that provide additional information',
         color: 'bg-orange-100 border-orange-300'
       }
     ],
     terms: [
-      { id: 'sop-review', text: 'SOP Review', correctCategory: 'audit-preparation' },
-      { id: 'capa-implementation', text: 'CAPA Implementation', correctCategory: 'audit-followup' },
-      { id: 'document-compilation', text: 'Document Compilation', correctCategory: 'audit-preparation' },
-      { id: 'root-cause-analysis', text: 'Root Cause Analysis', correctCategory: 'audit-followup' }
+      { id: '99215', text: '99215', correctCategory: 'cpt' },
+      { id: 'modifier-59', text: 'Modifier 59', correctCategory: 'modifier' },
+      { id: 'Q2038', text: 'Q2038', correctCategory: 'modifier' },
+      { id: '99406', text: '99406', correctCategory: 'cpt' }
     ]
   },
   {
-    id: 'documentation-vs-observation',
-    title: '📄 Documentation vs Observation Sort',
-    description: 'Sort items into Documentation vs Observation categories',
-    moduleId: 4,
+    id: 'code-vs-modifier',
+    title: '🔢 Code vs Modifier Sort',
+    description: 'Sort items into Code vs Modifier categories',
+    moduleId: 2,
     type: 3,
     categories: [
       {
-        id: 'documentation',
-        name: 'Documentation',
-        description: 'Written records and reports',
+        id: 'code',
+        name: 'Code',
+        description: 'Medical procedure or service codes',
         color: 'bg-teal-100 border-teal-300'
       },
       {
-        id: 'observation',
-        name: 'Observation',
-        description: 'Findings and deviations noted during audit',
+        id: 'modifier',
+        name: 'Modifier',
+        description: 'Code modifiers that provide additional information',
         color: 'bg-red-100 border-red-300'
       }
     ],
     terms: [
-      { id: 'audit-report', text: 'Audit Report', correctCategory: 'documentation' },
-      { id: 'major-deviation', text: 'Major Deviation', correctCategory: 'observation' },
-      { id: 'audit-observation-form', text: 'Audit Observation Form', correctCategory: 'documentation' },
-      { id: 'cleaning-log-not-updated', text: 'Cleaning log not updated', correctCategory: 'observation' }
+      { id: '96372', text: '96372', correctCategory: 'code' },
+      { id: 'A4556', text: 'A4556', correctCategory: 'code' },
+      { id: 'modifier-25', text: '-25', correctCategory: 'modifier' },
+      { id: 'modifier-tc', text: '-TC', correctCategory: 'modifier' }
+    ]
+  },
+  {
+    id: 'category-i-vs-other',
+    title: '📊 Category I vs Other Categories Sort',
+    description: 'Sort codes into Category I vs Other Categories',
+    moduleId: 2,
+    type: 4,
+    categories: [
+      {
+        id: 'category-i',
+        name: 'Category I',
+        description: 'Standard CPT Category I codes',
+        color: 'bg-yellow-100 border-yellow-300'
+      },
+      {
+        id: 'other-categories',
+        name: 'Other Categories',
+        description: 'Category II, III, and other code types',
+        color: 'bg-gray-100 border-gray-300'
+      }
+    ],
+    terms: [
+      { id: '99406-cat', text: '99406', correctCategory: 'category-i' },
+      { id: '0001F', text: '0001F', correctCategory: 'other-categories' },
+      { id: '0075T', text: '0075T', correctCategory: 'other-categories' }
+    ]
+  },
+  {
+    id: 'sequencing-vs-exclusion',
+    title: '📋 Sequencing Instruction vs Exclusion Guideline',
+    description: 'Group items by their purpose in medical coding',
+    moduleId: 3,
+    type: 1,
+    categories: [
+      {
+        id: 'sequencing-instruction',
+        name: 'Sequencing Instruction',
+        description: 'Instructions for code sequencing and ordering',
+        color: 'bg-blue-100 border-blue-300'
+      },
+      {
+        id: 'exclusion-guideline',
+        name: 'Exclusion Guideline',
+        description: 'Guidelines for code exclusions',
+        color: 'bg-red-100 border-red-300'
+      }
+    ],
+    terms: [
+      { id: 'code-first', text: 'Code First', correctCategory: 'sequencing-instruction' },
+      { id: 'use-additional-code', text: 'Use Additional Code', correctCategory: 'sequencing-instruction' },
+      { id: 'excludes1', text: 'Excludes1', correctCategory: 'exclusion-guideline' },
+      { id: 'excludes2', text: 'Excludes2', correctCategory: 'exclusion-guideline' }
+    ]
+  },
+  {
+    id: 'synonyms-vs-structure',
+    title: '� Synonyms/Alternate Terms vs Structure Indicator',
+    description: 'Classify symbols by their category in medical coding',
+    moduleId: 3,
+    type: 2,
+    categories: [
+      {
+        id: 'synonyms-alternate-terms',
+        name: 'Synonyms / Alternate Terms',
+        description: 'Symbols indicating synonyms or alternate terms',
+        color: 'bg-green-100 border-green-300'
+      },
+      {
+        id: 'structure-indicator',
+        name: 'Structure Indicator',
+        description: 'Symbols indicating structure or formatting',
+        color: 'bg-purple-100 border-purple-300'
+      }
+    ],
+    terms: [
+      { id: 'square-brackets', text: '[ ]', correctCategory: 'synonyms-alternate-terms' },
+      { id: 'parentheses', text: '( )', correctCategory: 'synonyms-alternate-terms' },
+      { id: 'colon', text: ':', correctCategory: 'structure-indicator' },
+      { id: 'period', text: '.', correctCategory: 'structure-indicator' }
+    ]
+  },
+  {
+    id: 'format-vs-section',
+    title: '� Format Rule vs Section',
+    description: 'Sort items into Format or Usage categories',
+    moduleId: 3,
+    type: 3,
+    categories: [
+      {
+        id: 'format-rule',
+        name: 'Format Rule',
+        description: 'Rules for formatting and structure',
+        color: 'bg-orange-100 border-orange-300'
+      },
+      {
+        id: 'section',
+        name: 'Section',
+        description: 'Sections or parts of coding system',
+        color: 'bg-teal-100 border-teal-300'
+      }
+    ],
+    terms: [
+      { id: 'placeholder-x', text: 'Placeholder X', correctCategory: 'format-rule' },
+      { id: 'laterality', text: 'Laterality', correctCategory: 'format-rule' },
+      { id: 'tabular-list', text: 'Tabular List', correctCategory: 'section' },
+      { id: 'alphabetic-index', text: 'Alphabetic Index', correctCategory: 'section' }
+    ]
+  },
+  {
+    id: 'surgical-vs-nonsurgical',
+    title: '🏥 Surgical vs Non-surgical Sort',
+    description: 'Sort medical specialties into Surgical vs Non-surgical categories',
+    moduleId: 4,
+    type: 1,
+    categories: [
+      {
+        id: 'surgical',
+        name: 'Surgical',
+        description: 'Surgical procedures and specialties',
+        color: 'bg-red-100 border-red-300'
+      },
+      {
+        id: 'non-surgical',
+        name: 'Non-surgical',
+        description: 'Non-surgical specialties and services',
+        color: 'bg-blue-100 border-blue-300'
+      }
+    ],
+    terms: [
+      { id: 'surgery', text: 'Surgery', correctCategory: 'surgical' },
+      { id: 'radiology', text: 'Radiology', correctCategory: 'non-surgical' },
+      { id: 'pathology-laboratory', text: 'Pathology & Laboratory', correctCategory: 'non-surgical' },
+      { id: 'evaluation-management', text: 'Evaluation & Management', correctCategory: 'non-surgical' },
+      { id: 'medicine', text: 'Medicine', correctCategory: 'non-surgical' }
+    ]
+  },
+  {
+    id: 'em-related-vs-procedural',
+    title: '📋 E/M Related vs Procedural Modifiers',
+    description: 'Sort modifiers into E/M Related vs Procedural categories',
+    moduleId: 4,
+    type: 2,
+    categories: [
+      {
+        id: 'em-related',
+        name: 'E/M Related',
+        description: 'Modifiers related to Evaluation & Management',
+        color: 'bg-green-100 border-green-300'
+      },
+      {
+        id: 'procedural',
+        name: 'Procedural',
+        description: 'Modifiers related to procedures',
+        color: 'bg-purple-100 border-purple-300'
+      }
+    ],
+    terms: [
+      { id: 'modifier-25', text: '25', correctCategory: 'em-related' },
+      { id: 'modifier-26', text: '26', correctCategory: 'em-related' },
+      { id: 'modifier-tc', text: 'TC', correctCategory: 'em-related' },
+      { id: 'modifier-59', text: '59', correctCategory: 'procedural' },
+      { id: 'modifier-51', text: '51', correctCategory: 'procedural' }
+    ]
+  },
+  {
+    id: 'drugs-vs-services-devices',
+    title: '� Drugs vs Services/Devices',
+    description: 'Sort HCPCS code prefixes into Drugs vs Services/Devices categories',
+    moduleId: 4,
+    type: 3,
+    categories: [
+      {
+        id: 'drugs',
+        name: 'Drugs',
+        description: 'Drug-related HCPCS codes',
+        color: 'bg-orange-100 border-orange-300'
+      },
+      {
+        id: 'services-devices',
+        name: 'Services/Devices',
+        description: 'Services and devices HCPCS codes',
+        color: 'bg-teal-100 border-teal-300'
+      }
+    ],
+    terms: [
+      { id: 'prefix-j', text: 'J', correctCategory: 'drugs' },
+      { id: 'prefix-g', text: 'G', correctCategory: 'services-devices' },
+      { id: 'prefix-k', text: 'K', correctCategory: 'services-devices' },
+      { id: 'prefix-l', text: 'L', correctCategory: 'services-devices' }
     ]
   }
 ];
@@ -344,31 +426,31 @@ export interface ModuleFlowConfig {
 export const moduleFlowConfigs: ModuleFlowConfig[] = [
   {
     moduleId: 1,
-    typeSequence: [1],
-    requiresContinueButton: false,
-    showResultsAfterEachType: false,
-    description: 'Module 1: Only type 1 activities, direct to ResultsModal after completion'
-  },
-  {
-    moduleId: 2,
-    typeSequence: [1, 2, 3],
-    requiresContinueButton: true,
-    showResultsAfterEachType: false,
-    description: 'Module 2: Sequential types 1→2→3 with Continue buttons between each'
-  },
-  {
-    moduleId: 3,
     typeSequence: [1, 2, 3, 4],
     requiresContinueButton: true,
     showResultsAfterEachType: false,
-    description: 'Module 3: Sequential types 1→2→3→4 with Continue buttons between each'
+    description: 'Module 1: Medical terminology sorting - Sequential types 1→2→3→4 with Continue buttons between each'
+  },
+  {
+    moduleId: 2,
+    typeSequence: [1, 2, 3, 4],
+    requiresContinueButton: true,
+    showResultsAfterEachType: false,
+    description: 'Module 2: Medical coding sorting - Sequential types 1→2→3→4 with Continue buttons between each'
+  },
+  {
+    moduleId: 3,
+    typeSequence: [1, 2, 3],
+    requiresContinueButton: true,
+    showResultsAfterEachType: false,
+    description: 'Module 3: Medical coding guidelines - Sequential types 1→2→3 with Continue buttons between each'
   },
   {
     moduleId: 4,
     typeSequence: [1, 2, 3],
     requiresContinueButton: true,
     showResultsAfterEachType: false,
-    description: 'Module 4: Sequential types 1→2→3 with Continue buttons between each'
+    description: 'Module 4: Medical coding specialties and modifiers - Sequential types 1→2→3 with Continue buttons between each'
   }
 ];
 

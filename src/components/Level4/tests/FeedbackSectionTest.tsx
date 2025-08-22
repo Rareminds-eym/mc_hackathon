@@ -103,7 +103,7 @@ const FeedbackSectionTest: React.FC = () => {
                 Result: Violation section will {module4Case.questions.violation ? 'SHOW ❌' : 'HIDE ✅'}
               </div>
               <div className="font-mono bg-gray-100 p-2 rounded">
-                {`  <div>🔍 GMP Violation section</div>`}
+                {`  <div>🔍 MC Violation section</div>`}
               </div>
               <div className="font-mono bg-gray-100 p-2 rounded">
                 {`)}`}
@@ -125,7 +125,7 @@ const FeedbackSectionTest: React.FC = () => {
                 Result: Violation section will {module1Case.questions.violation ? 'SHOW ✅' : 'HIDE ❌'}
               </div>
               <div className="font-mono bg-gray-100 p-2 rounded">
-                {`  <div>🔍 GMP Violation section</div>`}
+                {`  <div>🔍 MC Violation section</div>`}
               </div>
               <div className="font-mono bg-gray-100 p-2 rounded">
                 {`)}`}
@@ -146,7 +146,7 @@ const FeedbackSectionTest: React.FC = () => {
             <div className="space-y-2 text-sm">
               <div className="flex items-center space-x-2">
                 <span className="text-red-500">❌</span>
-                <span className="line-through text-gray-400">🔍 GMP Violation</span>
+                <span className="line-through text-gray-400">🔍 MC Violation</span>
                 <span className="text-red-600 text-xs">(Hidden)</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -166,7 +166,7 @@ const FeedbackSectionTest: React.FC = () => {
             <div className="space-y-2 text-sm">
               <div className="flex items-center space-x-2">
                 <span className="text-green-500">✅</span>
-                <span>🔍 GMP Violation</span>
+                <span>🔍 MC Violation</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-green-500">✅</span>
@@ -189,7 +189,7 @@ const FeedbackSectionTest: React.FC = () => {
           <div>✅ Conditional rendering logic implemented: <code>{`{currentCase.questions.violation && (...)}`}</code></div>
           <div>✅ Module 4 feedback will only show Root Cause and Impact sections</div>
           <div>✅ Module 1-3 feedback will continue to show all three sections</div>
-          <div>✅ No "GMP Violation" section will appear in Module 4</div>
+          <div>✅ No "MC Violation" section will appear in Module 4</div>
           <div>✅ No "Not answered" text for non-existent violation questions</div>
         </div>
       </div>
@@ -200,7 +200,7 @@ const FeedbackSectionTest: React.FC = () => {
         <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
           <li>Play Module 4 and complete a case</li>
           <li>Check the feedback screen - should only show 2 sections (Root Cause + Impact)</li>
-          <li>Verify no "🔍 GMP Violation" section appears</li>
+          <li>Verify no "🔍 MC Violation" section appears</li>
           <li>Verify no "Not answered" text for violation questions</li>
           <li>Compare with Module 1-3 which should show all 3 sections</li>
         </ol>

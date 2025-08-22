@@ -105,13 +105,13 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
           </div>
 
           {/* Score Display */}
-          <div className="mb-3 pixel-border bg-gradient-to-r from-yellow-600 to-orange-600 p-2 flex-shrink-0">
+          {/* <div className="mb-3 pixel-border bg-gradient-to-r from-yellow-600 to-orange-600 p-2 flex-shrink-0">
             <div className="text-center">
               <div className="text-yellow-100 text-xs font-bold mb-1">CURRENT SCORE</div>
               <div className="text-white text-lg font-black pixel-text">{currentScore.toString().padStart(2, '0')}/40</div>
               <div className="text-yellow-200 text-xs font-bold">+5 per correct item</div>
             </div>
-          </div>
+          </div> */}
 
           {/* Items Pool - Flexible Height */}
           <div className="flex-1 overflow-y-auto mb-3">

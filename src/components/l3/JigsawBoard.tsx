@@ -27,7 +27,6 @@ import { ScenarioDialog } from "./ScenarioDialog";
 import { VictoryPopup } from "../ui/Popup";
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { supabase } from '../../lib/supabase';
-import { LevelProgressService } from '../../services/levelProgressService';
 // Save progress to Supabase, including piece placements
 // Uses upsert to store one row per scenario (user_id + module_id + scenario_index combination)
 async function saveProgressToSupabase({
@@ -129,9 +128,6 @@ import { useLevel3Persistence } from "../../store/hooks/index";
 
 // Level 3 Database Service
 import useLevel3Service from "./hooks/useLevel3Service";
-
-// Level Progress Service for level completion
-// (Already imported above at line 30)
 
 // Debug Component (temporarily disabled)
 // import { Level3Debug } from "../Debug/Level3Debug";
@@ -350,6 +346,7 @@ export const JigsawBoard: React.FC = () => {
   const [hasCheckedProgress, setHasCheckedProgress] = useState(false);
   const [isReplayMode, setIsReplayMode] = useState(false);
   const [userClosedScenario, setUserClosedScenario] = useState(false);
+  const [hasStartedGameplay, setHasStartedGameplay] = useState(false);
 
   // Enhanced scoring state
   const [incorrectAttempts, setIncorrectAttempts] = useState(0);
@@ -510,10 +507,19 @@ export const JigsawBoard: React.FC = () => {
           moduleId = (currentModule as number).toString();
         }
 
-        // Only update if there's meaningful progress (timer > 10 seconds)
-        // AND we have scenario results (indicating this is not a fresh restart)
-        // AND we're not currently resetting for replay
-        if (currentTimer > 10 && currentScenarioResults.length > 0 && !isResettingForReplayRef.current) {
+        // Only update if there's meaningful progress:
+        // 1. Timer > 10 seconds (user has been playing for a while)
+        // 2. We have scenario results (indicating completed scenarios exist) OR user has started gameplay
+        // 3. User has placed at least one piece (indicating actual gameplay)
+        // 4. We're not currently resetting for replay
+        const hasPlacedPieces = currentPlacedPiecesRef.current &&
+          (currentPlacedPiecesRef.current.violations.length > 0 ||
+           currentPlacedPiecesRef.current.actions.length > 0);
+
+        if (currentTimer > 10 &&
+            (currentScenarioResults.length > 0 || hasStartedGameplay) &&
+            hasPlacedPieces &&
+            !isResettingForReplayRef.current) {
           console.log('🕐 Updating timer in database:', {
             timer: currentTimer,
             moduleId,
@@ -541,7 +547,12 @@ export const JigsawBoard: React.FC = () => {
           console.log('🕐 Skipping timer update - insufficient progress or resetting:', {
             timer: currentTimer,
             scenarioResultsCount: currentScenarioResults.length,
-            isResetting: isResettingForReplayRef.current
+            hasPlacedPieces: hasPlacedPieces,
+            hasStartedGameplay: hasStartedGameplay,
+            isResetting: isResettingForReplayRef.current,
+            reason: currentTimer <= 10 ? 'timer too low' :
+                   (currentScenarioResults.length === 0 && !hasStartedGameplay) ? 'no progress yet' :
+                   !hasPlacedPieces ? 'no pieces placed' : 'resetting'
           });
         }
       } catch (err) {
@@ -553,7 +564,7 @@ export const JigsawBoard: React.FC = () => {
       console.log('🕐 Clearing periodic timer update interval');
       clearInterval(updateTimerInterval);
     };
-  }, [user?.id, currentModule, showFinalStats]); // Minimal dependencies
+  }, [user?.id, currentModule, showFinalStats, hasStartedGameplay]); // Include hasStartedGameplay
 
   // Debug logging for scenarios (disabled to prevent performance issues)
   // console.log('🎮 JigsawBoard: Scenarios state:', {
@@ -730,37 +741,23 @@ export const JigsawBoard: React.FC = () => {
           setScenarioIndex(currentScenarioIndex);
           setScenarioResults(allScenarioResults);
 
+          // If we have any progress (completed scenarios or placed pieces), mark as started
+          const hasAnyProgress = allScenarioResults.length > 0 || hasIncompleteScenario;
+          setHasStartedGameplay(hasAnyProgress);
+
           // Check if all scenarios are completed and show FinalStatsPopup
-          // Only check completion if scenarios are loaded
-          if (scenarios && scenarios.length > 0) {
-            const totalScenariosInModule = scenarios.length;
-            const allScenariosCompleted = allScenarioResults.length === totalScenariosInModule &&
-                                         totalScenariosInModule > 0 &&
-                                         !hasIncompleteScenario;
+          const totalScenariosInModule = scenarios?.length ?? 0;
+          const allScenariosCompleted = allScenarioResults.length === totalScenariosInModule &&
+                                       totalScenariosInModule > 0 &&
+                                       !hasIncompleteScenario;
 
-            console.log("🔍 Progress restoration completion check:", {
-              totalScenariosInModule,
-              completedScenariosCount: allScenarioResults.length,
-              hasIncompleteScenario,
-              allScenariosCompleted,
-              scenarioResults: allScenarioResults.map(r => ({
-                scenarioIndex: r.scenarioIndex,
-                score: r.score
-              }))
-            });
-
-            if (allScenariosCompleted) {
-              // All scenarios completed - show final stats
-              console.log("🏆 All scenarios completed during restoration - showing FinalStatsPopup");
-              setShowFinalStats(true);
-            } else {
-              // Not all scenarios completed - show current scenario
-              console.log("📋 Showing scenario after progress restoration:", currentScenarioIndex);
-              setShowScenario(true);
-            }
+          if (allScenariosCompleted) {
+            // All scenarios completed - show final stats
+            setShowFinalStats(true);
           } else {
-            console.log("⏳ Scenarios not loaded yet, will check completion when scenarios are available");
-            // Don't show anything yet, wait for scenarios to load
+            // Not all scenarios completed - show current scenario
+            console.log("📋 Showing scenario after progress restoration:", currentScenarioIndex);
+            setShowScenario(true);
           }
         } else {
           // No progress data found - start fresh
@@ -777,6 +774,7 @@ export const JigsawBoard: React.FC = () => {
           // Reset enhanced scoring state
           setIncorrectAttempts(0);
           setScenarioStartTime(Date.now());
+          setHasStartedGameplay(false); // Reset gameplay flag for fresh start
 
           // Show first scenario when starting fresh
           console.log("📋 Showing first scenario for fresh start");
@@ -798,12 +796,10 @@ export const JigsawBoard: React.FC = () => {
         // Reset enhanced scoring state
         setIncorrectAttempts(0);
         setScenarioStartTime(Date.now());
+        setHasStartedGameplay(false); // Reset gameplay flag for fresh start
 
         setShowScenario(true);
       }
-
-      // Mark that we've checked progress to prevent multiple runs
-      setHasCheckedProgress(true);
       setIsInitializing(false);
     }
     restoreProgress();
@@ -1203,50 +1199,76 @@ export const JigsawBoard: React.FC = () => {
         // Update placed pieces state
         setPlacedPieces(updatedPlacedPieces);
 
+        // Mark that user has started actual gameplay (first piece placed)
+        if (!hasStartedGameplay) {
+          setHasStartedGameplay(true);
+        }
+
         // Set completion state with delay for UX
         if (isScenarioComplete) {
-          setTimeout(() => {
+          setTimeout(async () => {
             setIsComplete(true);
-          }, 400);
 
-          // Check if this is the last scenario and mark level as complete
-          const isLastScenario = scenarioIndex >= (scenarios?.length ?? 0) - 1;
-          if (isLastScenario) {
-            // This is the last scenario's last piece - mark Level 3 as completed
-            setTimeout(async () => {
-              try {
-                // Get module ID for level completion
-                let moduleIdForCompletion: number = 1;
-                if (
-                  typeof currentModule === "object" &&
-                  currentModule !== null &&
-                  "id" in currentModule
-                ) {
-                  moduleIdForCompletion = Number((currentModule as any).id) || 1;
-                } else if (typeof currentModule === "number") {
-                  moduleIdForCompletion = currentModule;
-                }
-
-                // Mark Level 3 as completed in the level_progress table
-                if (user?.id) {
-                  console.log('🏆 Last scenario completed! Marking Level 3 as completed for module:', moduleIdForCompletion);
-                  const levelCompletionResult = await LevelProgressService.completeLevel(
-                    user.id,
-                    moduleIdForCompletion,
-                    3 // Level 3 (jigsaw game)
-                  );
-
-                  if (levelCompletionResult.error) {
-                    console.error('Error marking level as complete:', levelCompletionResult.error);
-                  } else {
-                    console.log('✅ Level 3 marked as completed successfully after last puzzle piece placement');
-                  }
-                }
-              } catch (error) {
-                console.error('Exception marking level as complete:', error);
+            // === LEVEL3_HISTORY AND LEVEL_PROGRESS UPDATE ===
+            // If this is the last scenario, save to level3_history table and update level_progress
+            const isLastScenario = scenarioIndex >= (scenarios?.length ?? 0) - 1;
+            if (isLastScenario && user?.id && currentModule) {
+              let moduleId: string = "1";
+              let moduleIdNumber: number = 1;
+              if (
+                typeof currentModule === "object" &&
+                currentModule !== null &&
+                "id" in currentModule
+              ) {
+                moduleId = (currentModule as any).id.toString();
+                moduleIdNumber = Number((currentModule as any).id) || 1;
+              } else if (typeof currentModule === "number") {
+                moduleId = (currentModule as number).toString();
+                moduleIdNumber = currentModule;
               }
-            }, 500); // Slight delay to ensure UI updates first
-          }
+
+              try {
+                // Create the final scenario result for this last scenario
+                const finalScenarioResult: ScenarioResult = {
+                  score: newScore,
+                  combo: newCombo,
+                  health,
+                  scenarioIndex,
+                };
+                const finalScenarioResults = [...scenarioResults, finalScenarioResult];
+
+                // Save entire Level 3 data to history table
+                await saveLevel3DataToHistory(moduleId, finalScenarioResults, timer);
+                console.log('✅ Level 3 completion saved to history');
+
+                // Update level_progress table to mark Level 3 as completed
+                const levelId = 3;
+                const { error: levelProgressError } = await supabase
+                  .from('level_progress')
+                  .upsert([
+                    {
+                      user_id: user.id,
+                      module_id: moduleIdNumber,
+                      level_id: levelId,
+                      is_completed: true,
+                      updated_at: new Date().toISOString(),
+                    }
+                  ], { onConflict: 'user_id,module_id,level_id' });
+
+                if (levelProgressError) {
+                  console.error('Error updating level_progress for completion:', levelProgressError);
+                } else {
+                  console.log('✅ Level progress updated for completion:', { 
+                    user_id: user.id, 
+                    module_id: moduleIdNumber, 
+                    level_id: levelId 
+                  });
+                }
+              } catch (err) {
+                console.error('Error saving Level 3 completion to history or updating level progress:', err);
+              }
+            }
+          }, 400);
         }
 
         setFeedback("CRITICAL HIT! Perfect placement!");
@@ -1402,7 +1424,6 @@ export const JigsawBoard: React.FC = () => {
 
     if (isLastScenario) {
       // All scenarios completed - show final stats
-      // Note: Level completion already happened when the last piece was placed in handleDrop
       setIsComplete(false);
       setShowFinalStats(true);
     } else {
@@ -1459,14 +1480,14 @@ export const JigsawBoard: React.FC = () => {
     <DndContext
       sensors={sensors}
       onDragStart={(event) => {
-        const piece = availablePieces.find((p) => p.id === event.active.id);
+        const piece = availablePieces.find((p:any) => p.id === event.active.id);
         setActiveDragPiece(piece || null);
       }}
       onDragEnd={async (event) => {
         setActiveDragPiece(null);
         if (event.over && event.active) {
           const containerType = event.over.id;
-          const piece = availablePieces.find((p) => p.id === event.active.id);
+          const piece = availablePieces.find((p:any) => p.id === event.active.id);
           if (
             (containerType === "violations" || containerType === "actions") &&
             piece
@@ -1926,35 +1947,10 @@ export const JigsawBoard: React.FC = () => {
                     currentPlacedPiecesRef.current = { violations: [], actions: [] };
                     currentScenarioIndexRef.current = 0;
 
-                    // First, update the level_progress table to mark Level 3 as completed
-                    if (user?.id) {
-                      try {
-                        console.log('🎯 Updating level_progress table for Level 3 completion...', {
-                          userId: user.id,
-                          moduleId: parseInt(moduleId),
-                          levelId: 3
-                        });
-
-                        const { error: levelProgressError } = await LevelProgressService.completeLevel(
-                          user.id,
-                          parseInt(moduleId),
-                          3 // Level 3
-                        );
-
-                        if (levelProgressError) {
-                          console.error('❌ Failed to update level_progress:', levelProgressError);
-                        } else {
-                          console.log('✅ Level 3 marked as completed in level_progress table');
-                        }
-                      } catch (error) {
-                        console.error('❌ Exception updating level_progress:', error);
-                      }
-                    }
-
-                    // Then, save entire Level 3 data to history table
+                    // First, save entire Level 3 data to history table
                     await saveLevel3DataToHistory(moduleId, scenarioResults, timer);
 
-                    // Finally, remove ALL existing records from database for completely fresh start
+                    // Then remove ALL existing records from database for completely fresh start
                     await clearModuleProgress(moduleId);
 
                     // Core game state
@@ -1971,6 +1967,7 @@ export const JigsawBoard: React.FC = () => {
                     // Reset enhanced scoring state
                     setIncorrectAttempts(0);
                     setScenarioStartTime(0); // Will be set when first scenario starts
+                    setHasStartedGameplay(false); // Reset gameplay flag for replay
 
                     // UI state - initially hide scenario dialog
                     setShowScenario(false);

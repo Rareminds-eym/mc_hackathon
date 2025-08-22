@@ -18,16 +18,14 @@ jobs:
         with:
           node-version: 18
 
-      - name: Create .env file
-        run: |
-          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env
-          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env
-
       - name: Install dependencies
         run: npm install
 
-      - name: Build React app
+      - name: Build React app with env
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Archive build folder into tar
         run: tar -czf build.tar.gz -C dist .
@@ -48,8 +46,11 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            mkdir -p /home/ubuntu/mc-temp
-            tar -xzf /home/ubuntu/build.tar.gz -C /home/ubuntu/mc-temp
-            sudo rm -rf /var/www/mc/*
-            sudo mv /home/ubuntu/mc-temp/* /var/www/mc/
-            rm -rf /home/ubuntu/build.tar.gz /home/ubuntu/mc-temp
+            set -e
+            mkdir -p /home/ubuntu/mc-release
+            tar -xzf /home/ubuntu/build.tar.gz -C /home/ubuntu/mc-release
+            sudo rm -rf /var/www/mc-old
+            sudo mv /var/www/mc /var/www/mc-old || true
+            sudo mv /home/ubuntu/mc-release /var/www/mc
+            sudo chown -R www-data:www-data /var/www/mc
+            rm -rf /home/ubuntu/build.tar.gz
