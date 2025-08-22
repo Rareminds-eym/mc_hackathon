@@ -51,7 +51,7 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
     switch (type) {
       case 'violation':
         return {
-          title: 'Step 1: Identify GMP Violation',
+          title: 'Step 1: Identify MC Violation',
           icon: <AlertCircle className="w-6 h-6 text-red-500" />,
           gradient: 'from-red-500 to-red-600',
           bgGradient: 'from-red-50 to-pink-50',

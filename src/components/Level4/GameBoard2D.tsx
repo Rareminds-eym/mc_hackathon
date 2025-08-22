@@ -11,7 +11,6 @@ import { QuestionPanel } from './QuestionPanel';
 import { GameHeader } from './GameHeader';
 import Animation_manufacture from './animated_manufacture'
 import level4Service from './services';
-import { saveFinalScoreClean } from './utils/finalScoreSaver';
 import { 
   ChevronRight, 
   AlertTriangle, 
@@ -165,38 +164,17 @@ export const GameBoard2D: React.FC = () => {
 
       let recordId;
 
-      if (isSubmitButton) {
-        // For Submit button, we need to ensure clean score history
-        // First, delete any existing data for this module to start fresh
-        try {
-          await level4Service.deleteModuleData(user.id, gameState.moduleNumber || 1);
-          console.log('🧹 Cleared existing data for clean score history');
-        } catch (error) {
-          console.log('ℹ️ No existing data to clear (this is normal for first play)');
-        }
-
-        // Now save the final score with history management
-        recordId = await level4Service.upsertGameDataWithHistory(
-          user.id,
-          gameState.moduleNumber || 1,
-          gameState.score,
-          true, // Game completed
-          timer,
-          casesData
-        );
-        console.log('✅ Final game data saved via Submit button with clean history:', recordId);
-      } else {
-        // For automatic completion, use simple upsert to avoid duplicate history entries
-        recordId = await level4Service.upsertGameData(
-          user.id,
-          gameState.moduleNumber || 1,
-          gameState.score,
-          true, // Game completed
-          timer,
-          casesData
-        );
-        console.log('✅ Game completed and saved to Supabase (no history):', recordId);
-      }
+      // Always use the history function for both submit button and auto-completion
+      // This ensures score history is properly maintained across all play attempts
+      recordId = await level4Service.upsertGameDataWithHistory(
+        user.id,
+        gameState.moduleNumber || 1,
+        gameState.score,
+        true, // Game completed
+        timer,
+        casesData
+      );
+      console.log('✅ Game data saved with score history maintained:', recordId);
 
     } catch (error) {
       console.error('❌ Failed to complete game:', error);
@@ -382,9 +360,7 @@ export const GameBoard2D: React.FC = () => {
         break;
       case 'feedback':
         const correctAnswers = getCorrectAnswers();
-        const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 
-                              (currentCase.questions.rootCause ? 1 : 0) + 
-                              (currentCase.questions.impact ? 1 : 0);
+        const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
         if (correctAnswers === totalQuestions) {
           // Only continue if all answers are correct
           // Use moduleCases.length to determine if there are more cases
@@ -606,10 +582,10 @@ export const GameBoard2D: React.FC = () => {
       return (
         <div
           key={idx}
-          className={`flex flex-col items-center justify-center px-2 py-2 my-1 rounded-xl border-2 pixel-border transition-all duration-300 cursor-pointer ${brightness}`}
-          style={{ minWidth: 80, minHeight: 60 }}
+          className={`flex flex-col items-center justify-center px-1 py-1 lg:px-2 lg:py-2 my-1 rounded-xl border-2 pixel-border transition-all duration-300 cursor-pointer ${brightness}`}
+          style={{ minWidth: 90, minHeight: 45, maxWidth: 90 }}
         >
-          <span className="font-bold text-md lg:text-lg text-white">Case {idx + 1}</span>
+          <span className="font-bold text-sm lg:text-md text-white whitespace-nowrap">Case {idx + 1}</span>
           {/* <span className="text-xs text-cyan-200 mt-1">{c?.title || ''}</span> */}
         </div>
       );
@@ -618,7 +594,7 @@ export const GameBoard2D: React.FC = () => {
       <div className="fixed inset-0 h-screen w-screen p-0 m-0 flex flex-col text-xs md:text-sm lg:text-base z-50 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
         {/* Neon Animated SVG Background - only one layer */}
 <img
-  src="/backgrounds/background.jpeg"
+  src="/backgrounds/background.webp"
   alt="Background"
   className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
 />
@@ -630,26 +606,26 @@ export const GameBoard2D: React.FC = () => {
 
         <div className="relative z-10 h-full w-full flex flex-col text-xs md:text-sm lg:text-base">
           {/* Case cards column below back button, left-aligned */}
-          <div className="absolute left-2 top-16 z-40 flex flex-col items-center justify-start">
+          <div className="absolute left-1 top-10 z-40 flex flex-col items-center justify-start pixel-border-thick bg-gradient-to-br from-black via-gray-900 to-black shadow-xl rounded-lg p-1 border border-cyan-400/30 lg:mt-[2%] lg:ml-[1%] mt-[1%]" style={{ fontSize: '0.85em', minWidth: 60, minHeight: 40 }}>
             {caseCards}
           </div>
           {/* Header */}
           <div className="flex flex-col items-center justify-center w-full z-10 landscape:relative landscape:z-20 landscape:bg-transparent landscape:pt-2 ">
-            <div className="pixel-border-thick bg-gradient-to-r from-yellow-400 to-orange-500 p-1 lg:p-4 relative">
+            <div className="pixel-border-thick bg-gradient-to-br from-black via-gray-900 to-black shadow-xl flex items-center lg:gap-2 rounded-xl px-3 py-1 lg:p-4 border-2 border-cyan-400/40 relative">
               <div className="flex items-center space-x-2 lg:space-x-4">
-                <div className="w-8 h-18 lg:w-16 lg:h-16 bg-yellow-300 pixel-border flex items-center justify-center">
-                  <Crown className="w-5 h-5 sm:w-8 sm:h-8 text-yellow-800" />
+                <div className="w-8 h-18 lg:w-16 lg:h-16 bg-gray-800 pixel-border flex items-center justify-center border-cyan-400/40">
+                  <Crown className="w-5 h-5 sm:w-8 sm:h-8 text-cyan-400" />
                 </div>
                 <div className="text-left">
-                  <h1 className="text-lg lg:text-4xl font-black text-white pixel-text tracking-wider">
+                  <h1 className="text-lg lg:text-4xl font-black text-cyan-300 pixel-text tracking-wider">
                     DEVIATION REPORT
                   </h1>
-                  <div className="text-yellow-200 text-xs sm:text-sm font-bold tracking-widest">
+                  <div className="text-cyan-400 text-xs sm:text-sm font-bold tracking-widest">
                     Quality deviation detected - Investigation required
                   </div>
                 </div>
-                <div className="w-8 h-8 lg:w-16 lg:h-16 bg-orange-300 pixel-border flex items-center justify-center">
-<Gamepad2 className="w-5 h-5 sm:w-8 sm:h-8 text-orange-800 drop-shadow-glow animate-bounce-slow" />
+                <div className="w-8 h-8 lg:w-16 lg:h-16 bg-gray-800 pixel-border flex items-center justify-center border-cyan-400/40">
+<Gamepad2 className="w-5 h-5 sm:w-8 sm:h-8 text-cyan-400 drop-shadow-glow animate-bounce-slow" />
 
                 </div>
               </div>
@@ -682,11 +658,11 @@ export const GameBoard2D: React.FC = () => {
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-col items-center justify-center flex-1 w-full h-auto lg:h-full mb-4 md:mb-0 lg:mt-2">
 <div
-  className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl min-h-[3 40px] lg:max-h-[calc(100vh-120px)] lg:p-4 rounded-2xl border-2 border-cyan-400/40 relative overflow-hidden"
+  className="pixel-border-thick bg-gradient-to-br from-black-100 via-black-50 to-black-100 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-md lg:max-w-2xl xl:max-w-3xl min-h-[3 40px] lg:max-h-[calc(100vh-120px)] lg:p-4 rounded-2xl border-2 border-teal-400/60 relative overflow-hidden"
 >
   {/* Card background image, slightly visible */}
   <img
-    src="/backgrounds/background.jpeg"
+    src="/backgrounds/background.webp"
     alt="Card Background"
     className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
     aria-hidden="true"
@@ -732,11 +708,11 @@ export const GameBoard2D: React.FC = () => {
                 <button
                   onClick={handleContinue}
                   disabled={!canContinue}
-                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-white font-black text-sm lg:text-lg rounded-lg shadow-lg"
+                  className="pixel-border-thick bg-gradient-to-br from-black via-gray-900 to-black hover:from-gray-900 hover:via-gray-800 hover:to-black transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-cyan-300 font-black text-sm lg:text-lg rounded-lg shadow-xl border-2 border-cyan-400/40 hover:border-cyan-300/60"
                   style={{ minWidth: 180 }}
                   aria-label="Start Investigation"
                 >
-                  <ChevronRight className="w-5 h-5 mr-2" />
+                  <ChevronRight className="w-5 h-5 mr-2 text-cyan-400" />
                   START INVESTIGATION
                 </button>
               </div>
@@ -760,7 +736,7 @@ export const GameBoard2D: React.FC = () => {
         </div> */}
 
 <img
-src="/backgrounds/background.jpeg"
+src="/backgrounds/background.webp"
 alt="Background"
 className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
 />
@@ -774,11 +750,11 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
           {/* Responsive layout: flex-row for mobile landscape, grid for desktop */}
           <div className="flex flex-col items-center justify-center flex-1 w-full h-full lg:mb-4 lg:md:mb-0 mt-2">
 <div
-  className="pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-lg lg:max-w-lg  lg:h-[60%] h-[100%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-80px)] p-4 rounded-2xl border-2 border-cyan-400/40 relative overflow-hidden"
+  className="pixel-border-thick bg-gradient-to-br from-black-100 via-black-50 to-black-100 shadow-xl flex flex-col mx-auto w-[96vw] sm:w-[90vw] md:w-[80vw] lg:w-auto max-w-lg lg:max-w-lg  lg:h-[60%] h-[100%] xl:max-w-3xl lg:min-h-[auto]  max-h-[calc(100vh-80px)] p-4 rounded-2xl border-2 border-teal-400/60 relative overflow-hidden"
 >
   {/* Card background image, slightly visible */}
   <img
-    src="/backgrounds/background.jpeg"
+    src="/backgrounds/background.webp"
     alt="Card Background"
     className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
     aria-hidden="true"
@@ -852,7 +828,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                 <button
                   onClick={handleContinue}
                   disabled={!canContinue}
-                  className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-white font-black text-sm lg:text-lg p-1  rounded-lg shadow-lg"
+                  className="pixel-border-thick bg-gradient-to-br from-black via-gray-900 to-black hover:from-gray-900 hover:via-gray-800 hover:to-black transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-cyan-300 font-black text-sm lg:text-lg rounded-lg shadow-xl border-2 border-cyan-400/40 hover:border-cyan-300/60"
                   style={{ minWidth: 180 }}
                   aria-label="Start Investigation"
                 >
@@ -873,7 +849,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
     const hasViolation = currentCase.questions.violation !== undefined;
     const stepTitles = hasViolation
       ? {
-          'step1': 'Step 1: Identify GMP Violation',
+          'step1': 'Step 1: Identify MC Violation',
           'step2': 'Step 2: Root Cause Analysis',
           'step3': 'Step 3: Impact Assessment'
         }
@@ -890,7 +866,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
         aria-hidden="true"
       >
         <img
-src="/backgrounds/background.jpeg"
+src="/backgrounds/background.webp"
 alt="Background"
 className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
 />
@@ -934,7 +910,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                           <button
                             onClick={handleContinue}
                             disabled={!canContinue}
-                            className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-xs md:text-sm rounded-lg shadow-lg"
+                            className="pixel-border-thick bg-gradient-to-br from-black via-gray-900 to-black hover:from-gray-900 hover:via-gray-800 hover:to-black transition-all duration-300 flex items-center justify-center lg:px-6 py-1 lg:py-2 text-cyan-300 font-black text-sm lg:text-lg rounded-lg shadow-xl border-2 border-cyan-400/40 hover:border-cyan-300/60"
                             aria-label="Continue"
                           >
                             <span className="mr-2">Continue</span>
@@ -949,15 +925,15 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                     (currentPhase === 'step2' && gameState.answers.rootCause !== null) ||
                     (currentPhase === 'step3' && gameState.answers.impact !== null)) && (
                     <>
-                      {/* Mobile only */}
-                      <div className="absolute right-2 bottom-2 z-20 md:hidden">
+                      {/* Mobile only - positioned at bottom right */}
+                      <div className="fixed right-4 bottom-4 z-50 md:hidden">
                         <button
                           onClick={handleContinue}
                           disabled={!canContinue}
-                          className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-4 py-2 text-white font-black text-xs rounded-lg shadow-lg"
+                          className="pixel-border-thick bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 transition-all duration-300 flex items-center justify-center px-3 py-2 text-white font-black text-xs rounded-lg shadow-lg"
                           aria-label="Continue"
                         >
-                          <span className="mr-2">Continue</span>
+                          <span className="mr-1">Continue</span>
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                         </button>
                       </div>
@@ -983,7 +959,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
             {/* Gamified message - only show in step2 (Root Cause Analysis) - visible on all screens */}
             {currentPhase === 'step2' && !step2InstructionDismissed && (
               <div
-                className=" pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl flex flex-col items-center justify-center rounded-2xl border-2 border-cyan-400/40 px-3 py-3 lg:px-6 lg:py-6 w-full max-w-xs lg:w-[340px] animate-bounce-in relative overflow-visible mt-4 lg:mt-0 mx-auto"
+                className="pixel-border-thick bg-gradient-to-br from-black-100 via-black-50 to-black-100 shadow-xl flex flex-col items-center justify-center rounded-2xl border-2 border-teal-400/60 px-3 py-3 lg:px-6 lg:py-6 w-full max-w-xs lg:w-[340px] animate-bounce-in relative overflow-visible mt-4 lg:mt-0 mx-auto"
                 style={{ minWidth: '0', maxWidth: '360px' }}
               >
                 <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-5xl select-none gamify-shake"
@@ -995,16 +971,16 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                     fontWeight: 900
                   }}
                 >🖐️</span>
-                <span className="text-xl font-extrabold text-cyan-200 drop-shadow-lg mb-2 animate-pulse-text pixel-text" style={{ letterSpacing: '1px' }}>
+                <span className="text-xl font-extrabold text-cyan-400 drop-shadow-lg mb-2 animate-pulse-text pixel-text" style={{ letterSpacing: '1px' }}>
                   Drag & Drop!
                 </span>
-                <span className="text-base font-bold text-cyan-100 text-center animate-slide-in-up pixel-text">
+                <span className="text-base font-bold text-cyan-300 text-center animate-slide-in-up pixel-text">
                   Drag the most suitable answer<br />
                   into the container<br />
                   to solve the root cause
                 </span>
                 <button
-                  className="mt-6 lg:px-6 lg:py-2 px-3 py-1 rounded-lg font-bold text-lg bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
+                  className="mt-6 lg:px-6 lg:py-2 px-3 py-1 rounded-lg font-bold text-lg bg-gradient-to-br from-black via-gray-900 to-black hover:from-gray-900 hover:via-gray-800 hover:to-black text-cyan-300 transition-all duration-300 hover:border-cyan-300/60 pixel-border-thick border-2 border-cyan-400/40"
                   disabled={false}
                   onClick={() => {
                     setStep2InstructionDismissed(true);
@@ -1035,9 +1011,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
   const renderFeedback = () => {
     const correctAnswers = getCorrectAnswers();
     const isAllCorrect = allAnswersCorrectAtFeedback;
-    const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 
-                          (currentCase.questions.rootCause ? 1 : 0) + 
-                          (currentCase.questions.impact ? 1 : 0);
+    const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
     const caseAccuracy = Math.round((correctAnswers / totalQuestions) * 100);
     // Calculate performance for this case only based on score (out of 15)
     const caseIdx = gameState.currentCase;
@@ -1091,7 +1065,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
       >
 
         <img
-src="/backgrounds/background.jpeg"
+src="/backgrounds/background.webp"
 alt="Background"
 className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 object-cover object-center"
 />
@@ -1108,7 +1082,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
           {/* Correction message above feedback panel */}
           {showCorrectionMessage && !allAnswersCorrectAtFeedback && (
             <div className="fixed inset-0 flex items-center justify-center z-50" style={{ pointerEvents: 'none' }}>
-              <div className="p-3 bg-yellow-200 border-l-4 border-yellow-600 rounded shadow text-yellow-900 font-bold text-center animate-fade-in flex flex-col items-center max-w-lg w-full mx-auto" style={{ pointerEvents: 'auto' }}>
+              <div className="pixel-border-thick bg-gradient-to-br from-black-100 via-black-50 to-black-100 shadow-xl border-2 border-teal-400/60 rounded-2xl p-4 text-cyan-300 font-bold text-center animate-fade-in flex flex-col items-center max-w-lg w-full mx-auto relative overflow-hidden" style={{ pointerEvents: 'auto' }}>
                 <span className="mb-2">Please go back and correct the answer to proceed.</span>
                 <div className="flex gap-3 mt-2">
                   <button
@@ -1146,13 +1120,13 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
             {/* Right: Feedback Panel - make this scrollable if content overflows */}
             <div
               className={
-                `pixel-border-thick bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-xl rounded-2xl border-2 border-cyan-400/40 p-4 flex flex-col gap-2 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg max-h-[80vh]   lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 ${showCorrectionMessage && !allAnswersCorrectAtFeedback ? 'overflow-y-hidden' : 'overflow-y-auto'}`
+                `pixel-border-thick bg-gradient-to-br from-black-100 via-black-50 to-black-100 shadow-xl rounded-2xl border-2 border-teal-400/60 p-4 flex flex-col gap-2 items-stretch flex-1 min-w-0 min-h-0 h-full text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg max-h-[80vh]   lg:max-w-5xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[80%] mx-auto transition-all duration-300 relative overflow-hidden ${showCorrectionMessage && !allAnswersCorrectAtFeedback ? 'overflow-y-hidden' : 'overflow-y-auto'}`
               }
               style={{ minHeight: 0 }}
             >
               {/* Card background image, slightly visible */}
               <img
-                src="/backgrounds/background.jpeg"
+                src="/backgrounds/background.webp"
                 alt="Card Background"
                 className="absolute inset-0 w-full h-full object-cover object-center opacity-10 pointer-events-none select-none z-0"
                 aria-hidden="true"
@@ -1165,7 +1139,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
               {/* Score summary */}
               <div className="flex flex-row items-center gap-2 sm:gap-3 mt-1">
                 <div className="pixel-border bg-black/30 rounded-lg px-2 sm:px-3 py-1 sm:py-2 flex flex-col items-center justify-center">
-                  <span className="text-red-700 font-bold text-sm lg:text-lg xl:text-xl leading-tight">{correctAnswers}/{totalQuestions} Correct</span>
+                  <span className="text-red-700 font-bold text-sm lg:text-lg xl:text-xl leading-tight">{correctAnswers}/3 Correct</span>
                   <span className="text-slate-400 text-xs lg:text-base xl:text-lg leading-tight font-medium">Case Accuracy: {caseAccuracy}%</span>
                 </div>
                 <div className="pixel-border bg-black/30 rounded-lg px-2 sm:px-3 py-1 sm:py-2 flex flex-col items-center justify-center">
@@ -1180,7 +1154,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                   {/* Violation - only show if violation question exists */}
                   {currentCase.questions.violation && (
                     <div className="pixel-border bg-gradient-to-r from-yellow-100 via-yellow-50 to-white/90 border-l-4 border-yellow-400 rounded-lg p-2 sm:p-3 shadow-lg flex flex-col gap-1">
-                      <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🔍 GMP Violation</span>
+                      <span className="font-bold text-yellow-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">🔍 MC Violation</span>
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full text-xs sm:text-sm lg:text-base xl:text-lg gap-1 sm:gap-2">
                         <span className="text-slate-700">Correct: <span className="text-green-700 font-semibold">{violationCorrect}</span></span>
                         <span className={`font-semibold ${violationIsCorrect ? 'text-green-600' : 'text-red-600'}`}>Your answer: <span className="font-bold">{violationUser || 'Not answered'}</span></span>
@@ -1210,7 +1184,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                 <span className="font-bold text-blue-700 text-base lg:text-lg xl:text-xl flex items-center gap-2">💡 Learning Insight</span>
                 <span className="text-slate-700 text-xs sm:text-sm lg:text-base xl:text-lg flex items-start mt-2 leading-relaxed">
                   <span className="mr-2 text-base" role="img" aria-label="book">📚</span>
-                  <span className="font-medium">This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes.</span>
+                  <span className="font-medium">This case highlights areas for improvement. Focus on understanding the interconnections between MC violations and their underlying causes.</span>
                 </span>
               </div>
               {/* Summary message at the bottom */}
@@ -1253,36 +1227,47 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                       }
                     }
 
-                    // Save game data to Supabase before showing popup
+                    // Save game data to Supabase using the bulletproof SQL function
                     try {
                       if (!user) {
                         throw new Error('User not authenticated');
                       }
 
-                      // Use clean save approach to ensure correct score history
-                      const result = await saveFinalScoreClean(
+                      // Prepare final cases data
+                      const casesData = {
+                        currentCase: gameState.currentCase,
+                        caseProgress: moduleCases.map((caseItem, index) => ({
+                          id: caseItem.id,
+                          answers: index <= gameState.currentCase ? gameState.answers : { violation: null, rootCause: null, impact: null },
+                          isCorrect: index <= gameState.currentCase,
+                          attempts: 1,
+                          timeSpent: index === gameState.currentCase ? timer : 0
+                        })),
+                        scoredQuestions: {
+                          [gameState.currentCase]: ["violation", "rootCause", "impact"]
+                        }
+                      };
+
+                      // Use the bulletproof SQL function that properly manages score history
+                      const recordId = await level4Service.upsertGameDataWithHistory(
                         user.id,
-                        { ...gameState, gameComplete: true },
+                        gameState.moduleNumber || 1,
+                        gameState.score,
+                        true, // Game completed
                         timer,
-                        moduleCases
+                        casesData
                       );
 
-                      if (result.success) {
-                        console.log('✅ Game data saved to Supabase successfully with clean score history');
-                      } else {
-                        throw new Error(result.error || 'Failed to save final score');
-                      }
+                      console.log('✅ Game data saved with bulletproof score history:', recordId);
 
                       // Check data after saving to verify
-                      if (user) {
-                        const savedData = await level4Service.getUserModuleData(user.id, gameState.moduleNumber || 1);
-                        console.log('📊 Data after save:', {
-                          mainScore: savedData?.score,
-                          scoreHistory: savedData?.score_history,
-                          timeArray: savedData?.time,
-                          isCompleted: savedData?.is_completed
-                        });
-                      }
+                      const savedData = await level4Service.getUserModuleData(user.id, gameState.moduleNumber || 1);
+                      console.log('📊 Data after save:', {
+                        mainScore: savedData?.score,
+                        scoreHistory: savedData?.score_history,
+                        timeHistory: savedData?.time_history,
+                        isCompleted: savedData?.is_completed
+                      });
                     } catch (error) {
                       console.error('❌ Failed to save game data to Supabase:', error);
                       console.error('Error details:', {
@@ -1504,7 +1489,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
       {/* Back button always top left, above timer/case label */}
       <button
         onClick={handleBack}
-        className="absolute top-2 left-2 lg:left-4 bg-red-600 hover:bg-red-700 text-white px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 text-sm z-[9999] hover:shadow-xl"
+        className="absolute top-2 left-2 lg:left-4 bg-text-cyan-300 red-200 hover:bg-red-700 text-cyan-300 hover:text-black px-1 py-1 lg:px-3 lg:py-2 pixel-border flex items-center space-x-2 font-bold shadow-lg transition-all duration-200 border-teal-400/60 text-sm z-[9999] hover:shadow-xl"
         style={{
           minWidth: 64,
           boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
@@ -1518,9 +1503,9 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
       {currentPhase !== 'feedback' && (
         <div className="flex flex-row items-center justify-center w-full mb-[1vw] mt-2 px-2">
           <div className="flex flex-row items-center gap-2">
-            <span className="pixel-border bg-green-600 px-2 py-1 rounded-lg text-white font-bold text-xs md:text-sm">CASE: {gameState.currentCase + 1}</span>
-            <span className="pixel-border bg-blue-600 px-2 py-1 rounded-lg text-white font-bold text-xs md:text-sm">TIME: {formatTimer(timer)}</span>
-            <span className="pixel-border bg-yellow-600 px-2 py-1 rounded-lg text-white font-bold text-xs md:text-sm">SCORE: {gameState.score}</span>
+            <span className="pixel-border bg-gradient-to-br from-black via-gray-900 to-black px-2 py-1 rounded-lg text-cyan-300 font-bold text-xs md:text-sm border-2 border-teal-400/60">CASE: {gameState.currentCase + 1}</span>
+            <span className="pixel-border bg-gradient-to-br from-black via-gray-900 to-black px-2 py-1 rounded-lg text-cyan-300 font-bold text-xs md:text-sm border-2 border-teal-400/60">TIME: {formatTimer(timer)}</span>
+            <span className="pixel-border bg-gradient-to-br from-black via-gray-900 to-black px-2 py-1 rounded-lg text-cyan-300 font-bold text-xs md:text-sm border-2 border-teal-400/60">SCORE: {gameState.score}</span>
           </div>
         </div>
       )}
@@ -1528,7 +1513,7 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
       {user && (
         <div className="absolute top-2 right-1 lg:right-4 z-[60] flex items-center gap-2">
           <div
-            className="pixel-border-thick bg-gradient-to-br from-cyan-900 via-blue-900 to-purple-900 shadow-xl flex items-center lg:gap-2 rounded-xl px-3 py-1 border-2 border-cyan-400/40 min-w-[48px] max-w-xs cursor-pointer hover:bg-cyan-900/60 transition relative"
+            className="pixel-border-thick bg-gradient-to-br from-black-900 via-black-900 to-black-900 shadow-xl flex items-center lg:gap-2 rounded-xl px-3 py-1 border-2 border-cyan-400/40 min-w-[48px] max-w-xs cursor-pointer hover:bg-cyan-900/60 transition relative"
             onClick={() => setProfileOpen((v) => !v)}
             tabIndex={0}
             role="button"
@@ -1543,9 +1528,9 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
             <span className="hidden lg:inline text-cyan-200 font-bold text-xs md:text-sm truncate max-w-[80px] pixel-text">{user.email || 'User'}</span>
             {/* Profile Popover */}
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-2xl p-4 z-[200] border-2 border-cyan-400/40 flex flex-col items-center animate-fade-in-scale bg-gradient-to-br from-cyan-900 via-blue-900 to-purple-900" style={{top: '100%', overflow: 'hidden', wordBreak: 'break-word'}}>
+              <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-2xl p-4 z-[200] border-2 border-cyan-400/40 flex flex-col items-center animate-fade-in-scale bg-gradient-to-br from-black via-gray-900 to-black pixel-border-thick" style={{top: '100%', overflow: 'hidden', wordBreak: 'break-word'}}>
                 <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-cyan-400 text-xl font-black"
+                  className="absolute top-2 right-2 text-gray-400 hover:text-cyan-300 text-xl font-black transition-colors duration-300"
                   onClick={e => { e.stopPropagation(); setProfileOpen(false); }}
                   aria-label="Close profile"
                   tabIndex={0}
@@ -1555,13 +1540,13 @@ className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-25 obj
                 <img
                   src={avatar}
                   alt="Player Avatar Large"
-                  className="w-16 h-16 rounded-full border-2 border-cyan-400 object-cover bg-cyan-700 mb-3"
+                  className="w-16 h-16 rounded-full border-2 border-cyan-400 object-cover bg-gray-800 mb-3 shadow-lg"
                 />
                 <div className="text-center w-full">
-                  <div className="text-lg font-black text-cyan-200 mb-1 break-all truncate whitespace-normal max-w-full pixel-text">{user.email}</div>
+                  <div className="text-lg font-black text-cyan-300 mb-1 break-all truncate whitespace-normal max-w-full pixel-text">{user.email}</div>
                 </div>
                 {/* <button
-                  className="mt-4 px-4 py-2 rounded-lg font-bold text-base bg-cyan-700/80 text-white transition-all duration-300 hover:bg-cyan-500/90 pixel-border-thick"
+                  className="mt-4 px-4 py-2 rounded-lg font-bold text-base bg-gray-800 text-cyan-300 transition-all duration-300 hover:bg-gray-700 hover:text-cyan-200 pixel-border-thick border border-cyan-400/40"
                   onClick={() => setShowAvatarModal(true)}
                 >
                   Change Avatar

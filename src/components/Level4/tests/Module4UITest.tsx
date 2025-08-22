@@ -2,7 +2,7 @@
  * Module 4 UI Test Component
  * 
  * This component tests that Module 4 UI correctly shows only 2 steps
- * (Root Cause and Impact) without any GMP violation references.
+ * (Root Cause and Impact) without any MC violation references.
  */
 
 import React, { useState } from 'react';
@@ -44,7 +44,7 @@ const Module4UITest: React.FC = () => {
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Module 4 UI Test - No GMP Violation References</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Module 4 UI Test - No MC Violation References</h2>
       
       {/* Test Controls */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -87,7 +87,7 @@ const Module4UITest: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <span className="text-green-500">✅</span>
-              <span>No "GMP Violation" text in step titles</span>
+              <span>No "MC Violation" text in step titles</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-green-500">✅</span>
@@ -223,7 +223,7 @@ const Module4UITest: React.FC = () => {
           <div>✅ Module 4 has 4 cases with 2 questions each</div>
           <div>✅ No violation questions in any case</div>
           <div>✅ Step numbering starts from 1 (not 2)</div>
-          <div>✅ No "GMP Violation" text in UI</div>
+          <div>✅ No "MC Violation" text in UI</div>
           <div>✅ QuestionPanel renders correctly for both question types</div>
           <div>✅ All cases have proper root cause and impact questions</div>
         </div>

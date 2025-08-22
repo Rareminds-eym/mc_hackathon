@@ -131,83 +131,85 @@ CREATE OR REPLACE FUNCTION upsert_level4_game_data_with_history(
 RETURNS TEXT AS $$
 DECLARE
     result_id UUID;
-    existing_score_history INTEGER[];
-    existing_times INTEGER[];
+    existing_record RECORD;
     new_score_history INTEGER[];
     new_time_history INTEGER[];
-    combined_scores INTEGER[];
-    combined_times INTEGER[];
-    temp_scores INTEGER[];
-    temp_times INTEGER[];
     i INTEGER;
-    j INTEGER;
 BEGIN
-    -- Get existing score_history and time history
-    SELECT score_history, time_history
-    INTO existing_score_history, existing_times
+    -- Get existing record
+    SELECT score_history, time_history, score, time
+    INTO existing_record
     FROM level_4
-    WHERE user_id = p_user_id
-      AND module = p_module;
+    WHERE user_id = p_user_id AND module = p_module;
 
-    -- If no existing record, initialize empty arrays
-    IF existing_score_history IS NULL THEN
-        existing_score_history := '{}';
-        existing_times := '{}';
+    -- If no existing record, create arrays with just the new attempt
+    IF existing_record IS NULL THEN
+        new_score_history := ARRAY[p_new_score];
+        new_time_history := ARRAY[p_new_time];
+    ELSE
+        -- Create a temporary table to store score-time pairs
+        DROP TABLE IF EXISTS temp_score_pairs;
+        CREATE TEMP TABLE temp_score_pairs (
+            score INTEGER,
+            time_val INTEGER,
+            attempt_order INTEGER
+        );
+
+        -- Insert existing attempts (from history arrays)
+        IF existing_record.score_history IS NOT NULL THEN
+            FOR i IN 1..array_length(existing_record.score_history, 1) LOOP
+                INSERT INTO temp_score_pairs (score, time_val, attempt_order) 
+                VALUES (
+                    existing_record.score_history[i], 
+                    COALESCE(existing_record.time_history[i], 0),
+                    i
+                );
+            END LOOP;
+        END IF;
+
+        -- Add the new attempt
+        INSERT INTO temp_score_pairs (score, time_val, attempt_order) 
+        VALUES (p_new_score, p_new_time, 999); -- Use 999 as new attempt marker
+
+        -- Get top 3 attempts ordered by score (highest first)
+        WITH top_attempts AS (
+            SELECT score, time_val
+            FROM temp_score_pairs
+            ORDER BY score DESC, attempt_order ASC
+            LIMIT 3
+        )
+        SELECT 
+            array_agg(score ORDER BY score DESC) as scores,
+            array_agg(time_val ORDER BY score DESC) as times
+        INTO new_score_history, new_time_history
+        FROM top_attempts;
+
+        -- Clean up temp table
+        DROP TABLE temp_score_pairs;
     END IF;
 
-    -- Add new score and time to existing arrays
-    combined_scores := existing_score_history || ARRAY[p_new_score];
-    combined_times := existing_times || ARRAY[p_new_time];
-
-    -- Sort scores and times together to maintain alignment
-    -- Use a simple approach: create pairs, sort, then separate
-    WITH score_time_pairs AS (
-        SELECT
-            unnest(combined_scores) as score,
-            unnest(combined_times) as time,
-            generate_subscripts(combined_scores, 1) as original_index
-    ),
-    sorted_pairs AS (
-        SELECT score, time
-        FROM score_time_pairs
-        ORDER BY score DESC, original_index ASC
-        LIMIT 3
-    )
-    SELECT
-        array_agg(score ORDER BY score DESC) as sorted_scores,
-        array_agg(time ORDER BY score DESC) as sorted_times
-    INTO temp_scores, temp_times
-    FROM sorted_pairs;
-
-    -- Keep only top 3 scores and times
-    new_score_history := temp_scores[1:3];
-    new_time_history := temp_times[1:3];
-
-    -- Update or insert the main game data table
+    -- Insert or update the record
     INSERT INTO level_4 (
         user_id, module, level,
-        score, is_completed, time, time_history, cases,
-        score_history
+        score, is_completed, time, 
+        time_history, score_history, cases
     )
     VALUES (
         p_user_id, p_module, 4,
-        -- Use the highest score and its corresponding time
-        new_score_history[1], p_is_completed, new_time_history[1], new_time_history, p_cases,
-        new_score_history
+        new_score_history[1], p_is_completed, new_time_history[1],
+        new_time_history, new_score_history, p_cases
     )
     ON CONFLICT (user_id, module)
     DO UPDATE SET
-        -- Always use the highest score from the sorted history
         score = new_score_history[1],
         is_completed = EXCLUDED.is_completed OR level_4.is_completed,
-        -- Always use the time corresponding to the highest score
         time = new_time_history[1],
         time_history = new_time_history,
+        score_history = new_score_history,
         cases = CASE
             WHEN new_score_history[1] > level_4.score THEN EXCLUDED.cases
             ELSE level_4.cases
         END,
-        score_history = new_score_history,
         updated_at = NOW()
     RETURNING id INTO result_id;
 
@@ -301,7 +303,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to update game data and manage score history
+-- Function to update game data and manage score history (IMPROVED VERSION)
 CREATE OR REPLACE FUNCTION update_level4_game_data_with_history(
     p_user_id UUID,
     p_module INTEGER,
@@ -317,12 +319,7 @@ DECLARE
     current_record RECORD;
     new_score_history INTEGER[];
     new_time_history INTEGER[];
-    combined_scores INTEGER[];
-    combined_times INTEGER[];
-    temp_scores INTEGER[];
-    temp_times INTEGER[];
     i INTEGER;
-    j INTEGER;
 BEGIN
     -- Get the current record
     SELECT * INTO current_record
@@ -336,39 +333,46 @@ BEGIN
     
     -- If we're updating score and managing history
     IF p_new_score IS NOT NULL AND p_update_history THEN
-        -- Add new score to existing score history
-        combined_scores := current_record.score_history || ARRAY[p_new_score];
-        
-        -- Add new time to existing time history (if provided)
-        IF p_new_time IS NOT NULL THEN
-            combined_times := current_record.time_history || ARRAY[p_new_time];
-        ELSE
-            combined_times := current_record.time_history;
+        -- Use the same improved logic as upsert function
+        -- Create a temporary table to store score-time pairs
+        DROP TABLE IF EXISTS temp_update_score_pairs;
+        CREATE TEMP TABLE temp_update_score_pairs (
+            score INTEGER,
+            time_val INTEGER,
+            attempt_order INTEGER
+        );
+
+        -- Insert existing attempts (from history arrays)
+        IF current_record.score_history IS NOT NULL THEN
+            FOR i IN 1..array_length(current_record.score_history, 1) LOOP
+                INSERT INTO temp_update_score_pairs (score, time_val, attempt_order) 
+                VALUES (
+                    current_record.score_history[i], 
+                    COALESCE(current_record.time_history[i], 0),
+                    i
+                );
+            END LOOP;
         END IF;
-        
-        -- Sort scores and times together to maintain alignment
-        -- Use a simple approach: create pairs, sort, then separate
-        WITH score_time_pairs AS (
-            SELECT
-                unnest(combined_scores) as score,
-                unnest(combined_times) as time,
-                generate_subscripts(combined_scores, 1) as original_index
-        ),
-        sorted_pairs AS (
-            SELECT score, time
-            FROM score_time_pairs
-            ORDER BY score DESC, original_index ASC
+
+        -- Add the new attempt
+        INSERT INTO temp_update_score_pairs (score, time_val, attempt_order) 
+        VALUES (p_new_score, COALESCE(p_new_time, 0), 999); -- Use 999 as new attempt marker
+
+        -- Get top 3 attempts ordered by score (highest first)
+        WITH top_attempts AS (
+            SELECT score, time_val
+            FROM temp_update_score_pairs
+            ORDER BY score DESC, attempt_order ASC
             LIMIT 3
         )
-        SELECT
-            array_agg(score ORDER BY score DESC) as sorted_scores,
-            array_agg(time ORDER BY score DESC) as sorted_times
-        INTO temp_scores, temp_times
-        FROM sorted_pairs;
-        
-        -- Keep only top 3 scores and times
-        new_score_history := temp_scores[1:3];
-        new_time_history := temp_times[1:3];
+        SELECT 
+            array_agg(score ORDER BY score DESC) as scores,
+            array_agg(time_val ORDER BY score DESC) as times
+        INTO new_score_history, new_time_history
+        FROM top_attempts;
+
+        -- Clean up temp table
+        DROP TABLE temp_update_score_pairs;
     ELSE
         new_score_history := current_record.score_history;
         new_time_history := current_record.time_history;
@@ -621,6 +625,73 @@ BEGIN
             ELSE
                 '❌ MISALIGNED: Current score/time does not match history[1]'
         END::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to test multiple attempts and verify top 3 tracking
+CREATE OR REPLACE FUNCTION test_level4_multiple_attempts(
+    p_user_id UUID,
+    p_module INTEGER,
+    p_test_scores INTEGER[],
+    p_test_times INTEGER[] DEFAULT NULL
+)
+RETURNS TABLE(
+    attempt_number INTEGER,
+    input_score INTEGER,
+    input_time INTEGER,
+    resulting_score_history INTEGER[],
+    resulting_time_history INTEGER[],
+    current_best_score INTEGER,
+    status TEXT
+) AS $$
+DECLARE
+    score_val INTEGER;
+    time_val INTEGER;
+    step_counter INTEGER := 1;
+    default_times INTEGER[] := ARRAY[120, 130, 125, 110, 135, 115, 140, 105, 145, 100];
+    rec RECORD;
+BEGIN
+    -- Clear existing data for this test
+    DELETE FROM level_4 WHERE user_id = p_user_id AND module = p_module;
+    
+    -- Use default times if not provided
+    IF p_test_times IS NULL THEN
+        p_test_times := default_times;
+    END IF;
+    
+    -- Insert each test score
+    FOR i IN 1..array_length(p_test_scores, 1) LOOP
+        score_val := p_test_scores[i];
+        time_val := COALESCE(p_test_times[i], 120);
+        
+        PERFORM upsert_level4_game_data_with_history(
+            p_user_id,
+            p_module,
+            score_val,
+            true,
+            time_val,
+            ('{"attempt": ' || step_counter || ', "test": true}')::jsonb
+        );
+        
+        -- Get the current state
+        SELECT score, time, score_history, time_history
+        INTO rec
+        FROM level_4
+        WHERE user_id = p_user_id AND module = p_module;
+        
+        -- Return the current state
+        RETURN QUERY SELECT
+            step_counter::INTEGER,
+            score_val::INTEGER,
+            time_val::INTEGER,
+            rec.score_history,
+            rec.time_history,
+            rec.score::INTEGER,
+            ('Added score ' || score_val || ' - Top 3: [' || 
+             array_to_string(rec.score_history, ', ') || ']')::TEXT;
+        
+        step_counter := step_counter + 1;
+    END LOOP;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -6,5 +6,5 @@ export const modules: Module[] = [
   { id: "3", status: 'locked', title: 'ICD-10-CM Guidelines & Structure' },
   { id: "4", status: 'locked', title: 'CPT & HCPCS Coding' },
   { id: "HL1", status: 'locked', title: 'Hackathon Level-1' },
-  { id: "HL2", status: 'available', title: 'Hackathon Level-2' },
+  { id: "HL2", status: 'locked', title: 'Hackathon Level-2' },
 ];

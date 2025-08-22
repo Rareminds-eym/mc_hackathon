@@ -26,13 +26,11 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   onBack
 }) => {
   // Calculate total questions based on what exists
-  const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 
-                        (currentCase.questions.rootCause ? 1 : 0) + 
-                        (currentCase.questions.impact ? 1 : 0);
+  const totalQuestions = (currentCase.questions.violation ? 1 : 0) + 1 + 1; // violation (optional) + rootCause + impact
   const correctAnswers = [
     ...(currentCase.questions.violation ? [answers.violation === currentCase.questions.violation.correct] : []),
-    ...(currentCase.questions.rootCause ? [answers.rootCause === currentCase.questions.rootCause.correct] : []),
-    ...(currentCase.questions.impact ? [answers.impact === currentCase.questions.impact.correct] : [])
+    answers.rootCause === currentCase.questions.rootCause.correct,
+    answers.impact === currentCase.questions.impact.correct
   ];
   const caseScore = correctAnswers.filter(Boolean).length;
   const accuracy = Math.round((caseScore / totalQuestions) * 100);
@@ -262,12 +260,12 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
                 </h5>
                 <p className="text-blue-800 font-medium leading-relaxed text-[7px]">
                   {caseScore === 3 
-                    ? "🎉 Outstanding work! You've demonstrated excellent understanding of GMP principles, root cause analysis, and risk assessment."
+                    ? "🎉 Outstanding work! You've demonstrated excellent understanding of MC principles, root cause analysis, and risk assessment."
                     : caseScore === 2
                       ? "👏 Good analysis! You correctly identified most aspects of this deviation. Focus on the areas you missed to strengthen your investigation methodology."
                       : caseScore === 1
-                        ? "📖 Partial understanding demonstrated. Consider reviewing GMP documentation requirements, systematic root cause analysis techniques."
-                        : "📚 This case highlights areas for improvement. Focus on understanding the interconnections between GMP violations and their underlying causes."
+                        ? "📖 Partial understanding demonstrated. Consider reviewing MC documentation requirements, systematic root cause analysis techniques."
+                        : "📚 This case highlights areas for improvement. Focus on understanding the interconnections between MC violations and their underlying causes."
                   }
                 </p>
               </div>

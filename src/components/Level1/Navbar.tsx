@@ -105,7 +105,7 @@ const Navbar: React.FC<NavbarProps> = ({ score, rowsSolved, onBackClick, onHomeC
         {/* Center: Title (gmp bINGO) */}
         <div className="flex-1 flex justify-center">
           <div className={`pixel-border bg-gradient-to-r from-blue-400 to-blue-700 ${isMobileLandscape ? 'ml-28 px-3 py-0.5 text-xs' : 'px-4 py-1 text-xs sm:text-base'} rounded text-white font-black shadow-md pixel-text uppercase tracking-widest`}>
-            gmp bINGO
+            MC bINGO
           </div>
         </div>
 
