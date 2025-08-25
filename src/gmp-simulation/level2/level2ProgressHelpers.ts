@@ -157,6 +157,34 @@ export async function markScreenCompleteWithTimer(user_id: string, screen: numbe
     return data;
   } catch (err) {
     console.error('[Screen Complete] Failed to mark screen complete:', err);
-    throw err;
+  throw err;
+  }
+}
+
+/**
+ * Check if Level 2 Screen 3 (Innovation Round) is completed
+ * @param user_id - User identifier
+ * @returns boolean indicating completion status
+ */
+export async function isLevel2Screen3Completed(user_id: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('level2_screen3_progress')
+      .select('is_completed')
+      .eq('user_id', user_id)
+      .single();
+    
+    if (error) {
+      // If no record exists, it's not completed
+      if (error.code === 'PGRST116') {
+        return false;
+      }
+      throw error;
+    }
+    
+    return data?.is_completed || false;
+  } catch (err) {
+    console.error('[Level2Screen3 Check] Error checking completion:', err);
+    return false;
   }
 }
