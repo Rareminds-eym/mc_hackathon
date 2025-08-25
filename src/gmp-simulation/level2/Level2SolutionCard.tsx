@@ -17,10 +17,13 @@ import {
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { Question } from "../HackathonData";
 
-interface Level2SolutionCardProps {
-  question: Question;
+
+
+export interface Level2SolutionCardProps {
+  question: import("../HackathonData").Question;
   selectedSolution: string;
   setSelectedSolution: (solution: string) => void;
+  onDragInteraction?: (seconds: number) => void;
 }
 
 // Draggable Item Component (solution only)
@@ -83,49 +86,53 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({ id, type, children }) => 
 };
 
 
-const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selectedSolution, setSelectedSolution }) => {
+const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selectedSolution, setSelectedSolution, onDragInteraction }) => {
+  // Track drag interaction time
+  const [dragStartTime, setDragStartTime] = useState<number | null>(null);
+  const [totalDragTime, setTotalDragTime] = useState<number>(0);
   // TODO: Replace with actual session_id, email, and module_number from context/auth
   let session_id = window.sessionStorage.getItem('session_id') || "";
   let email = window.sessionStorage.getItem('email') || "";
 
-  // If session_id or email missing, try to fetch from winners_list_l1
+  // If session_id or email missing, derive from authenticated user or winners_list_l1 (no prompts)
   useEffect(() => {
-    async function fetchAndSetUserFromWinnersList() {
-      if (session_id && email) {
-        console.log('[DEBUG] On mount: session_id:', session_id, 'email:', email);
-        return;
-      }
-      // Try to get from winners_list_l1 using another identifier (e.g., localStorage, or prompt user)
-      // For demo, try to get by email prompt if not set
-      let userEmail = email;
-      if (!userEmail) {
-        userEmail = window.prompt('Enter your email to continue:') || "";
-      }
-      if (!userEmail) {
-        console.warn('[DEBUG] No email provided, cannot fetch user.');
-        return;
-      }
-      // Fetch from Supabase
-      const { data, error } = await supabase
-        .from('winners_list_l1')
-        .select('session_id,email')
-        .eq('email', userEmail)
-        .single();
-      if (error || !data) {
-        console.error('[DEBUG] Could not fetch user from winners_list_l1:', error?.message);
-        return;
-      }
-      if (data.session_id && data.email) {
-        window.sessionStorage.setItem('session_id', data.session_id);
-        window.sessionStorage.setItem('email', data.email);
-        session_id = data.session_id;
-        email = data.email;
-        console.log('[DEBUG] Set session_id and email from winners_list_l1:', session_id, email);
-        // Optionally, reload the page or re-render state
-        window.location.reload();
+    async function initUser() {
+      try {
+        // Prefer authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.warn('[Level2SolutionCard] Auth not ready:', authError.message);
+        }
+
+        const authEmail = user?.email || email;
+        if (authEmail) {
+          email = authEmail;
+          window.sessionStorage.setItem('email', authEmail);
+        }
+
+        let sid = window.sessionStorage.getItem('session_id') || (user?.user_metadata as any)?.session_id || session_id;
+
+        // Fallback: look up session_id using winners_list_l1 by authenticated email
+        if (!sid && authEmail) {
+          const { data, error } = await supabase
+            .from('winners_list_l1')
+            .select('session_id')
+            .eq('email', authEmail)
+            .maybeSingle();
+          if (!error && data?.session_id) {
+            sid = data.session_id as string;
+          }
+        }
+
+        if (sid) {
+          session_id = sid;
+          window.sessionStorage.setItem('session_id', sid);
+        }
+      } catch (e) {
+        console.error('[Level2SolutionCard] initUser error', e);
       }
     }
-    fetchAndSetUserFromWinnersList();
+    initUser();
   }, []);
   const module_number = 6; // or get from props/context if dynamic
 
@@ -205,14 +212,49 @@ const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selec
 
   // Drag and Drop event handlers (solution only)
   const handleDragStart = (event: any) => {
+    setDragStartTime(Date.now());
     const { active } = event;
     const draggedData = active.data.current as { text: string };
     if (draggedData && draggedData.text) setActiveItem(draggedData);
   };
 
-  const handleDragCancel = () => setActiveItem(null);
+  const handleDragCancel = () => {
+    if (dragStartTime) {
+      const now = Date.now();
+      const rawDuration = (now - dragStartTime) / 1000;
+      const duration = Math.max(1, Math.floor(rawDuration));
+      setTotalDragTime((prev) => prev + duration);
+      console.log('[DEBUG] DragCancel:', {
+        dragStartTime,
+        now,
+        rawDuration,
+        duration,
+        totalDragTime,
+        next: totalDragTime + duration
+      });
+      if (onDragInteraction) onDragInteraction(totalDragTime + duration);
+    }
+    setDragStartTime(null);
+    setActiveItem(null);
+  };
 
   const handleDragEnd = (event: any) => {
+    if (dragStartTime) {
+      const now = Date.now();
+      const rawDuration = (now - dragStartTime) / 1000;
+      const duration = Math.max(1, Math.floor(rawDuration));
+      setTotalDragTime((prev) => prev + duration);
+      console.log('[DEBUG] DragEnd:', {
+        dragStartTime,
+        now,
+        rawDuration,
+        duration,
+        totalDragTime,
+        next: totalDragTime + duration
+      });
+      if (onDragInteraction) onDragInteraction(totalDragTime + duration);
+    }
+    setDragStartTime(null);
     const { active, over } = event;
     setActiveItem(null);
     if (!over) return;
@@ -223,6 +265,12 @@ const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selec
     if (!draggedData || !draggedData.text) return;
     setSelectedSolution(draggedData.text);
   };
+  // Report total drag time to parent on change
+  useEffect(() => {
+    console.log('[DEBUG] useEffect totalDragTime', totalDragTime);
+    if (onDragInteraction) onDragInteraction(totalDragTime);
+    // eslint-disable-next-line
+  }, [totalDragTime]);
 
 
 

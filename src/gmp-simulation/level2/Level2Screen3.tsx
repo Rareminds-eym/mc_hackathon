@@ -1,5 +1,5 @@
 import { FileText, Globe, Lightbulb, Rocket, Sparkles, Target, Upload, Users, Zap } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceLayout } from '../../hooks/useOrientation';
 import { supabase } from '../../lib/supabase';
@@ -12,6 +12,7 @@ import LevelCompletionPopup from './components/LevelCompletionPopup';
 import NavigationBar from './components/NavigationBar';
 import ProgressTrack from './components/ProgressTrack';
 import StageContent from './components/StageContent';
+import type { PrototypeStageRef } from './components/stages/PrototypeStage';
 import { StageData, StageFormData } from './types';
 // import ProgressIndicator from './components/ProgressIndicator';
 import LoadingScreen from './components/LoadingScreen';
@@ -30,6 +31,8 @@ const Level2Screen3: React.FC<Level2Screen3Props> = () => {
   const [caseError, setCaseError] = useState<string | null>(null);
   // Fetch selected case on mount
   const { user } = useAuth();
+  // Ref to call upload from Stage 9 before proceeding
+  const prototypeStageRef = useRef<PrototypeStageRef | null>(null);
 
   // Move isStageComplete here so it is defined before any usage
   const isStageComplete = (stageNum: number) => {
@@ -436,6 +439,26 @@ const Level2Screen3: React.FC<Level2Screen3Props> = () => {
       // Determine the next stage before saving
       let nextStage = stage;
       if (stage === 9) {
+        // Before proceeding from Stage 9, attempt the PDF upload if a file is selected
+        try {
+          if (prototypeStageRef.current && typeof prototypeStageRef.current.uploadSelectedFile === 'function') {
+            const uploaded = await prototypeStageRef.current.uploadSelectedFile();
+            if (!uploaded) {
+              console.error('❌ PDF upload failed - not proceeding to next stage');
+              const lastErr = prototypeStageRef.current?.getLastUploadError?.();
+              setShowProceedWarning(false); // close modal so toast is visible
+              showToast('error', lastErr || 'Failed to upload your PDF. Please try again.');
+              setIsSaving(false);
+              return;
+            }
+          }
+        } catch (uploadErr) {
+          console.error('💥 Error during PDF upload from stage 9:', uploadErr);
+          setShowProceedWarning(false); // close modal so toast is visible
+          showToast('error', 'Failed to upload your PDF. Please try again.');
+          setIsSaving(false);
+          return;
+        }
         nextStage = 10;
       } else if (stage === 10) {
         nextStage = 10; // Stay on 10 for completion
@@ -618,6 +641,7 @@ const Level2Screen3: React.FC<Level2Screen3Props> = () => {
             onFormDataChange={handleFormDataChange}
             isMobileHorizontal={isMobileHorizontal}
             isAnimating={isAnimating}
+            prototypeStageRef={prototypeStageRef}
           />
 
           {/* Navigation Bar */}

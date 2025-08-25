@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Level2Card from "./Level2Card";
 // import Level2Timer from "./Level2Timer";
-import { getLevel2Progress } from "./level2/level2ProgressHelpers";
+import { getLevel2Progress, isLevel2Screen3Completed } from "./level2/level2ProgressHelpers";
 import { useGameSession } from "./useGameSession";
 
 // Real eligibility check: only allow if user is in winners_list_level1
@@ -26,7 +26,7 @@ async function isLevel2Allowed(email: string | null, session_id: string | null):
 }
 
 const showWalkthroughVideo = () => {
-  const videoUrl = "https://www.youtube.com/watch?v=7CemV2XIaXo";
+  const videoUrl = "https://www.youtube.com/watch?v=De5tXqUyT-0&feature=youtu.be";
   window.open(videoUrl, '_blank');
 };
 
@@ -52,6 +52,7 @@ const Level2Simulation: React.FC = () => {
   // const [timerActive, setTimerActive] = useState(false);
   // const [timerValue, setTimerValue] = useState(INITIAL_TIME);
   const [isFirstTime, setIsFirstTime] = useState(true);
+  const [isLevel2Completed, setIsLevel2Completed] = useState(false);
 
   // Restore progress on mount
   useEffect(() => {
@@ -59,8 +60,15 @@ const Level2Simulation: React.FC = () => {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user || !user.id) throw new Error('User not authenticated');
+        
+        // Check if Level2Screen3 (Innovation Round) is completed
+        const level2CompletionStatus = await isLevel2Screen3Completed(user.id);
+        setIsLevel2Completed(level2CompletionStatus);
+        
         const progress = await getLevel2Progress(user.id);
         console.log('[Level2Simulation] Restored progress from hl2_progress:', progress);
+        console.log('[Level2Simulation] Level2Screen3 completion status:', level2CompletionStatus);
+        
         if (progress) {
           // Resume from next incomplete screen
           let nextScreen = 1;
@@ -331,7 +339,7 @@ const Level2Simulation: React.FC = () => {
           </div>
         </div>
         <h1 className="text-xl font-black text-blue-100 mb-3 pixel-text">
-          CODECare 2.0
+          CodeCare 2.0
         </h1>
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="pixel-border bg-gradient-to-r from-blue-700 to-blue-600 p-2">
@@ -369,36 +377,45 @@ const Level2Simulation: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-          <button
-            onClick={() => {
-              if (session_id && email) {
-                window.sessionStorage.setItem('session_id', session_id);
-                window.sessionStorage.setItem('email', email);
-                console.log('[DEBUG] Set session_id and email in sessionStorage:', session_id, email);
-              } else {
-                console.warn('[DEBUG] session_id or email missing, not set in sessionStorage');
-              }
-              setShowCountdown(true);
-              setCountdownNumber(3);
-              let i = 3;
-              const interval = setInterval(() => {
-                i--;
-                setCountdownNumber(i);
-                if (i === 0) {
-                  clearInterval(interval);
-                  setShowCountdown(false);
-                  setShowLevel2Card(true);
-                  if (!window.sessionStorage.getItem('level2_timer_start')) {
-                    window.sessionStorage.setItem('level2_timer_start', Date.now().toString());
-                    console.log('[TIMER] Set level2_timer_start:', Date.now());
-                  }
+          {isLevel2Completed ? (
+            <div className="pixel-border bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-black py-2 px-4 pixel-text text-sm flex items-center gap-2">
+              <span className="text-2xl">🏆</span>
+              HL2-Completed
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                // Set session_id and email in sessionStorage if available
+                if (session_id && email) {
+                  window.sessionStorage.setItem('session_id', session_id);
+                  window.sessionStorage.setItem('email', email);
+                  console.log('[DEBUG] Set session_id and email in sessionStorage:', session_id, email);
+                } else {
+                  console.warn('[DEBUG] session_id or email missing, not set in sessionStorage');
                 }
-              }, 1000);
-            }}
-            className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
-          >
-            {isFirstTime ? "START HACKATHON" : "CONTINUE"}
-          </button>
+                setShowCountdown(true);
+                setCountdownNumber(3);
+                let i = 3;
+                const interval = setInterval(() => {
+                  i--;
+                  setCountdownNumber(i);
+                  if (i === 0) {
+                    clearInterval(interval);
+                    setShowCountdown(false);
+                    setShowLevel2Card(true);
+                    // Set timer start timestamp if not already set
+                    if (!window.sessionStorage.getItem('level2_timer_start')) {
+                      window.sessionStorage.setItem('level2_timer_start', Date.now().toString());
+                      console.log('[TIMER] Set level2_timer_start:', Date.now());
+                    }
+                  }
+                }, 1000);
+              }}
+              className="pixel-border bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm"
+            >
+              {isFirstTime ? "START HACKATHON" : "CONTINUE"}
+            </button>
+          )}
           <button
             onClick={showWalkthroughVideo}
             className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-2 px-4 pixel-text transition-all transform hover:scale-105 text-sm flex items-center gap-2"
