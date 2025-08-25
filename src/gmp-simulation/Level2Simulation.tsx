@@ -339,7 +339,7 @@ const Level2Simulation: React.FC = () => {
           </div>
         </div>
         <h1 className="text-xl font-black text-blue-100 mb-3 pixel-text">
-          CAPAThon 2.0
+          CodeCare 2.0
         </h1>
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="pixel-border bg-gradient-to-r from-blue-700 to-blue-600 p-2">
