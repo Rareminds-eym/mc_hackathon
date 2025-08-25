@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { hackathonData } from "../HackathonData";
 import Level2SolutionCard from "./Level2SolutionCard";
 import Header from "./components/Header";
+import ConfirmModal from "./ui/ConfirmModal";
 import { saveLevel2TimerState } from "./level2ProgressHelpers";
 import {
   restoreHL2Progress,
@@ -22,6 +23,9 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
   const [error, setError] = useState<string | null>(null);
   const [showBrief, setShowBrief] = useState(false);
   const [selectedSolution, setSelectedSolution] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  // Track drag interaction time (in seconds)
+  const [dragInteractionTime, setDragInteractionTime] = useState<number>(0);
   const { isMobile, isHorizontal } = useDeviceLayout();
   const isMobileHorizontal = isMobile && isHorizontal;
 
@@ -98,10 +102,21 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileHorizontal]);
 
-  // Save selected solution to Supabase (solution only)
-  const saveSelectedSolution = async (solution: string) => {
-    let session_id = window.sessionStorage.getItem("session_id") || "";
-    let email = window.sessionStorage.getItem("email") || "";
+    // Save selected solution to Supabase (solution + timer + drag_interaction_time)
+  // Helper to format seconds as HH:MM:SS
+  function formatSecondsToHHMMSS(seconds: number | null | undefined): string | null {
+    if (typeof seconds !== 'number' || isNaN(seconds)) return null;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return [h, m, s]
+      .map((v) => v.toString().padStart(2, '0'))
+      .join(':');
+  }
+
+  const saveSelectedSolution = async (solution: string, timer?: number | null, dragInteractionTime?: number | null) => {
+    const session_id = window.sessionStorage.getItem("session_id") || "";
+    const email = window.sessionStorage.getItem("email") || "";
     const module_number = 6;
     const question_index = 0;
 
@@ -118,6 +133,15 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
     const is_correct = solution === question.correctSolution;
     const score = is_correct ? 30 : 0;
 
+    const dragInteractionTimeFormatted = formatSecondsToHHMMSS(dragInteractionTime);
+    console.log('[DEBUG] Saving solution:', {
+      solution,
+      timer,
+      dragInteractionTime,
+      dragInteractionTimeFormatted,
+      typeofDragInteractionTime: typeof dragInteractionTime,
+    });
+
     const { error } = await supabase.from("selected_solution").upsert(
       [
         {
@@ -128,6 +152,8 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
           solution,
           is_correct,
           score,
+          timer: typeof timer === 'number' ? timer : null,
+          drag_interaction_time: dragInteractionTimeFormatted,
         },
       ],
       { onConflict: "session_id,email,module_number" }
@@ -145,7 +171,8 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
   const handleProceed = async () => {
     setLoading(true);
     try {
-      await saveSelectedSolution(selectedSolution);
+      // Pass savedTimer to saveSelectedSolution
+      await saveSelectedSolution(selectedSolution, savedTimer, dragInteractionTime);
       const {
         data: { user },
         error: authError,
@@ -222,11 +249,24 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
         }
         titleText="SOLUTION QUEST"
         onShowBrief={() => setShowBrief(true)}
-        onProceed={selectedSolution ? handleProceed : undefined}
+        onProceed={selectedSolution ? () => setShowConfirm(true) : undefined}
         canProceed={!!selectedSolution}
         savedTimer={savedTimer || undefined}
         autoSave={true}
         onSaveTimer={handleSaveTimer}
+      />
+
+       {/* Confirm Modal for Proceed */}
+      <ConfirmModal
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={() => {
+          setShowConfirm(false);
+          handleProceed();
+        }}
+        confirmText="CONFIRM & PROCEED"
+        title="CAUTION"
+        message="Are you sure you want to submit your solution? This action cannot be undone."
       />
 
       {/* Mobile Brief Popup (only in mobile horizontal) */}
@@ -241,6 +281,7 @@ const Level2Screen2: React.FC<Level2Screen2Props> = ({ onProceedConfirmed }) => 
         question={question}
         selectedSolution={selectedSolution}
         setSelectedSolution={setSelectedSolution}
+        onDragInteraction={setDragInteractionTime}
       />
     </>
   );
