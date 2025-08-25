@@ -4,10 +4,12 @@ import { StageProps } from '../../types';
 import { uploadFileToS3 } from '../../../../utils/awsConfig';
 import { useSupabaseUserId } from '../../../../hooks/useSupabaseUserId';
 import { supabase } from '../../../../lib/supabase';
+import Toast from '../Toast';
 
 // Add interface for ref methods
 export interface PrototypeStageRef {
   uploadSelectedFile: () => Promise<boolean>;
+  getLastUploadError: () => string | null;
 }
 
 const PrototypeStage = forwardRef(
@@ -19,6 +21,7 @@ const PrototypeStage = forwardRef(
   const [retryCount, setRetryCount] = useState(0);
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileValidationError, setFileValidationError] = useState<string | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const MAX_RETRY_ATTEMPTS = 3;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userId } = useSupabaseUserId();
@@ -34,7 +37,7 @@ const PrototypeStage = forwardRef(
     return () => clearTimeout(focusTimeout);
   }, []);
 
-  // Expose upload method to parent via ref
+  // Expose upload method and last error to parent via ref
   useImperativeHandle(ref, () => ({
     uploadSelectedFile: async (): Promise<boolean> => {
       if (!selectedFile) {
@@ -48,7 +51,8 @@ const PrototypeStage = forwardRef(
         console.error('Upload failed during confirmation:', error);
         return false;
       }
-    }
+    },
+    getLastUploadError: () => uploadError
   }));
 
   const uploadFileToCloud = async (file: File, isRetry = false): Promise<boolean> => {
@@ -104,6 +108,10 @@ const PrototypeStage = forwardRef(
       
       // Reset retry count on successful upload
       setRetryCount(0);
+      
+      // Show success toast
+      setShowSuccessToast(true);
+      
       return true;
       
     } catch (uploadError: any) {
@@ -310,7 +318,18 @@ const PrototypeStage = forwardRef(
   };
 
   return (
-    <div className={`${isMobileHorizontal ? 'space-y-3' : 'space-y-8'} animate-fadeIn`}>
+    <>
+      {/* Success Toast */}
+      <Toast
+        show={showSuccessToast}
+        type="success"
+        message="Successfully File Uploaded"
+        onClose={() => setShowSuccessToast(false)}
+        autoClose={true}
+        duration={5000}
+      />
+      
+      <div className={`${isMobileHorizontal ? 'space-y-3' : 'space-y-8'} animate-fadeIn`}>
       <div className="space-y-6">
         <div className="group">
           <div className="pixel-border-thick bg-gray-900/50 p-4 relative overflow-hidden group-hover:bg-gray-900/70 transition-all duration-300">
@@ -568,6 +587,7 @@ const PrototypeStage = forwardRef(
         </div>
       </div>
     </div>
+    </>
   );
 }) as React.ForwardRefExoticComponent<StageProps & React.RefAttributes<PrototypeStageRef>>;
 
