@@ -26,7 +26,7 @@ async function isLevel2Allowed(email: string | null, session_id: string | null):
 }
 
 const showWalkthroughVideo = () => {
-  const videoUrl = "https://www.youtube.com/watch?v=7CemV2XIaXo";
+  const videoUrl = "https://www.youtube.com/watch?v=De5tXqUyT-0&feature=youtu.be";
   window.open(videoUrl, '_blank');
 };
 

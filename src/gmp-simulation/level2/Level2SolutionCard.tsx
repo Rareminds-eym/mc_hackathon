@@ -17,10 +17,11 @@ import {
 import { useDeviceLayout } from "../../hooks/useOrientation";
 import { Question } from "../HackathonData";
 
-interface Level2SolutionCardProps {
-  question: Question;
+export interface Level2SolutionCardProps {
+  question: import("../HackathonData").Question;
   selectedSolution: string;
   setSelectedSolution: (solution: string) => void;
+  onDragInteraction?: (seconds: number) => void;
 }
 
 // Draggable Item Component (solution only)
@@ -83,7 +84,10 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({ id, type, children }) => 
 };
 
 
-const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selectedSolution, setSelectedSolution }) => {
+const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selectedSolution, setSelectedSolution, onDragInteraction }) => {
+  // Track drag interaction time
+  const [dragStartTime, setDragStartTime] = useState<number | null>(null);
+  const [totalDragTime, setTotalDragTime] = useState<number>(0);
   // TODO: Replace with actual session_id, email, and module_number from context/auth
   let session_id = window.sessionStorage.getItem('session_id') || "";
   let email = window.sessionStorage.getItem('email') || "";
@@ -205,14 +209,49 @@ const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selec
 
   // Drag and Drop event handlers (solution only)
   const handleDragStart = (event: any) => {
+    setDragStartTime(Date.now());
     const { active } = event;
     const draggedData = active.data.current as { text: string };
     if (draggedData && draggedData.text) setActiveItem(draggedData);
   };
 
-  const handleDragCancel = () => setActiveItem(null);
+const handleDragCancel = () => {
+    if (dragStartTime) {
+      const now = Date.now();
+      const rawDuration = (now - dragStartTime) / 1000;
+      const duration = Math.max(1, Math.floor(rawDuration));
+      setTotalDragTime((prev) => prev + duration);
+      console.log('[DEBUG] DragCancel:', {
+        dragStartTime,
+        now,
+        rawDuration,
+        duration,
+        totalDragTime,
+        next: totalDragTime + duration
+      });
+      if (onDragInteraction) onDragInteraction(totalDragTime + duration);
+    }
+    setDragStartTime(null);
+    setActiveItem(null);
+  };
 
   const handleDragEnd = (event: any) => {
+    if (dragStartTime) {
+      const now = Date.now();
+      const rawDuration = (now - dragStartTime) / 1000;
+      const duration = Math.max(1, Math.floor(rawDuration));
+      setTotalDragTime((prev) => prev + duration);
+      console.log('[DEBUG] DragEnd:', {
+        dragStartTime,
+        now,
+        rawDuration,
+        duration,
+        totalDragTime,
+        next: totalDragTime + duration
+      });
+      if (onDragInteraction) onDragInteraction(totalDragTime + duration);
+    }
+    setDragStartTime(null);
     const { active, over } = event;
     setActiveItem(null);
     if (!over) return;
@@ -225,7 +264,13 @@ const Level2SolutionCard: React.FC<Level2SolutionCardProps> = ({ question, selec
   };
 
 
-
+// Report total drag time to parent on change
+  useEffect(() => {
+    console.log('[DEBUG] useEffect totalDragTime', totalDragTime);
+    if (onDragInteraction) onDragInteraction(totalDragTime);
+    // eslint-disable-next-line
+  }, [totalDragTime]);
+  
   return (
     <DndContext
       sensors={sensors}
