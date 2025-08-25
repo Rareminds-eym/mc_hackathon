@@ -12,502 +12,502 @@ export interface Question {
 export const hackathonData: Question[] = [
   {
     "id": 1,
-    "caseFile": "An adult came to the ER with cough, fever, and trouble breathing. The chest x‑ray later showed pneumonia, and the discharge summary clearly says 'community‑acquired pneumonia.' The coder looked at the ER note first and chose cough + fever as the main diagnosis. No one checked the discharge summary before billing. The bill now tells the story that the patient had only symptoms, not the real illness. This can confuse payers and change reports about hospital cases.",
+    "caseFile": "During Paracetamol 500 mg tablet production, the compression machine stopped after ~45% of the batch. The hopper lid was not closed properly, so the blend sat uncovered ~30 minutes before restart. The line log shows no downtime product protection entry. In‑process weight checks right after restart show wider variation than earlier samples. Environmental differential pressure dipped once during the stoppage. What should the production and QA teams record and consider for this lot?",
     "violationOptions": [
-      "Used symptoms as principal instead of the confirmed disease",
-      "Used pneumonia as principal (correct)",
-      "Added an external cause for cough",
-      "Used 'unspecified viral illness' as a placeholder"
+      "Preventive maintenance not done as per schedule",
+      "Cleaning done with wrong detergent",
+      "Use of expired raw materials",
+      "Primary packaging stored in open area"
     ],
-    "correctViolation": "Used symptoms as principal instead of the confirmed disease",
+    "correctViolation": "Preventive maintenance not done as per schedule",
     "rootCauseOptions": [
-      "Coder chose the first note (ER) and skipped the discharge summary",
-      "Doctor hid the diagnosis on purpose",
-      "Pharmacy note had no medicines listed",
-      "The software blocked all pneumonia codes"
+      "Faulty motor sensor not replaced on time",
+      "Wrong label artwork received from vendor",
+      "QC analyst used wrong reference standard",
+      "Weighing balance drift in warehouse"
     ],
-    "correctRootCause": "Coder chose the first note (ER) and skipped the discharge summary",
+    "correctRootCause": "Faulty motor sensor not replaced on time",
     "solutionOptions": [
-      "Add a 'final diagnosis check' before billing; train coder; flag when symptoms are chosen over a final disease",
-      "Delete all symptom codes from the system",
-      "Only accept ER notes as the principal source",
-      "Ask doctors to delete ER notes after admission"
+      "Replace the sensor, update maintenance plan, train operators on downtime handling and covering of product",
+      "Reject all future batches of this product",
+      "Run machine faster to catch up lost time",
+      "Skip in‑process checks to save time"
     ],
-    "correctSolution": "Add a 'final diagnosis check' before billing; train coder; flag when symptoms are chosen over a final disease"
+    "correctSolution": "Replace the sensor, update maintenance plan, train operators on downtime handling and covering of product"
   },
   {
     "id": 2,
-    "caseFile": "A patient had arthroscopy on the left knee. The consent, imaging, and operative note all say left side. The claim went out with 'unspecified knee' because the template did not ask for side, and the coder did not recheck the operation note. The payer cannot tell which leg was treated. That can lead to denials or wrong quality data. The story of care is incomplete without left/right.",
+    "caseFile": "An antibiotic dry-blend moved straight to drying because the operator skipped wet granulation after misreading the BMR. The shift was short-staffed, and two steps on the BMR fall on a page break. Sieve analysis shows non‑uniform particle size and poor flow. The critical-step checkbox is blank for this stage. What should the team review and capture in the deviation?",
     "violationOptions": [
-      "Left/right side (laterality) not captured",
-      "Correct left knee code used",
-      "Added weeks of pregnancy",
-      "Added external place code"
+      "Skipping a validated manufacturing step",
+      "Using a smaller FBD bag",
+      "Printing labels in a different room",
+      "Changing hair cover type"
     ],
-    "correctViolation": "Left/right side (laterality) not captured",
+    "correctViolation": "Skipping a validated manufacturing step",
     "rootCauseOptions": [
-      "Template didn't ask for side and coder didn't verify the op report",
-      "Surgeon refused to help the coder",
-      "Images were low quality",
-      "Patient changed knees mid-surgery"
+      "Unclear BMR layout; critical step not highlighted",
+      "Faulty temperature probe in dryer",
+      "Vendor sent different grade of API",
+      "Wrong mesh used in sifter"
     ],
-    "correctRootCause": "Template didn't ask for side and coder didn't verify the op report",
+    "correctRootCause": "Unclear BMR layout; critical step not highlighted",
     "solutionOptions": [
-      "Make side a required field; link op note side to code picker; block 'unspecified' when side exists",
-      "Remove all side info from reports",
-      "Use unspecified codes to save time",
-      "Bill both knees 'just in case'"
+      "Revise BMR with clear step numbers/visual flags; retrain operators on critical steps; add peer check before moving to next stage",
+      "Proceed to compression and rely on final testing",
+      "Shorten drying time in future batches",
+      "Increase lubricant for better flow"
     ],
-    "correctSolution": "Make side a required field; link op note side to code picker; block 'unspecified' when side exists"
+    "correctSolution": "Revise BMR with clear step numbers/visual flags; retrain operators on critical steps; add peer check before moving to next stage"
   },
   {
     "id": 3,
-    "caseFile": "A 68‑year‑old has right‑side weakness from a stroke years ago. Today's visit is for help with walking aids. The note says 'history of stroke; residual weakness,' and there are no new stroke symptoms. The coder chose an 'acute stroke' code from the problem list. This makes it look like a new emergency when it is not. The record should show long‑term effects of an old stroke, not a fresh event.",
+    "caseFile": "A vitamin capsule blend ran 60 minutes instead of 40 due to a power outage and late restart. Mixer timer logs show a gap; no hold‑time assessment was recorded. The batch record does not indicate whether the lubricant was added before or after the extra mixing. Early dissolution results look slightly slower than trend. What information belongs in the BMR and deviation file?",
     "violationOptions": [
-      "Coded acute stroke; should have used late effect (sequela)",
-      "Correctly coded residual weakness from old stroke",
-      "Added contrast CT code",
-      "Used external cause"
+      "Mixing beyond validated time limit",
+      "Using a clean scoop without log entry",
+      "Sampling at 3 locations instead of 5",
+      "Recording data in blue ink"
     ],
-    "correctViolation": "Coded acute stroke; should have used late effect (sequela)",
+    "correctViolation": "Mixing beyond validated time limit",
     "rootCauseOptions": [
-      "Problem list showed 'stroke' without dates; coder didn't read visit details",
-      "Radiology server was down",
-      "Nurses wrote in blue ink",
-      "Clinic closed on weekends"
+      "No UPS/generator for mixer; no SOP for power failure handling",
+      "Wrong label applied to API drum",
+      "Incorrect assay method used",
+      "Humidity high in dispensing room"
     ],
-    "correctRootCause": "Problem list showed 'stroke' without dates; coder didn't read visit details",
+    "correctRootCause": "No UPS/generator for mixer; no SOP for power failure handling",
     "solutionOptions": [
-      "Add 'current vs past' prompt; check dates; train on sequela vs active",
-      "Always code acute for old issues",
-      "Delete the problem list",
-      "Let patients pick codes"
+      "Install backup power; add power‑loss SOP; test blend uniformity and dissolution risk; document hold time decision",
+      "Reduce mixing time for all future products",
+      "Bypass QA approval for restarts",
+      "Blend again to 'average out' impact"
     ],
-    "correctSolution": "Add 'current vs past' prompt; check dates; train on sequela vs active"
+    "correctSolution": "Install backup power; add power‑loss SOP; test blend uniformity and dissolution risk; document hold time decision"
   },
   {
     "id": 4,
-    "caseFile": "A pregnant patient comes for a clinic visit at about 32 weeks. The note shows blood pressure, baby's status, and the problem 'mild preeclampsia.' The coder entered the problem code but forgot the simple code that tells how many weeks pregnant the patient is. Without weeks, others cannot judge risk or compare cases. Many payers expect the week code on OB visits. The story of the visit is missing a key detail.",
+    "caseFile": "During packaging of an antihypertensive tablet, labels carried the previous batch number for about 2,000 packs before detection. The line clearance sheet is incomplete; the second‑person label check line is blank. Label reconciliation counts do not match the used/returned labels. Pallets from the first hour are already staged for dispatch. What must the team document about scope and traceability?",
     "violationOptions": [
-      "Weeks of pregnancy (Z3A) missing",
-      "Weeks coded correctly",
-      "Wrong modifier used",
-      "External cause added"
+      "Line clearance and label verification not done as per SOP",
+      "Use of non‑sterile gloves in packing",
+      "Cartons not shrink‑wrapped",
+      "Use of different lot of desiccant"
     ],
-    "correctViolation": "Weeks of pregnancy (Z3A) missing",
+    "correctViolation": "Line clearance and label verification not done as per SOP",
     "rootCauseOptions": [
-      "OB template hides the weeks field; coder focused only on the problem code",
-      "Ultrasound room was noisy",
-      "Lab had no gloves",
-      "Patient hid age"
+      "Label reconciliation failure; second check skipped under time pressure",
+      "Printer cartridge low causing faint text",
+      "QC approval memo not filed",
+      "Warehouse issued extra shippers"
     ],
-    "correctRootCause": "OB template hides the weeks field; coder focused only on the problem code",
+    "correctRootCause": "Label reconciliation failure; second check skipped under time pressure",
     "solutionOptions": [
-      "Make weeks required; auto-pull from OB chart; block OB claims without weeks",
-      "Never code weeks",
-      "Use 40 weeks for everyone",
-      "Ask payer to guess weeks"
+      "Stop line; segregate and destroy wrong packs; perform full line clearance; retrain staff; enforce independent double‑check and reconciliation",
+      "Overwrite labels with marker pen",
+      "Release packs with a market recall plan",
+      "Print a correction note and insert into cartons"
     ],
-    "correctSolution": "Make weeks required; auto-pull from OB chart; block OB claims without weeks"
+    "correctSolution": "Stop line; segregate and destroy wrong packs; perform full line clearance; retrain staff; enforce independent double‑check and reconciliation"
   },
   {
     "id": 5,
-    "caseFile": "A student fell off a bicycle on a city street and broke a wrist. The doctor wrote how it happened and where. The coder sent only the fracture code and skipped the 'how/where' parts. Later, the trauma data team could not tell if this was a road crash, a sports fall, or something else. That makes safety tracking and reports less useful. The case record looks unfinished.",
+    "caseFile": "For a multivitamin product, size '0' shells were loaded instead of size '00'. Half the batch was filled before anyone noticed the height mismatch at visual check. The component racks hold look‑alike boxes, and there is no barcode scan step at shell loading. Early net weight checks look acceptable because fill mass adjusted, but sealing defects appear in samples. What details should be captured about line setup and identification controls?",
     "violationOptions": [
-      "External cause/activity/place codes missing",
-      "Cause/place coded correctly",
-      "OB weeks added",
-      "Vaccine code added"
+      "Wrong component selection at line setup",
+      "Using stainless steel scoop",
+      "Running at slower speed",
+      "Using different tray color"
     ],
-    "correctViolation": "External cause/activity/place codes missing",
+    "correctViolation": "Wrong component selection at line setup",
     "rootCauseOptions": [
-      "Coder didn't read triage; shortcut skipped the external cause screen",
-      "Patient refused x-ray",
-      "Doctor used black pen",
-      "No elevators in ED"
+      "Look‑alike packaging; no barcode or second‑person verification",
+      "Wrong blend potency",
+      "Incorrect vacuum setting",
+      "Humidity excursion in store"
     ],
-    "correctRootCause": "Coder didn't read triage; shortcut skipped the external cause screen",
+    "correctRootCause": "Look‑alike packaging; no barcode or second‑person verification",
     "solutionOptions": [
-      "Show an injury prompt for cause/activity/place; red banner if blank",
-      "Never use cause codes",
-      "Add cause to every visit",
-      "Let patients choose the cause"
+      "Quarantine filled units; 100% visual check; introduce barcode verification and two‑person check at shell loading; update line setup checklist",
+      "Blend more fill to adjust weight",
+      "Increase tamping pins to compensate",
+      "Release only bottles with correct net weight"
     ],
-    "correctSolution": "Show an injury prompt for cause/activity/place; red banner if blank"
+    "correctSolution": "Quarantine filled units; 100% visual check; introduce barcode verification and two‑person check at shell loading; update line setup checklist"
   },
   {
     "id": 6,
-    "caseFile": "A 5‑cm forearm cut was cleaned, trimmed, and then closed with simple stitches. The cleaning and trimming were part of getting the wound ready. The coder billed the repair code and also billed a debridement code as if it were a separate extra service. For simple repairs, cleaning is included. The bill now looks like two services when there was one normal repair.",
+    "caseFile": "QC ran the tablet dissolution at 39 °C instead of 37 ± 0.5 °C. The bath probe daily verification entry is missing, and the control chart shows mild drift for a week. Results are out‑of‑trend versus prior lots. The analyst realized the error only after reviewing the raw data post‑run. What documents and records belong with this deviation?",
     "violationOptions": [
-      "Billed an extra code for a step included in the main repair",
-      "Only the repair code billed",
-      "Time codes used correctly",
-      "Contrast CT used"
+      "Analyst did not verify bath temperature before run",
+      "Samples not vortexed for 10 seconds",
+      "Using Class A glassware",
+      "Recording observations every 5 minutes"
     ],
-    "correctViolation": "Billed an extra code for a step included in the main repair",
+    "correctViolation": "Analyst did not verify bath temperature before run",
     "rootCauseOptions": [
-      "Didn't know bundling rules; copied prior charges",
-      "Doctor hid details",
-      "Lights too bright",
-      "Faded keyboard"
+      "Temperature probe drift; no daily verification log",
+      "Impeller blade worn out",
+      "Incorrect medium volume printed",
+      "Filter interaction with API"
     ],
-    "correctRootCause": "Didn't know bundling rules; copied prior charges",
+    "correctRootCause": "Temperature probe drift; no daily verification log",
     "solutionOptions": [
-      "Turn on bundling edits; pop-up 'included service'; short refresher",
-      "Turn off all edits",
-      "Bill every step separately",
-      "Ask payer to ignore edits"
+      "Calibrate/replace probe; add pre‑run temperature verification step; invalidate results and repeat; retrain analysts",
+      "Adjust results mathematically for temperature",
+      "Accept results as they are since close",
+      "Change dissolution method permanently"
     ],
-    "correctSolution": "Turn on bundling edits; pop-up 'included service'; short refresher"
+    "correctSolution": "Calibrate/replace probe; add pre‑run temperature verification step; invalidate results and repeat; retrain analysts"
   },
   {
     "id": 7,
-    "caseFile": "A patient came with ear pain and had wax removed. The note shows only the short problem history and the procedure. The coder also billed a separate office visit using modifier‑25, but there was no extra, separate evaluation documented. This makes it look like two payable services instead of one. Payers may deny or ask for money back.",
+    "caseFile": "A cough‑syrup assay used a titrant beyond expiry. The shelf tag is handwritten and faint; the reagent cabinet has no expired‑stock segregation shelf. Initial assay results looked normal, so the batch record was signed before the error was found during review. What receiving, storage, and inventory details should be written into the case file?",
     "violationOptions": [
-      "Used modifier-25 without a significant, separate E/M",
-      "Only the procedure billed",
-      "Drug units correct",
-      "External cause added"
+      "Use of expired analytical reagent",
+      "Using amber glassware",
+      "Triplicate injections instead of duplicate",
+      "Using class F weights"
     ],
-    "correctViolation": "Used modifier-25 without a significant, separate E/M",
+    "correctViolation": "Use of expired analytical reagent",
     "rootCauseOptions": [
-      "Template auto-suggested -25; coder didn't verify the note",
-      "Printer jam",
-      "Scales off",
-      "Patient late"
+      "Inventory control failure; no expiry alerts; expired bottle not segregated",
+      "Balance not leveled",
+      "Wrong calculation factor used",
+      "Analyst switched columns mid‑run"
     ],
-    "correctRootCause": "Template auto-suggested -25; coder didn't verify the note",
+    "correctRootCause": "Inventory control failure; no expiry alerts; expired bottle not segregated",
     "solutionOptions": [
-      "Use a 3-item checklist to prove separate E/M; block -25 unless checked; quick training",
-      "Remove all modifiers",
-      "Always add -25",
-      "Bill E/M twice"
+      "Invalidate results; retest with in‑date reagent; implement electronic stock alerts; segregate expired items; 5S of reagent shelves",
+      "Average results with previous batch",
+      "Adjust assay by adding correction factor",
+      "Skip assay and rely on dissolution only"
     ],
-    "correctSolution": "Use a 3-item checklist to prove separate E/M; block -25 unless checked; quick training"
+    "correctSolution": "Invalidate results; retest with in‑date reagent; implement electronic stock alerts; segregate expired items; 5S of reagent shelves"
   },
   {
     "id": 8,
-    "caseFile": "A small fatty lump (lipoma) was removed from the back. The operative note template copied a paragraph twice by mistake. The coder read fast and billed two removals. Follow‑up notes and the wound check mention only one incision. The claim tells a bigger story than what really happened.",
+    "caseFile": "An HPLC assay failed because the standard dilution factor was wrong. The SOP table is crowded, and the analyst copied the factor from the previous method version. There is no peer verification step for standard prep calculations. System suitability failed on response factor consistency. What should be preserved as evidence for the investigation pack?",
     "violationOptions": [
-      "Duplicate procedure billed for a single excision",
-      "Single excision billed once",
-      "OB weeks added",
-      "Contrast code used"
+      "Deviation from SOP in standard preparation",
+      "Column equilibrated for 30 minutes",
+      "Mobile phase filtered and degassed",
+      "System suitability run performed"
     ],
-    "correctViolation": "Duplicate procedure billed for a single excision",
+    "correctViolation": "Deviation from SOP in standard preparation",
     "rootCauseOptions": [
-      "Template duplicated a paragraph; no count check vs op note",
-      "Patient changed mid-case",
-      "OR clock stopped",
-      "Slow internet"
+      "Analyst misread dilution table; no peer verification step",
+      "Column end‑capped differently",
+      "PDA lamp aging",
+      "Autosampler misalignment"
     ],
-    "correctRootCause": "Template duplicated a paragraph; no count check vs op note",
+    "correctRootCause": "Analyst misread dilution table; no peer verification step",
     "solutionOptions": [
-      "Add 'unique procedure count' check; compare op note counts vs charges; fix template",
-      "Allow unlimited duplicates",
-      "Hide the op note from coders",
-      "Bill three times to be safe"
+      "Add peer verification for calculations; redesign SOP table for clarity; provide calculator template; retrain analysts",
+      "Increase injection volume to fix response",
+      "Change column to a newer type",
+      "Shorten runtime to save time"
     ],
-    "correctSolution": "Add 'unique procedure count' check; compare op note counts vs charges; fix template"
+    "correctSolution": "Add peer verification for calculations; redesign SOP table for clarity; provide calculator template; retrain analysts"
   },
   {
     "id": 9,
-    "caseFile": "A child received a vaccine in clinic. The claim shows the vaccine and the administration code, which is correct. It also shows a separate supply code for the syringe. The payer's rule counts the syringe as part of giving the shot. The extra supply line can cause a denial or overbilling risk.",
+    "caseFile": "Potency results varied by analyst for the same batch. Investigation shows samples were left at room temperature for hours instead of 2–8 °C as required. The label on the sample bag does not show storage condition, and the handover log between shifts is incomplete. Fridge temperature log has gaps. What should be described about sample custody and storage?",
     "violationOptions": [
-      "Separate supply billed when it is included in administration",
-      "Supply included correctly",
-      "Right external cause used",
-      "Time-based visit code added"
+      "Not following defined sample storage conditions",
+      "Using 10 mL vials instead of 20 mL",
+      "Labeling samples with blue ink",
+      "Sampling from top only"
     ],
-    "correctViolation": "Separate supply billed when it is included in administration",
+    "correctViolation": "Not following defined sample storage conditions",
     "rootCauseOptions": [
-      "Charge master had an outdated rule; coder followed it",
-      "Fridge was noisy",
-      "Reception printed in color",
-      "Nurse wore blue gown"
+      "Poor handover; storage instruction not communicated; fridge log not maintained",
+      "Filter lot variability",
+      "Different needle gauges used",
+      "Balance sensitivity limit"
     ],
-    "correctRootCause": "Charge master had an outdated rule; coder followed it",
+    "correctRootCause": "Poor handover; storage instruction not communicated; fridge log not maintained",
     "solutionOptions": [
-      "Update charge master; add payer policy tip; block syringe when admin present",
-      "Bill all supplies separately",
-      "Remove vaccine admin codes",
-      "Let patients bring their own syringes"
+      "Define handover checklist; label samples with storage condition; maintain fridge logs with alarms; retrain staff; repeat testing",
+      "Warm samples to room temperature before every test",
+      "Increase acceptance ranges to pass",
+      "Pool analyst results to average out"
     ],
-    "correctSolution": "Update charge master; add payer policy tip; block syringe when admin present"
+    "correctSolution": "Define handover checklist; label samples with storage condition; maintain fridge logs with alarms; retrain staff; repeat testing"
   },
   {
     "id": 10,
-    "caseFile": "A chemo drug of 80 mg was given. The HCPCS code counts 10 mg per unit. The claim shows only 1 unit instead of 8. The bill now under‑reports the drug used and the payment will be wrong. Audits may flag this as a unit error.",
+    "caseFile": "Stability samples meant for 25 °C/60% RH spent two days at ambient. Chambers look similar; sample trays are un‑color‑coded, and the LIMS location field was left as 'TBD'. Some sample labels are smudged from condensation. No excursion assessment form was opened. What should be noted for scope identification and evidence collection?",
     "violationOptions": [
-      "Units on claim don't match dose given",
-      "Units matched dose",
-      "Left/right modifier correct",
-      "External cause added"
+      "Placing stability samples in wrong storage condition",
+      "Sampling at 0, 3, and 6 months",
+      "Recording chamber ID on label",
+      "Using tamper seals"
     ],
-    "correctViolation": "Units on claim don't match dose given",
+    "correctViolation": "Placing stability samples in wrong storage condition",
     "rootCauseOptions": [
-      "Coder didn't read 'mg per unit'; no dose-to-unit calculator",
-      "Nurse hid the MAR",
-      "Lights were off",
-      "Pharmacy changed label colors"
+      "Similar‑looking chambers; labels unclear; no location scanning",
+      "Power failure in the correct chamber",
+      "Excess sample pulled by QC",
+      "Wrong stability protocol approved"
     ],
-    "correctRootCause": "Coder didn't read 'mg per unit'; no dose-to-unit calculator",
+    "correctRootCause": "Similar‑looking chambers; labels unclear; no location scanning",
     "solutionOptions": [
-      "Add dose-to-unit calculator + hard-stop edit; show 'unit = 10 mg' next to code; refresher",
-      "Always bill 1 unit for simplicity",
-      "Round doses to nearest 100 mg",
-      "Ask payers to convert units later"
+      "Move samples to correct chamber; evaluate impact with excursion assessment; add barcode location control and clear signage; retrain staff",
+      "Discard all stability lots",
+      "Reduce study time to compensate",
+      "Skip affected time points"
     ],
-    "correctSolution": "Add dose-to-unit calculator + hard-stop edit; show 'unit = 10 mg' next to code; refresher"
+    "correctSolution": "Move samples to correct chamber; evaluate impact with excursion assessment; add barcode location control and clear signage; retrain staff"
   },
   {
     "id": 11,
-    "caseFile": "The clinic note looks long because the computer filled many 'normal' boxes. The real thinking by the provider was simple: one stable problem, no tests, low risk. The coder picked a high visit level because the note is long. This makes the visit look more complex than it was. Payers may see this as upcoding.",
+    "caseFile": "A lactose drum arrived without any supplier label. Warehouse placed it in quarantine, but receipt was entered without a photo record or supplier contact. No ID test was requested before someone moved it to a general aisle pending 'clarification.' Later, issuance was halted by QA during a walk‑through. What receiving checkpoints and trace notes belong in the scenario record?",
     "violationOptions": [
-      "Upcoded visit level not supported by MDM/time",
-      "Correct E/M level chosen by MDM",
-      "Correct place code added",
-      "Correct pregnancy week used"
+      "Accepting unidentified material into warehouse",
+      "Placing pallets 10 cm from wall",
+      "Using nylon straps for pallets",
+      "Recording GRN within 24 hours"
     ],
-    "correctViolation": "Upcoded visit level not supported by MDM/time",
+    "correctViolation": "Accepting unidentified material into warehouse",
     "rootCauseOptions": [
-      "Coder picked level by note length; didn't review MDM",
-      "Clinic had no chairs",
-      "Double-sided printing",
-      "Thermometer missing"
+      "Vendor dispatch error not caught; receiving checklist incomplete",
+      "Humidity excursion in dock",
+      "Forklift battery low",
+      "Wrong bin card color used"
     ],
-    "correctRootCause": "Coder picked level by note length; didn't review MDM",
+    "correctRootCause": "Vendor dispatch error not caught; receiving checklist incomplete",
     "solutionOptions": [
-      "Teach 'code by MDM/time'; add level suggestion tied to MDM; audit auto-fill inflation",
-      "Always pick highest level",
-      "Delete MDM section",
-      "Ban templates"
+      "Quarantine drum; reject receipt; inform vendor; strengthen vendor audits; enforce receiving checklist and photo capture",
+      "Open drum and smell/visual check only",
+      "Issue material to production under caution",
+      "Relabel the drum manually"
     ],
-    "correctSolution": "Teach 'code by MDM/time'; add level suggestion tied to MDM; audit auto-fill inflation"
+    "correctSolution": "Quarantine drum; reject receipt; inform vendor; strengthen vendor audits; enforce receiving checklist and photo capture"
   },
   {
     "id": 12,
-    "caseFile": "The provider billed a time-based visit and a prolonged service add‑on. The note says 'long counseling,' but does not list total minutes for that day. Time‑based codes need total time and what it covered. Without minutes, reviewers cannot confirm the level. The record is not complete for time coding.",
+    "caseFile": "Gelatin (2–8 °C) sat at ambient for ~6 hours awaiting put‑away. The dock was busy; there is no put‑away SLA in the SOP, and shift logs do not show escalation. The delivery had three lots mixed on one pallet; carton thermometers were not used. Condensation was seen on outer cartons. What details should students capture about timing, temperatures, and lot segregation?",
     "violationOptions": [
-      "Time-based code used without total time",
-      "Correct time documented",
-      "Correct laterality used",
-      "Supply billed correctly"
+      "Failure to store temperature‑controlled material as per requirement",
+      "Using white pallet tags",
+      "Weighing on 2‑decimal balance",
+      "Stacking two pallets high"
     ],
-    "correctViolation": "Time-based code used without total time",
+    "correctViolation": "Failure to store temperature‑controlled material as per requirement",
     "rootCauseOptions": [
-      "Provider forgot to record minutes; template lacks a time field",
-      "Clock set to 24-hour format",
-      "Nurse wore a watch",
-      "No window in room"
+      "New storekeeper not trained; no visual cues; no put‑away time target",
+      "Truck off‑loading delay due to rain",
+      "Chiller coil frosting",
+      "Delivery note missing batch number"
     ],
-    "correctRootCause": "Provider forgot to record minutes; template lacks a time field",
+    "correctRootCause": "New storekeeper not trained; no visual cues; no put‑away time target",
     "solutionOptions": [
-      "Add mandatory time box; teach what counts; block time codes if time empty",
-      "Estimate time later from memory",
-      "Replace time codes with flat fees",
-      "Let coders guess minutes"
+      "Move to cold room; evaluate excursion; add training, colored zone labels, put‑away SLA, and dock temperature loggers",
+      "Dry the gelatin and use it",
+      "Mix with other lots to dilute impact",
+      "Ignore if COA meets specs"
     ],
-    "correctSolution": "Add mandatory time box; teach what counts; block time codes if time empty"
+    "correctSolution": "Move to cold room; evaluate excursion; add training, colored zone labels, put‑away SLA, and dock temperature loggers"
   },
   {
     "id": 13,
-    "caseFile": "A CT abdomen was ordered with contrast dye, but the dye was not used due to a shortage. The final radiology report clearly says 'non‑contrast study.' The claim still shows the with‑contrast code because charges pulled from the order screen. The codes should reflect what actually happened, not only what was planned. The current bill does not match the procedure performed.",
+    "caseFile": "A starch drum with a torn inner liner was received and pushed to storage without QA decision. The receiving checklist lacks a damage criteria item and a photo capture step. Later, foreign specks were seen during sifting trials. What evidence and process gaps should be written up?",
     "violationOptions": [
-      "Coded what was ordered, not what was done",
-      "Correctly coded non-contrast CT",
-      "External cause added",
-      "OB weeks added"
+      "Accepting physically damaged material without QA decision",
+      "Not shrink‑wrapping pallets",
+      "Using single‑use gloves",
+      "Skipping safety shoes"
     ],
-    "correctViolation": "Coded what was ordered, not what was done",
+    "correctViolation": "Accepting physically damaged material without QA decision",
     "rootCauseOptions": [
-      "Charge pulled from the order, not from the final radiology report",
-      "Radiologist whispered results",
-      "Scanner fan noisy",
-      "Printer out of paper"
+      "Receiving inspection checklist not followed; no escalation to QA",
+      "Forklift operator inexperienced",
+      "Supplier used different liner color",
+      "COA not stamped by QA"
     ],
-    "correctRootCause": "Charge pulled from the order, not from the final radiology report",
+    "correctRootCause": "Receiving inspection checklist not followed; no escalation to QA",
     "solutionOptions": [
-      "Bill from finalized report; add 'contrast used?' checkbox; block mismatch",
-      "Always code with contrast",
-      "Ask payer to choose",
-      "Delete the report"
+      "Quarantine drum; inspect for contamination; take QA decision; train receiving team; add damage criteria and photo evidence in SOP",
+      "Use material after sieving only",
+      "Blend with intact lots",
+      "Re‑bag material and proceed"
     ],
-    "correctSolution": "Bill from finalized report; add 'contrast used?' checkbox; block mismatch"
+    "correctSolution": "Quarantine drum; inspect for contamination; take QA decision; train receiving team; add damage criteria and photo evidence in SOP"
   },
   {
     "id": 14,
-    "caseFile": "In the cath lab, stents were placed in two different heart arteries (for example LAD and RCA). The op note lists both vessels and device details. The charge system pulled only the first line. The claim now shows just one vessel treated. This under‑reports care and reduces correct payment.",
+    "caseFile": "An older API lot expired in store while newer lots were issued. Bin cards and WMS show mismatched statuses; rack labels are hard to read. No cycle count occurred last month, and the FEFO rule is not enforced in the issuance screen. Production only realized after a reconciliation audit. What stock‑rotation and system‑control facts belong in the narrative?",
     "violationOptions": [
-      "Missed coding a second distinct vessel",
-      "Coded both vessels correctly",
-      "Correct activity code used",
-      "Supply code for stent syringe added"
+      "Not following FEFO/FIFO during issuance",
+      "Printing GRN the next day",
+      "Double shrink‑wrapping pallets",
+      "Using metal pallets"
     ],
-    "correctViolation": "Missed coding a second distinct vessel",
+    "correctViolation": "Not following FEFO/FIFO during issuance",
     "rootCauseOptions": [
-      "Charge capture pulled only first code; coder didn't read full vessel list",
-      "Cath lab lights dim",
-      "Contrast looked blue",
-      "Patient changed arteries"
+      "Manual picking; no system control; poor rack labeling",
+      "Unplanned overtime in warehouse",
+      "API demand forecast error only",
+      "QC COA attached late"
     ],
-    "correctRootCause": "Charge capture pulled only first code; coder didn't read full vessel list",
+    "correctRootCause": "Manual picking; no system control; poor rack labeling",
     "solutionOptions": [
-      "Use a vessel checklist (LAD/RCA/Cx…); match device log; import multi-line charges",
-      "Always bill one vessel",
-      "Let payer add vessels",
-      "Hide cath report"
+      "Implement barcode/WMS with FEFO rules; relabel racks; cycle count; train staff; investigate expired lot disposal",
+      "Allow use of expired lot after testing",
+      "Change expiry date in system",
+      "Issue credit note to production"
     ],
-    "correctSolution": "Use a vessel checklist (LAD/RCA/Cx…); match device log; import multi-line charges"
+    "correctSolution": "Implement barcode/WMS with FEFO rules; relabel racks; cycle count; train staff; investigate expired lot disposal"
   },
   {
     "id": 15,
-    "caseFile": "Three weeks after a wrist fracture, the patient returns for a routine healing check. The plan says 'continue cast, routine healing.' The coder billed the visit as an initial/active treatment encounter instead of follow‑up. That makes it look like new treatment was started when it was just routine care. The story in the bill does not match the note.",
+    "caseFile": "The blending step was completed, but the operator signature and date are missing in the BMR. The supervisor also did not initial the page review box. A later note claims 'done at 14:30,' but no time‑stamped equipment printout is attached. What should be described about documentation timing and verification artifacts?",
     "violationOptions": [
-      "Used initial/active encounter instead of routine follow-up",
-      "Used subsequent encounter for routine healing",
-      "Added correct external cause",
-      "Used correct contrast code"
+      "Failure to complete real‑time documentation",
+      "Using black ink instead of blue",
+      "Writing block letters",
+      "Attaching printouts with staples"
     ],
-    "correctViolation": "Used initial/active encounter instead of routine follow-up",
+    "correctViolation": "Failure to complete real‑time documentation",
     "rootCauseOptions": [
-      "Coder missed 'routine healing'; default stayed 'initial'",
-      "Clinic day was Tuesday",
-      "X-ray room painted blue",
-      "Consent stapled twice"
+      "High workload; no in‑process documentation check by supervisor",
+      "Pen ran out of ink",
+      "Wrong BMR version used",
+      "Different operator handwriting"
     ],
-    "correctRootCause": "Coder missed 'routine healing'; default stayed 'initial'",
+    "correctRootCause": "High workload; no in‑process documentation check by supervisor",
     "solutionOptions": [
-      "Add encounter-type prompt (initial/subsequent/sequela); default to 'subsequent' when note says routine healing",
-      "Always code initial",
-      "Remove encounter types",
-      "Ask patient which type"
+      "Interview operator; verify step completion with witnesses and records; add in‑process documentation check; retrain on ALCOA+ principles",
+      "Sign now with today's date",
+      "Ask QA to sign on behalf of operator",
+      "Ignore as minor"
     ],
-    "correctSolution": "Add encounter-type prompt (initial/subsequent/sequela); default to 'subsequent' when note says routine healing"
+    "correctSolution": "Interview operator; verify step completion with witnesses and records; add in‑process documentation check; retrain on ALCOA+ principles"
   },
   {
     "id": 16,
-    "caseFile": "A patient was treated for a urinary infection. Early notes said 'rule out sepsis,' but by discharge the doctor wrote 'sepsis ruled out.' The coder left the sepsis code on the claim anyway. This makes the bill show a serious condition that was not present. Payment and reports can be affected.",
+    "caseFile": "An analyst changed a pH value in a logbook without crossing out the old entry, adding a reason, or signing and dating. The next page shows corrected calculations, but no deviation number is referenced. The reviewer noticed inconsistent handwriting pressure on the altered line. What should the case narrative include about data integrity observations?",
     "violationOptions": [
-      "Left a ruled-out diagnosis on the final claim",
-      "Removed ruled-out diagnosis",
-      "Added pregnancy weeks",
-      "Used correct laterality"
+      "Non‑compliant data correction; breach of data integrity",
+      "Using gel pen in logbook",
+      "Writing in capital letters",
+      "Attaching a post‑it note"
     ],
-    "correctViolation": "Left a ruled-out diagnosis on the final claim",
+    "correctViolation": "Non‑compliant data correction; breach of data integrity",
     "rootCauseOptions": [
-      "Coder copied early 'r/o sepsis' and missed the final 'ruled out' note",
-      "Blood culture machine loud",
-      "Bedsheets white",
-      "Patient ate late"
+      "Analyst not trained on data correction SOP; weak review culture",
+      "pH meter drifted overnight",
+      "Reagent expired",
+      "QC manager on leave"
     ],
-    "correctRootCause": "Coder copied early 'r/o sepsis' and missed the final 'ruled out' note",
+    "correctRootCause": "Analyst not trained on data correction SOP; weak review culture",
     "solutionOptions": [
-      "Do a final-diagnosis reconciliation; flag 'ruled out' terms; peer review high-impact cases",
-      "Keep all possible diagnoses",
-      "Ask payer to decide",
-      "Delete early notes"
+      "Start data integrity investigation; retrain on GMP data correction; add second‑person review; audit recent entries; strengthen culture",
+      "Rewrite the whole page neatly",
+      "Delete the page and re‑enter",
+      "Accept the value since close to target"
     ],
-    "correctSolution": "Do a final-diagnosis reconciliation; flag 'ruled out' terms; peer review high-impact cases"
+    "correctSolution": "Start data integrity investigation; retrain on GMP data correction; add second‑person review; audit recent entries; strengthen culture"
   },
   {
     "id": 17,
-    "caseFile": "A coder needed to ask a doctor a question. Instead of using the hospital's secure message tool, the coder sent a personal Gmail with the patient's name and ID. No one reported this to the privacy officer. Patient information must be protected. Sending it through personal email is a risk and against policy.",
+    "caseFile": "A deviation report was submitted without root cause or CAPA fields completed. Closure was marked 'no impact' and sent for signature. The e‑form does not force those fields before submission, and there is no QA pre‑close gate. Training records show the initiator is new to deviation writing. What should be captured about documentation flow and competence?",
     "violationOptions": [
-      "Sent PHI outside approved secure channels",
-      "Used secure message system",
-      "Removed all patient info",
-      "Encrypted per policy"
+      "Submitting incomplete deviation documentation",
+      "Using the old deviation template",
+      "Filing deviation one day late",
+      "Not attaching a photo"
     ],
-    "correctViolation": "Sent PHI outside approved secure channels",
+    "correctViolation": "Submitting incomplete deviation documentation",
     "rootCauseOptions": [
-      "Didn't know policy / no quick secure tool; deadline pressure",
-      "Patient asked for Gmail",
-      "Hospital banned computers",
-      "Doctor prefers postcards"
+      "Staff not trained in deviation writing; no QA gate before closure",
+      "Deviation form too long",
+      "Supervisor on shift change",
+      "Printer out of toner"
     ],
-    "correctRootCause": "Didn't know policy / no quick secure tool; deadline pressure",
+    "correctRootCause": "Staff not trained in deviation writing; no QA gate before closure",
     "solutionOptions": [
-      "Train on PHI rules; auto-block emails with PHI keywords; give a one-click secure query tool",
-      "Allow any email if urgent",
-      "Print PHI and mail it",
-      "Store PHI on personal phones"
+      "Return for completion; provide training and job aids; add QA review gate; track overdue deviations and escalate",
+      "Close deviation with 'no impact' note",
+      "Create a new deviation for the same event",
+      "Ignore missing sections if batch passed"
     ],
-    "correctSolution": "Train on PHI rules; auto-block emails with PHI keywords; give a one-click secure query tool"
+    "correctSolution": "Return for completion; provide training and job aids; add QA review gate; track overdue deviations and escalate"
   },
   {
     "id": 18,
-    "caseFile": "The note mentions possible fluid overload but does not clearly diagnose heart failure. The coder sent a query that said, 'Please confirm acute heart failure,' with a yes/no choice. This pushes the doctor toward one answer. Queries should be neutral and open. The current wording can change the record unfairly.",
+    "caseFile": "Chromatography software was updated and several sequences were lost because no backup was taken. IT and QC emails show schedule confusion; the change control ticket lacks a step for pre‑update backup proof. Partial PDF printouts exist, but raw data files are missing. What should be noted about change authorization and data protection?",
     "violationOptions": [
-      "Used a leading (non-neutral) query",
-      "Used a neutral, open-ended query",
-      "Did not send any query",
-      "Asked HIM to edit the note"
+      "Failing to back up electronic data before system change",
+      "Printing fewer chromatograms",
+      "Using a shorter runtime",
+      "Changing column wash"
     ],
-    "correctViolation": "Used a leading (non-neutral) query",
+    "correctViolation": "Failing to back up electronic data before system change",
     "rootCauseOptions": [
-      "No standard query templates; pressure to finish; didn't know neutral wording",
-      "Provider hates questions",
-      "Office ran out of paper",
-      "Clinic door locked"
+      "No pre‑update backup SOP; IT‑QC communication gap",
+      "UPS capacity low",
+      "Autosampler leak",
+      "CDS audit trail off"
     ],
-    "correctRootCause": "No standard query templates; pressure to finish; didn't know neutral wording",
+    "correctRootCause": "No pre‑update backup SOP; IT‑QC communication gap",
     "solutionOptions": [
-      "Use neutral query templates; train staff; quick peer check for sensitive diagnoses",
-      "Ban all queries",
-      "Use only yes/no queries",
-      "Let coders assign diagnoses"
+      "Restore from last backup; re‑run tests as needed; create mandatory pre‑change backup SOP with sign‑off; schedule joint IT‑QC changes",
+      "Accept previous averages for lost data",
+      "Ignore because COA is already issued",
+      "Disable updates permanently"
     ],
-    "correctSolution": "Use neutral query templates; train staff; quick peer check for sensitive diagnoses"
+    "correctSolution": "Restore from last backup; re‑run tests as needed; create mandatory pre‑change backup SOP with sign‑off; schedule joint IT‑QC changes"
   },
   {
     "id": 19,
-    "caseFile": "New diagnosis codes started on October 1. The encoder software on some computers was not updated. For two weeks, staff kept using last year's codes. Payers denied the claims as 'invalid code for date of service.' Revenue dropped and rework increased. A clear update process was missing.",
+    "caseFile": "Post‑cleaning swab results exceeded limits, yet production of the next batch was started without re‑cleaning or QA release. The supervisor wrote 're‑swab later' on the line board. The stop rule is vague in the cleaning SOP, and the QA check box is at the end of the batch start list, not before it. What details should be included about release steps and limits?",
     "violationOptions": [
-      "Used retired/invalid codes for date of service",
-      "Used current codes",
-      "Added correct external cause",
-      "Used correct units"
+      "Starting production without QA release after failed cleaning validation",
+      "Using hot water instead of warm",
+      "Skipping exterior wipe‑down",
+      "Shorter drying time"
     ],
-    "correctViolation": "Used retired/invalid codes for date of service",
+    "correctViolation": "Starting production without QA release after failed cleaning validation",
     "rootCauseOptions": [
-      "No owner/checklist for updates; coders not alerted",
-      "Sun set early",
-      "Reception smiled too much",
-      "Building has four floors"
+      "Supervisor misread report; pressure to meet schedule; unclear stop rule",
+      "Detergent concentration slightly low",
+      "Water hardness high",
+      "Swab recovery factor not applied"
     ],
-    "correctRootCause": "No owner/checklist for updates; coders not alerted",
+    "correctRootCause": "Supervisor misread report; pressure to meet schedule; unclear stop rule",
     "solutionOptions": [
-      "Assign update owner; pre/post checklist; alert banner on go-live; spot-audit first week",
-      "Wait for denials to fix",
-      "Turn off updates",
-      "Ask payers to auto-map old codes"
+      "Stop batch; quarantine materials; re‑clean and re‑test; define clear stop rules in SOP; retrain supervisors; require QA sign‑off",
+      "Blend next batch to dilute residue",
+      "Proceed but test more samples later",
+      "Change limit to current result"
     ],
-    "correctSolution": "Assign update owner; pre/post checklist; alert banner on go-live; spot-audit first week"
+    "correctSolution": "Stop batch; quarantine materials; re‑clean and re‑test; define clear stop rules in SOP; retrain supervisors; require QA sign‑off"
   },
   {
     "id": 20,
-    "caseFile": "An internal audit found many mistakes: wrong use of modifier‑25, missing time for time‑based visits, and wrong drug units. The report was emailed, but no corrective plan was opened. Next month the same errors appeared again. Without owners and due dates, nothing changed. The problems keep repeating.",
+    "caseFile": "An in‑process pH meter carried a calibration sticker expired by 3 days. Two intermediate checks were logged using this meter. The calibration tracker spreadsheet shows the device as 'due soon,' but no alert reached the area. A backup meter exists in another room but requires a key. What context should be recorded about equipment status and access?",
     "violationOptions": [
-      "No CAPA after audit findings; issues repeated",
-      "CAPA created and closed",
-      "Errors dropped after training",
-      "Root causes well documented"
+      "Using measuring equipment past calibration due date",
+      "Not cleaning probe with DI water",
+      "Not wearing safety goggles",
+      "Recording pH to one decimal place"
     ],
-    "correctViolation": "No CAPA after audit findings; issues repeated",
+    "correctViolation": "Using measuring equipment past calibration due date",
     "rootCauseOptions": [
-      "No owner/due dates; audit report not tied to actions; weak follow-up",
-      "Printer squeaked",
-      "Parking lot full",
-      "Cafeteria closed"
+      "Calibration tracking system not updated; no visual alert on due date",
+      "Probe junction dirty",
+      "Power adapter loose",
+      "Temperature not compensated"
     ],
-    "correctRootCause": "No owner/due dates; audit report not tied to actions; weak follow-up",
+    "correctRootCause": "Calibration tracking system not updated; no visual alert on due date",
     "solutionOptions": [
-      "Open a CAPA with owners/dates; track fixes (policy, training, edits); re‑audit to confirm drop",
-      "Ignore audits if under 20% error",
-      "Run another audit without action",
-      "Delete the audit report"
+      "Quarantine affected results/batches; calibrate meter; review last valid date; implement electronic calibration tracker with alerts; retrain users",
+      "Ignore because only 3 days overdue",
+      "Average pH with previous runs",
+      "Switch to color paper test"
     ],
-    "correctSolution": "Open a CAPA with owners/dates; track fixes (policy, training, edits); re‑audit to confirm drop"
+    "correctSolution": "Quarantine affected results/batches; calibrate meter; review last valid date; implement electronic calibration tracker with alerts; retrain users"
   }
 ];

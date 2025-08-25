@@ -56,9 +56,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   });
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
-  const canProceed = level === 1 
-    ? selectedViolation && selectedRootCause 
-    : selectedSolution;
+  // Only allow proceed for Level 1 (Level 2 UI removed)
+  const canProceed = selectedViolation && selectedRootCause;
 
   const handleViolationSelect = (violation: string) => {
     setSelectedViolation(violation);
@@ -136,7 +135,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     setIsRootCauseDragOver(false);
   };
 
-  // Level 2 drag handlers
+  // Level 2 drag handlers removed
   const handleDragStart = (e: React.DragEvent, solution: string) => {
     e.dataTransfer.setData('text/plain', solution);
     e.dataTransfer.effectAllowed = 'move';
@@ -172,7 +171,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     setDraggedItem(null);
   };
 
-  // Level 2 Game-style Drag System with Clean Overlay
+  // Level 2 Game-style Drag System with Clean Overlay removed
   const handleAdvancedMouseDown = (e: React.MouseEvent, option: string, type: 'violation' | 'rootCause' | 'solution') => {
     e.preventDefault();
     console.log('🎮 Game drag started:', option, type);
@@ -722,10 +721,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     );
   }
 
-  // Level 2 - Single Screen Solution Deployment
+  // Level 2 - Single Screen Solution Deployment removed
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 overflow-hidden relative">
-      {/* Clean Drag Overlay for Level 2 */}
+  {/* Clean Drag Overlay for Level 2 removed */}
       {dragOverlay.visible && (
         <div
           className="fixed pointer-events-none z-50 transform -translate-x-1/2 -translate-y-1/2"
@@ -752,7 +751,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">SOLUTION DEPLOYMENT</h2>
-              <p className="text-green-100 text-xs">Level 2: Strategic Mode</p>
+              {/* Level 2: Strategic Mode label removed */}
             </div>
           </div>
           <div className="flex items-center space-x-3">
