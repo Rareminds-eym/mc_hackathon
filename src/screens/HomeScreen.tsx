@@ -95,11 +95,10 @@ const HomeScreen: React.FC = () => {
   };
 
   const viewScores = () => {
-    if (isGameLocked) {
-      setShowGameLocked(true);
-      return;
-    }
-    navigate("/scores");
+    // View Scores is locked - do nothing
+    return;
+    // Commented out navigation - scores are locked
+    // navigate("/scores");
   };
 
   const viewInstructions = () => {
@@ -170,7 +169,17 @@ const HomeScreen: React.FC = () => {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`group flex items-center gap-2 p-2 rounded-lg transition-colors duration-200 ${item.color}`}
+            className={`group flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 bg-white/80 border-2 border-blue-500 shadow-md mb-1 hover:scale-110 ${item.color}`}
+            title={item.label}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{
+              duration: 0.4,
+              delay: 0.1 + idx * 0.08,
+              type: "spring",
+            }}
+            whileHover={{ scale: 1.18, rotate: 6 }}
+            whileTap={{ scale: 0.95 }}
           >
             <span className="transition-colors duration-200 group-hover:text-white text-gray-700">
               {item.icon}
@@ -429,6 +438,7 @@ const HomeScreen: React.FC = () => {
                 label: "View Scores",
                 onClick: viewScores,
                 shouldDisable: true,
+                showLockIcon: true,
               },
               {
                 label: "Instructions",
@@ -454,16 +464,17 @@ const HomeScreen: React.FC = () => {
                 <Button
                   onClick={btn.onClick}
                   {...(btn.variant ? { variant: btn.variant } : {})}
-                  disabled={btn.label === "View Scores" ? true : (btn.shouldDisable && isGameLocked)}
-                  className={`$
-                    {layout.isMobile && layout.isHorizontal
+                  className={
+                    layout.isMobile && layout.isHorizontal
                       ? "px-0.5 py-0 !text-[14px] min-w-[60px] !h-9 !mb-2 rounded"
-                      : "px-3 py-2 text-base min-w-[120px] !h-12 rounded-lg"}
-                    ${btn.label === "View Scores" ? "!opacity-100 !cursor-not-allowed" : ""}
-                  `}
+                      : "px-3 py-2 text-base min-w-[120px] !h-12 rounded-lg"
+                  }
                 >
                   <div className="flex items-center justify-center gap-2">
-                    {((btn.shouldDisable && isGameLocked) || btn.label === "View Scores") && (
+                    {btn.shouldDisable && isGameLocked && (
+                      <Icon icon="mdi:lock" className="w-4 h-4" />
+                    )}
+                    {btn.showLockIcon && (
                       <Icon icon="mdi:lock" className="w-4 h-4" />
                     )}
                     {btn.label}
