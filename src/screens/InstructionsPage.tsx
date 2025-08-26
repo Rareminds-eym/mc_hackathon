@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import logo from "../../public/logos/bulb.png";
 import { Icon } from '@iconify/react';
-import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame, ArrowLeft, ChevronRight, Download } from 'lucide-react';
+import { Lock, Clock, Trophy, Target, Home, RotateCcw, HelpCircle, Hash, Award, Heart, Flame, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDeviceLayout } from '../hooks/useOrientation';
 
@@ -13,8 +13,8 @@ const levelImages = [
   "/backgrounds/Level2.png",
   "/backgrounds/Level3.png",
   "/backgrounds/Level4.png",
-  "/backgrounds/HL1.png",
-  "/backgrounds/HL2.png",
+  "/backgrounds/Level5.png",
+  "/backgrounds/Level6.png",
 ];
 
 const levels = [
@@ -183,54 +183,106 @@ const levels = [
   //   youtube: ""
   // },
   {
-    title: "HL-1: Design Challenge",
-    objective: "Create quality solutions",
-    bloom: "Evaluating",
-    format: "Process Design",
-    interface: "Interactive Builder",
-    description: "Design and evaluate quality systems from scratch. Build comprehensive solutions that meet regulatory standards and optimize manufacturing processes. Apply advanced GMP principles to create robust quality frameworks.",
-    icon: "🏗️",
-    features: [
-      {
-        icon: '🎯',
-        title: 'Design Objective',
-        color: 'blue',
-        border: 'border-blue-400',
-        text: 'Create comprehensive quality management systems by designing processes, procedures, and controls that ensure regulatory compliance.'
-      },
-      {
-        icon: '⚡',
-        title: 'Interactive Builder',
-        color: 'green',
-        border: 'border-green-400',
-        text: 'Use drag-and-drop tools to construct quality frameworks, design workflows, and build integrated management systems.'
-      },
-      {
-        icon: '🏆',
-        title: 'Evaluation System',
-        color: 'purple',
-        border: 'border-purple-400',
-        text: 'Your designs are evaluated based on completeness, regulatory compliance, efficiency, and real-world applicability.'
-      }
-    ],
-    controls: [
-      { icon: Hash, label: "Case No", tooltip: "Current case number", gradient: "from-purple-400 to-purple-500" },
-      { icon: Clock, label: "Timer", tooltip: "Track your time for this case", gradient: "from-blue-400 to-blue-500" },
-      { icon: Target, label: "Progress", tooltip: "Case completion progress", gradient: "from-green-400 to-green-500" },
-      { icon: ChevronRight, label: "Proceed", tooltip: "Proceed to next case", gradient: "from-green-400 to-green-700" },
-      { icon: Download, label: "Download", tooltip: "Download attempted scenarios for HL1", gradient: "from-cyan-400 to-blue-400" }
-    ],
-    youtube: ""
-  },
-  {
-    title: "HL-2: Innovation Lab",
-    objective: "Develop new methodologies",
-    bloom: "Creating",
-    format: "Research & Development",
-    interface: "Simulation Platform",
-    description: "🔒 LOCKED - Push the boundaries of quality management! Create innovative approaches, develop new methodologies, and pioneer the future of manufacturing excellence. (Complete previous levels to unlock)",
-    icon: "�"
-  },
+  title: "🚀 Welcome to CAPATHon!",
+  objective: "Theme: Root Cause or Bust!",
+  bloom: "🎯 Goal: Spot the violations. Crack the root cause. Score big.",
+  format: "🕹 Hackathon Level 1:",
+  interface: "Level 1: 5 problem statements\nWork as a team of 4\n1 attempt only\n60 mins on the clock",
+  description: [
+    "📊 Scoring:",
+    "Violation Accuracy – 50%",
+    "Root Cause Depth – 50%",
+    "📥 Submission:",
+    "Online, after all 5 problems are done.",
+    "No late entries",
+    "⚡ Pro Tip:",
+    "Divide and conquer — assign roles, stay sharp, beat the clock.",
+    "Don’t go linear. Run two parallel passes on each case:",
+    "Rapid Scan (2–3 mins): Identify likely violations first using a quick checklist (policy breach? data gap? SOP miss? safety lapse?).",
+    "RCA Sprint (3–4 mins): For each flagged violation, draft a one-line root cause using 5 Whys lite (Why → Because → Evidence).",
+    "Then cross-map: If a root cause doesn’t clearly explain a flagged violation (or vice versa), relink or drop it.",
+    "Finish with a 30–45 sec integrity check: Does every violation have one defensible root cause with evidence?",
+    "Assign team roles: Scanner, Mapper, RCA Lead, Timekeeper/QC.",
+    "Stay modular, not sequential."
+  ],
+  icon: "🏗️",
+  features: [
+    {
+      icon: "🎯",
+      title: "Design Objective",
+      color: "blue",
+      border: "border-blue-400",
+      text: "Theme: Root Cause or Bust! Spot the violations. Crack the root cause. Score big."
+    },
+    {
+      icon: "⚡",
+      title: "Interactive Builder",
+      color: "green",
+      border: "border-green-400",
+      text: "Run parallel passes: Rapid Scan for violations, RCA Sprint for root causes, and cross-map for accuracy."
+    },
+    {
+      icon: "🏆",
+      title: "Evaluation System",
+      color: "purple",
+      border: "border-purple-400",
+      text: "Scoring split: Violation Accuracy (50%), Root Cause Depth (50%). Only one attempt, 60 minutes total."
+    }
+  ],
+  controls: [
+    { icon: Clock, label: "Timer", tooltip: "Track your design time", gradient: "from-blue-400 to-blue-500" },
+    { icon: Trophy, label: "Score", tooltip: "Your design evaluation score", gradient: "from-amber-400 to-amber-500" },
+    { icon: Target, label: "Progress", tooltip: "Design completion progress", gradient: "from-green-400 to-green-500" },
+    { icon: RotateCcw, label: "Reset", tooltip: "Reset your design", gradient: "from-yellow-400 to-yellow-500" },
+    { icon: Home, label: "Exit", tooltip: "Return to main menu", gradient: "from-blue-400 to-blue-500" }
+  ],
+  youtube: ""
+},
+{
+  title: "🚀 Welcome to CAPATHon Level 2!",
+  objective: "Solution & Innovation Stage 🎉",
+  bloom: "🎯 Goal: Design innovative solutions. Build implementation plans. Create impact at scale.",
+  format: "🕹 Hackathon Level 2:",
+  interface: "Level 2: Solution & Innovation Stage\nShortlisted teams only (1-4 members)\nOne scenario per team\n3 hours on the clock",
+  // description: [
+  //   "📋 Submission Requirements:",
+  //   "• Choose ONE scenario from the Hackathon problem statements",
+  //   "• Your team must work on one scenario only",
+  //   "• Prepare your Innovation PDF using the provided template",
+  //   "",
+    
+  // ],
+  icon: "🏗️",
+  features: [
+    {
+      icon: "💡",
+      title: "Innovation Focus",
+      color: "blue",
+      border: "border-blue-400",
+      text: "Design practical solutions with clear FSQM/GMP alignment. Focus on scalable impact and implementation feasibility."
+    },
+    {
+      icon: "📋",
+      title: "PDF Template",
+      color: "green",
+      border: "border-green-400",
+      text: "Six mandatory sections: Problem Context, Root Cause Analysis, Solution Workflow, Implementation Plan, Feasibility, Scale Impact."
+    },
+    {
+      icon: "⏰",
+      title: "Submission Rules",
+      color: "purple",
+      border: "border-purple-400",
+      text: "3-hour deadline. One PDF per person (max 2MB). Final once uploaded. No plagiarism. Original work only."
+    }
+  ],
+  controls: [
+    { icon: Clock, label: "Timer", tooltip: "Track your development time", gradient: "from-blue-400 to-blue-500" },
+    { icon: Target, label: "Progress", tooltip: "PDF section completion progress", gradient: "from-green-400 to-green-500" },
+  ],
+  youtube: ""
+}
+ 
 ];
 
 // Color arrays for level backgrounds and borders
@@ -259,7 +311,11 @@ const InstructionsPage: React.FC = () => {
   // Detect mobile (simple check, can be improved)
   // Determine which levels to show - now we only have 2 levels (HL-1 and HL-2)
   const visibleLevels = levels; // Show all available levels (now only 2)
-  const visibleLevelImages = levelImages.slice(4, 6); // Use Level5.png and Level6.png for HL-1 and HL-2
+  // Use Level5.png for HL-1 and HL6.png for HL-2 (custom HL2 image)
+  const visibleLevelImages = [
+    "/backgrounds/HL5.png", // HL-1
+    "/backgrounds/HL6.png",   // HL-2 (custom image)
+  ];
   // Map selected index to correct level in visibleLevels
   const selectedIdx = selected;
   // Only allow selection of visible levels
@@ -437,17 +493,8 @@ const InstructionsPage: React.FC = () => {
                       <img
                         src={visibleLevelImages[i]}
                         alt={level.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-black"
                       />
-                      {/* Locked overlay for HL-2 only (HL-1 is now unlocked) */}
-                      {(i === 1) && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center backdrop-blur-sm opacity-90">
-                          <div className="text-center flex flex-col items-center justify-center">
-                            <Lock size={selectedIdx === i ? 20 : 16} className="text-white mb-1 drop-shadow-lg" />
-                            <span className={`text-white font-bold drop-shadow-lg ${selectedIdx === i ? 'text-xs' : 'text-[10px]'}`}>LOCKED</span>
-                          </div>
-                        </div>
-                      )}
                     </motion.div>
                   ))}
                 </motion.div>
@@ -456,7 +503,7 @@ const InstructionsPage: React.FC = () => {
                 <div className="flex flex-row gap-2 w-full">
                   {/* Instructions Container */}
                   <motion.div
-                    className="flex-1 bg-white/5 rounded-lg p-3 border-l-2 border-yellow-200/40 shadow-lg backdrop-blur-md mt-1 min-h-[200px]"
+                    className="flex-1 bg-white/5 rounded-lg p-3 border-l-2 border-yellow-200/40 shadow-lg backdrop-blur-md mt-1 min-h-[200px] max-h-[400px] overflow-y-auto scrollbar-hide"
                     initial={{ x: 50, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.8 }}
@@ -469,6 +516,74 @@ const InstructionsPage: React.FC = () => {
                     <p className="text-[10px] text-slate-200 mb-1">
                       <span className="font-semibold">Objective:</span> {levels[selected].objective}
                     </p>
+                    
+                    {/* Add Submission Requirements below Objective for HL-2 - Mobile */}
+                    {selected === 1 && (
+                      <div className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 rounded-lg p-2 mb-2 border border-emerald-400/30">
+                        <h3 className="text-[9px] font-bold text-emerald-200 mb-1 flex items-center gap-1">
+                          <span>📋</span> Submission Requirements
+                        </h3>
+                        <ul className="text-slate-200 space-y-0.5 text-[8px]">
+                          <li className="flex items-start gap-1">
+                            <span className="text-emerald-400">•</span>
+                            <span>Choose <strong>ONE</strong> scenario from problem statements</span>
+                          </li>
+                          <li className="flex items-start gap-1">
+                            <span className="text-emerald-400">•</span>
+                            <span>Team works on <strong>one scenario only</strong></span>
+                          </li>
+                          <li className="flex items-start gap-1">
+                            <span className="text-emerald-400">•</span>
+                            <span>Use the <strong>provided template</strong></span>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Submission Requirements Section for HL-2 - Mobile */}
+                    {selected === 1 && (
+                      <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-lg p-2 mb-2 border border-blue-400/30">
+                        <h3 className="text-[10px] font-bold text-blue-200 mb-2 flex items-center gap-1">
+                          <span>📋</span> Submission Guide
+                        </h3>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-[8px]">
+                          {/* Required PDF Sections */}
+                          <div className="bg-white/5 rounded p-1 border-l-2 border-green-400">
+                            <h4 className="font-bold text-green-200 mb-1">📄 PDF Sections:</h4>
+                            <ul className="text-slate-200 space-y-0.5">
+                              <li>• 1. Problem Statement & Context</li>
+                              <li>• 2. Root Cause / Risk Analysis</li>
+                              <li>• 3. Solution Concept & Workflow</li>
+                              <li>• 4. Implementation Plan</li>
+                              <li>• 5. Feasibility Analysis</li>
+                              <li>• 6. Impact at Scale & Compliance</li>
+                            </ul>
+                          </div>
+                          
+                          {/* Upload & Timeline */}
+                          <div className="space-y-1">
+                            <div className="bg-white/5 rounded p-1 border-l-2 border-yellow-400">
+                              <h4 className="font-bold text-yellow-200 mb-1">📤 Upload:</h4>
+                              <ul className="text-slate-200 space-y-0.5">
+                                <li>• One PDF per person</li>
+                                <li>• Max 2MB file size</li>
+                                <li>• No late submissions</li>
+                              </ul>
+                            </div>
+                            
+                            <div className="bg-white/5 rounded p-1 border-l-2 border-red-400">
+                              <h4 className="font-bold text-red-200 mb-1">⏰ Deadline:</h4>
+                              <ul className="text-slate-200 space-y-0.5">
+                                <li>• 3 hours from start</li>
+                                <li>• PDF is FINAL once uploaded</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <p className="text-[10px] text-slate-200 italic mb-2">{levels[selected].description}</p>
                     {levels[selected].features && levels[selected].features.length > 0 && (
                       <div className="mt-2 space-y-2">
@@ -703,17 +818,8 @@ const InstructionsPage: React.FC = () => {
                     <img
                       src={visibleLevelImages[i]}
                       alt={level.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-black"
                     />
-                    {/* Locked overlay for HL-2 only (HL-1 is now unlocked) */}
-                    {(i === 1) && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-cyan-600 to-emerald-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center backdrop-blur-sm opacity-90">
-                        <div className="text-center flex flex-col items-center justify-center">
-                          <Lock size={48} className="text-white mb-2 drop-shadow-lg" />
-                          <span className="text-white text-sm font-bold drop-shadow-lg">LOCKED</span>
-                        </div>
-                      </div>
-                    )}
                   </motion.div>
                 ))}
               </motion.div>
@@ -732,6 +838,83 @@ const InstructionsPage: React.FC = () => {
                 <p className="text-sm text-slate-200 mb-2">
                   <span className="font-semibold">Objective:</span> {levels[selected].objective}
                 </p>
+                
+                {/* Add Submission Requirements below Objective for HL-2 */}
+                {selected === 1 && (
+                  <div className="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 rounded-lg p-3 mb-3 border border-emerald-400/30">
+                    <h3 className="text-sm font-bold text-emerald-200 mb-2 flex items-center gap-2">
+                      <span>📋</span> Submission Requirements
+                    </h3>
+                    <ul className="text-slate-200 space-y-1 text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400">•</span>
+                        <span>Choose <strong>ONE</strong> scenario from the Hackathon problem statements</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400">•</span>
+                        <span>Your team must work on <strong>one scenario only</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-400">•</span>
+                        <span>Prepare your Innovation PDF using the <strong>provided template</strong></span>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Submission Requirements Section for HL-2 */}
+                {selected === 1 && (
+                  <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-lg p-4 mb-4 border border-blue-400/30">
+                    <h3 className="text-lg font-bold text-blue-200 mb-3 flex items-center gap-2">
+                      <span>📋</span> Detailed Submission Guide
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      {/* Required PDF Sections */}
+                      <div className="bg-white/5 rounded-lg p-3 border-l-4 border-green-400">
+                        <h4 className="font-bold text-green-200 mb-2">📄 Required PDF Sections:</h4>
+                        <ul className="text-slate-200 space-y-1 text-xs">
+                          <li>• 1. Problem Statement & Context</li>
+                          <li>• 2. Root Cause / Risk Analysis (linked to FSQM or GMP)</li>
+                          <li>• 3. Solution Concept & Workflow</li>
+                          <li>• 4. Implementation Plan (roles, timeline, resources)</li>
+                          <li>• 5. Feasibility (cost, people, process, technology)</li>
+                          <li>• 6. Impact at Scale & Compliance</li>
+                        </ul>
+                      </div>
+                      
+                      {/* Upload Requirements */}
+                      <div className="bg-white/5 rounded-lg p-3 border-l-4 border-yellow-400">
+                        <h4 className="font-bold text-yellow-200 mb-2">📤 Upload Requirements:</h4>
+                        <ul className="text-slate-200 space-y-1 text-xs">
+                          <li>• One PDF per person must be uploaded in the portal</li>
+                          <li>• File size cannot exceed 2MB</li>
+                          <li>• Upload before the deadline - no exceptions</li>
+                        </ul>
+                      </div>
+                      
+                      {/* Timeline */}
+                      <div className="bg-white/5 rounded-lg p-3 border-l-4 border-red-400">
+                        <h4 className="font-bold text-red-200 mb-2">⏰ Timeline:</h4>
+                        <ul className="text-slate-200 space-y-1 text-xs">
+                          <li>• Submission Deadline: 3 hours from start time</li>
+                          <li>• Late submissions will NOT be accepted</li>
+                        </ul>
+                      </div>
+                      
+                      {/* Important Notes */}
+                      <div className="bg-white/5 rounded-lg p-3 border-l-4 border-purple-400">
+                        <h4 className="font-bold text-purple-200 mb-2">⚠️ Important Notes:</h4>
+                        <ul className="text-slate-200 space-y-1 text-xs">
+                          <li>• Once uploaded, your PDF is FINAL - no edits allowed</li>
+                          <li>• Plagiarism or copying from other teams = disqualification</li>
+                          <li>• Keep work original, practical, and relevant to FSQM/GMP/MC context</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <p className="text-xs text-slate-200 italic mb-4">{levels[selected].description}</p>
                 {levels[selected].features && levels[selected].features.length > 0 && (
                   <div className="mt-4 space-y-4">

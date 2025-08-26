@@ -4,7 +4,7 @@ import { useDeviceLayout } from '../../hooks/useOrientation'; // Add this import
 
 interface AnswerModalProps {
   isVisible: boolean;
-  isCorrect: boolean;
+  isCorrect: boolean; 
   selectedTerm: string;
   correctDefinition: string;
   onClose: () => void;

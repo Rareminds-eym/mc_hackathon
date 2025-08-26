@@ -64,12 +64,8 @@ export const ModuleCompleteModal: React.FC<ModuleCompleteModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
 
-      <div
-        className={`pixel-border-thick bg-gray-800 w-full text-center relative overflow-hidden animate-slideIn my-auto
-          ${isMobileHorizontal ? 'max-w-4xl p-4' : 'max-w-2xl p-6'}
-          ${isMobile ? 'max-h-[80vh] overflow-y-auto' : ''}
-        `}
-      >
+      <div className={`pixel-border-thick bg-gray-800 w-full text-center relative overflow-hidden animate-slideIn my-auto ${isMobileHorizontal ? 'max-w-4xl p-4' : 'max-w-2xl p-6'
+        }`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-pixel-pattern opacity-10"></div>
         <div className="absolute inset-0 bg-scan-lines opacity-20"></div>

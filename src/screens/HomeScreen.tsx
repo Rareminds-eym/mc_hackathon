@@ -95,11 +95,10 @@ const HomeScreen: React.FC = () => {
   };
 
   const viewScores = () => {
-    if (isGameLocked) {
-      setShowGameLocked(true);
-      return;
-    }
-    navigate("/scores");
+    // View Scores is locked - do nothing
+    return;
+    // Commented out navigation - scores are locked
+    // navigate("/scores");
   };
 
   const viewInstructions = () => {
@@ -439,6 +438,7 @@ const HomeScreen: React.FC = () => {
                 label: "View Scores",
                 onClick: viewScores,
                 shouldDisable: true,
+                showLockIcon: true,
               },
               {
                 label: "Instructions",
@@ -472,6 +472,9 @@ const HomeScreen: React.FC = () => {
                 >
                   <div className="flex items-center justify-center gap-2">
                     {btn.shouldDisable && isGameLocked && (
+                      <Icon icon="mdi:lock" className="w-4 h-4" />
+                    )}
+                    {btn.showLockIcon && (
                       <Icon icon="mdi:lock" className="w-4 h-4" />
                     )}
                     {btn.label}

@@ -1007,14 +1007,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onToggleMode, onForgotPasswor
               </>
             ) : (
               <>
-                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
+                {/* {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
                 <button
                   type="button"
                   onClick={onToggleMode}
                   className="ml-1 font-medium text-white hover:text-blue-400 transition-colors duration-200"
                 >
                   {mode === 'login' ? 'Sign up' : 'Sign in'}
-                </button>
+                </button> */}
               </>
             )}
           </p>

@@ -1,7 +1,5 @@
 
 import { AlertTriangle, Clock, Eye, Factory, Play, Trophy } from "lucide-react";
-import { Download } from "lucide-react";
-import jsPDF from "jspdf";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDeviceLayout } from "../hooks/useOrientation";
@@ -41,16 +39,16 @@ interface GmpSimulationProps {
   onProceedToLevel2?: () => void;
 }
 
+const GameEngine: React.FC<GmpSimulationProps> = ({
+  mode,
+  onProceedToLevel2,
+}) => {
 
-const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) => {
-  // State for download message
-  const [showDownloadMsg, setShowDownloadMsg] = useState(false);
+  // Add navigate for routing
+  const navigate = useNavigate();
 
   // State for team score calculation modal (must be inside component)
   const [showTeamScoreModal, setShowTeamScoreModal] = useState(false);
-
-  // Navigation hook for back button
-  const navigate = useNavigate();
 
   // Device layout detection
   const { isMobile, isHorizontal } = useDeviceLayout();
@@ -86,7 +84,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
   // Walkthrough video handler
   const showWalkthroughVideo = () => {
     // You can replace this URL with the actual walkthrough video URL
-    const videoUrl = "https://www.youtube.com/watch?v=TlZ79exnc4o";
+    const videoUrl = "https://www.youtube.com/watch?v=7CemV2XIaXo";
     window.open(videoUrl, '_blank');
   };
 
@@ -1716,71 +1714,26 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
           <div className="absolute inset-0 bg-scan-lines opacity-20"></div>
 
           <div className="pixel-border-thick bg-gradient-to-r from-cyan-600 to-blue-600 p-4 max-w-xl w-full text-center relative z-10">
-            {/* Top row: Back (left) and Download (right) */}
-            <div className="flex justify-between items-center mb-2">
+            {/* Back Button - styled like walkthrough video modal */}
+            <div className="absolute top-3 left-3 z-20">
               <button
-                className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-1 px-3 pixel-text flex items-center gap-2 transition-all"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/modules')}
+                className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-1 px-3 pixel-text transition-all flex items-center gap-2 text-xs shadow-lg"
                 aria-label="Back"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 Back
               </button>
-              <button
-                className="pixel-border bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-black py-1 px-3 pixel-text flex items-center gap-2 transition-all"
-                onClick={() => {
-                  if (!isHackathonCompleted()) {
-                    setShowDownloadMsg(true);
-                    setTimeout(() => setShowDownloadMsg(false), 2500);
-                    return;
-                  }
-                  const doc = new jsPDF();
-                  doc.setFont('Times', 'normal');
-                  doc.setFontSize(16);
-                  const pageWidth = doc.internal.pageSize.getWidth();
-                  const margin = 28;
-                  const usableWidth = pageWidth - margin * 2;
-                  const title = 'Level 1: Attempted Scenarios';
-                  const titleWidth = doc.getTextWidth(title);
-                  doc.text(title, (pageWidth - titleWidth) / 2, margin);
-                  let y = margin + 20;
-                  gameState.questions.forEach((q) => {
-                    const normalizedCase = (q.caseFile || '').replace(/[^\x00-\x7F]+/g, '-');
-                    const caseLines = doc.splitTextToSize(normalizedCase, usableWidth - 32);
-                    caseLines.forEach((line, i) => {
-                      doc.text(line, margin + 32, y + i * 8, { maxWidth: usableWidth - 32, align: 'justify' });
-                    });
-                    y += 8 * caseLines.length + 8;
-                    doc.setFont('Times', 'normal');
-                    y += 16;
-                    if (y > doc.internal.pageSize.getHeight() - margin - 20) {
-                      doc.addPage();
-                      y = margin + 8;
-                    }
-                  });
-                  doc.save('Level1_Attempted_Scenarios.pdf');
-                }}
-                aria-label="Download Attempted Scenarios"
-              >
-                <Download className="w-4 h-4 mr-1" /> Download
-              </button>
-      {/* Download message toast */}
-      {showDownloadMsg && (
-        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-yellow-100 border-2 border-yellow-400 text-yellow-800 px-6 py-3 rounded-xl shadow-lg font-bold pixel-text flex items-center gap-2 animate-fadeIn">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
-            Download is enabled after the test
-          </div>
-        </div>
-      )}
             </div>
+            {/* Download button is not seen in Back */}
+          
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 bg-cyan-500 pixel-border flex items-center justify-center">
                 <Factory className="w-6 h-6 text-cyan-900" />
               </div>
             </div>
             <h1 className="text-xl font-black text-cyan-100 mb-3 pixel-text">
-              Medical Coding
+              GOOD MANUFACTURING PRACTICES
             </h1>
             {/* <p className="text-cyan-100 mb-4 text-sm font-bold">
               Test your knowledge of Good Manufacturing Practices through
@@ -1817,7 +1770,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
                   5 CASES
                 </h3>
                 <p className="text-orange-100 text-xs font-bold">
-                  Random MC scenarios
+                  Random GMP scenarios
                 </p>
               </div>
             </div>
@@ -2008,7 +1961,7 @@ const GameEngine: React.FC<GmpSimulationProps> = ({ mode, onProceedToLevel2 }) =
 
       {/* Pixel Game Header */}
       <div className="pixel-border-thick bg-gradient-to-r from-gray-900 to-gray-800 relative z-10">
-        <div className="container mx-auto px-3 py-2">
+        <div className="container mx-auto px-3">
           <div className="flex items-center justify-between">
             {/* Left - Game Identity */}
             <div className="flex items-center gap-3">

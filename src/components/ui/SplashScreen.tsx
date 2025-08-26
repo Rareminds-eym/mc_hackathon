@@ -133,27 +133,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         <div className={`${layout.isMobile && layout.isHorizontal ? 'flex-1 flex flex-col items-center justify-center' : ''}`}>
           {/* Logo Container - Horizontal Layout */}
           <div className={`flex items-center justify-center mb-8 transition-all duration-1000 ${showLogo ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90'}`}>
-            {/* First Logo */}
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-              <div className="relative bg-gradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
-                <div className="flex items-center justify-center space-x-3">
-                  <div className="text-left">
-                    <img src="/logos/NM.png" alt="Company Logo" className={`${layout.isMobile && layout.isHorizontal ? 'h-16 w-36' : 'h-28 w-72'} rounded-xs shadow-lg py-4`} />
-                  </div>
-                </div>
-              </div>
-              <div className="absolute inset-0 animate-spin-slow">
-                <CheckCircle className="absolute -top-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-green-400" />
-                <Target className="absolute top-1/2 -right-2 transform -translate-y-1/2 h-6 w-6 text-blue-400" />
-                <Sparkles className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-purple-400" />
-              </div>
-            </div>
-
-            {/* X Symbol */}
-            <X className={`mx-4 ${layout.isMobile && layout.isHorizontal ? 'h-8 w-8' : 'h-12 w-12'} text-white`} />
-
-            {/* Second Logo */}
+            {/* Only Second Logo */}
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
               <div className="relative bg-gradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl">
